@@ -17,7 +17,7 @@
 			onclick={() => uiStore.toggleSidebar()}
 			aria-label="Toggle sidebar"
 		>
-			<Menu class="w-5 h-5" />
+			<Menu class="w-5 h-5 text-slate-700 dark:text-slate-300" />
 		</button>
 
 		<div class="flex items-center gap-2">
@@ -52,12 +52,12 @@
 			aria-label="Toggle AI chat"
 			title="AI Assistant"
 		>
-			<MessageSquare class="w-5 h-5" />
+			<MessageSquare class="w-5 h-5 text-slate-700 dark:text-slate-300" />
 		</button>
 
 		<!-- Settings -->
 		<a href="/settings" class="btn btn-ghost p-2" aria-label="Settings" title="Settings">
-			<Settings class="w-5 h-5" />
+			<Settings class="w-5 h-5 text-slate-700 dark:text-slate-300" />
 		</a>
 	</div>
 </header>

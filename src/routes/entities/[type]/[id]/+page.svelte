@@ -90,8 +90,8 @@
 
 		<!-- Description -->
 		{#if entity.description}
-			<div class="prose dark:prose-invert max-w-none mb-8">
-				<p class="whitespace-pre-wrap">{entity.description}</p>
+			<div class="max-w-none mb-8">
+				<p class="text-slate-700 dark:text-slate-300 whitespace-pre-wrap">{entity.description}</p>
 			</div>
 		{/if}
 

@@ -63,9 +63,9 @@
 							{@const Icon = getIconComponent(iconName)}
 							<button
 								type="button"
-								class="p-2 rounded hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors
+								class="p-2 rounded hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-slate-700 dark:text-slate-300
 									{value === iconName
-									? 'bg-blue-100 dark:bg-blue-900 ring-2 ring-blue-500'
+									? 'bg-blue-100 dark:bg-blue-900 ring-2 ring-blue-500 text-blue-700 dark:text-blue-300'
 									: ''}"
 								onclick={() => selectIcon(iconName)}
 								title={ICON_DISPLAY_NAMES[iconName] ?? iconName}

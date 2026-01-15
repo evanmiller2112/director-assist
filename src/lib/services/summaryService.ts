@@ -1,6 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import type { BaseEntity } from '$lib/types';
 import { getEntityTypeDefinition } from '$lib/config/entityTypes';
+import { getSelectedModel } from './modelService';
 
 export interface SummaryGenerationResult {
 	success: boolean;
@@ -65,7 +66,7 @@ export async function generateSummary(entity: BaseEntity): Promise<SummaryGenera
 		const client = new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
 
 		const response = await client.messages.create({
-			model: 'claude-sonnet-4-20250514',
+			model: getSelectedModel(),
 			max_tokens: 256,
 			messages: [
 				{

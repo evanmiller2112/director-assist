@@ -59,3 +59,25 @@ export const DEFAULT_AI_SETTINGS: AISettings = {
 	maxTokens: 4096,
 	temperature: 0.7
 };
+
+// Model information from Anthropic API
+export interface ModelInfo {
+	id: string;
+	display_name: string;
+	created_at: string;
+	type: 'model';
+}
+
+// Response from /v1/models endpoint
+export interface ModelsListResponse {
+	data: ModelInfo[];
+	has_more: boolean;
+	first_id: string;
+	last_id: string;
+}
+
+// Cached models with timestamp
+export interface ModelCache {
+	models: ModelInfo[];
+	timestamp: number;
+}

@@ -2,8 +2,15 @@
 	import { campaignStore, notificationStore, uiStore } from '$lib/stores';
 	import { db } from '$lib/db';
 	import { entityRepository, campaignRepository, chatRepository } from '$lib/db/repositories';
-	import type { CampaignBackup } from '$lib/types';
-	import { Download, Upload, Save, Moon, Sun, Monitor, Trash2, Key } from 'lucide-svelte';
+	import type { CampaignBackup, ModelInfo } from '$lib/types';
+	import {
+		fetchModels,
+		getSelectedModel,
+		setSelectedModel,
+		clearModelsCache,
+		getFallbackModels
+	} from '$lib/services';
+	import { Download, Upload, Save, Moon, Sun, Monitor, Trash2, Key, RefreshCw } from 'lucide-svelte';
 
 	// Form state
 	let campaignName = $state(campaignStore.campaign?.name ?? '');
@@ -12,6 +19,12 @@
 	let campaignSetting = $state(campaignStore.campaign?.setting ?? '');
 	let apiKey = $state('');
 	let isSaving = $state(false);
+
+	// Model selection state
+	let models = $state<ModelInfo[]>([]);
+	let selectedModel = $state('');
+	let isLoadingModels = $state(false);
+	let modelError = $state<string | null>(null);
 
 	// Update form when campaign loads
 	$effect(() => {
@@ -23,15 +36,44 @@
 		}
 	});
 
-	// Load API key from storage
+	// Load API key and models from storage
 	$effect(() => {
 		if (typeof window !== 'undefined') {
 			const stored = localStorage.getItem('dm-assist-api-key');
 			if (stored) {
 				apiKey = stored;
+				loadModels(stored);
 			}
+			selectedModel = getSelectedModel();
 		}
 	});
+
+	async function loadModels(key: string) {
+		isLoadingModels = true;
+		modelError = null;
+		try {
+			models = await fetchModels(key);
+		} catch (error) {
+			modelError = error instanceof Error ? error.message : 'Failed to load models';
+			models = getFallbackModels();
+		} finally {
+			isLoadingModels = false;
+		}
+	}
+
+	function handleModelChange() {
+		setSelectedModel(selectedModel);
+		notificationStore.success('Model preference saved!');
+	}
+
+	async function refreshModels() {
+		clearModelsCache();
+		const key = localStorage.getItem('dm-assist-api-key');
+		if (key) {
+			await loadModels(key);
+			notificationStore.success('Models refreshed!');
+		}
+	}
 
 	async function saveCampaign() {
 		isSaving = true;
@@ -51,8 +93,11 @@
 		if (typeof window !== 'undefined') {
 			if (apiKey) {
 				localStorage.setItem('dm-assist-api-key', apiKey);
+				clearModelsCache();
+				loadModels(apiKey);
 			} else {
 				localStorage.removeItem('dm-assist-api-key');
+				models = [];
 			}
 			notificationStore.success('API key saved!');
 		}
@@ -297,6 +342,48 @@
 					Your API key is stored locally in your browser and never sent to our servers.
 				</p>
 			</div>
+
+			<!-- Model Selection -->
+			{#if apiKey}
+				<div>
+					<label for="model" class="label">Claude Model</label>
+					<p class="text-sm text-slate-500 mb-2">
+						Select which Claude model to use for AI features. More capable models cost more per request.
+					</p>
+					<div class="flex gap-2">
+						<select
+							id="model"
+							class="input flex-1"
+							bind:value={selectedModel}
+							disabled={isLoadingModels}
+							onchange={handleModelChange}
+						>
+							{#if isLoadingModels}
+								<option value="">Loading models...</option>
+							{:else if models.length === 0}
+								<option value="">No models available</option>
+							{:else}
+								{#each models as model}
+									<option value={model.id}>{model.display_name}</option>
+								{/each}
+							{/if}
+						</select>
+						<button
+							class="btn btn-secondary"
+							onclick={refreshModels}
+							disabled={isLoadingModels}
+							title="Refresh available models"
+						>
+							<RefreshCw class="w-4 h-4 {isLoadingModels ? 'animate-spin' : ''}" />
+						</button>
+					</div>
+					{#if modelError}
+						<p class="text-xs text-amber-600 dark:text-amber-400 mt-1">
+							Could not load models from API. Using default options.
+						</p>
+					{/if}
+				</div>
+			{/if}
 		</div>
 	</section>
 

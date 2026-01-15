@@ -3,7 +3,7 @@ import type { ModelInfo, ModelsListResponse, ModelCache } from '$lib/types';
 const STORAGE_KEY = 'dm-assist-selected-model';
 const CACHE_KEY = 'dm-assist-models-cache';
 const CACHE_DURATION = 1000 * 60 * 60; // 1 hour cache
-const DEFAULT_MODEL = 'claude-sonnet-4-20250514';
+const DEFAULT_MODEL = 'claude-3-5-haiku-20241022';
 
 // Fallback models when API fetch fails
 const FALLBACK_MODELS: ModelInfo[] = [

@@ -55,7 +55,7 @@ export interface AISettings {
 }
 
 export const DEFAULT_AI_SETTINGS: AISettings = {
-	model: 'claude-sonnet-4-20250514',
+	model: 'claude-3-5-haiku-20241022',
 	maxTokens: 4096,
 	temperature: 0.7
 };

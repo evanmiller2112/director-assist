@@ -4,6 +4,7 @@
 	import { entitiesStore } from '$lib/stores';
 	import { getEntityTypeDefinition } from '$lib/config/entityTypes';
 	import { ArrowLeft, Edit, Trash2, Link } from 'lucide-svelte';
+	import { EntitySummary } from '$lib/components/entity';
 
 	const entityId = $derived($page.params.id ?? '');
 	const entityType = $derived($page.params.type ?? '');
@@ -74,6 +75,11 @@
 				<p class="whitespace-pre-wrap">{entity.description}</p>
 			</div>
 		{/if}
+
+		<!-- AI Summary -->
+		<div class="mb-8">
+			<EntitySummary {entity} editable={true} />
+		</div>
 
 		<!-- Fields -->
 		{#if Object.keys(entity.fields).length > 0}

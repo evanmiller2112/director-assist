@@ -14,6 +14,7 @@
 	// Form state
 	let name = $state('');
 	let description = $state('');
+	let summary = $state('');
 	let tags = $state('');
 	let notes = $state('');
 	let fields = $state<Record<string, FieldValue>>({});
@@ -25,6 +26,7 @@
 		if (entity && !isInitialized) {
 			name = entity.name;
 			description = entity.description;
+			summary = entity.summary ?? '';
 			tags = entity.tags.join(', ');
 			notes = entity.notes;
 			fields = { ...entity.fields };
@@ -42,6 +44,7 @@
 			await entitiesStore.update(entityId, {
 				name: name.trim(),
 				description: description.trim(),
+				summary: summary.trim() || undefined,
 				tags: tags
 					.split(',')
 					.map((t) => t.trim())
@@ -106,6 +109,20 @@
 					class="input min-h-[100px]"
 					bind:value={description}
 					placeholder="Describe this {typeDefinition?.label?.toLowerCase() ?? 'entity'}..."
+				></textarea>
+			</div>
+
+			<!-- AI Summary -->
+			<div>
+				<label for="summary" class="label">AI Summary</label>
+				<p class="text-sm text-slate-500 mb-1">
+					Brief summary for AI context. Can be auto-generated on the view page.
+				</p>
+				<textarea
+					id="summary"
+					class="input min-h-[60px]"
+					bind:value={summary}
+					placeholder="A brief summary of this entity for AI context..."
 				></textarea>
 			</div>
 

@@ -41,6 +41,7 @@ export interface BaseEntity {
 	type: EntityType;
 	name: string;
 	description: string; // Rich text (markdown)
+	summary?: string; // AI-generated brief summary for context injection
 	tags: string[];
 	imageUrl?: string;
 	fields: Record<string, FieldValue>;

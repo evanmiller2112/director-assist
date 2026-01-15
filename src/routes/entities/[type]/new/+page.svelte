@@ -44,7 +44,7 @@
 					.map((t) => t.trim())
 					.filter(Boolean),
 				notes: notes.trim(),
-				fields
+				fields: $state.snapshot(fields)
 			});
 
 			const created = await entitiesStore.create(newEntity);

@@ -47,7 +47,7 @@
 					.map((t) => t.trim())
 					.filter(Boolean),
 				notes: notes.trim(),
-				fields,
+				fields: $state.snapshot(fields),
 				updatedAt: new Date()
 			});
 

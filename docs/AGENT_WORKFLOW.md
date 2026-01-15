@@ -4,31 +4,66 @@ This document describes the multi-agent development workflow for managing Direct
 
 ## Overview
 
-The agent workflow is a pipeline system where specialized agents handle specific responsibilities. Each agent performs its task and hands off to the next agent in the chain. This structured approach ensures code quality, maintains documentation, and keeps the development process organized.
+The agent workflow is a pipeline system where specialized agents handle specific responsibilities. Each agent performs its task and hands off to the next agent in the chain. This structured approach follows **Test-Driven Development (TDD)** principles, ensuring code quality, maintaining documentation, and keeping the development process organized.
 
 **Key Benefits:**
+- Tests define "done" before coding starts (TDD approach)
+- Tests can't be forgotten since they come first
+- Forces clear requirements and prevents over-engineering
+- Better code design through the RED-GREEN-REFACTOR cycle
 - Consistent code review process
 - Documentation stays in sync with code
-- Atomic commits (code + docs together)
+- Atomic commits (code + tests + docs together)
 - Clear handoffs between development stages
 - Specialized expertise at each step
 
 ## Pipeline Stages
 
-The workflow consists of 10 distinct stages:
+The workflow consists of 10 distinct stages following TDD principles:
 
 ```
 1. Issue Selection    → Pick and validate issue
 2. Planning           → Design approach (optional)
-3. Implementation     → Write the code
-4. Unit Testing       → Write/update tests for changes
-5. QA Validation      → Validate against requirements
+3. Unit Testing       → Write tests for expected behavior (RED - tests fail)
+4. Implementation     → Write code to make tests pass (GREEN)
+5. QA Validation      → Validate against requirements (verify GREEN)
 6. Code Review        → Review code and domain accuracy (optional)
 7. Documentation      → Update docs
 8. Git Operations     → Commit and push changes
 9. User Verification  → Manual testing
 10. Issue Closure     → Mark issue complete
 ```
+
+## Test-Driven Development (TDD) Approach
+
+This workflow follows the **RED-GREEN-REFACTOR** cycle:
+
+### RED Phase (Step 3: Unit Testing)
+The **unit-test-expert** writes tests that define the expected behavior before any code exists. These tests FAIL because the functionality hasn't been implemented yet. This is intentional and desirable - failing tests define what "done" looks like.
+
+**Benefits:**
+- Tests clarify requirements before coding
+- Forces thinking about API design and interfaces
+- Prevents writing untestable code
+- Provides immediate feedback when implementation is complete
+
+### GREEN Phase (Step 4: Implementation)
+The **senior-web-architect** writes the minimum code necessary to make the failing tests pass. The goal is to get from RED (failing tests) to GREEN (passing tests) as quickly as possible.
+
+**Benefits:**
+- Implementation is focused and purposeful
+- No over-engineering or unnecessary features
+- Test coverage is guaranteed (tests already exist)
+- Clear definition of "done" (all tests pass)
+
+### REFACTOR Phase (Steps 5-7: QA, Review, Documentation)
+Once tests are passing, the code can be improved and cleaned up while maintaining the GREEN state. QA validation, code review, and documentation updates occur while tests continue to pass.
+
+**Benefits:**
+- Safe to improve code structure (tests catch regressions)
+- Quality checks happen with working code
+- Documentation reflects tested, working features
+- Confidence that changes don't break functionality
 
 ## The Agents
 
@@ -101,90 +136,100 @@ The workflow consists of 10 distinct stages:
 
 ---
 
-### 3. senior-web-architect
+### 3. unit-test-expert (TDD: RED Phase)
 
-**Role:** Code implementation
+**Role:** Unit test creation and test-driven development
 
 **Responsibilities:**
-- Implement features based on issue requirements or plan
-- Write type-safe TypeScript code
-- Follow project code style guidelines
-- Ensure proper error handling
-- Test changes during development
-- Hand off completed code for review
+- Write tests BEFORE implementation (RED phase)
+- Define expected behavior through failing tests
+- Ensure test coverage for edge cases and requirements
+- Create test fixtures and mocks as needed
+- Document expected behavior in test descriptions
+- Hand off failing tests to senior-web-architect
+
+**TDD Approach:**
+In the TDD workflow, this agent writes tests FIRST, before any code exists. The tests should fail (RED state) because the functionality hasn't been implemented yet. This is the correct and expected behavior.
 
 **When to Use:**
-- Every workflow (this is the core implementation agent)
+- Every feature and bug fix (TDD requires tests first)
+- After planning completes and requirements are clear
+- Before any implementation begins
+
+**When to Skip:**
+- Simple documentation-only changes
+- Minor UI styling tweaks with no logic changes
+- Configuration file updates with no behavioral changes
 
 **Example Commands:**
 ```
-"Implement issue #23: Add faction member count"
-"Follow the plan and implement the custom field feature"
-"Fix the bug described in issue #18"
+"Write tests for the expected faction member count behavior"
+"Create failing tests that define how heroic resources should work"
+"Write tests for the bug fix requirements in issue #18"
+```
+
+**Output:**
+- New test files with failing tests (RED state)
+- Test fixtures and mocks
+- Test execution results showing failures
+- Clear definition of expected behavior
+- Notes on what needs to be implemented
+
+---
+
+### 4. senior-web-architect (TDD: GREEN Phase)
+
+**Role:** Code implementation to satisfy tests
+
+**Responsibilities:**
+- Implement features to make failing tests pass (GREEN phase)
+- Write type-safe TypeScript code
+- Follow project code style guidelines
+- Ensure proper error handling
+- Run tests during development to track progress
+- Hand off working code with passing tests
+
+**TDD Approach:**
+In the TDD workflow, this agent writes the minimum code necessary to make the failing tests pass. The goal is to transition from RED (failing tests) to GREEN (passing tests) efficiently and purposefully.
+
+**When to Use:**
+- Every workflow (this is the core implementation agent)
+- After unit-test-expert has created failing tests
+
+**Example Commands:**
+```
+"Implement the code to make the faction tests pass"
+"Write the implementation for the heroic resources feature (tests already exist)"
+"Fix the bug to satisfy the test requirements"
 ```
 
 **Output:**
 - Working code implementation
 - New or modified files
+- Passing test results (GREEN state)
 - Summary of changes made
-- Any notes for the reviewer
+- Notes for QA and review
 
 ---
 
-### 4. unit-test-expert
-
-**Role:** Unit test creation and maintenance
-
-**Responsibilities:**
-- Write unit tests for new functionality
-- Update existing tests affected by code changes
-- Ensure test coverage for edge cases
-- Create test fixtures and mocks as needed
-- Verify tests pass before handing off
-- Hand off to QA expert for validation
-
-**When to Use:**
-- After implementation of new features
-- When modifying existing functionality
-- For any code that has testable logic
-- When test coverage needs improvement
-
-**When to Skip:**
-- Simple documentation-only changes
-- Minor UI styling tweaks with no logic changes
-- Configuration file updates
-- Simple bug fixes that already have test coverage
-
-**Example Commands:**
-```
-"Write unit tests for the new faction features"
-"Update tests affected by the heroic resources implementation"
-"Add test coverage for the custom field validation logic"
-```
-
-**Output:**
-- New or updated test files
-- Test fixtures and mocks
-- Test execution results
-- Coverage report summary
-- Notes on what was tested
-
----
-
-### 5. qa-expert
+### 5. qa-expert (TDD: REFACTOR Phase)
 
 **Role:** Quality assurance and requirements validation
 
 **Responsibilities:**
-- Validate implementation meets acceptance criteria
-- Check edge cases and error handling
+- Validate implementation meets acceptance criteria (verify GREEN state)
+- Check edge cases and error handling beyond unit tests
 - Verify no regressions in existing functionality
 - Test boundary conditions and invalid inputs
 - Ensure user experience is intuitive
+- Confirm tests remain passing during validation
 - Hand off to code reviewer or documentation specialist
 
+**TDD Approach:**
+In the TDD workflow, QA validation occurs after implementation is complete and tests are passing (GREEN state). This agent verifies that the code not only passes tests but also meets all acceptance criteria and handles edge cases appropriately.
+
 **When to Use:**
-- After tests are written (standard features)
+- After implementation completes and tests pass (GREEN state)
 - Before code review or documentation
 - When acceptance criteria are complex
 - For features with multiple edge cases
@@ -196,14 +241,15 @@ The workflow consists of 10 distinct stages:
 
 **Example Commands:**
 ```
-"Validate the faction implementation against requirements"
-"Check edge cases for the search functionality"
-"Verify the custom field feature meets acceptance criteria"
+"Validate the faction implementation against requirements (tests are passing)"
+"Check edge cases for the search functionality and verify tests cover them"
+"Verify the custom field feature meets acceptance criteria in GREEN state"
 ```
 
 **Output:**
 - Validation results
 - Edge cases tested
+- Confirmation that tests remain passing
 - Issues found (if any)
 - Acceptance criteria checklist
 - Notes for the code reviewer
@@ -310,32 +356,35 @@ The workflow consists of 10 distinct stages:
 
 ## Workflow Variants
 
-Choose the appropriate workflow based on the issue complexity and domain involvement:
+Choose the appropriate workflow based on the issue complexity and domain involvement. All variants follow TDD principles where tests are written before implementation.
 
-### Variant 1: Simple Bug Fix
+### Variant 1: Simple Bug Fix (TDD)
 
 **Use When:**
 - Clear, isolated bug
 - Single file change
 - Obvious solution
 - No game mechanics involved
-- Already has test coverage
 
-**Steps:** 1 → 3 → 5 → 7 → 8 → 9 → 10
+**Steps:** 1 → 3 → 4 → 5 → 7 → 8 → 9 → 10
 
-**Skip:** Planning (step 2), Unit Tests (step 4), QA (step 5), Code Review (step 6)
+**Skip:** Planning (step 2), Code Review (step 6)
+
+**TDD Flow:** Write test that reproduces bug (RED) → Fix bug (GREEN) → Validate fix
 
 **Example Issues:**
-- Typo in UI text
-- Broken link in documentation
-- CSS styling bug
-- Simple input validation error
+- Input validation error
+- Search functionality bug
+- Broken form submission
+- Logic error in calculation
 
 **Workflow:**
 ```
 1. github-project-manager selects issue
    ↓
-3. senior-web-architect fixes the bug
+3. unit-test-expert writes test that reproduces the bug (RED)
+   ↓
+4. senior-web-architect fixes bug to make test pass (GREEN)
    ↓
 5. qa-expert validates the fix works
    ↓
@@ -350,7 +399,7 @@ Choose the appropriate workflow based on the issue complexity and domain involve
 
 ---
 
-### Variant 2: Standard Feature (Non-Draw-Steel)
+### Variant 2: Standard Feature (Non-Draw-Steel TDD)
 
 **Use When:**
 - New feature or enhancement
@@ -361,6 +410,8 @@ Choose the appropriate workflow based on the issue complexity and domain involve
 **Steps:** 1 → 2 → 3 → 4 → 5 → 7 → 8 → 9 → 10
 
 **Skip:** Code Review (step 6)
+
+**TDD Flow:** Plan → Write tests (RED) → Implement feature (GREEN) → Validate & document
 
 **Example Issues:**
 - Add export to CSV feature
@@ -374,9 +425,9 @@ Choose the appropriate workflow based on the issue complexity and domain involve
    ↓
 2. Plan creates implementation plan
    ↓
-3. senior-web-architect implements feature
+3. unit-test-expert writes tests for expected behavior (RED)
    ↓
-4. unit-test-expert writes tests
+4. senior-web-architect implements feature to pass tests (GREEN)
    ↓
 5. qa-expert validates implementation
    ↓
@@ -391,7 +442,7 @@ Choose the appropriate workflow based on the issue complexity and domain involve
 
 ---
 
-### Variant 3: Draw Steel Feature (Full Pipeline)
+### Variant 3: Draw Steel Feature (Full TDD Pipeline)
 
 **Use When:**
 - Feature involves Draw Steel game mechanics
@@ -400,6 +451,8 @@ Choose the appropriate workflow based on the issue complexity and domain involve
 - Content that requires domain accuracy
 
 **Steps:** 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 (Full pipeline)
+
+**TDD Flow:** Plan → Write tests (RED) → Implement (GREEN) → Validate → Domain review → Document
 
 **Example Issues:**
 - Add Draw Steel character class tracking
@@ -413,9 +466,9 @@ Choose the appropriate workflow based on the issue complexity and domain involve
    ↓
 2. Plan designs the feature architecture
    ↓
-3. senior-web-architect implements the feature
+3. unit-test-expert writes tests for Draw Steel behavior (RED)
    ↓
-4. unit-test-expert writes tests
+4. senior-web-architect implements the feature (GREEN)
    ↓
 5. qa-expert validates implementation
    ↓
@@ -450,9 +503,9 @@ Does it involve Draw Steel game mechanics or domain knowledge?
 
 ## Best Practices
 
-### Context Handoffs
+### Context Handoffs (TDD Flow)
 
-Each agent should provide clear context when handing off:
+Each agent should provide clear context when handing off. The TDD workflow emphasizes test-first development:
 
 **From github-project-manager to Plan:**
 - Issue number and title
@@ -460,27 +513,28 @@ Each agent should provide clear context when handing off:
 - Complexity assessment
 - Any relevant background
 
-**From Plan to senior-web-architect:**
+**From Plan to unit-test-expert:**
 - Implementation plan
-- Files to modify
-- Step-by-step tasks
-- Design decisions
+- Expected behavior to test
+- Requirements and acceptance criteria
+- API design and interfaces to test
 
-**From senior-web-architect to unit-test-expert:**
+**From unit-test-expert to senior-web-architect:**
+- Failing test files (RED state)
+- Test execution results showing failures
+- Expected behavior defined in tests
+- What needs to be implemented to pass tests
+
+**From senior-web-architect to qa-expert:**
 - List of changed files
 - Summary of implementation
-- Logic that needs test coverage
-- Expected test scenarios
-
-**From unit-test-expert to qa-expert:**
-- Test files created/updated
-- Test execution results
-- Coverage summary
-- Areas that need QA focus
+- Passing test results (GREEN state)
+- Notes on implementation approach
 
 **From qa-expert to draw-steel-web-reviewer (or docs-specialist):**
 - Validation results
 - Edge cases tested
+- Confirmation tests still pass
 - Any issues found
 - Acceptance criteria checklist
 
@@ -490,7 +544,7 @@ Each agent should provide clear context when handing off:
 - Domain-specific notes
 
 **From docs-specialist to git-manager:**
-- All files ready to commit (code + docs)
+- All files ready to commit (code + tests + docs)
 - Summary of changes
 - Suggested commit message type
 
@@ -498,27 +552,38 @@ Each agent should provide clear context when handing off:
 - What was implemented
 - How to test it
 - What to verify
+- Confirmation that tests are passing
 
-### Atomic Commits
+### Atomic Commits (Including Tests)
 
-The git-manager should ALWAYS commit code and documentation together:
+The git-manager should ALWAYS commit code, tests, and documentation together as a single atomic unit:
 
 **Good:**
 ```
 feat(entities): add faction member count tracking
 
+- Add unit tests for member count behavior
 - Add memberCount field to faction entity type
 - Update FactionForm component to include member count
 - Add validation for positive integers
 - Update ARCHITECTURE.md with new field
 - Add usage example to README
+- All tests passing
 ```
 
 **Bad (separate commits):**
 ```
-Commit 1: feat(entities): add faction member count
-Commit 2: docs: update docs for faction member count
+Commit 1: test: add faction member count tests
+Commit 2: feat(entities): add faction member count
+Commit 3: docs: update docs for faction member count
 ```
+
+**Why Atomic Commits Matter:**
+- Code, tests, and docs stay perfectly synchronized
+- Single revert point if needed
+- Clear history showing complete feature implementation
+- Tests document what the code does
+- No intermediate broken states
 
 ### Communication Style
 
@@ -553,7 +618,7 @@ User should explicitly confirm: "The fix works correctly, proceed to close the i
 
 ## Practical Examples
 
-### Example 1: Simple Bug Fix
+### Example 1: Simple Bug Fix (TDD)
 
 **Issue:** "Search box doesn't clear when pressing Escape key"
 
@@ -566,16 +631,28 @@ User should explicitly confirm: "The fix works correctly, proceed to close the i
 # github-project-manager response:
 # "Issue #45: Search box doesn't clear on Escape
 #  Complexity: Simple
-#  Recommendation: Variant 1 (skip planning and review)
+#  Recommendation: Variant 1 (TDD: write test first, then fix)
 #
-#  Handing off to senior-web-architect for implementation."
+#  Handing off to unit-test-expert to write test."
 
-# Step 3: Implementation
-"Implement the escape key handler for the search box"
+# Step 3: Write Test First (RED)
+"Write a test that verifies Escape key clears the search box"
+
+# unit-test-expert response:
+# "Test created: Header.test.ts
+#  Test case: 'pressing Escape clears search input'
+#  Status: FAILING (RED state - expected behavior)
+#  The test simulates Escape keypress and expects empty value.
+#
+#  Handing off to senior-web-architect to implement."
+
+# Step 4: Implementation (GREEN)
+"Implement the escape key handler to make the test pass"
 
 # senior-web-architect response:
 # "Implementation complete. Added keydown event listener
 #  to Header.svelte search input. Modified 1 file.
+#  Tests now PASSING (GREEN state).
 #
 #  Handing off to qa-expert."
 
@@ -584,7 +661,7 @@ User should explicitly confirm: "The fix works correctly, proceed to close the i
 
 # qa-expert response:
 # "Validation complete. Tested escape key in various scenarios.
-#  All acceptance criteria met. No edge case issues found.
+#  All acceptance criteria met. Tests remain passing.
 #
 #  Handing off to docs-specialist."
 
@@ -593,7 +670,7 @@ User should explicitly confirm: "The fix works correctly, proceed to close the i
 
 # docs-specialist response:
 # "Updated CONTRIBUTING.md keyboard shortcuts section.
-#  Changes ready for commit.
+#  All changes ready for commit: 1 test file, 1 implementation file, 1 doc file.
 #
 #  Handing off to git-manager."
 
@@ -602,6 +679,10 @@ User should explicitly confirm: "The fix works correctly, proceed to close the i
 
 # git-manager response:
 # "Committed: fix(ui): clear search on Escape key press
+#  - Add test for Escape key behavior
+#  - Implement keydown handler
+#  - Update keyboard shortcuts documentation
+#  - All tests passing
 #  Pushed to main: abc1234
 #
 #  Ready for user verification."
@@ -618,7 +699,7 @@ User should explicitly confirm: "The fix works correctly, proceed to close the i
 
 ---
 
-### Example 2: Draw Steel Feature
+### Example 2: Draw Steel Feature (Full TDD)
 
 **Issue:** "Add support for Draw Steel Heroic Resources tracking"
 
@@ -632,7 +713,7 @@ User should explicitly confirm: "The fix works correctly, proceed to close the i
 # "Issue #78: Add Draw Steel Heroic Resources
 #  Complexity: Complex
 #  Involves: Game mechanics, character tracking
-#  Recommendation: Variant 3 (full pipeline)
+#  Recommendation: Variant 3 (full TDD pipeline)
 #
 #  Handing off to Plan for architecture design."
 
@@ -641,21 +722,51 @@ User should explicitly confirm: "The fix works correctly, proceed to close the i
 
 # Plan response:
 # "Implementation Plan:
-#  1. Add heroicResources field to Character entity
-#  2. Create HeroicResourceTracker component
-#  3. Add resource type definitions
-#  4. Update CharacterSheet to display resources
+#  1. Test: Define expected behavior for heroic resources
+#  2. Add heroicResources field to Character entity
+#  3. Create HeroicResourceTracker component
+#  4. Add resource type definitions
+#  5. Update CharacterSheet to display resources
 #
-#  Files to modify:
+#  Test scenarios to cover:
+#  - Resource initialization with defaults
+#  - Increment/decrement operations
+#  - Multiple resource types (Victories, Hope, etc.)
+#  - Validation (no negative values)
+#
+#  Files to create/modify:
+#  - src/lib/components/HeroicResourceTracker.test.ts (new)
+#  - src/lib/types/entities.test.ts (update)
 #  - src/lib/types/entities.ts
 #  - src/lib/config/entityTypes.ts
 #  - src/lib/components/HeroicResourceTracker.svelte (new)
 #  - src/routes/entities/character/[id]/+page.svelte
 #
-#  Handing off to senior-web-architect."
+#  Handing off to unit-test-expert for TDD."
 
-# Step 3: Implementation
-"Implement the heroic resources feature according to the plan"
+# Step 3: Write Tests First (RED)
+"Write tests that define heroic resources behavior"
+
+# unit-test-expert response:
+# "Test suite created for heroic resources:
+#  - Component rendering tests
+#  - Increment/decrement logic tests
+#  - Resource type validation tests
+#  - Edge case tests (negative values, max values)
+#  - Multiple resource type tests
+#  Status: FAILING (RED state - 15 tests)
+#
+#  Tests clearly define expected behavior:
+#  ✗ Should initialize resources with correct defaults
+#  ✗ Should increment Victory count
+#  ✗ Should decrement Hope without going negative
+#  ✗ Should support multiple resource types
+#  [... 11 more failing tests]
+#
+#  Handing off to senior-web-architect to implement."
+
+# Step 4: Implementation (GREEN)
+"Implement the heroic resources feature to pass the tests"
 
 # senior-web-architect response:
 # "Implementation complete. Added heroic resource tracking
@@ -663,22 +774,11 @@ User should explicitly confirm: "The fix works correctly, proceed to close the i
 #  Created new component with increment/decrement controls.
 #
 #  Files changed: 4 files (as planned)
-#
-#  Handing off to unit-test-expert."
-
-# Step 4: Unit Testing
-"Write unit tests for the heroic resources feature"
-
-# unit-test-expert response:
-# "Test suite created for heroic resources:
-#  - Component rendering tests
-#  - Increment/decrement logic tests
-#  - Resource type validation tests
-#  - All tests passing (15 tests)
+#  Tests now PASSING: 15/15 (GREEN state)
 #
 #  Handing off to qa-expert."
 
-# Step 5: QA Validation
+# Step 5: QA Validation (REFACTOR)
 "Validate the heroic resources implementation"
 
 # qa-expert response:
@@ -687,10 +787,11 @@ User should explicitly confirm: "The fix works correctly, proceed to close the i
 #  ✓ Edge cases handled (negative values, max values)
 #  ✓ Multiple resource types work correctly
 #  ✓ UI is intuitive and responsive
+#  ✓ Tests remain passing during validation
 #
 #  Handing off to draw-steel-web-reviewer."
 
-# Step 6: Code Review
+# Step 6: Code Review (REFACTOR)
 "Review the heroic resources implementation for Draw Steel accuracy"
 
 # draw-steel-web-reviewer response:
@@ -699,12 +800,13 @@ User should explicitly confirm: "The fix works correctly, proceed to close the i
 #  ✓ Terminology is accurate (Victories, Hope)
 #  ✓ Default values are correct
 #  ✓ UI follows Draw Steel conventions
+#  ✓ Tests validate domain accuracy
 #
 #  Changes approved.
 #
 #  Handing off to docs-specialist."
 
-# Step 7: Documentation
+# Step 7: Documentation (REFACTOR)
 "Document the new heroic resources feature"
 
 # docs-specialist response:
@@ -714,7 +816,7 @@ User should explicitly confirm: "The fix works correctly, proceed to close the i
 #  - Added code comments explaining resource types
 #  - Created example in CONTRIBUTING.md
 #
-#  All changes ready for commit.
+#  All changes ready for commit: 4 implementation files, 2 test files, 4 doc files.
 #
 #  Handing off to git-manager."
 
@@ -723,6 +825,13 @@ User should explicitly confirm: "The fix works correctly, proceed to close the i
 
 # git-manager response:
 # "Committed: feat(character): add Draw Steel heroic resources tracking
+#
+#  - Add comprehensive test suite (15 tests)
+#  - Implement heroic resources data model
+#  - Create HeroicResourceTracker component
+#  - Add support for Victories, Hope, and custom resources
+#  - Update documentation and examples
+#  - All tests passing (GREEN state)
 #
 #  Pushed to main: def5678
 #
@@ -736,7 +845,8 @@ User should explicitly confirm: "The fix works correctly, proceed to close the i
 
 # github-project-manager response:
 # "Issue #78 closed. Added support for Draw Steel Heroic Resources
-#  including Victories, Hope, and custom resource tracking."
+#  including Victories, Hope, and custom resource tracking.
+#  Full TDD approach with 15 passing tests."
 ```
 
 ---
@@ -838,6 +948,44 @@ Don't skip review, QA, or testing steps or ignore feedback.
 
 ---
 
+### Problem: Tests Written After Implementation (Anti-TDD)
+
+**Symptoms:**
+- Implementation happens before tests are written
+- Tests are written to match existing code rather than define behavior
+- Missing test coverage for edge cases
+- Code is harder to test (not designed with testing in mind)
+
+**Solution:**
+Return to proper TDD workflow:
+
+1. If implementation already exists, write tests anyway (better late than never)
+2. For future work, strictly follow TDD: unit-test-expert BEFORE senior-web-architect
+3. If code is untestable, refactor it to be testable
+4. Remember: Tests define the contract, implementation fulfills it
+
+---
+
+### Problem: Tests Pass But Requirements Not Met
+
+**Symptoms:**
+- All unit tests passing (GREEN state)
+- QA validation finds missing functionality
+- Tests don't cover all acceptance criteria
+- Edge cases not tested
+
+**Solution:**
+Return to RED state by adding missing tests:
+
+1. unit-test-expert adds tests for missing scenarios (new RED state)
+2. senior-web-architect implements to pass new tests (back to GREEN)
+3. qa-expert validates again
+4. Repeat until all requirements covered
+
+This is the REFACTOR phase working correctly - improving while staying GREEN.
+
+---
+
 ## Tips for Effective Workflow Usage
 
 ### 1. Start Each Session with github-project-manager
@@ -882,15 +1030,15 @@ Code and documentation should be committed together. This keeps history clean an
 
 ## Quick Reference
 
-### Workflow Variants Cheat Sheet
+### Workflow Variants Cheat Sheet (TDD)
 
-| Variant | Steps | Use For | Skip |
-|---------|-------|---------|------|
-| Simple Bug Fix | 1→3→5→7→8→9→10 | Typos, small fixes, obvious solutions | Plan, Unit Tests, Domain Review |
-| Standard Feature | 1→2→3→4→5→7→8→9→10 | Infrastructure, generic features | Domain Review |
-| Draw Steel Feature | 1→2→3→4→5→6→7→8→9→10 | Game mechanics, domain-specific | None (full pipeline) |
+| Variant | Steps | TDD Flow | Use For | Skip |
+|---------|-------|----------|---------|------|
+| Simple Bug Fix | 1→3→4→5→7→8→9→10 | Test bug (RED) → Fix (GREEN) → Validate | Bug fixes, small logic changes | Plan, Domain Review |
+| Standard Feature | 1→2→3→4→5→7→8→9→10 | Plan → Tests (RED) → Code (GREEN) → Validate | Infrastructure, generic features | Domain Review |
+| Draw Steel Feature | 1→2→3→4→5→6→7→8→9→10 | Plan → Tests (RED) → Code (GREEN) → Validate → Review | Game mechanics, domain-specific | None (full pipeline) |
 
-### Agent Commands Quick Reference
+### Agent Commands Quick Reference (TDD Order)
 
 ```bash
 # Issue Selection
@@ -902,37 +1050,57 @@ Code and documentation should be committed together. This keeps history clean an
 "Create a plan for issue #XX"
 "Design the architecture for [feature]"
 
-# Implementation
-"Implement issue #XX"
-"Follow the plan and implement [feature]"
-"Fix bug described in issue #XX"
+# Unit Testing (STEP 3 - RED Phase)
+"Write tests that define expected behavior for [feature]"
+"Create failing tests for the bug in issue #XX"
+"Write test cases for the planned implementation"
 
-# Unit Testing
-"Write unit tests for the new [feature]"
-"Update tests affected by the changes"
-"Add test coverage for [component]"
+# Implementation (STEP 4 - GREEN Phase)
+"Implement the code to make the tests pass"
+"Fix the bug to satisfy the test requirements"
+"Write implementation for [feature] (tests already exist)"
 
-# QA Validation
+# QA Validation (REFACTOR Phase)
 "Validate the implementation against requirements"
 "Check edge cases for [feature]"
-"Verify acceptance criteria are met"
+"Verify acceptance criteria are met and tests still pass"
 
-# Code Review
+# Code Review (REFACTOR Phase)
 "Review the changes for Draw Steel accuracy"
 "Check code quality and standards"
 
-# Documentation
+# Documentation (REFACTOR Phase)
 "Update documentation for these changes"
 "Document the new [feature]"
 
 # Git Operations
-"Commit and push all changes"
-"Create commit with appropriate message"
+"Commit and push all changes (code + tests + docs)"
+"Create atomic commit with tests, implementation, and docs"
 
 # Issue Closure
 "Close issue #XX as resolved"
 "Mark issue #XX complete with summary"
 ```
+
+### TDD Quick Tips
+
+**RED (Write Tests First)**
+- Tests should fail initially
+- Define expected behavior clearly
+- Think about API design and interfaces
+- Cover edge cases in test scenarios
+
+**GREEN (Make Tests Pass)**
+- Write minimum code to pass tests
+- Focus on making tests pass first
+- Avoid over-engineering
+- Run tests frequently
+
+**REFACTOR (Clean Up)**
+- Tests stay passing during refactor
+- QA validates while GREEN
+- Code review while GREEN
+- Document working, tested code
 
 ---
 
@@ -940,29 +1108,45 @@ Code and documentation should be committed together. This keeps history clean an
 
 This multi-agent workflow is designed around several key principles:
 
+### Test-Driven Development (TDD)
+
+Tests are written BEFORE implementation, defining expected behavior upfront. This ensures:
+- Clear requirements before coding begins
+- Code designed for testability
+- Immediate feedback when implementation is complete
+- No forgotten or missing tests
+- Better code design through forced interface thinking
+
+### RED-GREEN-REFACTOR Cycle
+
+The workflow follows the proven TDD cycle:
+- **RED**: Write failing tests that define desired behavior
+- **GREEN**: Write minimal code to make tests pass
+- **REFACTOR**: Improve code quality while maintaining passing tests
+
 ### Separation of Concerns
 
 Each agent has a clear, focused responsibility. This prevents any single agent from being overwhelmed and ensures expertise at each stage.
 
 ### Quality Gates
 
-Code review (step 4) and user verification (step 7) act as quality gates, catching issues before they reach production.
+Unit tests (step 3), QA validation (step 5), code review (step 6), and user verification (step 9) act as quality gates, catching issues before they reach production.
 
-### Documentation as Code
+### Tests, Code, and Documentation as a Unit
 
-Documentation is treated as a first-class citizen, not an afterthought. The docs-specialist ensures documentation stays accurate.
+Tests define behavior, code implements it, and documentation explains it. All three are treated as first-class citizens and committed together atomically.
 
 ### Atomic Changes
 
-By committing code and docs together, we ensure the repository is always in a consistent state.
+By committing tests + code + docs together, we ensure the repository is always in a consistent, well-documented, and tested state.
 
 ### Traceability
 
-Each issue flows through a predictable pipeline, making it easy to track progress and understand where work stands.
+Each issue flows through a predictable TDD pipeline, making it easy to track progress from RED to GREEN to REFACTOR.
 
 ### Flexibility
 
-The workflow variants allow you to skip unnecessary steps for simple work while maintaining rigor for complex features.
+The workflow variants allow you to skip unnecessary steps for simple work while maintaining TDD rigor for all work.
 
 ---
 
@@ -994,12 +1178,20 @@ If you're unsure about the workflow:
 
 ## Summary
 
-The agent workflow provides a structured, quality-focused approach to development:
+The agent workflow provides a structured, TDD-focused approach to development:
 
 - **10 clear stages** from issue selection to closure
 - **8 specialized agents** each with focused expertise
-- **3 workflow variants** optimized for different complexities
-- **Atomic commits** ensuring code and docs stay in sync
-- **Multiple quality gates** through testing, QA validation, code review, and user verification
+- **3 workflow variants** optimized for different complexities, all following TDD
+- **RED-GREEN-REFACTOR cycle** ensuring tests drive implementation
+- **Tests written first** defining expected behavior before coding
+- **Atomic commits** ensuring tests + code + docs stay in sync
+- **Multiple quality gates** through unit tests, QA validation, code review, and user verification
 
-By following this workflow, you ensure consistent quality, comprehensive test coverage, validated requirements, accurate documentation, and an organized, efficient development process.
+By following this TDD workflow, you ensure:
+- **Better design**: Tests force thinking about interfaces and APIs first
+- **Complete coverage**: Tests can't be forgotten when written first
+- **Clear requirements**: Failing tests define what "done" means
+- **Confident refactoring**: Tests catch regressions during improvements
+- **Living documentation**: Tests demonstrate how code should be used
+- **Consistent quality**: Multiple validation steps while maintaining GREEN state

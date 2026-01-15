@@ -1,5 +1,5 @@
 import { campaignRepository } from '$lib/db/repositories';
-import type { Campaign, EntityTypeDefinition } from '$lib/types';
+import type { Campaign, EntityTypeDefinition, EntityTypeOverride } from '$lib/types';
 import { createCampaign } from '$lib/types';
 
 // Campaign store using Svelte 5 runes
@@ -161,6 +161,65 @@ function createCampaignStore() {
 
 		getCustomEntityType(type: string): EntityTypeDefinition | undefined {
 			return campaign?.customEntityTypes.find((t) => t.type === type);
+		},
+
+		// Entity type override CRUD methods (for customizing built-in types)
+		get entityTypeOverrides(): EntityTypeOverride[] {
+			return campaign?.entityTypeOverrides ?? [];
+		},
+
+		async setEntityTypeOverride(override: EntityTypeOverride): Promise<void> {
+			if (!campaign) return;
+
+			try {
+				// Deep clone to remove Svelte 5 Proxy wrappers
+				const clonedOverride = JSON.parse(JSON.stringify(override)) as EntityTypeOverride;
+				const clonedCampaign = JSON.parse(JSON.stringify(campaign)) as Campaign;
+
+				// Initialize array if not present (for existing campaigns)
+				if (!clonedCampaign.entityTypeOverrides) {
+					clonedCampaign.entityTypeOverrides = [];
+				}
+
+				// Find existing override or add new one
+				const existingIndex = clonedCampaign.entityTypeOverrides.findIndex(
+					(o) => o.type === override.type
+				);
+				if (existingIndex >= 0) {
+					clonedCampaign.entityTypeOverrides[existingIndex] = clonedOverride;
+				} else {
+					clonedCampaign.entityTypeOverrides.push(clonedOverride);
+				}
+
+				await campaignRepository.save(clonedCampaign);
+				campaign = clonedCampaign;
+			} catch (e) {
+				error = e instanceof Error ? e.message : 'Failed to save entity type override';
+				console.error('Failed to save entity type override:', e);
+				throw e;
+			}
+		},
+
+		async removeEntityTypeOverride(type: string): Promise<void> {
+			if (!campaign) return;
+
+			try {
+				const clonedCampaign = JSON.parse(JSON.stringify(campaign)) as Campaign;
+				clonedCampaign.entityTypeOverrides = (clonedCampaign.entityTypeOverrides ?? []).filter(
+					(o) => o.type !== type
+				);
+
+				await campaignRepository.save(clonedCampaign);
+				campaign = clonedCampaign;
+			} catch (e) {
+				error = e instanceof Error ? e.message : 'Failed to remove entity type override';
+				console.error('Failed to remove entity type override:', e);
+				throw e;
+			}
+		},
+
+		getEntityTypeOverride(type: string): EntityTypeOverride | undefined {
+			return campaign?.entityTypeOverrides?.find((o) => o.type === type);
 		}
 	};
 }

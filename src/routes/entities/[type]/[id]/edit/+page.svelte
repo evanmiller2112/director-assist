@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
-	import { entitiesStore, notificationStore } from '$lib/stores';
+	import { entitiesStore, notificationStore, campaignStore } from '$lib/stores';
 	import { getEntityTypeDefinition } from '$lib/config/entityTypes';
 	import type { FieldValue } from '$lib/types';
 	import { ArrowLeft, Save } from 'lucide-svelte';
@@ -9,7 +9,15 @@
 	const entityId = $derived($page.params.id ?? '');
 	const entityType = $derived($page.params.type ?? '');
 	const entity = $derived(entityId ? entitiesStore.getById(entityId) : undefined);
-	const typeDefinition = $derived(entityType ? getEntityTypeDefinition(entityType) : undefined);
+	const typeDefinition = $derived(
+		entityType
+			? getEntityTypeDefinition(
+					entityType,
+					campaignStore.customEntityTypes,
+					campaignStore.entityTypeOverrides
+				)
+			: undefined
+	);
 
 	// Form state
 	let name = $state('');

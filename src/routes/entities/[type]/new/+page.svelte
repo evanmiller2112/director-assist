@@ -1,13 +1,21 @@
 <script lang="ts">
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
-	import { entitiesStore, notificationStore } from '$lib/stores';
+	import { entitiesStore, notificationStore, campaignStore } from '$lib/stores';
 	import { getEntityTypeDefinition } from '$lib/config/entityTypes';
 	import { createEntity, type FieldValue } from '$lib/types';
 	import { ArrowLeft, Save } from 'lucide-svelte';
 
 	const entityType = $derived($page.params.type ?? '');
-	const typeDefinition = $derived(entityType ? getEntityTypeDefinition(entityType) : undefined);
+	const typeDefinition = $derived(
+		entityType
+			? getEntityTypeDefinition(
+					entityType,
+					campaignStore.customEntityTypes,
+					campaignStore.entityTypeOverrides
+				)
+			: undefined
+	);
 
 	// Form state
 	let name = $state('');

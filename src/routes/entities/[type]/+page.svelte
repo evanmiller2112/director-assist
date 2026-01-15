@@ -1,12 +1,20 @@
 <script lang="ts">
 	import { page } from '$app/stores';
-	import { entitiesStore } from '$lib/stores';
+	import { entitiesStore, campaignStore } from '$lib/stores';
 	import { getEntityTypeDefinition } from '$lib/config/entityTypes';
 	import { Plus, Search } from 'lucide-svelte';
 	import type { BaseEntity } from '$lib/types';
 
 	const entityType = $derived($page.params.type ?? '');
-	const typeDefinition = $derived(entityType ? getEntityTypeDefinition(entityType) : undefined);
+	const typeDefinition = $derived(
+		entityType
+			? getEntityTypeDefinition(
+					entityType,
+					campaignStore.customEntityTypes,
+					campaignStore.entityTypeOverrides
+				)
+			: undefined
+	);
 	const entities = $derived(entityType ? entitiesStore.getByType(entityType) : []);
 
 	let searchQuery = $state('');

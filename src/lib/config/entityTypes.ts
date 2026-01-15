@@ -1,4 +1,4 @@
-import type { EntityTypeDefinition } from '$lib/types';
+import type { EntityTypeDefinition, EntityTypeOverride, FieldDefinition } from '$lib/types';
 
 export const BUILT_IN_ENTITY_TYPES: EntityTypeDefinition[] = [
 	{
@@ -656,25 +656,85 @@ export const BUILT_IN_ENTITY_TYPES: EntityTypeDefinition[] = [
 	}
 ];
 
+// Apply an override to a built-in entity type definition
+export function applyOverrideToType(
+	typeDef: EntityTypeDefinition,
+	override: EntityTypeOverride
+): EntityTypeDefinition {
+	let fieldDefs = [...typeDef.fieldDefinitions];
+
+	// Add additional fields from override
+	if (override.additionalFields && override.additionalFields.length > 0) {
+		fieldDefs = [...fieldDefs, ...override.additionalFields];
+	}
+
+	// Filter out hidden fields
+	if (override.hiddenFields && override.hiddenFields.length > 0) {
+		fieldDefs = fieldDefs.filter((f) => !override.hiddenFields!.includes(f.key));
+	}
+
+	// Apply custom field ordering if specified
+	if (override.fieldOrder && override.fieldOrder.length > 0) {
+		const orderMap = new Map(override.fieldOrder.map((key, index) => [key, index]));
+		fieldDefs = fieldDefs.sort((a, b) => {
+			const orderA = orderMap.get(a.key) ?? 999;
+			const orderB = orderMap.get(b.key) ?? 999;
+			if (orderA !== orderB) return orderA - orderB;
+			// Fall back to original order for fields not in the order list
+			return a.order - b.order;
+		});
+	}
+
+	return {
+		...typeDef,
+		fieldDefinitions: fieldDefs
+	};
+}
+
 // Get an entity type definition by type string
-// Optionally accepts custom types to search through as well
+// Optionally accepts custom types and overrides
 export function getEntityTypeDefinition(
 	type: string,
-	customTypes: EntityTypeDefinition[] = []
+	customTypes: EntityTypeDefinition[] = [],
+	overrides: EntityTypeOverride[] = []
 ): EntityTypeDefinition | undefined {
 	// Check built-in types first
 	const builtIn = BUILT_IN_ENTITY_TYPES.find((t) => t.type === type);
-	if (builtIn) return builtIn;
+	if (builtIn) {
+		// Apply override if one exists
+		const override = overrides.find((o) => o.type === type);
+		return override ? applyOverrideToType(builtIn, override) : builtIn;
+	}
 
 	// Then check custom types
 	return customTypes.find((t) => t.type === type);
 }
 
 // Get all available entity types (built-in + custom)
+// Applies overrides to built-in types and filters hidden ones
 export function getAllEntityTypes(
-	customTypes: EntityTypeDefinition[] = []
+	customTypes: EntityTypeDefinition[] = [],
+	overrides: EntityTypeOverride[] = []
 ): EntityTypeDefinition[] {
-	return [...BUILT_IN_ENTITY_TYPES, ...customTypes];
+	// Apply overrides to built-in types
+	const builtInWithOverrides = BUILT_IN_ENTITY_TYPES.map((typeDef) => {
+		const override = overrides.find((o) => o.type === typeDef.type);
+		return override ? applyOverrideToType(typeDef, override) : typeDef;
+	}).filter((typeDef) => {
+		// Filter out types hidden from sidebar
+		const override = overrides.find((o) => o.type === typeDef.type);
+		return !override?.hiddenFromSidebar;
+	});
+
+	return [...builtInWithOverrides, ...customTypes];
+}
+
+// Get override for a specific type
+export function getOverrideForType(
+	type: string,
+	overrides: EntityTypeOverride[]
+): EntityTypeOverride | undefined {
+	return overrides.find((o) => o.type === type);
 }
 
 // Default relationship types used across entities

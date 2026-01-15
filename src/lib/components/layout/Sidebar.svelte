@@ -37,7 +37,7 @@
 		</h2>
 
 		<!-- Entity type links -->
-		{#each getAllEntityTypes(campaignStore.customEntityTypes) as entityType}
+		{#each getAllEntityTypes(campaignStore.customEntityTypes, campaignStore.entityTypeOverrides) as entityType}
 			{@const Icon = getIconComponent(entityType.icon)}
 			{@const count = getEntityCount(entityType.type)}
 			{@const href = `/entities/${entityType.type}`}

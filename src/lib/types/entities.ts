@@ -95,6 +95,15 @@ export interface EntityTypeDefinition {
 	defaultRelationships: string[];
 }
 
+// Overrides for customizing built-in entity types
+export interface EntityTypeOverride {
+	type: EntityType; // The built-in type being customized
+	hiddenFromSidebar?: boolean; // Hide this type from sidebar navigation
+	hiddenFields?: string[]; // Field keys to hide from forms/display
+	fieldOrder?: string[]; // Custom field ordering (field keys in order)
+	additionalFields?: FieldDefinition[]; // Custom fields added to this built-in type
+}
+
 // Helper type for creating new entities
 export type NewEntity = Omit<BaseEntity, 'id' | 'createdAt' | 'updatedAt'>;
 

@@ -1,4 +1,4 @@
-import type { EntityId, EntityTypeDefinition, BaseEntity } from './entities';
+import type { EntityId, EntityTypeDefinition, EntityTypeOverride, BaseEntity } from './entities';
 import type { ChatMessage } from './ai';
 
 // Campaign model
@@ -13,6 +13,9 @@ export interface Campaign {
 
 	// Custom entity type definitions (user-created)
 	customEntityTypes: EntityTypeDefinition[];
+
+	// Customizations for built-in entity types
+	entityTypeOverrides: EntityTypeOverride[];
 
 	// Campaign-level settings
 	settings: CampaignSettings;
@@ -63,6 +66,7 @@ export function createCampaign(
 		system: 'System Agnostic',
 		setting: '',
 		customEntityTypes: [],
+		entityTypeOverrides: [],
 		settings: { ...DEFAULT_CAMPAIGN_SETTINGS },
 		...overrides
 	};

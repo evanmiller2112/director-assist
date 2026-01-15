@@ -28,11 +28,7 @@
 		if (typeof window !== 'undefined') {
 			const stored = localStorage.getItem('dm-assist-api-key');
 			if (stored) {
-				try {
-					apiKey = atob(stored);
-				} catch {
-					apiKey = '';
-				}
+				apiKey = stored;
 			}
 		}
 	});
@@ -54,7 +50,7 @@
 	function saveApiKey() {
 		if (typeof window !== 'undefined') {
 			if (apiKey) {
-				localStorage.setItem('dm-assist-api-key', btoa(apiKey));
+				localStorage.setItem('dm-assist-api-key', apiKey);
 			} else {
 				localStorage.removeItem('dm-assist-api-key');
 			}
@@ -297,6 +293,9 @@
 						Save
 					</button>
 				</div>
+				<p class="text-xs text-slate-500 mt-2">
+					Your API key is stored locally in your browser and never sent to our servers.
+				</p>
 			</div>
 		</div>
 	</section>

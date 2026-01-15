@@ -657,8 +657,17 @@ export const BUILT_IN_ENTITY_TYPES: EntityTypeDefinition[] = [
 ];
 
 // Get an entity type definition by type string
-export function getEntityTypeDefinition(type: string): EntityTypeDefinition | undefined {
-	return BUILT_IN_ENTITY_TYPES.find((t) => t.type === type);
+// Optionally accepts custom types to search through as well
+export function getEntityTypeDefinition(
+	type: string,
+	customTypes: EntityTypeDefinition[] = []
+): EntityTypeDefinition | undefined {
+	// Check built-in types first
+	const builtIn = BUILT_IN_ENTITY_TYPES.find((t) => t.type === type);
+	if (builtIn) return builtIn;
+
+	// Then check custom types
+	return customTypes.find((t) => t.type === type);
 }
 
 // Get all available entity types (built-in + custom)

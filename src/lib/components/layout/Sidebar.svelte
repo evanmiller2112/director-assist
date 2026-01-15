@@ -1,41 +1,9 @@
 <script lang="ts">
-	import {
-		User,
-		Users,
-		MapPin,
-		Flag,
-		Package,
-		Swords,
-		Calendar,
-		Sun,
-		Clock,
-		BookOpen,
-		UserCircle,
-		Plus,
-		Home
-	} from 'lucide-svelte';
+	import { Plus, Home } from 'lucide-svelte';
 	import { page } from '$app/stores';
-	import { BUILT_IN_ENTITY_TYPES } from '$lib/config/entityTypes';
-	import { entitiesStore } from '$lib/stores';
-
-	// Map icon names to Lucide components
-	const iconMap: Record<string, typeof User> = {
-		user: User,
-		users: Users,
-		'map-pin': MapPin,
-		flag: Flag,
-		package: Package,
-		swords: Swords,
-		calendar: Calendar,
-		sun: Sun,
-		clock: Clock,
-		book: BookOpen,
-		'user-circle': UserCircle
-	};
-
-	function getIcon(iconName: string) {
-		return iconMap[iconName] ?? User;
-	}
+	import { getAllEntityTypes } from '$lib/config/entityTypes';
+	import { entitiesStore, campaignStore } from '$lib/stores';
+	import { getIconComponent } from '$lib/utils/icons';
 
 	function getEntityCount(type: string): number {
 		const byType = entitiesStore.entitiesByType;
@@ -69,8 +37,8 @@
 		</h2>
 
 		<!-- Entity type links -->
-		{#each BUILT_IN_ENTITY_TYPES as entityType}
-			{@const Icon = getIcon(entityType.icon)}
+		{#each getAllEntityTypes(campaignStore.customEntityTypes) as entityType}
+			{@const Icon = getIconComponent(entityType.icon)}
 			{@const count = getEntityCount(entityType.type)}
 			{@const href = `/entities/${entityType.type}`}
 			<a

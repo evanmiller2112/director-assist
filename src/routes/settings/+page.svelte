@@ -10,7 +10,7 @@
 		clearModelsCache,
 		getFallbackModels
 	} from '$lib/services';
-	import { Download, Upload, Save, Moon, Sun, Monitor, Trash2, Key, RefreshCw } from 'lucide-svelte';
+	import { Download, Upload, Save, Moon, Sun, Monitor, Trash2, Key, RefreshCw, Layers, ChevronRight } from 'lucide-svelte';
 
 	// Form state
 	let campaignName = $state(campaignStore.campaign?.name ?? '');
@@ -308,6 +308,29 @@
 				System
 			</button>
 		</div>
+	</section>
+
+	<!-- Entity Types -->
+	<section class="mb-8">
+		<h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">Entity Types</h2>
+		<p class="text-sm text-slate-500 mb-4">
+			Create custom entity types to organize your campaign content beyond the built-in types.
+		</p>
+		<a
+			href="/settings/custom-entities"
+			class="flex items-center gap-4 p-4 bg-slate-50 dark:bg-slate-800 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+		>
+			<div class="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
+				<Layers class="w-5 h-5 text-blue-600 dark:text-blue-400" />
+			</div>
+			<div class="flex-1">
+				<h3 class="font-medium text-slate-900 dark:text-white">Custom Entity Types</h3>
+				<p class="text-sm text-slate-500 dark:text-slate-400">
+					{campaignStore.customEntityTypes.length} custom type{campaignStore.customEntityTypes.length !== 1 ? 's' : ''} defined
+				</p>
+			</div>
+			<ChevronRight class="w-5 h-5 text-slate-400" />
+		</a>
 	</section>
 
 	<!-- AI Settings -->

@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Tailwind CSS styling
 - TypeScript support
 - ESLint configuration for code quality
+- Edit functionality for entities (dedicated edit page at `/entities/[type]/[id]/edit`)
 
 ### Planning
 - Automated tests (Vitest)

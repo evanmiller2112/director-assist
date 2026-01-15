@@ -70,7 +70,9 @@ src/
 │   │       ├── new/
 │   │       │   └── +page.svelte # Create entity (/entities/npc/new)
 │   │       └── [id]/
-│   │           └── +page.svelte # View/edit entity (/entities/npc/abc123)
+│   │           ├── +page.svelte # View entity (/entities/npc/abc123)
+│   │           └── edit/
+│   │               └── +page.svelte # Edit entity (/entities/npc/abc123/edit)
 │   └── settings/
 │       └── +page.svelte     # Settings page
 ├── app.css                  # Global styles & Tailwind
@@ -263,9 +265,9 @@ User Action → Store → Repository → Database
 ### Example Data Flow: Creating an Entity
 
 ```
-1. User clicks "Create NPC" button
+1. User fills out creation form and submits
    ↓
-2. Component calls entitiesStore.createEntity()
+2. Component calls entitiesStore.create()
    ↓
 3. Store validates data and calls entityRepository.create()
    ↓
@@ -278,6 +280,30 @@ User Action → Store → Repository → Database
 7. Store state updates automatically
    ↓
 8. Components re-render with new entity
+   ↓
+9. User is redirected to entity detail page
+```
+
+### Example Data Flow: Updating an Entity
+
+```
+1. User navigates to edit page and modifies fields
+   ↓
+2. Component calls entitiesStore.update()
+   ↓
+3. Store validates changes and calls entityRepository.update()
+   ↓
+4. Repository updates entity in IndexedDB via Dexie
+   ↓
+5. Dexie triggers change notification
+   ↓
+6. Live query updates
+   ↓
+7. Store state updates automatically
+   ↓
+8. All components showing this entity re-render
+   ↓
+9. User is redirected to entity detail page
 ```
 
 ## Database Schema
@@ -383,7 +409,9 @@ SvelteKit uses file-based routing. Each file in `src/routes/` becomes a route.
 - `src/routes/+page.svelte` → `/`
 - `src/routes/settings/+page.svelte` → `/settings`
 - `src/routes/entities/[type]/+page.svelte` → `/entities/npc` (dynamic)
+- `src/routes/entities/[type]/new/+page.svelte` → `/entities/npc/new`
 - `src/routes/entities/[type]/[id]/+page.svelte` → `/entities/npc/abc123`
+- `src/routes/entities/[type]/[id]/edit/+page.svelte` → `/entities/npc/abc123/edit`
 
 ### Dynamic Routes
 
@@ -431,9 +459,9 @@ Manages all entities:
 - `entities`: Array of all entities
 - `entitiesByType`: Entities grouped by type
 - `load()`: Load entities from database
-- `createEntity()`: Create new entity
-- `updateEntity()`: Update entity
-- `deleteEntity()`: Delete entity
+- `create()`: Create new entity
+- `update()`: Update existing entity
+- `delete()`: Delete entity
 - `linkEntities()`: Create relationship between entities
 
 #### UI Store (`ui.svelte.ts`)

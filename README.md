@@ -59,9 +59,11 @@ When you first open Director Assist, create a campaign with:
 - **Setting**: Brief description of your world
 - **Description**: Campaign overview
 
-### Adding Entities
+### Managing Entities
 
-Click any entity type in the sidebar or dashboard to create:
+Click any entity type in the sidebar or dashboard to view the list. From there you can create new entities or view existing ones. Each entity has a detail page where you can edit or delete it.
+
+**Entity Types:**
 
 - **Characters**: Player characters with background, goals, and secrets
 - **NPCs**: Non-player characters with personality, appearance, and motivations
@@ -77,13 +79,13 @@ Click any entity type in the sidebar or dashboard to create:
 
 ### Creating Relationships
 
-Link entities together:
+Link entities together to build connections in your campaign world:
 - NPCs can be located at specific locations
 - Characters can be members of factions
 - Items can be owned by characters
 - Events can involve multiple NPCs
 
-Use the "Links" section when editing any entity.
+To create relationships, use the "Links" section on an entity's detail page or edit page.
 
 ### Searching
 

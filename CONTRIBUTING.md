@@ -221,12 +221,15 @@ this.version(2).stores({
 Currently, the project does not have automated tests. Contributions to add testing infrastructure are welcome.
 
 When making changes, manually test:
-- Creating, editing, and deleting entities
-- Entity relationships
-- Search functionality
-- Theme switching
-- Backup export/import
-- Browser refresh (data persistence)
+- Creating entities (via `/entities/[type]/new`)
+- Viewing entity details (via `/entities/[type]/[id]`)
+- Editing entities (via `/entities/[type]/[id]/edit`)
+- Deleting entities (via delete button on detail page)
+- Entity relationships (creating and viewing links)
+- Search functionality (finding entities by name, description, tags)
+- Theme switching (light/dark/system mode)
+- Backup export/import (settings page)
+- Browser refresh (data persistence in IndexedDB)
 
 ## Pull Request Process
 

@@ -53,9 +53,12 @@
 
 <div class="bg-slate-50 dark:bg-slate-800 rounded-lg p-4">
 	<div class="flex items-center justify-between mb-2">
-		<h3 class="text-sm font-medium text-slate-700 dark:text-slate-300 flex items-center gap-2">
+		<h3
+			class="text-sm font-medium text-slate-700 dark:text-slate-300 flex items-center gap-2 cursor-help"
+			title="This summary will be submitted as context when calling an AI agent for a related task."
+		>
 			<Sparkles class="w-4 h-4 text-purple-500" />
-			AI Summary
+			Summary
 		</h3>
 
 		{#if editable && !isEditing}

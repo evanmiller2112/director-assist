@@ -112,11 +112,11 @@
 				></textarea>
 			</div>
 
-			<!-- AI Summary -->
+			<!-- Summary -->
 			<div>
-				<label for="summary" class="label">AI Summary</label>
+				<label for="summary" class="label">Summary</label>
 				<p class="text-sm text-slate-500 mb-1">
-					Brief summary for AI context. Can be auto-generated on the view page.
+					This summary will be submitted as context when calling an AI agent. Can be auto-generated on the view page.
 				</p>
 				<textarea
 					id="summary"

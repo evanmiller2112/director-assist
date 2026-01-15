@@ -30,6 +30,10 @@ export function isBrowser(): boolean {
 	return typeof window !== 'undefined' && typeof indexedDB !== 'undefined';
 }
 
+// Track initialization state
+let dbInitialized = false;
+let dbInitializing: Promise<void> | null = null;
+
 // Initialize database (call on app startup)
 export async function initializeDatabase(): Promise<void> {
 	if (!isBrowser()) {
@@ -37,11 +41,36 @@ export async function initializeDatabase(): Promise<void> {
 		return;
 	}
 
-	try {
-		await db.open();
-		console.log('Database initialized successfully');
-	} catch (error) {
-		console.error('Failed to initialize database:', error);
-		throw error;
+	// Return existing initialization promise if already initializing
+	if (dbInitializing) {
+		return dbInitializing;
+	}
+
+	// Return immediately if already initialized
+	if (dbInitialized) {
+		return;
+	}
+
+	dbInitializing = (async () => {
+		try {
+			await db.open();
+			dbInitialized = true;
+			console.log('Database initialized successfully');
+		} catch (error) {
+			console.error('Failed to initialize database:', error);
+			dbInitializing = null; // Reset so we can retry
+			throw error;
+		}
+	})();
+
+	return dbInitializing;
+}
+
+// Ensure database is ready before any operation
+export async function ensureDbReady(): Promise<void> {
+	if (!dbInitialized && !dbInitializing) {
+		await initializeDatabase();
+	} else if (dbInitializing) {
+		await dbInitializing;
 	}
 }

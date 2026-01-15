@@ -1,4 +1,4 @@
-import { db } from '../index';
+import { db, ensureDbReady } from '../index';
 import { liveQuery, type Observable } from 'dexie';
 import type { BaseEntity, EntityType, NewEntity } from '$lib/types';
 import { nanoid } from 'nanoid';
@@ -16,6 +16,7 @@ export const entityRepository = {
 
 	// Get single entity by ID
 	async getById(id: string): Promise<BaseEntity | undefined> {
+		await ensureDbReady();
 		return db.entities.get(id);
 	},
 
@@ -57,6 +58,8 @@ export const entityRepository = {
 
 	// Create a new entity
 	async create(newEntity: NewEntity): Promise<BaseEntity> {
+		await ensureDbReady();
+
 		const now = new Date();
 		const entity: BaseEntity = {
 			...newEntity,
@@ -71,6 +74,7 @@ export const entityRepository = {
 
 	// Update an existing entity
 	async update(id: string, changes: Partial<BaseEntity>): Promise<void> {
+		await ensureDbReady();
 		await db.entities.update(id, {
 			...changes,
 			updatedAt: new Date()
@@ -79,6 +83,7 @@ export const entityRepository = {
 
 	// Delete an entity and clean up references
 	async delete(id: string): Promise<void> {
+		await ensureDbReady();
 		await db.transaction('rw', db.entities, async () => {
 			// Remove links from other entities pointing to this one
 			const allEntities = await db.entities.toArray();

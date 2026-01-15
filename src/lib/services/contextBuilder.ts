@@ -59,10 +59,12 @@ export async function buildContext(options: ContextOptions = {}): Promise<BuiltC
 		if (opts.includeLinked) {
 			const linkedIds = new Set<string>();
 			for (const entity of entities) {
-				for (const link of entity.links) {
+				// Get all linked entity IDs (both forward and reverse)
+				const allLinked = await entityRepository.getAllLinkedIds(entity.id);
+				for (const linkedId of allLinked) {
 					// Don't include already-selected entities
-					if (!opts.entityIds.includes(link.targetId)) {
-						linkedIds.add(link.targetId);
+					if (!opts.entityIds.includes(linkedId)) {
+						linkedIds.add(linkedId);
 					}
 				}
 			}

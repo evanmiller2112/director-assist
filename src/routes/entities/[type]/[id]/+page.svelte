@@ -3,8 +3,8 @@
 	import { goto } from '$app/navigation';
 	import { entitiesStore, campaignStore } from '$lib/stores';
 	import { getEntityTypeDefinition } from '$lib/config/entityTypes';
-	import { ArrowLeft, Edit, Trash2, Link } from 'lucide-svelte';
-	import { EntitySummary } from '$lib/components/entity';
+	import { ArrowLeft, Edit, Trash2, Link, Plus, X } from 'lucide-svelte';
+	import { EntitySummary, RelateCommand } from '$lib/components/entity';
 
 	const entityId = $derived($page.params.id ?? '');
 	const entityType = $derived($page.params.type ?? '');
@@ -18,13 +18,24 @@
 				)
 			: undefined
 	);
-	const linkedEntities = $derived(entity ? entitiesStore.getLinked(entity.id) : []);
+	const linkedEntitiesWithRelationships = $derived(
+		entity ? entitiesStore.getLinkedWithRelationships(entity.id) : []
+	);
+
+	let relateCommandOpen = $state(false);
 
 	async function handleDelete() {
 		if (!entity) return;
 		if (confirm(`Are you sure you want to delete "${entity.name}"?`)) {
 			await entitiesStore.delete(entity.id);
 			goto(`/entities/${entityType}`);
+		}
+	}
+
+	async function handleRemoveLink(targetId: string) {
+		if (!entity) return;
+		if (confirm('Remove this relationship?')) {
+			await entitiesStore.removeLink(entity.id, targetId);
 		}
 	}
 </script>
@@ -127,33 +138,80 @@
 		{/if}
 
 		<!-- Linked Entities -->
-		{#if entity.links.length > 0}
-			<div class="mb-8">
-				<h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+		<div class="mb-8">
+			<div class="flex items-center justify-between mb-4">
+				<h2 class="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
 					<Link class="w-5 h-5" />
 					Relationships
+					{#if linkedEntitiesWithRelationships.length > 0}
+						<span class="text-sm font-normal text-slate-500 dark:text-slate-400">
+							({linkedEntitiesWithRelationships.length})
+						</span>
+					{/if}
 				</h2>
+				<button onclick={() => (relateCommandOpen = true)} class="btn btn-secondary text-sm">
+					<Plus class="w-4 h-4" />
+					Link Entity
+				</button>
+			</div>
+
+			{#if linkedEntitiesWithRelationships.length > 0}
 				<div class="grid gap-2">
-					{#each entity.links as link}
-						{@const linkedEntity = entitiesStore.getById(link.targetId)}
-						{#if linkedEntity}
+					{#each linkedEntitiesWithRelationships as { entity: linkedEntity, relationship, isReverse, bidirectional }}
+						{@const linkedTypeDefinition = getEntityTypeDefinition(
+							linkedEntity.type,
+							campaignStore.customEntityTypes,
+							campaignStore.entityTypeOverrides
+						)}
+						<div class="entity-card group relative" data-type={linkedEntity.type}>
 							<a
 								href="/entities/{linkedEntity.type}/{linkedEntity.id}"
-								class="entity-card flex items-center gap-3"
-								data-type={linkedEntity.type}
+								class="flex items-center gap-3 flex-1"
 							>
-								<span class="text-sm text-slate-500 dark:text-slate-400 w-24">
-									{link.relationship.replace(/_/g, ' ')}
+								<span class="text-sm text-slate-500 dark:text-slate-400 w-28 flex-shrink-0">
+									{#if isReverse}
+										<span class="opacity-60">← </span>
+									{/if}
+									{relationship.replace(/_/g, ' ')}
+									{#if bidirectional}
+										<span class="text-xs ml-1" title="Bidirectional">↔</span>
+									{/if}
 								</span>
-								<span class="font-medium text-slate-900 dark:text-white">
+								<span class="font-medium text-slate-900 dark:text-white flex-1">
 									{linkedEntity.name}
 								</span>
+								<span class="text-xs text-slate-400 dark:text-slate-500">
+									{linkedTypeDefinition?.label ?? linkedEntity.type}
+								</span>
 							</a>
-						{/if}
+							{#if !isReverse}
+								<button
+									onclick={(e) => {
+										e.preventDefault();
+										handleRemoveLink(linkedEntity.id);
+									}}
+									class="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-red-50 dark:hover:bg-red-900/20 rounded text-red-600 dark:text-red-400"
+									aria-label="Remove relationship"
+								>
+									<X class="w-4 h-4" />
+								</button>
+							{/if}
+						</div>
 					{/each}
 				</div>
-			</div>
-		{/if}
+			{:else}
+				<div class="text-center py-8 bg-slate-50 dark:bg-slate-800 rounded-lg border-2 border-dashed border-slate-200 dark:border-slate-700">
+					<Link class="w-12 h-12 mx-auto text-slate-300 dark:text-slate-600 mb-2" />
+					<p class="text-slate-500 dark:text-slate-400 mb-3">
+						No relationships yet
+					</p>
+					<button onclick={() => (relateCommandOpen = true)} class="btn btn-secondary">
+						<Plus class="w-4 h-4" />
+						Link Entity
+					</button>
+				</div>
+			{/if}
+		</div>
 
 		<!-- DM Notes -->
 		{#if entity.notes}
@@ -181,4 +239,9 @@
 			Back to list
 		</a>
 	</div>
+{/if}
+
+<!-- Relate Command Modal -->
+{#if entity}
+	<RelateCommand sourceEntity={entity} bind:open={relateCommandOpen} />
 {/if}

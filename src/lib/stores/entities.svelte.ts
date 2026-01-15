@@ -107,8 +107,77 @@ function createEntitiesStore() {
 			const entity = entities.find((e) => e.id === entityId);
 			if (!entity) return [];
 
-			const linkedIds = entity.links.map((l) => l.targetId);
-			return entities.filter((e) => linkedIds.includes(e.id));
+			// Get forward links
+			const forwardIds = entity.links.map((l) => l.targetId);
+
+			// Get reverse links (entities that link to this one)
+			const reverseIds = entities
+				.filter((e) => e.links.some((l) => l.targetId === entityId))
+				.map((e) => e.id);
+
+			// Combine and deduplicate
+			const allLinkedIds = [...new Set([...forwardIds, ...reverseIds])];
+
+			return entities.filter((e) => allLinkedIds.includes(e.id));
+		},
+
+		// Get linked entities with relationship info
+		getLinkedWithRelationships(entityId: string): Array<{
+			entity: BaseEntity;
+			relationship: string;
+			isReverse: boolean;
+			bidirectional: boolean;
+		}> {
+			const entity = entities.find((e) => e.id === entityId);
+			if (!entity) return [];
+
+			const result: Array<{
+				entity: BaseEntity;
+				relationship: string;
+				isReverse: boolean;
+				bidirectional: boolean;
+			}> = [];
+
+			// Add forward links
+			entity.links.forEach((link) => {
+				const linkedEntity = entities.find((e) => e.id === link.targetId);
+				if (linkedEntity) {
+					result.push({
+						entity: linkedEntity,
+						relationship: link.relationship,
+						isReverse: false,
+						bidirectional: link.bidirectional
+					});
+				}
+			});
+
+			// Add reverse links (only if they're not already in forward links as bidirectional)
+			entities.forEach((e) => {
+				const linkToThisEntity = e.links.find((l) => l.targetId === entityId);
+				if (linkToThisEntity && !linkToThisEntity.bidirectional) {
+					result.push({
+						entity: e,
+						relationship: linkToThisEntity.relationship,
+						isReverse: true,
+						bidirectional: false
+					});
+				}
+			});
+
+			return result;
+		},
+
+		async addLink(
+			sourceId: string,
+			targetId: string,
+			relationship: string,
+			bidirectional: boolean = false
+		): Promise<void> {
+			await entityRepository.addLink(sourceId, targetId, relationship, bidirectional);
+		},
+
+		async removeLink(sourceId: string, targetId: string): Promise<void> {
+			await entityRepository.removeLink(sourceId, targetId);
 		}
 	};
 }

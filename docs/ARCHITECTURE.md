@@ -1,0 +1,769 @@
+# Architecture Documentation
+
+This document describes the technical architecture of Director Assist.
+
+## Overview
+
+Director Assist is a client-side web application built with SvelteKit 2 and Svelte 5. All data is stored locally in the browser using IndexedDB, making it work offline and keep user data private.
+
+**Key Characteristics:**
+- Static site (no backend server required)
+- Client-side only (all logic runs in the browser)
+- Local-first data storage (IndexedDB via Dexie)
+- Reactive UI (Svelte 5 runes)
+- Type-safe (TypeScript throughout)
+
+## Technology Stack
+
+### Core Framework
+- **SvelteKit 2**: Full-stack web framework with file-based routing
+- **Svelte 5**: Component framework using the new runes API (`$state`, `$derived`, `$effect`)
+- **TypeScript**: Type safety across the entire codebase
+- **Vite**: Fast build tool and dev server
+- **Static Adapter**: Builds to deployable static HTML/CSS/JS
+
+### UI & Styling
+- **Tailwind CSS**: Utility-first CSS framework
+- **Lucide Svelte**: Icon library
+- **CSS Custom Properties**: Theme variables for dark/light mode
+
+### Data Layer
+- **Dexie.js**: IndexedDB wrapper with a clean API
+- **IndexedDB**: Browser's persistent storage database
+- **nanoid**: Unique ID generation for entities
+
+### AI Integration (Scaffolded)
+- **Anthropic SDK**: Claude AI client (not yet implemented)
+
+## Directory Structure
+
+```
+src/
+├── lib/
+│   ├── components/          # Reusable Svelte components
+│   │   └── layout/          # Layout components
+│   │       ├── Header.svelte
+│   │       └── Sidebar.svelte
+│   ├── config/              # Configuration and definitions
+│   │   └── entityTypes.ts   # Entity type definitions
+│   ├── db/                  # Database layer
+│   │   ├── index.ts         # Dexie database setup
+│   │   └── repositories/    # Data access layer
+│   │       ├── entityRepository.ts
+│   │       ├── campaignRepository.ts
+│   │       └── chatRepository.ts
+│   ├── stores/              # Application state
+│   │   ├── campaign.svelte.ts
+│   │   ├── entities.svelte.ts
+│   │   └── ui.svelte.ts
+│   └── types/               # TypeScript definitions
+│       ├── entities.ts      # Entity type system
+│       ├── campaign.ts      # Campaign types
+│       ├── ai.ts            # AI integration types
+│       └── index.ts         # Type exports
+├── routes/                  # SvelteKit routes (pages)
+│   ├── +layout.svelte       # Root layout
+│   ├── +page.svelte         # Dashboard (/)
+│   ├── entities/            # Entity routes
+│   │   └── [type]/          # Dynamic entity type routes
+│   │       ├── +page.svelte     # List entities (/entities/npc)
+│   │       ├── new/
+│   │       │   └── +page.svelte # Create entity (/entities/npc/new)
+│   │       └── [id]/
+│   │           └── +page.svelte # View/edit entity (/entities/npc/abc123)
+│   └── settings/
+│       └── +page.svelte     # Settings page
+├── app.css                  # Global styles & Tailwind
+├── app.html                 # HTML template
+└── app.d.ts                 # TypeScript ambient declarations
+```
+
+## Data Model
+
+### Core Entities
+
+#### Campaign
+The top-level container for all campaign data.
+
+```typescript
+interface Campaign {
+  id: EntityId;
+  name: string;
+  description: string;
+  system: string;              // "Draw Steel", "D&D 5e", etc.
+  setting: string;             // Campaign setting name
+  createdAt: Date;
+  updatedAt: Date;
+  customEntityTypes: EntityTypeDefinition[];
+  settings: CampaignSettings;
+}
+
+interface CampaignSettings {
+  customRelationships: string[];
+  enabledEntityTypes: string[];
+  theme?: 'light' | 'dark' | 'system';
+}
+```
+
+**Relationships:**
+- One campaign per database
+- Contains all entities and chat history
+
+#### BaseEntity
+All entity types extend this base structure.
+
+```typescript
+interface BaseEntity {
+  id: EntityId;                // Unique ID (nanoid)
+  type: EntityType;            // Entity type identifier
+  name: string;
+  description: string;         // Rich text (markdown)
+  tags: string[];
+  imageUrl?: string;
+  fields: Record<string, FieldValue>;  // Dynamic fields
+  links: EntityLink[];         // Relationships to other entities
+  notes: string;               // Private DM notes
+  createdAt: Date;
+  updatedAt: Date;
+  metadata: Record<string, unknown>;
+}
+```
+
+**Key Concepts:**
+- **Dynamic Fields**: Each entity type defines its own fields via `EntityTypeDefinition`
+- **Flexible**: Same base structure for all 11 built-in types plus custom types
+- **Linked**: Entities reference each other through `EntityLink` objects
+
+#### EntityLink
+Represents a relationship between two entities.
+
+```typescript
+interface EntityLink {
+  id: EntityId;
+  targetId: EntityId;
+  targetType: EntityType;
+  relationship: string;        // "knows", "located_at", "member_of", etc.
+  bidirectional: boolean;
+  notes?: string;
+}
+```
+
+**Examples:**
+- NPC → "located_at" → Location
+- Character → "member_of" → Faction
+- Item → "owned_by" → Character
+
+### Dynamic Field System
+
+Entities use a dynamic field system that allows different entity types to have different fields.
+
+#### Field Types
+
+```typescript
+type FieldType =
+  | 'text'           // Single-line text
+  | 'textarea'       // Multi-line text
+  | 'richtext'       // Markdown editor
+  | 'number'         // Numeric input
+  | 'boolean'        // Checkbox
+  | 'select'         // Dropdown (single choice)
+  | 'multi-select'   // Dropdown (multiple choices)
+  | 'tags'           // Tag input
+  | 'entity-ref'     // Reference to another entity
+  | 'entity-refs'    // References to multiple entities
+  | 'date'           // Date picker
+  | 'url'            // URL input
+  | 'image';         // Image upload
+```
+
+#### Field Definition
+
+```typescript
+interface FieldDefinition {
+  key: string;                 // Unique key for the field
+  label: string;               // Display label
+  type: FieldType;
+  required: boolean;
+  defaultValue?: FieldValue;
+  options?: string[];          // For select fields
+  entityTypes?: EntityType[];  // For entity-ref fields
+  placeholder?: string;
+  helpText?: string;
+  section?: string;            // UI grouping (e.g., "hidden")
+  order: number;               // Display order
+}
+```
+
+#### Entity Type Definition
+
+```typescript
+interface EntityTypeDefinition {
+  type: EntityType;
+  label: string;               // Singular label
+  labelPlural: string;         // Plural label
+  icon: string;                // Lucide icon name
+  color: string;               // Theme color key
+  isBuiltIn: boolean;
+  fieldDefinitions: FieldDefinition[];
+  defaultRelationships: string[];
+}
+```
+
+**How It Works:**
+1. Entity types are defined in `src/lib/config/entityTypes.ts`
+2. Each type specifies what fields it has
+3. When creating an entity, the UI renders the appropriate field components
+4. Field values are stored in the `fields` object on the entity
+
+**Example:** NPC entity type has fields like `role`, `personality`, `appearance`, `voice`, `motivation`, `secrets`, `status`, and `importance`.
+
+## Data Flow
+
+### Architecture Pattern
+
+Director Assist uses a unidirectional data flow:
+
+```
+User Action → Store → Repository → Database
+                ↓                      ↓
+            Component ← Reactive Query ←┘
+```
+
+### Components
+
+#### 1. UI Components
+- Handle user interactions
+- Read from stores
+- Call store methods to trigger changes
+- Automatically re-render on store updates
+
+#### 2. Stores (State Management)
+- Hold reactive application state using Svelte 5 runes
+- Provide methods for state mutations
+- Call repository methods to persist changes
+- Example: `campaignStore`, `entitiesStore`, `uiStore`
+
+**Svelte 5 Runes Used:**
+- `$state`: Reactive state variables
+- `$derived`: Computed values that update automatically
+- `$effect`: Side effects that run when dependencies change
+
+#### 3. Repositories (Data Access Layer)
+- Abstract database operations
+- Provide clean API for CRUD operations
+- Handle IndexedDB queries
+- Return Observables for reactive queries
+
+#### 4. Dexie Database
+- Wraps IndexedDB
+- Provides type-safe queries
+- Manages schema versions
+- Handles transactions
+
+### Example Data Flow: Creating an Entity
+
+```
+1. User clicks "Create NPC" button
+   ↓
+2. Component calls entitiesStore.createEntity()
+   ↓
+3. Store validates data and calls entityRepository.create()
+   ↓
+4. Repository adds entity to IndexedDB via Dexie
+   ↓
+5. Dexie triggers change notification
+   ↓
+6. Live query updates
+   ↓
+7. Store state updates automatically
+   ↓
+8. Components re-render with new entity
+```
+
+## Database Schema
+
+### Tables
+
+#### `entities`
+Stores all campaign entities (characters, NPCs, locations, etc.).
+
+**Indexes:**
+- `id` (primary key)
+- `type` (for filtering by entity type)
+- `name` (for name-based queries)
+- `tags` (multi-entry index for tag searches)
+- `createdAt` (for sorting)
+- `updatedAt` (for recent items)
+
+#### `campaign`
+Stores the single campaign object.
+
+**Indexes:**
+- `id` (primary key)
+
+#### `chatMessages`
+Stores AI chat conversation history.
+
+**Indexes:**
+- `id` (primary key)
+- `timestamp` (for chronological order)
+
+#### `suggestions`
+Stores AI-generated suggestions.
+
+**Indexes:**
+- `id` (primary key)
+- `type` (for filtering by suggestion type)
+- `dismissed` (for filtering active suggestions)
+- `createdAt` (for sorting)
+
+### Database Versioning
+
+The database version is defined in `src/lib/db/index.ts`:
+
+```typescript
+this.version(1).stores({
+  entities: 'id, type, name, *tags, createdAt, updatedAt',
+  campaign: 'id',
+  chatMessages: 'id, timestamp',
+  suggestions: 'id, type, dismissed, createdAt'
+});
+```
+
+**To add a new version:**
+1. Increment the version number
+2. Define the new schema
+3. Add an `.upgrade()` function for migrations
+
+## Reactive Queries
+
+### Live Queries with Dexie
+
+Repositories use `liveQuery()` to create reactive database queries:
+
+```typescript
+// Repository method
+getAll(): Observable<BaseEntity[]> {
+  return liveQuery(() => db.entities.toArray());
+}
+
+// In a component
+const entities = entityRepository.getAll();
+// Automatically updates when database changes
+```
+
+**Benefits:**
+- Automatic reactivity without manual subscriptions
+- Components always show current data
+- Works across tabs (same-origin)
+
+### Store Integration
+
+Stores use `$effect` to subscribe to live queries:
+
+```typescript
+$effect(() => {
+  const subscription = entityRepository.getAll().subscribe(
+    (result) => {
+      entities = result;
+    }
+  );
+
+  return () => subscription.unsubscribe();
+});
+```
+
+## Routing
+
+### File-Based Routing
+
+SvelteKit uses file-based routing. Each file in `src/routes/` becomes a route.
+
+**Examples:**
+- `src/routes/+page.svelte` → `/`
+- `src/routes/settings/+page.svelte` → `/settings`
+- `src/routes/entities/[type]/+page.svelte` → `/entities/npc` (dynamic)
+- `src/routes/entities/[type]/[id]/+page.svelte` → `/entities/npc/abc123`
+
+### Dynamic Routes
+
+Routes with `[param]` are dynamic:
+- `[type]` matches any entity type
+- `[id]` matches any entity ID
+
+Access parameters in components:
+
+```svelte
+<script lang="ts">
+  import { page } from '$app/stores';
+
+  const type = $page.params.type;  // "npc", "location", etc.
+  const id = $page.params.id;      // entity ID
+</script>
+```
+
+### Layout
+
+`+layout.svelte` wraps all pages:
+- Contains Header and Sidebar
+- Provides global state
+- Handles theme application
+
+## State Management
+
+### Stores
+
+Director Assist uses Svelte 5 runes for state management instead of traditional Svelte stores.
+
+#### Campaign Store (`campaign.svelte.ts`)
+
+Manages the current campaign:
+- `campaign`: Current campaign object
+- `isLoading`: Loading state
+- `error`: Error message
+- `load()`: Load campaign from database
+- `update()`: Update campaign
+- `updateSettings()`: Update campaign settings
+
+#### Entities Store (`entities.svelte.ts`)
+
+Manages all entities:
+- `entities`: Array of all entities
+- `entitiesByType`: Entities grouped by type
+- `load()`: Load entities from database
+- `createEntity()`: Create new entity
+- `updateEntity()`: Update entity
+- `deleteEntity()`: Delete entity
+- `linkEntities()`: Create relationship between entities
+
+#### UI Store (`ui.svelte.ts`)
+
+Manages UI state:
+- `sidebarOpen`: Whether sidebar is open
+- `theme`: Current theme (light/dark/system)
+- `searchQuery`: Current search query
+- `toggleSidebar()`: Toggle sidebar
+- `setTheme()`: Change theme
+
+## Search & Filtering
+
+### Search Implementation
+
+Search is implemented in the entity repository:
+
+```typescript
+search(query: string): Observable<BaseEntity[]> {
+  const lowerQuery = query.toLowerCase();
+  return liveQuery(() =>
+    db.entities
+      .filter(entity =>
+        entity.name.toLowerCase().includes(lowerQuery) ||
+        entity.description.toLowerCase().includes(lowerQuery) ||
+        entity.tags.some(tag => tag.toLowerCase().includes(lowerQuery))
+      )
+      .toArray()
+  );
+}
+```
+
+**Search covers:**
+- Entity name
+- Description
+- Tags
+- Custom field values (future enhancement)
+
+### Filtering by Type
+
+Type filtering uses IndexedDB indexes for performance:
+
+```typescript
+getByType(type: EntityType): Observable<BaseEntity[]> {
+  return liveQuery(() =>
+    db.entities.where('type').equals(type).toArray()
+  );
+}
+```
+
+## Backup & Restore
+
+### Export Format
+
+Backups are JSON files containing:
+
+```typescript
+interface CampaignBackup {
+  version: string;              // Backup format version
+  exportedAt: Date;
+  campaign: Campaign;
+  entities: BaseEntity[];
+  chatHistory: ChatMessage[];
+}
+```
+
+### Export Process
+
+1. Read all data from IndexedDB
+2. Serialize to JSON
+3. Create blob and trigger download
+
+### Import Process
+
+1. Read uploaded JSON file
+2. Validate structure
+3. Clear existing database
+4. Import campaign
+5. Import entities
+6. Import chat history
+
+## Theme System
+
+### CSS Custom Properties
+
+Themes are implemented using CSS custom properties defined in `app.css`:
+
+```css
+:root {
+  --color-primary: ...;
+  --color-background: ...;
+  --color-text: ...;
+}
+
+.dark {
+  --color-primary: ...;
+  --color-background: ...;
+  --color-text: ...;
+}
+```
+
+### Theme Switching
+
+1. User selects theme in settings
+2. Store updates `theme` state
+3. Store adds/removes `.dark` class on `<html>`
+4. CSS custom properties update automatically
+5. All components inherit new theme
+
+### System Theme
+
+When set to "system":
+- Uses `window.matchMedia('(prefers-color-scheme: dark)')`
+- Listens for OS theme changes
+- Updates automatically
+
+## AI Integration (Future)
+
+The AI integration is scaffolded but not yet implemented. The planned architecture:
+
+### Components
+
+1. **Chat Interface**: Route for conversing with AI
+2. **Context Builder**: Selects relevant entities for AI context
+3. **Prompt Templates**: Pre-built prompts for common tasks
+4. **Entity Generator**: Parses AI responses into entities
+5. **Suggestion System**: AI-generated campaign suggestions
+
+### Flow
+
+```
+User Prompt → Context Builder → API Call → Response Parser → Entity Creation
+                    ↓
+            [Selected Entities]
+```
+
+### API Integration
+
+Uses Anthropic SDK:
+- API key stored in settings (not in backup)
+- Configurable model and parameters
+- Streaming responses for better UX
+
+### Planned Features
+
+- Generate NPCs with personality and background
+- Create locations with atmosphere and features
+- Suggest plot hooks based on campaign state
+- Identify inconsistencies in campaign data
+- Generate encounter ideas
+
+## Performance Considerations
+
+### Indexing Strategy
+
+IndexedDB indexes are carefully chosen:
+- Primary keys for direct lookups
+- Type index for entity type queries
+- Multi-entry index for tag searches
+- Timestamp indexes for recent items
+
+### Lazy Loading
+
+- Routes are code-split automatically by Vite
+- Components load on-demand
+- Large lists use virtual scrolling (future)
+
+### Reactivity Optimization
+
+- Live queries batch updates automatically
+- Derived state uses `$derived` for memoization
+- Components only re-render when dependencies change
+
+## Security Considerations
+
+### Local-First Security
+
+- No backend means no server-side vulnerabilities
+- All data stays in browser (privacy by default)
+- No authentication needed
+
+### Backup Security
+
+- Backups are plain JSON (user responsible for encryption)
+- API keys not included in backups (by design)
+- Users should store backups securely
+
+### XSS Prevention
+
+- Svelte escapes strings by default
+- Markdown rendering should sanitize HTML (future)
+- URL validation for link fields
+
+## Deployment
+
+### Build Process
+
+```bash
+npm run build
+```
+
+Output:
+- `build/` directory with static files
+- All routes pre-rendered as HTML
+- JavaScript bundled and minified
+- CSS extracted and optimized
+
+### Hosting Options
+
+Works on any static host:
+- **Netlify**: Drag-and-drop or git integration
+- **Vercel**: Zero-config deployment
+- **GitHub Pages**: Free hosting for public repos
+- **Cloudflare Pages**: Fast edge deployment
+- **Self-hosted**: Just serve the `build/` folder
+
+### Configuration
+
+The static adapter is configured in `svelte.config.js`:
+
+```javascript
+adapter: adapter({
+  pages: 'build',
+  assets: 'build',
+  fallback: 'index.html',  // SPA mode
+  precompress: false,
+  strict: true
+})
+```
+
+## Browser Compatibility
+
+### Required APIs
+
+- **IndexedDB**: Available in all modern browsers
+- **ES2020**: Target compilation level
+- **CSS Custom Properties**: For theming
+- **localStorage**: For settings persistence
+
+### Tested Browsers
+
+- Chrome/Edge 80+
+- Firefox 75+
+- Safari 14+
+- Mobile browsers with same engine versions
+
+## Future Architecture Improvements
+
+### Planned Enhancements
+
+1. **Relationship Graph**: Visualize entity connections
+2. **Full-Text Search**: Better search with field content
+3. **Virtual Lists**: Handle thousands of entities
+4. **PWA Support**: Install as mobile app
+5. **Cloud Sync**: Optional backup to cloud storage
+6. **Multi-Campaign**: Switch between campaigns
+7. **Undo/Redo**: History stack for changes
+8. **Collaborative Editing**: Real-time sync (ambitious)
+
+### Scalability
+
+Current architecture handles:
+- 1000s of entities efficiently
+- Complex relationship networks
+- Large markdown fields
+- Multiple browser tabs
+
+For larger scales, consider:
+- Web Workers for heavy computation
+- Virtual scrolling for long lists
+- Pagination for entity lists
+- Database compaction
+
+## Development Workflow
+
+### Local Development
+
+1. `npm run dev` starts dev server
+2. Hot module replacement for instant updates
+3. TypeScript checking in IDE
+4. Browser DevTools for debugging
+
+### Type Checking
+
+```bash
+npm run check        # One-time check
+npm run check:watch  # Continuous checking
+```
+
+### Linting
+
+```bash
+npm run lint
+```
+
+### Building
+
+```bash
+npm run build   # Build for production
+npm run preview # Test production build locally
+```
+
+## Troubleshooting
+
+### Common Issues
+
+**Database won't open:**
+- Clear browser data for the site
+- Check IndexedDB quota
+- Try incognito mode to test
+
+**Data loss after refresh:**
+- Check if IndexedDB is enabled
+- Verify data persistence in DevTools
+- Check for quota exceeded errors
+
+**Slow performance:**
+- Check number of entities
+- Look for missing indexes
+- Profile with Chrome DevTools
+
+**Theme not applying:**
+- Check localStorage for theme setting
+- Verify CSS custom properties in DevTools
+- Look for conflicting styles
+
+## Contributing
+
+See [CONTRIBUTING.md](../CONTRIBUTING.md) for:
+- Development setup
+- Code style guidelines
+- Pull request process
+- Testing guidelines

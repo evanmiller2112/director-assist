@@ -15,17 +15,19 @@ The agent workflow is a pipeline system where specialized agents handle specific
 
 ## Pipeline Stages
 
-The workflow consists of 8 distinct stages:
+The workflow consists of 10 distinct stages:
 
 ```
 1. Issue Selection    → Pick and validate issue
 2. Planning           → Design approach (optional)
 3. Implementation     → Write the code
-4. Code Review        → Review code and domain accuracy (optional)
-5. Documentation      → Update docs
-6. Git Operations     → Commit and push changes
-7. User Verification  → Manual testing
-8. Issue Closure      → Mark issue complete
+4. Unit Testing       → Write/update tests for changes
+5. QA Validation      → Validate against requirements
+6. Code Review        → Review code and domain accuracy (optional)
+7. Documentation      → Update docs
+8. Git Operations     → Commit and push changes
+9. User Verification  → Manual testing
+10. Issue Closure     → Mark issue complete
 ```
 
 ## The Agents
@@ -129,7 +131,86 @@ The workflow consists of 8 distinct stages:
 
 ---
 
-### 4. draw-steel-web-reviewer
+### 4. unit-test-expert
+
+**Role:** Unit test creation and maintenance
+
+**Responsibilities:**
+- Write unit tests for new functionality
+- Update existing tests affected by code changes
+- Ensure test coverage for edge cases
+- Create test fixtures and mocks as needed
+- Verify tests pass before handing off
+- Hand off to QA expert for validation
+
+**When to Use:**
+- After implementation of new features
+- When modifying existing functionality
+- For any code that has testable logic
+- When test coverage needs improvement
+
+**When to Skip:**
+- Simple documentation-only changes
+- Minor UI styling tweaks with no logic changes
+- Configuration file updates
+- Simple bug fixes that already have test coverage
+
+**Example Commands:**
+```
+"Write unit tests for the new faction features"
+"Update tests affected by the heroic resources implementation"
+"Add test coverage for the custom field validation logic"
+```
+
+**Output:**
+- New or updated test files
+- Test fixtures and mocks
+- Test execution results
+- Coverage report summary
+- Notes on what was tested
+
+---
+
+### 5. qa-expert
+
+**Role:** Quality assurance and requirements validation
+
+**Responsibilities:**
+- Validate implementation meets acceptance criteria
+- Check edge cases and error handling
+- Verify no regressions in existing functionality
+- Test boundary conditions and invalid inputs
+- Ensure user experience is intuitive
+- Hand off to code reviewer or documentation specialist
+
+**When to Use:**
+- After tests are written (standard features)
+- Before code review or documentation
+- When acceptance criteria are complex
+- For features with multiple edge cases
+
+**When to Skip:**
+- Trivial changes with obvious correctness
+- Documentation-only updates
+- Simple refactoring with no behavior changes
+
+**Example Commands:**
+```
+"Validate the faction implementation against requirements"
+"Check edge cases for the search functionality"
+"Verify the custom field feature meets acceptance criteria"
+```
+
+**Output:**
+- Validation results
+- Edge cases tested
+- Issues found (if any)
+- Acceptance criteria checklist
+- Notes for the code reviewer
+
+---
+
+### 6. draw-steel-web-reviewer
 
 **Role:** Code review and domain accuracy validation
 
@@ -167,7 +248,7 @@ The workflow consists of 8 distinct stages:
 
 ---
 
-### 5. docs-specialist
+### 7. docs-specialist
 
 **Role:** Documentation maintenance
 
@@ -197,7 +278,7 @@ The workflow consists of 8 distinct stages:
 
 ---
 
-### 6. git-manager
+### 8. git-manager
 
 **Role:** Version control operations
 
@@ -238,16 +319,17 @@ Choose the appropriate workflow based on the issue complexity and domain involve
 - Single file change
 - Obvious solution
 - No game mechanics involved
+- Already has test coverage
 
-**Steps:** 1 → 3 → 5 → 6 → 7 → 8
+**Steps:** 1 → 3 → 5 → 7 → 8 → 9 → 10
 
-**Skip:** Planning (step 2), Code Review (step 4)
+**Skip:** Planning (step 2), Unit Tests (step 4), QA (step 5), Code Review (step 6)
 
 **Example Issues:**
 - Typo in UI text
 - Broken link in documentation
 - CSS styling bug
-- Input validation error
+- Simple input validation error
 
 **Workflow:**
 ```
@@ -255,18 +337,20 @@ Choose the appropriate workflow based on the issue complexity and domain involve
    ↓
 3. senior-web-architect fixes the bug
    ↓
-5. docs-specialist updates relevant docs
+5. qa-expert validates the fix works
    ↓
-6. git-manager commits and pushes
+7. docs-specialist updates relevant docs
    ↓
-7. User tests the fix
+8. git-manager commits and pushes
    ↓
-8. github-project-manager closes issue
+9. User tests the fix
+   ↓
+10. github-project-manager closes issue
 ```
 
 ---
 
-### Variant 2: Non-Draw-Steel Feature
+### Variant 2: Standard Feature (Non-Draw-Steel)
 
 **Use When:**
 - New feature or enhancement
@@ -274,9 +358,9 @@ Choose the appropriate workflow based on the issue complexity and domain involve
 - Infrastructure or tooling work
 - Generic functionality
 
-**Steps:** 1 → 2 → 3 → 5 → 6 → 7 → 8
+**Steps:** 1 → 2 → 3 → 4 → 5 → 7 → 8 → 9 → 10
 
-**Skip:** Code Review (step 4)
+**Skip:** Code Review (step 6)
 
 **Example Issues:**
 - Add export to CSV feature
@@ -292,13 +376,17 @@ Choose the appropriate workflow based on the issue complexity and domain involve
    ↓
 3. senior-web-architect implements feature
    ↓
-5. docs-specialist documents the feature
+4. unit-test-expert writes tests
    ↓
-6. git-manager commits and pushes
+5. qa-expert validates implementation
    ↓
-7. User tests the feature
+7. docs-specialist documents the feature
    ↓
-8. github-project-manager closes issue
+8. git-manager commits and pushes
+   ↓
+9. User tests the feature
+   ↓
+10. github-project-manager closes issue
 ```
 
 ---
@@ -311,7 +399,7 @@ Choose the appropriate workflow based on the issue complexity and domain involve
 - Changes to combat, skills, or rules
 - Content that requires domain accuracy
 
-**Steps:** 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 (Full pipeline)
+**Steps:** 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 (Full pipeline)
 
 **Example Issues:**
 - Add Draw Steel character class tracking
@@ -327,15 +415,19 @@ Choose the appropriate workflow based on the issue complexity and domain involve
    ↓
 3. senior-web-architect implements the feature
    ↓
-4. draw-steel-web-reviewer validates accuracy
+4. unit-test-expert writes tests
    ↓
-5. docs-specialist documents the feature
+5. qa-expert validates implementation
    ↓
-6. git-manager commits and pushes
+6. draw-steel-web-reviewer validates accuracy
    ↓
-7. User tests the feature
+7. docs-specialist documents the feature
    ↓
-8. github-project-manager closes issue
+8. git-manager commits and pushes
+   ↓
+9. User tests the feature
+   ↓
+10. github-project-manager closes issue
 ```
 
 ---
@@ -374,11 +466,23 @@ Each agent should provide clear context when handing off:
 - Step-by-step tasks
 - Design decisions
 
-**From senior-web-architect to draw-steel-web-reviewer:**
+**From senior-web-architect to unit-test-expert:**
 - List of changed files
 - Summary of implementation
-- Any areas needing extra attention
-- Test results
+- Logic that needs test coverage
+- Expected test scenarios
+
+**From unit-test-expert to qa-expert:**
+- Test files created/updated
+- Test execution results
+- Coverage summary
+- Areas that need QA focus
+
+**From qa-expert to draw-steel-web-reviewer (or docs-specialist):**
+- Validation results
+- Edge cases tested
+- Any issues found
+- Acceptance criteria checklist
 
 **From draw-steel-web-reviewer to docs-specialist:**
 - Review approval
@@ -473,9 +577,18 @@ User should explicitly confirm: "The fix works correctly, proceed to close the i
 # "Implementation complete. Added keydown event listener
 #  to Header.svelte search input. Modified 1 file.
 #
+#  Handing off to qa-expert."
+
+# Step 5: QA Validation
+"Validate the escape key fix works correctly"
+
+# qa-expert response:
+# "Validation complete. Tested escape key in various scenarios.
+#  All acceptance criteria met. No edge case issues found.
+#
 #  Handing off to docs-specialist."
 
-# Step 5: Documentation
+# Step 7: Documentation
 "Update any relevant documentation for this change"
 
 # docs-specialist response:
@@ -484,7 +597,7 @@ User should explicitly confirm: "The fix works correctly, proceed to close the i
 #
 #  Handing off to git-manager."
 
-# Step 6: Git Operations
+# Step 8: Git Operations
 "Commit and push these changes"
 
 # git-manager response:
@@ -493,10 +606,10 @@ User should explicitly confirm: "The fix works correctly, proceed to close the i
 #
 #  Ready for user verification."
 
-# Step 7: User Verification
+# Step 9: User Verification
 # User tests: "Works correctly, close the issue"
 
-# Step 8: Issue Closure
+# Step 10: Issue Closure
 "Close issue #45 as resolved"
 
 # github-project-manager response:
@@ -551,9 +664,33 @@ User should explicitly confirm: "The fix works correctly, proceed to close the i
 #
 #  Files changed: 4 files (as planned)
 #
-#  Handing off to draw-steel-web-reviewer for domain review."
+#  Handing off to unit-test-expert."
 
-# Step 4: Code Review
+# Step 4: Unit Testing
+"Write unit tests for the heroic resources feature"
+
+# unit-test-expert response:
+# "Test suite created for heroic resources:
+#  - Component rendering tests
+#  - Increment/decrement logic tests
+#  - Resource type validation tests
+#  - All tests passing (15 tests)
+#
+#  Handing off to qa-expert."
+
+# Step 5: QA Validation
+"Validate the heroic resources implementation"
+
+# qa-expert response:
+# "Validation complete:
+#  ✓ All acceptance criteria met
+#  ✓ Edge cases handled (negative values, max values)
+#  ✓ Multiple resource types work correctly
+#  ✓ UI is intuitive and responsive
+#
+#  Handing off to draw-steel-web-reviewer."
+
+# Step 6: Code Review
 "Review the heroic resources implementation for Draw Steel accuracy"
 
 # draw-steel-web-reviewer response:
@@ -567,7 +704,7 @@ User should explicitly confirm: "The fix works correctly, proceed to close the i
 #
 #  Handing off to docs-specialist."
 
-# Step 5: Documentation
+# Step 7: Documentation
 "Document the new heroic resources feature"
 
 # docs-specialist response:
@@ -581,7 +718,7 @@ User should explicitly confirm: "The fix works correctly, proceed to close the i
 #
 #  Handing off to git-manager."
 
-# Step 6: Git Operations
+# Step 8: Git Operations
 "Commit all changes and push"
 
 # git-manager response:
@@ -591,10 +728,10 @@ User should explicitly confirm: "The fix works correctly, proceed to close the i
 #
 #  Ready for user verification."
 
-# Step 7: User Verification
+# Step 9: User Verification
 # User tests: "Tested with multiple resource types, works great. Close the issue."
 
-# Step 8: Issue Closure
+# Step 10: Issue Closure
 "Close issue #78 with summary"
 
 # github-project-manager response:
@@ -669,34 +806,35 @@ Use the decision tree:
 - Regression introduced
 
 **Solution:**
-ALWAYS complete step 7 before step 8:
+ALWAYS complete step 9 before step 10:
 
 1. git-manager pushes changes
 2. User must test locally
 3. User explicitly confirms "ready to close"
 4. Only then does github-project-manager close the issue
 
-Never combine steps 6, 7, and 8 into a single command.
+Never combine steps 8, 9, and 10 into a single command.
 
 ---
 
-### Problem: Review Requested Changes
+### Problem: Review or QA Requested Changes
 
 **Symptoms:**
-- draw-steel-web-reviewer finds issues
-- Code doesn't meet standards
+- qa-expert or draw-steel-web-reviewer finds issues
+- Code doesn't meet requirements
+- Tests are failing
 - Domain accuracy problems
 
 **Solution:**
-Loop back to implementation:
+Loop back to the appropriate agent:
 
-1. draw-steel-web-reviewer provides specific feedback
-2. Hand back to senior-web-architect with the feedback
-3. senior-web-architect makes corrections
-4. Return to draw-steel-web-reviewer for re-review
+1. Agent provides specific feedback
+2. Hand back to senior-web-architect (for code issues) or unit-test-expert (for test issues)
+3. Make corrections
+4. Resume the pipeline from where it was interrupted
 5. Continue until approved
 
-Don't skip review or ignore feedback.
+Don't skip review, QA, or testing steps or ignore feedback.
 
 ---
 
@@ -748,9 +886,9 @@ Code and documentation should be committed together. This keeps history clean an
 
 | Variant | Steps | Use For | Skip |
 |---------|-------|---------|------|
-| Simple Bug Fix | 1→3→5→6→7→8 | Typos, small fixes, obvious solutions | Plan, Review |
-| Non-DS Feature | 1→2→3→5→6→7→8 | Infrastructure, generic features | Review |
-| Draw Steel Feature | 1→2→3→4→5→6→7→8 | Game mechanics, domain-specific | None |
+| Simple Bug Fix | 1→3→5→7→8→9→10 | Typos, small fixes, obvious solutions | Plan, Unit Tests, Domain Review |
+| Standard Feature | 1→2→3→4→5→7→8→9→10 | Infrastructure, generic features | Domain Review |
+| Draw Steel Feature | 1→2→3→4→5→6→7→8→9→10 | Game mechanics, domain-specific | None (full pipeline) |
 
 ### Agent Commands Quick Reference
 
@@ -768,6 +906,16 @@ Code and documentation should be committed together. This keeps history clean an
 "Implement issue #XX"
 "Follow the plan and implement [feature]"
 "Fix bug described in issue #XX"
+
+# Unit Testing
+"Write unit tests for the new [feature]"
+"Update tests affected by the changes"
+"Add test coverage for [component]"
+
+# QA Validation
+"Validate the implementation against requirements"
+"Check edge cases for [feature]"
+"Verify acceptance criteria are met"
 
 # Code Review
 "Review the changes for Draw Steel accuracy"
@@ -822,12 +970,13 @@ The workflow variants allow you to skip unnecessary steps for simple work while 
 
 Potential improvements to consider:
 
-- **Automated Testing:** Add a testing agent between implementation and review
+- **Integration Testing:** Add integration test agent for end-to-end scenarios
 - **Design Review:** Add a UI/UX review agent for user-facing changes
 - **Performance Review:** Add a performance analysis agent for optimization work
 - **Security Review:** Add a security-focused review for auth/data handling
 - **Release Notes:** Automate release note generation from closed issues
 - **Metrics Tracking:** Track cycle time and agent effectiveness
+- **Accessibility Review:** Add accessibility testing for WCAG compliance
 
 ---
 
@@ -847,10 +996,10 @@ If you're unsure about the workflow:
 
 The agent workflow provides a structured, quality-focused approach to development:
 
-- **8 clear stages** from issue selection to closure
-- **6 specialized agents** each with focused expertise
+- **10 clear stages** from issue selection to closure
+- **8 specialized agents** each with focused expertise
 - **3 workflow variants** optimized for different complexities
 - **Atomic commits** ensuring code and docs stay in sync
-- **Quality gates** through code review and user verification
+- **Multiple quality gates** through testing, QA validation, code review, and user verification
 
-By following this workflow, you ensure consistent quality, maintain accurate documentation, and keep the development process organized and efficient.
+By following this workflow, you ensure consistent quality, comprehensive test coverage, validated requirements, accurate documentation, and an organized, efficient development process.

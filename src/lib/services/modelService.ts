@@ -3,10 +3,16 @@ import type { ModelInfo, ModelsListResponse, ModelCache } from '$lib/types';
 const STORAGE_KEY = 'dm-assist-selected-model';
 const CACHE_KEY = 'dm-assist-models-cache';
 const CACHE_DURATION = 1000 * 60 * 60; // 1 hour cache
-const DEFAULT_MODEL = 'claude-3-5-haiku-20241022';
+const DEFAULT_MODEL = 'claude-haiku-4-5-20250514';
 
 // Fallback models when API fetch fails
 const FALLBACK_MODELS: ModelInfo[] = [
+	{
+		id: 'claude-haiku-4-5-20250514',
+		display_name: 'Claude Haiku 4.5',
+		created_at: '',
+		type: 'model'
+	},
 	{
 		id: 'claude-sonnet-4-20250514',
 		display_name: 'Claude Sonnet 4',
@@ -14,14 +20,8 @@ const FALLBACK_MODELS: ModelInfo[] = [
 		type: 'model'
 	},
 	{
-		id: 'claude-opus-4-20250514',
-		display_name: 'Claude Opus 4',
-		created_at: '',
-		type: 'model'
-	},
-	{
-		id: 'claude-3-5-haiku-20241022',
-		display_name: 'Claude 3.5 Haiku',
+		id: 'claude-opus-4-5-20250514',
+		display_name: 'Claude Opus 4.5',
 		created_at: '',
 		type: 'model'
 	}

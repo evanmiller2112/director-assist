@@ -1,0 +1,156 @@
+import Anthropic from '@anthropic-ai/sdk';
+import { buildContext, formatContextForPrompt } from './contextBuilder';
+import { getSelectedModel } from './modelService';
+import type { ChatMessage } from '$lib/types';
+import { chatRepository } from '$lib/db/repositories';
+
+const SYSTEM_PROMPT = `You are a TTRPG campaign assistant for Director Assist, helping Directors (Game Masters) with campaign preparation, content generation, and world-building.
+
+Your capabilities include:
+- Generating NPCs with personalities, motivations, and backgrounds
+- Creating locations with atmosphere, inhabitants, and points of interest
+- Suggesting plot hooks, story threads, and adventure ideas
+- Designing encounters with interesting challenges
+- Creating items, artifacts, and treasures
+- Building factions with goals, resources, and relationships
+- Helping with session preparation and pacing
+
+Guidelines:
+- Be creative but stay consistent with the campaign context provided
+- When generating content, format it clearly with headings and bullet points
+- Ask clarifying questions if the request is ambiguous
+- Suggest connections to existing campaign elements when relevant
+- Keep responses concise but comprehensive`;
+
+export interface ChatResponse {
+	content: string;
+	error?: string;
+}
+
+/**
+ * Send a chat message and get an AI response.
+ * Supports streaming via the onStream callback.
+ */
+export async function sendChatMessage(
+	userMessage: string,
+	contextEntityIds: string[],
+	includeLinked: boolean = true,
+	onStream?: (partial: string) => void
+): Promise<string> {
+	// Get API key from localStorage
+	const apiKey = typeof window !== 'undefined' ? localStorage.getItem('dm-assist-api-key') : null;
+
+	if (!apiKey) {
+		throw new Error('API key not configured. Please add your Anthropic API key in Settings.');
+	}
+
+	// Build context from selected entities
+	const context = await buildContext({
+		entityIds: contextEntityIds,
+		includeLinked,
+		maxCharacters: 6000 // Leave room for conversation history
+	});
+
+	const contextPrompt = formatContextForPrompt(context);
+
+	// Build conversation history from recent messages
+	const recentMessages = await getRecentMessages(10);
+	const conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }> =
+		recentMessages.map((m) => ({
+			role: m.role,
+			content: m.content
+		}));
+
+	// Build system prompt with context
+	let fullSystemPrompt = SYSTEM_PROMPT;
+	if (contextPrompt) {
+		fullSystemPrompt += '\n\n' + contextPrompt;
+	}
+
+	try {
+		const client = new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
+
+		// Add the new user message to history
+		const messages: Array<{ role: 'user' | 'assistant'; content: string }> = [
+			...conversationHistory,
+			{ role: 'user', content: userMessage }
+		];
+
+		if (onStream) {
+			// Streaming response
+			let fullContent = '';
+
+			const stream = client.messages.stream({
+				model: getSelectedModel(),
+				max_tokens: 4096,
+				system: fullSystemPrompt,
+				messages
+			});
+
+			for await (const event of stream) {
+				if (
+					event.type === 'content_block_delta' &&
+					event.delta.type === 'text_delta'
+				) {
+					fullContent += event.delta.text;
+					onStream(fullContent);
+				}
+			}
+
+			return fullContent;
+		} else {
+			// Non-streaming response
+			const response = await client.messages.create({
+				model: getSelectedModel(),
+				max_tokens: 4096,
+				system: fullSystemPrompt,
+				messages
+			});
+
+			const textContent = response.content.find((c) => c.type === 'text');
+			if (textContent && textContent.type === 'text') {
+				return textContent.text;
+			}
+
+			throw new Error('Unexpected response format from AI');
+		}
+	} catch (error) {
+		if (error instanceof Anthropic.APIError) {
+			if (error.status === 401) {
+				throw new Error('Invalid API key. Please check your API key in Settings.');
+			} else if (error.status === 429) {
+				throw new Error('Rate limit exceeded. Please wait a moment and try again.');
+			} else if (error.status === 500) {
+				throw new Error('AI service temporarily unavailable. Please try again later.');
+			}
+		}
+		throw error;
+	}
+}
+
+/**
+ * Get recent messages from the chat repository.
+ */
+async function getRecentMessages(limit: number = 10): Promise<ChatMessage[]> {
+	return new Promise((resolve) => {
+		const observable = chatRepository.getRecent(limit);
+		const subscription = observable.subscribe({
+			next: (messages) => {
+				subscription.unsubscribe();
+				// Reverse to get chronological order
+				resolve(messages.reverse());
+			},
+			error: () => {
+				resolve([]);
+			}
+		});
+	});
+}
+
+/**
+ * Check if an API key is configured.
+ */
+export function hasChatApiKey(): boolean {
+	if (typeof window === 'undefined') return false;
+	return !!localStorage.getItem('dm-assist-api-key');
+}

@@ -2,6 +2,9 @@
 export { generateSummary, hasApiKey } from './summaryService';
 export type { SummaryGenerationResult } from './summaryService';
 
+// Chat service
+export { sendChatMessage, hasChatApiKey } from './chatService';
+
 // Context builder for chat AI
 export { buildContext, formatContextForPrompt, formatContextEntry, getContextStats } from './contextBuilder';
 export type { ContextOptions, EntityContext, BuiltContext } from './contextBuilder';

@@ -2,6 +2,7 @@
 	import '../app.css';
 	import { onMount } from 'svelte';
 	import { Header, Sidebar } from '$lib/components/layout';
+	import { ChatPanel } from '$lib/components/chat';
 	import Toast from '$lib/components/ui/Toast.svelte';
 	import { campaignStore, entitiesStore, uiStore } from '$lib/stores';
 	import { initializeDatabase } from '$lib/db';
@@ -29,16 +30,9 @@
 			{@render children()}
 		</div>
 
-		<!-- Chat panel would go here when open -->
+		<!-- Chat panel -->
 		{#if uiStore.chatPanelOpen}
-			<aside class="w-96 border-l border-slate-200 dark:border-slate-700 bg-white dark:bg-surface-dark overflow-y-auto">
-				<div class="p-4">
-					<h2 class="text-lg font-semibold mb-4">AI Assistant</h2>
-					<p class="text-slate-500 dark:text-slate-400 text-sm">
-						Chat functionality coming soon. Configure your API key in Settings.
-					</p>
-				</div>
-			</aside>
+			<ChatPanel />
 		{/if}
 	</main>
 	<Toast />

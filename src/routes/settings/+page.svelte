@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { campaignStore, uiStore } from '$lib/stores';
+	import { campaignStore, notificationStore, uiStore } from '$lib/stores';
 	import { db } from '$lib/db';
 	import { entityRepository, campaignRepository, chatRepository } from '$lib/db/repositories';
 	import type { CampaignBackup } from '$lib/types';
@@ -54,7 +54,7 @@
 			} else {
 				localStorage.removeItem('dm-assist-api-key');
 			}
-			alert('API key saved!');
+			notificationStore.success('API key saved!');
 		}
 	}
 
@@ -65,7 +65,7 @@
 			const chatHistory = await db.chatMessages.toArray();
 
 			if (!campaign) {
-				alert('No campaign to export');
+				notificationStore.error('No campaign to export');
 				return;
 			}
 
@@ -89,7 +89,7 @@
 			URL.revokeObjectURL(url);
 		} catch (error) {
 			console.error('Export failed:', error);
-			alert('Failed to export backup');
+			notificationStore.error('Failed to export backup');
 		}
 	}
 
@@ -139,11 +139,11 @@
 				// Reload stores
 				await campaignStore.load();
 
-				alert('Backup imported successfully!');
+				notificationStore.success('Backup imported successfully!');
 				window.location.reload();
 			} catch (error) {
 				console.error('Import failed:', error);
-				alert('Failed to import backup. Please check the file format.');
+				notificationStore.error('Failed to import backup. Please check the file format.');
 			}
 		};
 
@@ -178,7 +178,7 @@
 			window.location.reload();
 		} catch (error) {
 			console.error('Failed to clear data:', error);
-			alert('Failed to clear data');
+			notificationStore.error('Failed to clear data');
 		}
 	}
 </script>

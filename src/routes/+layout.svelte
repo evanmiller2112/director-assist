@@ -2,6 +2,7 @@
 	import '../app.css';
 	import { onMount } from 'svelte';
 	import { Header, Sidebar } from '$lib/components/layout';
+	import Toast from '$lib/components/ui/Toast.svelte';
 	import { campaignStore, entitiesStore, uiStore } from '$lib/stores';
 	import { initializeDatabase } from '$lib/db';
 
@@ -40,4 +41,5 @@
 			</aside>
 		{/if}
 	</main>
+	<Toast />
 </div>

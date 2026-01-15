@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
-	import { entitiesStore } from '$lib/stores';
+	import { entitiesStore, notificationStore } from '$lib/stores';
 	import { getEntityTypeDefinition } from '$lib/config/entityTypes';
 	import { createEntity, type FieldValue } from '$lib/types';
 	import { ArrowLeft, Save } from 'lucide-svelte';
@@ -51,7 +51,7 @@
 			goto(`/entities/${entityType}/${created.id}`);
 		} catch (error) {
 			console.error('Failed to create entity:', error);
-			alert('Failed to create entity. Please try again.');
+			notificationStore.error('Failed to create entity. Please try again.');
 		} finally {
 			isSaving = false;
 		}

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
-	import { entitiesStore } from '$lib/stores';
+	import { entitiesStore, notificationStore } from '$lib/stores';
 	import { getEntityTypeDefinition } from '$lib/config/entityTypes';
 	import type { FieldValue } from '$lib/types';
 	import { ArrowLeft, Save } from 'lucide-svelte';
@@ -54,7 +54,7 @@
 			goto(`/entities/${entityType}/${entityId}`);
 		} catch (error) {
 			console.error('Failed to update entity:', error);
-			alert('Failed to update entity. Please try again.');
+			notificationStore.error('Failed to update entity. Please try again.');
 		} finally {
 			isSaving = false;
 		}

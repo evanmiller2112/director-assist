@@ -125,6 +125,7 @@ function createEntitiesStore() {
 		getLinkedWithRelationships(entityId: string): Array<{
 			entity: BaseEntity;
 			relationship: string;
+			reverseRelationship?: string;
 			isReverse: boolean;
 			bidirectional: boolean;
 		}> {
@@ -134,6 +135,7 @@ function createEntitiesStore() {
 			const result: Array<{
 				entity: BaseEntity;
 				relationship: string;
+				reverseRelationship?: string;
 				isReverse: boolean;
 				bidirectional: boolean;
 			}> = [];
@@ -145,6 +147,7 @@ function createEntitiesStore() {
 					result.push({
 						entity: linkedEntity,
 						relationship: link.relationship,
+						reverseRelationship: link.reverseRelationship,
 						isReverse: false,
 						bidirectional: link.bidirectional
 					});
@@ -158,6 +161,7 @@ function createEntitiesStore() {
 					result.push({
 						entity: e,
 						relationship: linkToThisEntity.relationship,
+						reverseRelationship: linkToThisEntity.reverseRelationship,
 						isReverse: true,
 						bidirectional: false
 					});
@@ -174,7 +178,8 @@ function createEntitiesStore() {
 			bidirectional: boolean = false,
 			notes?: string,
 			strength?: 'strong' | 'moderate' | 'weak',
-			metadata?: { tags?: string[]; tension?: number; [key: string]: unknown }
+			metadata?: { tags?: string[]; tension?: number; [key: string]: unknown },
+			reverseRelationship?: string
 		): Promise<void> {
 			await entityRepository.addLink(
 				sourceId,
@@ -183,7 +188,8 @@ function createEntitiesStore() {
 				bidirectional,
 				notes,
 				strength,
-				metadata
+				metadata,
+				reverseRelationship
 			);
 		},
 

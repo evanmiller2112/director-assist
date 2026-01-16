@@ -235,12 +235,13 @@
 
 			{#if linkedEntitiesWithRelationships.length > 0}
 				<div class="grid gap-2">
-					{#each linkedEntitiesWithRelationships as { entity: linkedEntity, relationship, isReverse, bidirectional }}
+					{#each linkedEntitiesWithRelationships as { entity: linkedEntity, relationship, reverseRelationship, isReverse, bidirectional }}
 						{@const linkedTypeDefinition = getEntityTypeDefinition(
 							linkedEntity.type,
 							campaignStore.customEntityTypes,
 							campaignStore.entityTypeOverrides
 						)}
+						{@const isAsymmetric = bidirectional && reverseRelationship && reverseRelationship !== relationship}
 						<div class="entity-card group relative" data-type={linkedEntity.type}>
 							<a
 								href="/entities/{linkedEntity.type}/{linkedEntity.id}"
@@ -252,7 +253,11 @@
 									{/if}
 									{relationship.replace(/_/g, ' ')}
 									{#if bidirectional}
-										<span class="text-xs ml-1" title="Bidirectional">↔</span>
+										{#if isAsymmetric}
+											<span class="text-xs ml-1 text-blue-500" title="Asymmetric: {reverseRelationship?.replace(/_/g, ' ')}">↔</span>
+										{:else}
+											<span class="text-xs ml-1" title="Bidirectional">↔</span>
+										{/if}
 									{/if}
 								</span>
 								<span class="font-medium text-slate-900 dark:text-white flex-1">

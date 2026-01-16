@@ -21,6 +21,8 @@
 	let strength = $state<'none' | 'strong' | 'moderate' | 'weak'>('none');
 	let tags = $state('');
 	let tension = $state(0);
+	let showAsymmetricOptions = $state(false);
+	let reverseRelationship = $state('');
 	let isSubmitting = $state(false);
 	let errorMessage = $state('');
 
@@ -76,6 +78,8 @@
 		strength = 'none';
 		tags = '';
 		tension = 0;
+		showAsymmetricOptions = false;
+		reverseRelationship = '';
 		errorMessage = '';
 		open = false;
 		onClose?.();
@@ -114,6 +118,11 @@
 				metadata.tension = tension;
 			}
 
+			// Parse reverseRelationship: pass trimmed value if asymmetric is enabled and non-empty
+			const finalReverseRelationship = showAsymmetricOptions && reverseRelationship.trim()
+				? reverseRelationship.trim()
+				: undefined;
+
 			await entitiesStore.addLink(
 				sourceEntity.id,
 				selectedEntity.id,
@@ -121,7 +130,8 @@
 				bidirectional,
 				notes.trim(),
 				finalStrength,
-				metadata
+				metadata,
+				finalReverseRelationship
 			);
 			handleClose();
 		} catch (error) {
@@ -130,6 +140,13 @@
 			isSubmitting = false;
 		}
 	}
+
+	// Clear reverseRelationship when showAsymmetricOptions is unchecked
+	$effect(() => {
+		if (!showAsymmetricOptions) {
+			reverseRelationship = '';
+		}
+	});
 
 	// Close on escape key
 	function handleKeydown(e: KeyboardEvent) {
@@ -352,6 +369,39 @@
 								Bidirectional (also create reverse link)
 							</label>
 						</div>
+
+						<!-- Asymmetric relationship options (only shown when bidirectional is true) -->
+						{#if bidirectional}
+							<div class="flex items-center gap-2">
+								<input
+									id="asymmetric"
+									type="checkbox"
+									bind:checked={showAsymmetricOptions}
+									class="w-4 h-4 text-blue-600 bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 rounded focus:ring-blue-500"
+								/>
+								<label for="asymmetric" class="text-sm text-slate-700 dark:text-slate-300">
+									Use different relationship for reverse link
+								</label>
+							</div>
+
+							{#if showAsymmetricOptions}
+								<div>
+									<label for="reverse-relationship" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+										Reverse Relationship
+									</label>
+									<input
+										id="reverse-relationship"
+										type="text"
+										bind:value={reverseRelationship}
+										placeholder="Reverse direction (e.g., has_member, employs)"
+										class="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+									/>
+									<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+										How {selectedEntity.name} relates back to {sourceEntity.name}
+									</p>
+								</div>
+							{/if}
+						{/if}
 
 						{#if errorMessage}
 							<div class="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-700 dark:text-red-300 text-sm">

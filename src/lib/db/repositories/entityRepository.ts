@@ -153,7 +153,8 @@ export const entityRepository = {
 		bidirectional: boolean = false,
 		notes?: string,
 		strength?: 'strong' | 'moderate' | 'weak',
-		metadata?: { tags?: string[]; tension?: number; [key: string]: unknown }
+		metadata?: { tags?: string[]; tension?: number; [key: string]: unknown },
+		reverseRelationship?: string
 	): Promise<void> {
 		await ensureDbReady();
 
@@ -185,7 +186,8 @@ export const entityRepository = {
 				strength,
 				createdAt: now,
 				updatedAt: now,
-				metadata
+				metadata,
+				...(bidirectional && reverseRelationship ? { reverseRelationship } : {})
 			};
 
 			// Parse and stringify to avoid Proxy serialization errors
@@ -205,12 +207,13 @@ export const entityRepository = {
 					sourceId: targetId,
 					targetId: sourceId,
 					targetType: sourceEntity.type,
-					relationship: this.getInverseRelationship(relationship),
+					relationship: reverseRelationship || this.getInverseRelationship(relationship),
 					bidirectional: true,
 					strength,
 					createdAt: now,
 					updatedAt: now,
-					metadata
+					metadata,
+					...(reverseRelationship ? { reverseRelationship: relationship } : {})
 				};
 
 				const updatedTargetLinks = JSON.parse(

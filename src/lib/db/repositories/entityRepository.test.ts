@@ -923,6 +923,374 @@ describe('EntityRepository - Enhanced EntityLink Data Model (Issue #65)', () => 
 			);
 		});
 	});
+
+	describe('Asymmetric Bidirectional Relationships (reverseRelationship)', () => {
+		it('should use custom reverseRelationship when provided for bidirectional link', async () => {
+			await entityRepository.addLink(
+				sourceEntity.id,
+				targetEntity.id,
+				'patron_of',
+				true, // bidirectional
+				undefined, // notes
+				undefined, // strength
+				undefined, // metadata
+				'client_of' // reverseRelationship
+			);
+
+			const updatedSource = await db.entities.get(sourceEntity.id);
+			const updatedTarget = await db.entities.get(targetEntity.id);
+
+			// Forward link should have patron_of
+			expect(updatedSource!.links[0].relationship).toBe('patron_of');
+			// Reverse link should have client_of (NOT inverse_of_patron_of)
+			expect(updatedTarget!.links[0].relationship).toBe('client_of');
+		});
+
+		it('should store reverseRelationship field on forward link', async () => {
+			await entityRepository.addLink(
+				sourceEntity.id,
+				targetEntity.id,
+				'patron_of',
+				true,
+				undefined,
+				undefined,
+				undefined,
+				'client_of'
+			);
+
+			const updatedSource = await db.entities.get(sourceEntity.id);
+			const forwardLink = updatedSource!.links[0];
+
+			// Forward link should store the reverseRelationship
+			expect(forwardLink.reverseRelationship).toBe('client_of');
+		});
+
+		it('should use reverseRelationship as relationship on reverse link', async () => {
+			await entityRepository.addLink(
+				sourceEntity.id,
+				targetEntity.id,
+				'teacher_of',
+				true,
+				undefined,
+				undefined,
+				undefined,
+				'student_of'
+			);
+
+			const updatedTarget = await db.entities.get(targetEntity.id);
+			const reverseLink = updatedTarget!.links[0];
+
+			// Reverse link's relationship should be the reverseRelationship value
+			expect(reverseLink.relationship).toBe('student_of');
+		});
+
+		it('should store original relationship as reverseRelationship on reverse link', async () => {
+			await entityRepository.addLink(
+				sourceEntity.id,
+				targetEntity.id,
+				'patron_of',
+				true,
+				undefined,
+				undefined,
+				undefined,
+				'client_of'
+			);
+
+			const updatedTarget = await db.entities.get(targetEntity.id);
+			const reverseLink = updatedTarget!.links[0];
+
+			// Reverse link should store the original relationship as its reverseRelationship
+			expect(reverseLink.reverseRelationship).toBe('patron_of');
+		});
+
+		it('should fall back to getInverseRelationship when reverseRelationship is not provided', async () => {
+			await entityRepository.addLink(
+				sourceEntity.id,
+				targetEntity.id,
+				'member_of',
+				true,
+				undefined,
+				undefined,
+				undefined
+				// reverseRelationship NOT provided
+			);
+
+			const updatedTarget = await db.entities.get(targetEntity.id);
+			const reverseLink = updatedTarget!.links[0];
+
+			// Should use the inverse mapping from getInverseRelationship
+			expect(reverseLink.relationship).toBe('has_member');
+			// reverseRelationship field should not be set
+			expect(reverseLink.reverseRelationship).toBeUndefined();
+		});
+
+		it('should maintain backward compatibility when reverseRelationship is undefined', async () => {
+			// Old-style bidirectional link without reverseRelationship
+			await entityRepository.addLink(
+				sourceEntity.id,
+				targetEntity.id,
+				'allied_with',
+				true,
+				'Old alliance'
+			);
+
+			const updatedSource = await db.entities.get(sourceEntity.id);
+			const updatedTarget = await db.entities.get(targetEntity.id);
+
+			// Should use symmetric relationship (allied_with on both sides)
+			expect(updatedSource!.links[0].relationship).toBe('allied_with');
+			expect(updatedTarget!.links[0].relationship).toBe('allied_with');
+			// reverseRelationship should not be set
+			expect(updatedSource!.links[0].reverseRelationship).toBeUndefined();
+			expect(updatedTarget!.links[0].reverseRelationship).toBeUndefined();
+		});
+
+		it('should handle asymmetric relationships correctly (patron_of/client_of example)', async () => {
+			// Create a patron entity (wealthy merchant)
+			const patronEntity = createMockEntity({
+				id: 'patron-1',
+				name: 'Wealthy Merchant',
+				type: 'npc',
+				links: []
+			});
+
+			// Create a client entity (struggling artist)
+			const clientEntity = createMockEntity({
+				id: 'client-1',
+				name: 'Struggling Artist',
+				type: 'character',
+				links: []
+			});
+
+			await db.entities.add(patronEntity);
+			await db.entities.add(clientEntity);
+
+			// Merchant is patron_of Artist (Artist is client_of Merchant)
+			await entityRepository.addLink(
+				patronEntity.id,
+				clientEntity.id,
+				'patron_of',
+				true,
+				'Financial support for artistic endeavors',
+				'strong',
+				{ tags: ['patronage'], tension: 2 },
+				'client_of'
+			);
+
+			const updatedPatron = await db.entities.get(patronEntity.id);
+			const updatedClient = await db.entities.get(clientEntity.id);
+
+			const patronLink = updatedPatron!.links[0];
+			const clientLink = updatedClient!.links[0];
+
+			// Patron's link
+			expect(patronLink.targetId).toBe(clientEntity.id);
+			expect(patronLink.relationship).toBe('patron_of');
+			expect(patronLink.reverseRelationship).toBe('client_of');
+			expect(patronLink.bidirectional).toBe(true);
+
+			// Client's link
+			expect(clientLink.targetId).toBe(patronEntity.id);
+			expect(clientLink.relationship).toBe('client_of');
+			expect(clientLink.reverseRelationship).toBe('patron_of');
+			expect(clientLink.bidirectional).toBe(true);
+
+			// Both should have same strength and metadata
+			expect(patronLink.strength).toBe('strong');
+			expect(clientLink.strength).toBe('strong');
+			expect(patronLink.metadata).toEqual({ tags: ['patronage'], tension: 2 });
+			expect(clientLink.metadata).toEqual({ tags: ['patronage'], tension: 2 });
+
+			// Notes are link-specific (should only be on patron's side)
+			expect(patronLink.notes).toBe('Financial support for artistic endeavors');
+			expect(clientLink.notes).toBeUndefined();
+		});
+
+		it('should not set reverseRelationship on non-bidirectional links', async () => {
+			await entityRepository.addLink(
+				sourceEntity.id,
+				targetEntity.id,
+				'patron_of',
+				false, // NOT bidirectional
+				undefined,
+				undefined,
+				undefined,
+				'client_of' // This should be ignored
+			);
+
+			const updatedSource = await db.entities.get(sourceEntity.id);
+			const forwardLink = updatedSource!.links[0];
+
+			// Link should be created but reverseRelationship parameter should not matter
+			expect(forwardLink.relationship).toBe('patron_of');
+			// No reverse link should be created
+			const updatedTarget = await db.entities.get(targetEntity.id);
+			expect(updatedTarget!.links).toHaveLength(0);
+		});
+
+		it('should accept reverseRelationship as optional 8th parameter in correct position', async () => {
+			// Full parameter list:
+			// sourceId, targetId, relationship, bidirectional, notes, strength, metadata, reverseRelationship
+			await expect(
+				entityRepository.addLink(
+					sourceEntity.id,
+					targetEntity.id,
+					'master_of',
+					true, // bidirectional
+					'Master-apprentice relationship', // notes
+					'strong', // strength
+					{ tags: ['teaching'], tension: 1 }, // metadata
+					'apprentice_of' // reverseRelationship
+				)
+			).resolves.not.toThrow();
+
+			const updatedSource = await db.entities.get(sourceEntity.id);
+			const link = updatedSource!.links[0];
+
+			expect(link.relationship).toBe('master_of');
+			expect(link.reverseRelationship).toBe('apprentice_of');
+			expect(link.notes).toBe('Master-apprentice relationship');
+			expect(link.strength).toBe('strong');
+			expect(link.metadata).toEqual({ tags: ['teaching'], tension: 1 });
+		});
+
+		it('should handle multiple asymmetric relationships on same entity', async () => {
+			// Create multiple entities
+			const apprentice1 = createMockEntity({
+				id: 'apprentice-1',
+				name: 'First Apprentice',
+				type: 'character',
+				links: []
+			});
+
+			const apprentice2 = createMockEntity({
+				id: 'apprentice-2',
+				name: 'Second Apprentice',
+				type: 'character',
+				links: []
+			});
+
+			const client = createMockEntity({
+				id: 'client-1',
+				name: 'Client',
+				type: 'npc',
+				links: []
+			});
+
+			await db.entities.add(apprentice1);
+			await db.entities.add(apprentice2);
+			await db.entities.add(client);
+
+			// Source is master of two apprentices
+			await entityRepository.addLink(
+				sourceEntity.id,
+				apprentice1.id,
+				'master_of',
+				true,
+				undefined,
+				undefined,
+				undefined,
+				'apprentice_of'
+			);
+
+			await entityRepository.addLink(
+				sourceEntity.id,
+				apprentice2.id,
+				'master_of',
+				true,
+				undefined,
+				undefined,
+				undefined,
+				'apprentice_of'
+			);
+
+			// Source is also patron of a client
+			await entityRepository.addLink(
+				sourceEntity.id,
+				client.id,
+				'patron_of',
+				true,
+				undefined,
+				undefined,
+				undefined,
+				'client_of'
+			);
+
+			const updatedSource = await db.entities.get(sourceEntity.id);
+			expect(updatedSource!.links).toHaveLength(3);
+
+			// Check each link has correct asymmetric relationship
+			const masterLink1 = updatedSource!.links.find((l) => l.targetId === apprentice1.id);
+			const masterLink2 = updatedSource!.links.find((l) => l.targetId === apprentice2.id);
+			const patronLink = updatedSource!.links.find((l) => l.targetId === client.id);
+
+			expect(masterLink1?.relationship).toBe('master_of');
+			expect(masterLink1?.reverseRelationship).toBe('apprentice_of');
+
+			expect(masterLink2?.relationship).toBe('master_of');
+			expect(masterLink2?.reverseRelationship).toBe('apprentice_of');
+
+			expect(patronLink?.relationship).toBe('patron_of');
+			expect(patronLink?.reverseRelationship).toBe('client_of');
+
+			// Check reverse links
+			const updatedApprentice1 = await db.entities.get(apprentice1.id);
+			expect(updatedApprentice1!.links[0].relationship).toBe('apprentice_of');
+			expect(updatedApprentice1!.links[0].reverseRelationship).toBe('master_of');
+
+			const updatedClient = await db.entities.get(client.id);
+			expect(updatedClient!.links[0].relationship).toBe('client_of');
+			expect(updatedClient!.links[0].reverseRelationship).toBe('patron_of');
+		});
+
+		it('should handle symmetric relationships that could use reverseRelationship but dont need to', async () => {
+			// friend_of is symmetric - both sides use same relationship
+			await entityRepository.addLink(
+				sourceEntity.id,
+				targetEntity.id,
+				'friend_of',
+				true,
+				undefined,
+				undefined,
+				undefined,
+				'friend_of' // Explicitly providing same relationship
+			);
+
+			const updatedSource = await db.entities.get(sourceEntity.id);
+			const updatedTarget = await db.entities.get(targetEntity.id);
+
+			// Both should have friend_of
+			expect(updatedSource!.links[0].relationship).toBe('friend_of');
+			expect(updatedTarget!.links[0].relationship).toBe('friend_of');
+
+			// reverseRelationship should be stored
+			expect(updatedSource!.links[0].reverseRelationship).toBe('friend_of');
+			expect(updatedTarget!.links[0].reverseRelationship).toBe('friend_of');
+		});
+
+		it('should preserve reverseRelationship through JSON serialization', async () => {
+			await entityRepository.addLink(
+				sourceEntity.id,
+				targetEntity.id,
+				'employer_of',
+				true,
+				undefined,
+				undefined,
+				undefined,
+				'employee_of'
+			);
+
+			const updatedSource = await db.entities.get(sourceEntity.id);
+			const link = updatedSource!.links[0];
+
+			// Serialize and deserialize (simulating database round-trip)
+			const serialized = JSON.stringify(link);
+			const deserialized = JSON.parse(serialized);
+
+			expect(deserialized.relationship).toBe('employer_of');
+			expect(deserialized.reverseRelationship).toBe('employee_of');
+		});
+	});
 });
 
 describe('EntityRepository - Relationship Query Methods (Issue #71)', () => {

@@ -228,7 +228,7 @@ describe('RelateCommand Component - Notes Field', () => {
 			await fireEvent.input(notesTextarea, { target: { value: testNotes } });
 
 			// Change relationship field
-			const relationshipInput = screen.getByLabelText(/relationship/i) as HTMLInputElement;
+			const relationshipInput = screen.getByLabelText(/^relationship$/i) as HTMLInputElement;
 			await fireEvent.input(relationshipInput, { target: { value: 'member_of' } });
 
 			// Notes should still be preserved
@@ -302,7 +302,7 @@ describe('RelateCommand Component - Notes Field', () => {
 			await fireEvent.click(targetButton!);
 
 			// Fill in relationship
-			const relationshipInput = screen.getByLabelText(/relationship/i) as HTMLInputElement;
+			const relationshipInput = screen.getByLabelText(/^relationship$/i) as HTMLInputElement;
 			await fireEvent.input(relationshipInput, { target: { value: 'member_of' } });
 
 			// Fill in notes
@@ -323,7 +323,8 @@ describe('RelateCommand Component - Notes Field', () => {
 					true, // bidirectional
 					testNotes, // notes should be the 5th parameter
 					undefined, // strength
-					expect.any(Object) // metadata
+					expect.any(Object), // metadata
+					undefined // reverseRelationship
 				);
 			});
 		});
@@ -346,7 +347,7 @@ describe('RelateCommand Component - Notes Field', () => {
 			await fireEvent.click(targetButton!);
 
 			// Fill in relationship but leave notes empty
-			const relationshipInput = screen.getByLabelText(/relationship/i) as HTMLInputElement;
+			const relationshipInput = screen.getByLabelText(/^relationship$/i) as HTMLInputElement;
 			await fireEvent.input(relationshipInput, { target: { value: 'member_of' } });
 
 			// Submit
@@ -362,7 +363,8 @@ describe('RelateCommand Component - Notes Field', () => {
 					true,
 					'', // Empty string
 					undefined, // strength
-					expect.any(Object) // metadata
+					expect.any(Object), // metadata
+					undefined // reverseRelationship
 				);
 			});
 		});
@@ -385,7 +387,7 @@ describe('RelateCommand Component - Notes Field', () => {
 			await fireEvent.click(targetButton!);
 
 			// Fill in relationship
-			const relationshipInput = screen.getByLabelText(/relationship/i) as HTMLInputElement;
+			const relationshipInput = screen.getByLabelText(/^relationship$/i) as HTMLInputElement;
 			await fireEvent.input(relationshipInput, { target: { value: 'member_of' } });
 
 			// Fill in notes with special characters
@@ -406,7 +408,8 @@ describe('RelateCommand Component - Notes Field', () => {
 					true,
 					specialNotes,
 					undefined, // strength
-					expect.any(Object) // metadata
+					expect.any(Object), // metadata
+					undefined // reverseRelationship
 				);
 			});
 		});
@@ -429,7 +432,7 @@ describe('RelateCommand Component - Notes Field', () => {
 			await fireEvent.click(targetButton!);
 
 			// Fill in relationship
-			const relationshipInput = screen.getByLabelText(/relationship/i) as HTMLInputElement;
+			const relationshipInput = screen.getByLabelText(/^relationship$/i) as HTMLInputElement;
 			await fireEvent.input(relationshipInput, { target: { value: 'member_of' } });
 
 			// Fill in notes with leading/trailing whitespace
@@ -451,7 +454,8 @@ describe('RelateCommand Component - Notes Field', () => {
 					true,
 					'Important note with spaces',
 					undefined, // strength
-					expect.any(Object) // metadata
+					expect.any(Object), // metadata
+					undefined // reverseRelationship
 				);
 			});
 		});
@@ -476,7 +480,7 @@ describe('RelateCommand Component - Notes Field', () => {
 			await fireEvent.click(targetButton!);
 
 			// Fill in fields
-			const relationshipInput = screen.getByLabelText(/relationship/i) as HTMLInputElement;
+			const relationshipInput = screen.getByLabelText(/^relationship$/i) as HTMLInputElement;
 			await fireEvent.input(relationshipInput, { target: { value: 'member_of' } });
 
 			const notesTextarea = screen.getByLabelText(/notes/i) as HTMLTextAreaElement;
@@ -501,7 +505,8 @@ describe('RelateCommand Component - Notes Field', () => {
 					true,
 					'Bidirectional note',
 					undefined, // strength
-					expect.any(Object) // metadata
+					expect.any(Object), // metadata
+					undefined // reverseRelationship
 				);
 			});
 		});
@@ -524,7 +529,7 @@ describe('RelateCommand Component - Notes Field', () => {
 			await fireEvent.click(targetButton!);
 
 			// Fill in fields
-			const relationshipInput = screen.getByLabelText(/relationship/i) as HTMLInputElement;
+			const relationshipInput = screen.getByLabelText(/^relationship$/i) as HTMLInputElement;
 			await fireEvent.input(relationshipInput, { target: { value: 'knows' } });
 
 			const notesTextarea = screen.getByLabelText(/notes/i) as HTMLTextAreaElement;
@@ -550,7 +555,8 @@ describe('RelateCommand Component - Notes Field', () => {
 					false,
 					'Unidirectional note',
 					undefined, // strength
-					expect.any(Object) // metadata
+					expect.any(Object), // metadata
+					undefined // reverseRelationship
 				);
 			});
 		});
@@ -575,7 +581,7 @@ describe('RelateCommand Component - Notes Field', () => {
 			await fireEvent.click(targetButton!);
 
 			// Fill in relationship only, leave notes empty
-			const relationshipInput = screen.getByLabelText(/relationship/i) as HTMLInputElement;
+			const relationshipInput = screen.getByLabelText(/^relationship$/i) as HTMLInputElement;
 			await fireEvent.input(relationshipInput, { target: { value: 'member_of' } });
 
 			// Submit should work
@@ -606,7 +612,7 @@ describe('RelateCommand Component - Notes Field', () => {
 			await fireEvent.click(targetButton!);
 
 			// Fill in fields
-			const relationshipInput = screen.getByLabelText(/relationship/i) as HTMLInputElement;
+			const relationshipInput = screen.getByLabelText(/^relationship$/i) as HTMLInputElement;
 			await fireEvent.input(relationshipInput, { target: { value: 'member_of' } });
 
 			const notesTextarea = screen.getByLabelText(/notes/i) as HTMLTextAreaElement;
@@ -668,7 +674,7 @@ describe('RelateCommand Component - Notes Field', () => {
 			);
 			await fireEvent.click(targetButton!);
 
-			const relationshipInput = screen.getByLabelText(/relationship/i);
+			const relationshipInput = screen.getByLabelText(/^relationship$/i);
 			const notesTextarea = screen.getByLabelText(/notes/i);
 			const bidirectionalCheckbox = screen.getByLabelText(/bidirectional/i);
 
@@ -828,7 +834,7 @@ describe('RelateCommand Component - Notes Field', () => {
 			await fireEvent.change(strengthSelect, { target: { value: 'strong' } });
 
 			// Change relationship field
-			const relationshipInput = screen.getByLabelText(/relationship/i) as HTMLInputElement;
+			const relationshipInput = screen.getByLabelText(/^relationship$/i) as HTMLInputElement;
 			await fireEvent.input(relationshipInput, { target: { value: 'member_of' } });
 
 			// Strength should still be preserved
@@ -902,7 +908,7 @@ describe('RelateCommand Component - Notes Field', () => {
 			await fireEvent.click(targetButton!);
 
 			// Fill in relationship
-			const relationshipInput = screen.getByLabelText(/relationship/i) as HTMLInputElement;
+			const relationshipInput = screen.getByLabelText(/^relationship$/i) as HTMLInputElement;
 			await fireEvent.input(relationshipInput, { target: { value: 'allied_with' } });
 
 			// Set strength
@@ -922,7 +928,8 @@ describe('RelateCommand Component - Notes Field', () => {
 					true, // bidirectional
 					'', // notes
 					'strong', // strength
-					expect.any(Object) // metadata
+					expect.any(Object), // metadata
+					undefined // reverseRelationship
 				);
 			});
 		});
@@ -945,7 +952,7 @@ describe('RelateCommand Component - Notes Field', () => {
 			await fireEvent.click(targetButton!);
 
 			// Fill in relationship
-			const relationshipInput = screen.getByLabelText(/relationship/i) as HTMLInputElement;
+			const relationshipInput = screen.getByLabelText(/^relationship$/i) as HTMLInputElement;
 			await fireEvent.input(relationshipInput, { target: { value: 'knows' } });
 
 			// Leave strength as "none" (default)
@@ -965,7 +972,8 @@ describe('RelateCommand Component - Notes Field', () => {
 					true,
 					'',
 					undefined, // strength should be undefined for "none"
-					expect.any(Object)
+					expect.any(Object),
+					undefined // reverseRelationship
 				);
 			});
 		});
@@ -995,7 +1003,7 @@ describe('RelateCommand Component - Notes Field', () => {
 				await fireEvent.click(targetButton!);
 
 				// Fill in relationship
-				const relationshipInput = screen.getByLabelText(/relationship/i) as HTMLInputElement;
+				const relationshipInput = screen.getByLabelText(/^relationship$/i) as HTMLInputElement;
 				await fireEvent.input(relationshipInput, { target: { value: 'knows' } });
 
 				// Set strength
@@ -1015,7 +1023,8 @@ describe('RelateCommand Component - Notes Field', () => {
 						expect.any(Boolean),
 						expect.any(String),
 						strength, // Should match the selected strength
-						expect.any(Object)
+						expect.any(Object),
+						undefined // reverseRelationship
 					);
 				});
 
@@ -1135,7 +1144,7 @@ describe('RelateCommand Component - Notes Field', () => {
 			await fireEvent.input(tagsInput, { target: { value: testTags } });
 
 			// Change relationship field
-			const relationshipInput = screen.getByLabelText(/relationship/i) as HTMLInputElement;
+			const relationshipInput = screen.getByLabelText(/^relationship$/i) as HTMLInputElement;
 			await fireEvent.input(relationshipInput, { target: { value: 'member_of' } });
 
 			// Tags should still be preserved
@@ -1209,7 +1218,7 @@ describe('RelateCommand Component - Notes Field', () => {
 			await fireEvent.click(targetButton!);
 
 			// Fill in fields
-			const relationshipInput = screen.getByLabelText(/relationship/i) as HTMLInputElement;
+			const relationshipInput = screen.getByLabelText(/^relationship$/i) as HTMLInputElement;
 			await fireEvent.input(relationshipInput, { target: { value: 'member_of' } });
 
 			const tagsInput = screen.getByLabelText(/tags/i) as HTMLInputElement;
@@ -1230,7 +1239,8 @@ describe('RelateCommand Component - Notes Field', () => {
 					undefined,
 					expect.objectContaining({
 						tags: ['important', 'quest', 'fellowship']
-					})
+					}),
+					undefined // reverseRelationship
 				);
 			});
 		});
@@ -1253,7 +1263,7 @@ describe('RelateCommand Component - Notes Field', () => {
 			await fireEvent.click(targetButton!);
 
 			// Fill in fields
-			const relationshipInput = screen.getByLabelText(/relationship/i) as HTMLInputElement;
+			const relationshipInput = screen.getByLabelText(/^relationship$/i) as HTMLInputElement;
 			await fireEvent.input(relationshipInput, { target: { value: 'member_of' } });
 
 			// Add tags with extra spaces
@@ -1275,7 +1285,8 @@ describe('RelateCommand Component - Notes Field', () => {
 					undefined,
 					expect.objectContaining({
 						tags: ['tag1', 'tag2', 'tag3']
-					})
+					}),
+					undefined // reverseRelationship
 				);
 			});
 		});
@@ -1298,7 +1309,7 @@ describe('RelateCommand Component - Notes Field', () => {
 			await fireEvent.click(targetButton!);
 
 			// Fill in relationship but leave tags empty
-			const relationshipInput = screen.getByLabelText(/relationship/i) as HTMLInputElement;
+			const relationshipInput = screen.getByLabelText(/^relationship$/i) as HTMLInputElement;
 			await fireEvent.input(relationshipInput, { target: { value: 'member_of' } });
 
 			// Submit
@@ -1332,7 +1343,7 @@ describe('RelateCommand Component - Notes Field', () => {
 			await fireEvent.click(targetButton!);
 
 			// Fill in fields
-			const relationshipInput = screen.getByLabelText(/relationship/i) as HTMLInputElement;
+			const relationshipInput = screen.getByLabelText(/^relationship$/i) as HTMLInputElement;
 			await fireEvent.input(relationshipInput, { target: { value: 'member_of' } });
 
 			const tagsInput = screen.getByLabelText(/tags/i) as HTMLInputElement;
@@ -1353,7 +1364,8 @@ describe('RelateCommand Component - Notes Field', () => {
 					undefined,
 					expect.objectContaining({
 						tags: ['important']
-					})
+					}),
+					undefined // reverseRelationship
 				);
 			});
 		});
@@ -1492,7 +1504,7 @@ describe('RelateCommand Component - Notes Field', () => {
 			await fireEvent.input(tensionSlider, { target: { value: '60' } });
 
 			// Change relationship field
-			const relationshipInput = screen.getByLabelText(/relationship/i) as HTMLInputElement;
+			const relationshipInput = screen.getByLabelText(/^relationship$/i) as HTMLInputElement;
 			await fireEvent.input(relationshipInput, { target: { value: 'enemy_of' } });
 
 			// Tension should still be preserved
@@ -1566,7 +1578,7 @@ describe('RelateCommand Component - Notes Field', () => {
 			await fireEvent.click(targetButton!);
 
 			// Fill in fields
-			const relationshipInput = screen.getByLabelText(/relationship/i) as HTMLInputElement;
+			const relationshipInput = screen.getByLabelText(/^relationship$/i) as HTMLInputElement;
 			await fireEvent.input(relationshipInput, { target: { value: 'rival_of' } });
 
 			const tensionSlider = screen.getByLabelText(/tension/i) as HTMLInputElement;
@@ -1587,7 +1599,8 @@ describe('RelateCommand Component - Notes Field', () => {
 					undefined,
 					expect.objectContaining({
 						tension: 85
-					})
+					}),
+					undefined // reverseRelationship
 				);
 			});
 		});
@@ -1610,7 +1623,7 @@ describe('RelateCommand Component - Notes Field', () => {
 			await fireEvent.click(targetButton!);
 
 			// Fill in relationship
-			const relationshipInput = screen.getByLabelText(/relationship/i) as HTMLInputElement;
+			const relationshipInput = screen.getByLabelText(/^relationship$/i) as HTMLInputElement;
 			await fireEvent.input(relationshipInput, { target: { value: 'knows' } });
 
 			// Leave tension at 0 (default)
@@ -1648,7 +1661,7 @@ describe('RelateCommand Component - Notes Field', () => {
 			await fireEvent.click(targetButton!);
 
 			// Fill in fields
-			let relationshipInput = screen.getByLabelText(/relationship/i) as HTMLInputElement;
+			let relationshipInput = screen.getByLabelText(/^relationship$/i) as HTMLInputElement;
 			await fireEvent.input(relationshipInput, { target: { value: 'enemy_of' } });
 
 			let tensionSlider = screen.getByLabelText(/tension/i) as HTMLInputElement;
@@ -1669,7 +1682,8 @@ describe('RelateCommand Component - Notes Field', () => {
 					undefined,
 					expect.objectContaining({
 						tension: 100
-					})
+					}),
+					undefined // reverseRelationship
 				);
 			});
 
@@ -1697,7 +1711,7 @@ describe('RelateCommand Component - Notes Field', () => {
 			await fireEvent.click(targetButton!);
 
 			// Fill in all fields
-			const relationshipInput = screen.getByLabelText(/relationship/i) as HTMLInputElement;
+			const relationshipInput = screen.getByLabelText(/^relationship$/i) as HTMLInputElement;
 			await fireEvent.input(relationshipInput, { target: { value: 'complex_relationship' } });
 
 			const tagsInput = screen.getByLabelText(/tags/i) as HTMLInputElement;
@@ -1722,7 +1736,8 @@ describe('RelateCommand Component - Notes Field', () => {
 					expect.objectContaining({
 						tags: ['political', 'personal'],
 						tension: 65
-					})
+					}),
+					undefined // reverseRelationship
 				);
 			});
 		});
@@ -1745,7 +1760,7 @@ describe('RelateCommand Component - Notes Field', () => {
 			await fireEvent.click(targetButton!);
 
 			// Fill in ALL fields
-			const relationshipInput = screen.getByLabelText(/relationship/i) as HTMLInputElement;
+			const relationshipInput = screen.getByLabelText(/^relationship$/i) as HTMLInputElement;
 			await fireEvent.input(relationshipInput, { target: { value: 'allied_with' } });
 
 			const notesTextarea = screen.getByLabelText(/notes/i) as HTMLTextAreaElement;
@@ -1780,7 +1795,8 @@ describe('RelateCommand Component - Notes Field', () => {
 					expect.objectContaining({
 						tags: ['quest', 'fellowship', 'war'],
 						tension: 30
-					})
+					}),
+					undefined // reverseRelationship
 				);
 			});
 		});
@@ -1805,7 +1821,7 @@ describe('RelateCommand Component - Notes Field', () => {
 			await fireEvent.click(targetButton!);
 
 			// Only fill in relationship, leave everything else empty/default
-			const relationshipInput = screen.getByLabelText(/relationship/i) as HTMLInputElement;
+			const relationshipInput = screen.getByLabelText(/^relationship$/i) as HTMLInputElement;
 			await fireEvent.input(relationshipInput, { target: { value: 'knows' } });
 
 			// Submit
@@ -1822,7 +1838,8 @@ describe('RelateCommand Component - Notes Field', () => {
 					true, // bidirectional default
 					'', // empty notes
 					undefined, // no strength
-					expect.any(Object) // metadata may be empty
+					expect.any(Object), // metadata may be empty
+					undefined // reverseRelationship
 				);
 			});
 		});
@@ -1845,7 +1862,7 @@ describe('RelateCommand Component - Notes Field', () => {
 			await fireEvent.click(targetButton!);
 
 			// Fill in only relationship
-			const relationshipInput = screen.getByLabelText(/relationship/i) as HTMLInputElement;
+			const relationshipInput = screen.getByLabelText(/^relationship$/i) as HTMLInputElement;
 			await fireEvent.input(relationshipInput, { target: { value: 'member_of' } });
 
 			// Verify submit button is enabled
@@ -1878,7 +1895,7 @@ describe('RelateCommand Component - Notes Field', () => {
 			await fireEvent.click(targetButton!);
 
 			// Fill in relationship and notes (original fields)
-			const relationshipInput = screen.getByLabelText(/relationship/i) as HTMLInputElement;
+			const relationshipInput = screen.getByLabelText(/^relationship$/i) as HTMLInputElement;
 			await fireEvent.input(relationshipInput, { target: { value: 'friend_of' } });
 
 			const notesTextarea = screen.getByLabelText(/notes/i) as HTMLTextAreaElement;
@@ -1901,7 +1918,706 @@ describe('RelateCommand Component - Notes Field', () => {
 					false, // bidirectional unchecked
 					'Old friends',
 					undefined, // no strength
-					expect.any(Object) // metadata
+					expect.any(Object), // metadata
+					undefined // reverseRelationship
+				);
+			});
+		});
+	});
+
+	describe('Asymmetric Relationship - UI Presence', () => {
+		it('should NOT display asymmetric checkbox when bidirectional is unchecked', async () => {
+			render(RelateCommand, {
+				props: {
+					sourceEntity,
+					open: true
+				}
+			});
+
+			// Select entity
+			const searchResults = screen.getAllByRole('button');
+			const targetButton = searchResults.find((btn) =>
+				btn.textContent?.includes('Fellowship of the Ring')
+			);
+			await fireEvent.click(targetButton!);
+
+			// Uncheck bidirectional
+			const bidirectionalCheckbox = screen.getByLabelText(/bidirectional/i) as HTMLInputElement;
+			await fireEvent.click(bidirectionalCheckbox);
+			expect(bidirectionalCheckbox.checked).toBe(false);
+
+			// Asymmetric checkbox should not be visible
+			const asymmetricCheckbox = screen.queryByLabelText(
+				/use different relationship for reverse link/i
+			);
+			expect(asymmetricCheckbox).not.toBeInTheDocument();
+		});
+
+		it('should display asymmetric checkbox when bidirectional is checked', async () => {
+			render(RelateCommand, {
+				props: {
+					sourceEntity,
+					open: true
+				}
+			});
+
+			// Select entity
+			const searchResults = screen.getAllByRole('button');
+			const targetButton = searchResults.find((btn) =>
+				btn.textContent?.includes('Fellowship of the Ring')
+			);
+			await fireEvent.click(targetButton!);
+
+			// Bidirectional is checked by default
+			const bidirectionalCheckbox = screen.getByLabelText(/bidirectional/i) as HTMLInputElement;
+			expect(bidirectionalCheckbox.checked).toBe(true);
+
+			// Asymmetric checkbox should be visible
+			const asymmetricCheckbox = screen.getByLabelText(
+				/use different relationship for reverse link/i
+			);
+			expect(asymmetricCheckbox).toBeInTheDocument();
+			expect(asymmetricCheckbox.tagName).toBe('INPUT');
+			expect(asymmetricCheckbox).toHaveAttribute('type', 'checkbox');
+		});
+
+		it('should NOT display reverse relationship input when asymmetric checkbox is unchecked', async () => {
+			render(RelateCommand, {
+				props: {
+					sourceEntity,
+					open: true
+				}
+			});
+
+			// Select entity
+			const searchResults = screen.getAllByRole('button');
+			const targetButton = searchResults.find((btn) =>
+				btn.textContent?.includes('Fellowship of the Ring')
+			);
+			await fireEvent.click(targetButton!);
+
+			// Bidirectional is checked, asymmetric should be unchecked by default
+			const bidirectionalCheckbox = screen.getByLabelText(/bidirectional/i) as HTMLInputElement;
+			expect(bidirectionalCheckbox.checked).toBe(true);
+
+			const asymmetricCheckbox = screen.getByLabelText(
+				/use different relationship for reverse link/i
+			) as HTMLInputElement;
+			expect(asymmetricCheckbox.checked).toBe(false);
+
+			// Reverse relationship input should not be visible
+			const reverseRelationshipInput = screen.queryByLabelText(/reverse relationship/i);
+			expect(reverseRelationshipInput).not.toBeInTheDocument();
+		});
+
+		it('should display reverse relationship input when asymmetric checkbox is checked', async () => {
+			render(RelateCommand, {
+				props: {
+					sourceEntity,
+					open: true
+				}
+			});
+
+			// Select entity
+			const searchResults = screen.getAllByRole('button');
+			const targetButton = searchResults.find((btn) =>
+				btn.textContent?.includes('Fellowship of the Ring')
+			);
+			await fireEvent.click(targetButton!);
+
+			// Check asymmetric checkbox
+			const asymmetricCheckbox = screen.getByLabelText(
+				/use different relationship for reverse link/i
+			) as HTMLInputElement;
+			await fireEvent.click(asymmetricCheckbox);
+			expect(asymmetricCheckbox.checked).toBe(true);
+
+			// Reverse relationship input should now be visible
+			const reverseRelationshipInput = screen.getByLabelText(/reverse relationship/i);
+			expect(reverseRelationshipInput).toBeInTheDocument();
+			expect(reverseRelationshipInput.tagName).toBe('INPUT');
+			expect(reverseRelationshipInput).toHaveAttribute('type', 'text');
+		});
+
+		it('should have appropriate placeholder text for reverse relationship input', async () => {
+			render(RelateCommand, {
+				props: {
+					sourceEntity,
+					open: true
+				}
+			});
+
+			// Select entity
+			const searchResults = screen.getAllByRole('button');
+			const targetButton = searchResults.find((btn) =>
+				btn.textContent?.includes('Fellowship of the Ring')
+			);
+			await fireEvent.click(targetButton!);
+
+			// Check asymmetric checkbox
+			const asymmetricCheckbox = screen.getByLabelText(
+				/use different relationship for reverse link/i
+			) as HTMLInputElement;
+			await fireEvent.click(asymmetricCheckbox);
+
+			const reverseRelationshipInput = screen.getByLabelText(
+				/reverse relationship/i
+			) as HTMLInputElement;
+			expect(reverseRelationshipInput).toHaveAttribute(
+				'placeholder',
+				expect.stringMatching(/reverse|back|opposite/i)
+			);
+		});
+
+		it('should hide reverse relationship input when asymmetric checkbox is unchecked', async () => {
+			render(RelateCommand, {
+				props: {
+					sourceEntity,
+					open: true
+				}
+			});
+
+			// Select entity
+			const searchResults = screen.getAllByRole('button');
+			const targetButton = searchResults.find((btn) =>
+				btn.textContent?.includes('Fellowship of the Ring')
+			);
+			await fireEvent.click(targetButton!);
+
+			// Check asymmetric checkbox
+			const asymmetricCheckbox = screen.getByLabelText(
+				/use different relationship for reverse link/i
+			) as HTMLInputElement;
+			await fireEvent.click(asymmetricCheckbox);
+
+			// Verify input is visible
+			let reverseRelationshipInput = screen.getByLabelText(/reverse relationship/i);
+			expect(reverseRelationshipInput).toBeInTheDocument();
+
+			// Uncheck asymmetric checkbox
+			await fireEvent.click(asymmetricCheckbox);
+			expect(asymmetricCheckbox.checked).toBe(false);
+
+			// Input should be hidden
+			reverseRelationshipInput = screen.queryByLabelText(/reverse relationship/i);
+			expect(reverseRelationshipInput).not.toBeInTheDocument();
+		});
+
+		it('should hide asymmetric controls when bidirectional is unchecked', async () => {
+			render(RelateCommand, {
+				props: {
+					sourceEntity,
+					open: true
+				}
+			});
+
+			// Select entity
+			const searchResults = screen.getAllByRole('button');
+			const targetButton = searchResults.find((btn) =>
+				btn.textContent?.includes('Fellowship of the Ring')
+			);
+			await fireEvent.click(targetButton!);
+
+			// Check asymmetric checkbox and fill in reverse relationship
+			const asymmetricCheckbox = screen.getByLabelText(
+				/use different relationship for reverse link/i
+			) as HTMLInputElement;
+			await fireEvent.click(asymmetricCheckbox);
+
+			const reverseRelationshipInput = screen.getByLabelText(/reverse relationship/i);
+			expect(reverseRelationshipInput).toBeInTheDocument();
+
+			// Uncheck bidirectional
+			const bidirectionalCheckbox = screen.getByLabelText(/bidirectional/i) as HTMLInputElement;
+			await fireEvent.click(bidirectionalCheckbox);
+			expect(bidirectionalCheckbox.checked).toBe(false);
+
+			// Both asymmetric controls should be hidden
+			expect(screen.queryByLabelText(/use different relationship for reverse link/i)).not.toBeInTheDocument();
+			expect(screen.queryByLabelText(/reverse relationship/i)).not.toBeInTheDocument();
+		});
+	});
+
+	describe('Asymmetric Relationship - User Interaction', () => {
+		it('should allow typing in reverse relationship input', async () => {
+			render(RelateCommand, {
+				props: {
+					sourceEntity,
+					open: true
+				}
+			});
+
+			// Select entity
+			const searchResults = screen.getAllByRole('button');
+			const targetButton = searchResults.find((btn) =>
+				btn.textContent?.includes('Fellowship of the Ring')
+			);
+			await fireEvent.click(targetButton!);
+
+			// Check asymmetric checkbox
+			const asymmetricCheckbox = screen.getByLabelText(
+				/use different relationship for reverse link/i
+			) as HTMLInputElement;
+			await fireEvent.click(asymmetricCheckbox);
+
+			// Type in reverse relationship
+			const reverseRelationshipInput = screen.getByLabelText(
+				/reverse relationship/i
+			) as HTMLInputElement;
+			const testReverseRel = 'has_member';
+			await fireEvent.input(reverseRelationshipInput, { target: { value: testReverseRel } });
+
+			expect(reverseRelationshipInput.value).toBe(testReverseRel);
+		});
+
+		it('should preserve reverse relationship when other fields are changed', async () => {
+			render(RelateCommand, {
+				props: {
+					sourceEntity,
+					open: true
+				}
+			});
+
+			// Select entity
+			const searchResults = screen.getAllByRole('button');
+			const targetButton = searchResults.find((btn) =>
+				btn.textContent?.includes('Fellowship of the Ring')
+			);
+			await fireEvent.click(targetButton!);
+
+			// Check asymmetric checkbox and fill in reverse relationship
+			const asymmetricCheckbox = screen.getByLabelText(
+				/use different relationship for reverse link/i
+			) as HTMLInputElement;
+			await fireEvent.click(asymmetricCheckbox);
+
+			const reverseRelationshipInput = screen.getByLabelText(
+				/reverse relationship/i
+			) as HTMLInputElement;
+			const testReverseRel = 'has_member';
+			await fireEvent.input(reverseRelationshipInput, { target: { value: testReverseRel } });
+
+			// Change other fields
+			const relationshipInput = screen.getByLabelText(/^relationship$/i) as HTMLInputElement;
+			await fireEvent.input(relationshipInput, { target: { value: 'member_of' } });
+
+			const notesTextarea = screen.getByLabelText(/notes/i) as HTMLTextAreaElement;
+			await fireEvent.input(notesTextarea, { target: { value: 'Some notes' } });
+
+			// Reverse relationship should still be preserved
+			expect(reverseRelationshipInput.value).toBe(testReverseRel);
+		});
+
+		it('should clear reverse relationship when asymmetric checkbox is unchecked', async () => {
+			render(RelateCommand, {
+				props: {
+					sourceEntity,
+					open: true
+				}
+			});
+
+			// Select entity
+			const searchResults = screen.getAllByRole('button');
+			const targetButton = searchResults.find((btn) =>
+				btn.textContent?.includes('Fellowship of the Ring')
+			);
+			await fireEvent.click(targetButton!);
+
+			// Check asymmetric checkbox and fill in reverse relationship
+			const asymmetricCheckbox = screen.getByLabelText(
+				/use different relationship for reverse link/i
+			) as HTMLInputElement;
+			await fireEvent.click(asymmetricCheckbox);
+
+			const reverseRelationshipInput = screen.getByLabelText(
+				/reverse relationship/i
+			) as HTMLInputElement;
+			await fireEvent.input(reverseRelationshipInput, { target: { value: 'has_member' } });
+
+			// Uncheck asymmetric - this should clear the value
+			await fireEvent.click(asymmetricCheckbox);
+
+			// Re-check to verify it was cleared
+			await fireEvent.click(asymmetricCheckbox);
+			const newReverseRelationshipInput = screen.getByLabelText(
+				/reverse relationship/i
+			) as HTMLInputElement;
+			expect(newReverseRelationshipInput.value).toBe('');
+		});
+
+		it('should clear reverseRelationship when dialog is closed', async () => {
+			const { unmount } = render(RelateCommand, {
+				props: {
+					sourceEntity,
+					open: true
+				}
+			});
+
+			// Select entity and fill in reverse relationship
+			const searchResults = screen.getAllByRole('button');
+			const targetButton = searchResults.find((btn) =>
+				btn.textContent?.includes('Fellowship of the Ring')
+			);
+			await fireEvent.click(targetButton!);
+
+			const asymmetricCheckbox = screen.getByLabelText(
+				/use different relationship for reverse link/i
+			) as HTMLInputElement;
+			await fireEvent.click(asymmetricCheckbox);
+
+			const reverseRelationshipInput = screen.getByLabelText(
+				/reverse relationship/i
+			) as HTMLInputElement;
+			await fireEvent.input(reverseRelationshipInput, { target: { value: 'has_member' } });
+
+			// Close the dialog
+			const cancelButton = screen.getByRole('button', { name: /cancel/i });
+			await fireEvent.click(cancelButton);
+
+			// Clean up and reopen - reverse relationship should be cleared
+			unmount();
+
+			render(RelateCommand, {
+				props: {
+					sourceEntity,
+					open: true
+				}
+			});
+
+			await waitFor(() => {
+				// Select entity again
+				const newSearchResults = screen.getAllByRole('button');
+				const newTargetButton = newSearchResults.find((btn) =>
+					btn.textContent?.includes('Fellowship of the Ring')
+				);
+				fireEvent.click(newTargetButton!);
+			});
+
+			await waitFor(() => {
+				// Check asymmetric checkbox to show the input
+				const newAsymmetricCheckbox = screen.getByLabelText(
+					/use different relationship for reverse link/i
+				) as HTMLInputElement;
+				fireEvent.click(newAsymmetricCheckbox);
+			});
+
+			await waitFor(() => {
+				const newReverseRelationshipInput = screen.getByLabelText(
+					/reverse relationship/i
+				) as HTMLInputElement;
+				expect(newReverseRelationshipInput.value).toBe('');
+			});
+		});
+	});
+
+	describe('Asymmetric Relationship - Data Submission', () => {
+		it('should pass reverseRelationship to addLink when provided', async () => {
+			mockEntitiesStore.addLink = vi.fn().mockResolvedValue(undefined);
+
+			render(RelateCommand, {
+				props: {
+					sourceEntity,
+					open: true
+				}
+			});
+
+			// Select entity
+			const searchResults = screen.getAllByRole('button');
+			const targetButton = searchResults.find((btn) =>
+				btn.textContent?.includes('Fellowship of the Ring')
+			);
+			await fireEvent.click(targetButton!);
+
+			// Fill in relationship
+			const relationshipInput = screen.getByLabelText(/^relationship$/i) as HTMLInputElement;
+			await fireEvent.input(relationshipInput, { target: { value: 'member_of' } });
+
+			// Check asymmetric checkbox and fill in reverse relationship
+			const asymmetricCheckbox = screen.getByLabelText(
+				/use different relationship for reverse link/i
+			) as HTMLInputElement;
+			await fireEvent.click(asymmetricCheckbox);
+
+			const reverseRelationshipInput = screen.getByLabelText(
+				/reverse relationship/i
+			) as HTMLInputElement;
+			await fireEvent.input(reverseRelationshipInput, { target: { value: 'has_member' } });
+
+			// Submit
+			const submitButton = screen.getByRole('button', { name: /create link/i });
+			await fireEvent.click(submitButton);
+
+			// Verify addLink was called with reverseRelationship as 8th parameter
+			await waitFor(() => {
+				expect(mockEntitiesStore.addLink).toHaveBeenCalledWith(
+					sourceEntity.id,
+					'target-1',
+					'member_of',
+					true, // bidirectional
+					'', // notes
+					undefined, // strength
+					expect.any(Object), // metadata
+					'has_member' // reverseRelationship
+				);
+			});
+		});
+
+		it('should pass undefined for reverseRelationship when asymmetric option is unchecked', async () => {
+			mockEntitiesStore.addLink = vi.fn().mockResolvedValue(undefined);
+
+			render(RelateCommand, {
+				props: {
+					sourceEntity,
+					open: true
+				}
+			});
+
+			// Select entity
+			const searchResults = screen.getAllByRole('button');
+			const targetButton = searchResults.find((btn) =>
+				btn.textContent?.includes('Fellowship of the Ring')
+			);
+			await fireEvent.click(targetButton!);
+
+			// Fill in relationship
+			const relationshipInput = screen.getByLabelText(/^relationship$/i) as HTMLInputElement;
+			await fireEvent.input(relationshipInput, { target: { value: 'member_of' } });
+
+			// Ensure asymmetric checkbox is unchecked (default)
+			const asymmetricCheckbox = screen.getByLabelText(
+				/use different relationship for reverse link/i
+			) as HTMLInputElement;
+			expect(asymmetricCheckbox.checked).toBe(false);
+
+			// Submit
+			const submitButton = screen.getByRole('button', { name: /create link/i });
+			await fireEvent.click(submitButton);
+
+			// Verify addLink was called with undefined reverseRelationship
+			await waitFor(() => {
+				expect(mockEntitiesStore.addLink).toHaveBeenCalledWith(
+					sourceEntity.id,
+					'target-1',
+					'member_of',
+					true, // bidirectional
+					'', // notes
+					undefined, // strength
+					expect.any(Object), // metadata
+					undefined // reverseRelationship should be undefined
+				);
+			});
+		});
+
+		it('should pass undefined for reverseRelationship when bidirectional is unchecked', async () => {
+			mockEntitiesStore.addLink = vi.fn().mockResolvedValue(undefined);
+
+			render(RelateCommand, {
+				props: {
+					sourceEntity,
+					open: true
+				}
+			});
+
+			// Select entity
+			const searchResults = screen.getAllByRole('button');
+			const targetButton = searchResults.find((btn) =>
+				btn.textContent?.includes('Fellowship of the Ring')
+			);
+			await fireEvent.click(targetButton!);
+
+			// Fill in relationship
+			const relationshipInput = screen.getByLabelText(/^relationship$/i) as HTMLInputElement;
+			await fireEvent.input(relationshipInput, { target: { value: 'knows' } });
+
+			// Uncheck bidirectional
+			const bidirectionalCheckbox = screen.getByLabelText(/bidirectional/i) as HTMLInputElement;
+			await fireEvent.click(bidirectionalCheckbox);
+			expect(bidirectionalCheckbox.checked).toBe(false);
+
+			// Submit
+			const submitButton = screen.getByRole('button', { name: /create link/i });
+			await fireEvent.click(submitButton);
+
+			// Verify addLink was called with undefined reverseRelationship
+			await waitFor(() => {
+				expect(mockEntitiesStore.addLink).toHaveBeenCalledWith(
+					sourceEntity.id,
+					'target-1',
+					'knows',
+					false, // bidirectional
+					'', // notes
+					undefined, // strength
+					expect.any(Object), // metadata
+					undefined // reverseRelationship should be undefined
+				);
+			});
+		});
+
+		it('should trim whitespace from reverseRelationship before submission', async () => {
+			mockEntitiesStore.addLink = vi.fn().mockResolvedValue(undefined);
+
+			render(RelateCommand, {
+				props: {
+					sourceEntity,
+					open: true
+				}
+			});
+
+			// Select entity
+			const searchResults = screen.getAllByRole('button');
+			const targetButton = searchResults.find((btn) =>
+				btn.textContent?.includes('Fellowship of the Ring')
+			);
+			await fireEvent.click(targetButton!);
+
+			// Fill in relationship
+			const relationshipInput = screen.getByLabelText(/^relationship$/i) as HTMLInputElement;
+			await fireEvent.input(relationshipInput, { target: { value: 'member_of' } });
+
+			// Check asymmetric checkbox and fill in reverse relationship with whitespace
+			const asymmetricCheckbox = screen.getByLabelText(
+				/use different relationship for reverse link/i
+			) as HTMLInputElement;
+			await fireEvent.click(asymmetricCheckbox);
+
+			const reverseRelationshipInput = screen.getByLabelText(
+				/reverse relationship/i
+			) as HTMLInputElement;
+			await fireEvent.input(reverseRelationshipInput, {
+				target: { value: '  has_member  ' }
+			});
+
+			// Submit
+			const submitButton = screen.getByRole('button', { name: /create link/i });
+			await fireEvent.click(submitButton);
+
+			// Verify addLink was called with trimmed reverseRelationship
+			await waitFor(() => {
+				expect(mockEntitiesStore.addLink).toHaveBeenCalledWith(
+					sourceEntity.id,
+					'target-1',
+					'member_of',
+					true, // bidirectional
+					'', // notes
+					undefined, // strength
+					expect.any(Object), // metadata
+					'has_member' // reverseRelationship should be trimmed
+				);
+			});
+		});
+
+		it('should pass undefined for reverseRelationship when input is empty string', async () => {
+			mockEntitiesStore.addLink = vi.fn().mockResolvedValue(undefined);
+
+			render(RelateCommand, {
+				props: {
+					sourceEntity,
+					open: true
+				}
+			});
+
+			// Select entity
+			const searchResults = screen.getAllByRole('button');
+			const targetButton = searchResults.find((btn) =>
+				btn.textContent?.includes('Fellowship of the Ring')
+			);
+			await fireEvent.click(targetButton!);
+
+			// Fill in relationship
+			const relationshipInput = screen.getByLabelText(/^relationship$/i) as HTMLInputElement;
+			await fireEvent.input(relationshipInput, { target: { value: 'member_of' } });
+
+			// Check asymmetric checkbox but leave reverse relationship empty
+			const asymmetricCheckbox = screen.getByLabelText(
+				/use different relationship for reverse link/i
+			) as HTMLInputElement;
+			await fireEvent.click(asymmetricCheckbox);
+
+			// Submit
+			const submitButton = screen.getByRole('button', { name: /create link/i });
+			await fireEvent.click(submitButton);
+
+			// Verify addLink was called with undefined reverseRelationship
+			await waitFor(() => {
+				expect(mockEntitiesStore.addLink).toHaveBeenCalledWith(
+					sourceEntity.id,
+					'target-1',
+					'member_of',
+					true, // bidirectional
+					'', // notes
+					undefined, // strength
+					expect.any(Object), // metadata
+					undefined // empty reverseRelationship should be undefined
+				);
+			});
+		});
+
+		it('should handle complex scenario with all fields including reverseRelationship', async () => {
+			mockEntitiesStore.addLink = vi.fn().mockResolvedValue(undefined);
+
+			render(RelateCommand, {
+				props: {
+					sourceEntity,
+					open: true
+				}
+			});
+
+			// Select entity
+			const searchResults = screen.getAllByRole('button');
+			const targetButton = searchResults.find((btn) =>
+				btn.textContent?.includes('Fellowship of the Ring')
+			);
+			await fireEvent.click(targetButton!);
+
+			// Fill in ALL fields
+			const relationshipInput = screen.getByLabelText(/^relationship$/i) as HTMLInputElement;
+			await fireEvent.input(relationshipInput, { target: { value: 'member_of' } });
+
+			const notesTextarea = screen.getByLabelText(/notes/i) as HTMLTextAreaElement;
+			await fireEvent.input(notesTextarea, { target: { value: 'Active member since 3018' } });
+
+			const strengthSelect = screen.getByLabelText(/strength/i) as HTMLSelectElement;
+			await fireEvent.change(strengthSelect, { target: { value: 'strong' } });
+
+			const tagsInput = screen.getByLabelText(/tags/i) as HTMLInputElement;
+			await fireEvent.input(tagsInput, { target: { value: 'fellowship, quest' } });
+
+			const tensionSlider = screen.getByLabelText(/tension/i) as HTMLInputElement;
+			await fireEvent.input(tensionSlider, { target: { value: '20' } });
+
+			// Check asymmetric checkbox and fill in reverse relationship
+			const asymmetricCheckbox = screen.getByLabelText(
+				/use different relationship for reverse link/i
+			) as HTMLInputElement;
+			await fireEvent.click(asymmetricCheckbox);
+
+			const reverseRelationshipInput = screen.getByLabelText(
+				/reverse relationship/i
+			) as HTMLInputElement;
+			await fireEvent.input(reverseRelationshipInput, { target: { value: 'has_member' } });
+
+			// Ensure bidirectional is checked
+			const bidirectionalCheckbox = screen.getByLabelText(/bidirectional/i) as HTMLInputElement;
+			expect(bidirectionalCheckbox.checked).toBe(true);
+
+			// Submit
+			const submitButton = screen.getByRole('button', { name: /create link/i });
+			await fireEvent.click(submitButton);
+
+			// Verify all parameters passed correctly including reverseRelationship
+			await waitFor(() => {
+				expect(mockEntitiesStore.addLink).toHaveBeenCalledWith(
+					sourceEntity.id,
+					'target-1',
+					'member_of',
+					true, // bidirectional
+					'Active member since 3018', // notes
+					'strong', // strength
+					expect.objectContaining({
+						tags: ['fellowship', 'quest'],
+						tension: 20
+					}),
+					'has_member' // reverseRelationship
 				);
 			});
 		});

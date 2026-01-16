@@ -33,6 +33,7 @@ export interface EntityLink {
 	targetType: EntityType;
 	relationship: string; // "member_of", "located_at", "knows", custom...
 	bidirectional: boolean;
+	reverseRelationship?: string; // For asymmetric bidirectional links (e.g., patron_of/client_of)
 	notes?: string;
 	strength?: 'strong' | 'moderate' | 'weak'; // Relationship strength
 	createdAt?: Date; // When link was created

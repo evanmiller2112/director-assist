@@ -151,7 +151,9 @@ export const entityRepository = {
 		targetId: string,
 		relationship: string,
 		bidirectional: boolean = false,
-		notes?: string
+		notes?: string,
+		strength?: 'strong' | 'moderate' | 'weak',
+		metadata?: { tags?: string[]; tension?: number; [key: string]: unknown }
 	): Promise<void> {
 		await ensureDbReady();
 
@@ -169,14 +171,21 @@ export const entityRepository = {
 				throw new Error('Link already exists');
 			}
 
+			const now = new Date();
+
 			// Create the forward link
 			const forwardLink: BaseEntity['links'][0] = {
 				id: nanoid(),
+				sourceId: sourceId,
 				targetId,
 				targetType: targetEntity.type,
 				relationship,
 				bidirectional,
-				notes: notes || undefined
+				notes: notes || undefined,
+				strength,
+				createdAt: now,
+				updatedAt: now,
+				metadata
 			};
 
 			// Parse and stringify to avoid Proxy serialization errors
@@ -193,10 +202,15 @@ export const entityRepository = {
 			if (bidirectional) {
 				const reverseLink: BaseEntity['links'][0] = {
 					id: nanoid(),
+					sourceId: targetId,
 					targetId: sourceId,
 					targetType: sourceEntity.type,
 					relationship: this.getInverseRelationship(relationship),
-					bidirectional: true
+					bidirectional: true,
+					strength,
+					createdAt: now,
+					updatedAt: now,
+					metadata
 				};
 
 				const updatedTargetLinks = JSON.parse(
@@ -207,6 +221,98 @@ export const entityRepository = {
 					links: updatedTargetLinks,
 					updatedAt: new Date()
 				});
+			}
+		});
+	},
+
+	// Update an existing link
+	async updateLink(
+		sourceId: string,
+		linkId: string,
+		changes: {
+			notes?: string;
+			relationship?: string;
+			strength?: 'strong' | 'moderate' | 'weak';
+			metadata?: { tags?: string[]; tension?: number; [key: string]: unknown };
+		}
+	): Promise<void> {
+		await ensureDbReady();
+
+		await db.transaction('rw', db.entities, async () => {
+			const sourceEntity = await db.entities.get(sourceId);
+			if (!sourceEntity) {
+				throw new Error('Source entity not found');
+			}
+
+			// Find the link to update
+			const linkIndex = sourceEntity.links.findIndex((l) => l.id === linkId);
+			if (linkIndex === -1) {
+				throw new Error('Link not found');
+			}
+
+			const link = sourceEntity.links[linkIndex];
+			const now = new Date();
+
+			// Update the link with changes
+			const updatedLink = {
+				...link,
+				...changes,
+				updatedAt: now
+			};
+
+			// Update the source entity's links array
+			const updatedLinks = [...sourceEntity.links];
+			updatedLinks[linkIndex] = updatedLink;
+
+			const serializedLinks = JSON.parse(JSON.stringify(updatedLinks));
+
+			await db.entities.update(sourceId, {
+				links: serializedLinks,
+				updatedAt: new Date()
+			});
+
+			// If bidirectional and relationship/strength/metadata changed, update reverse link
+			if (link.bidirectional) {
+				const targetEntity = await db.entities.get(link.targetId);
+				if (targetEntity) {
+					// Find the reverse link
+					const reverseLinkIndex = targetEntity.links.findIndex((l) => l.targetId === sourceId);
+
+					if (reverseLinkIndex !== -1) {
+						const reverseLink = targetEntity.links[reverseLinkIndex];
+						const updatedReverseLink = {
+							...reverseLink,
+							updatedAt: now
+						};
+
+						// Update relationship if it changed (use inverse)
+						if (changes.relationship !== undefined) {
+							updatedReverseLink.relationship = this.getInverseRelationship(changes.relationship);
+						}
+
+						// Update strength if it changed
+						if (changes.strength !== undefined) {
+							updatedReverseLink.strength = changes.strength;
+						}
+
+						// Update metadata if it changed
+						if (changes.metadata !== undefined) {
+							updatedReverseLink.metadata = changes.metadata;
+						}
+
+						// Note: Do NOT update notes - notes are link-specific
+
+						const updatedTargetLinks = [...targetEntity.links];
+						updatedTargetLinks[reverseLinkIndex] = updatedReverseLink;
+
+						const serializedTargetLinks = JSON.parse(JSON.stringify(updatedTargetLinks));
+
+						await db.entities.update(link.targetId, {
+							links: serializedTargetLinks,
+							updatedAt: new Date()
+						});
+					}
+				}
 			}
 		});
 	},

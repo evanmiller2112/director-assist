@@ -653,6 +653,42 @@ export const BUILT_IN_ENTITY_TYPES: EntityTypeDefinition[] = [
 			}
 		],
 		defaultRelationships: ['plays']
+	},
+	{
+		type: 'campaign',
+		label: 'Campaign',
+		labelPlural: 'Campaigns',
+		icon: 'book-open',
+		color: 'campaign',
+		isBuiltIn: true,
+		fieldDefinitions: [
+			{
+				key: 'system',
+				label: 'Game System',
+				type: 'text',
+				required: false,
+				order: 1,
+				placeholder: 'e.g., D&D 5e, Pathfinder, Draw Steel'
+			},
+			{
+				key: 'setting',
+				label: 'Setting',
+				type: 'text',
+				required: false,
+				order: 2,
+				placeholder: 'e.g., Forgotten Realms, Homebrew World'
+			},
+			{
+				key: 'status',
+				label: 'Status',
+				type: 'select',
+				options: ['active', 'paused', 'completed'],
+				required: false,
+				defaultValue: 'active',
+				order: 3
+			}
+		],
+		defaultRelationships: ['contains', 'features']
 	}
 ];
 

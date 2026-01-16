@@ -18,6 +18,7 @@ export default {
 				timeline: { DEFAULT: '#64748b', dark: '#475569' },
 				rule: { DEFAULT: '#6366f1', dark: '#4f46e5' },
 				player: { DEFAULT: '#ec4899', dark: '#be185d' },
+				campaign: { DEFAULT: '#8b5cf6', dark: '#6d28d9' },
 
 				// Dashboard surfaces
 				surface: {

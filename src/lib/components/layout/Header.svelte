@@ -1,12 +1,38 @@
 <script lang="ts">
-	import { Search, MessageSquare, Settings, Menu } from 'lucide-svelte';
-	import { campaignStore, uiStore, entitiesStore } from '$lib/stores';
+	import { Search, MessageSquare, Settings, Menu, ChevronDown, Check } from 'lucide-svelte';
+	import { campaignStore, uiStore, entitiesStore, notificationStore } from '$lib/stores';
 
 	let searchInput = $state('');
+	let campaignDropdownOpen = $state(false);
 
 	function handleSearch(e: Event) {
 		const target = e.target as HTMLInputElement;
 		entitiesStore.setSearchQuery(target.value);
+	}
+
+	function toggleCampaignDropdown() {
+		campaignDropdownOpen = !campaignDropdownOpen;
+	}
+
+	function closeCampaignDropdown() {
+		campaignDropdownOpen = false;
+	}
+
+	async function switchCampaign(id: string) {
+		if (id === campaignStore.activeCampaignId) {
+			closeCampaignDropdown();
+			return;
+		}
+		try {
+			await campaignStore.setActiveCampaign(id);
+			notificationStore.success('Switched campaign');
+			// Reload page to refresh all data for new campaign
+			window.location.reload();
+		} catch (error) {
+			console.error('Failed to switch campaign:', error);
+			notificationStore.error('Failed to switch campaign');
+		}
+		closeCampaignDropdown();
 	}
 </script>
 
@@ -20,14 +46,68 @@
 			<Menu class="w-5 h-5 text-slate-700 dark:text-slate-300" />
 		</button>
 
-		<div class="flex items-center gap-2">
-			<h1 class="text-xl font-bold text-slate-900 dark:text-white">
-				{campaignStore.campaign?.name ?? 'Director Assist'}
-			</h1>
-			{#if campaignStore.campaign?.system}
-				<span class="text-sm text-slate-500 dark:text-slate-400">
-					({campaignStore.campaign.system})
-				</span>
+		<!-- Campaign Selector -->
+		<div class="relative">
+			<button
+				class="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+				onclick={toggleCampaignDropdown}
+				aria-label="Select campaign"
+				aria-expanded={campaignDropdownOpen}
+			>
+				<h1 class="text-xl font-bold text-slate-900 dark:text-white">
+					{campaignStore.campaign?.name ?? 'Director Assist'}
+				</h1>
+				{#if campaignStore.campaign?.fields?.system}
+					<span class="text-sm text-slate-500 dark:text-slate-400">
+						({campaignStore.campaign.fields.system})
+					</span>
+				{/if}
+				{#if campaignStore.allCampaigns.length > 1}
+					<ChevronDown class="w-4 h-4 text-slate-500 transition-transform {campaignDropdownOpen ? 'rotate-180' : ''}" />
+				{/if}
+			</button>
+
+			<!-- Dropdown Menu -->
+			{#if campaignDropdownOpen && campaignStore.allCampaigns.length > 0}
+				<!-- Backdrop to close dropdown -->
+				<button
+					class="fixed inset-0 z-40 bg-transparent"
+					onclick={closeCampaignDropdown}
+					aria-label="Close campaign dropdown"
+				></button>
+
+				<div class="absolute left-0 top-full mt-1 z-50 min-w-[200px] max-w-[300px] bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700 py-1">
+					<!-- Campaign List -->
+					{#each campaignStore.allCampaigns as camp}
+						<button
+							class="w-full px-3 py-2 text-left flex items-center gap-2 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+							onclick={() => switchCampaign(camp.id)}
+						>
+							<span class="flex-1 truncate">
+								<span class="font-medium text-slate-900 dark:text-white">{camp.name}</span>
+								{#if camp.fields?.system}
+									<span class="text-xs text-slate-500 dark:text-slate-400 ml-1">
+										({camp.fields.system})
+									</span>
+								{/if}
+							</span>
+							{#if camp.id === campaignStore.activeCampaignId}
+								<Check class="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+							{/if}
+						</button>
+					{/each}
+
+					<!-- Divider and Manage Link -->
+					<div class="border-t border-slate-200 dark:border-slate-700 mt-1 pt-1">
+						<a
+							href="/entities/campaign"
+							class="block w-full px-3 py-2 text-left text-sm text-blue-600 dark:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+							onclick={closeCampaignDropdown}
+						>
+							Manage Campaigns...
+						</a>
+					</div>
+				</div>
 			{/if}
 		</div>
 	</div>

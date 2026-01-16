@@ -85,6 +85,9 @@
 	.entity-card[data-type='player_profile'] {
 		@apply border-l-4 border-l-player;
 	}
+	.entity-card[data-type='campaign'] {
+		@apply border-l-4 border-l-campaign;
+	}
 
 	/* Buttons */
 	.btn {

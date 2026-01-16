@@ -27,13 +27,24 @@ export interface CampaignSettings {
 	theme?: 'light' | 'dark' | 'system';
 }
 
+/**
+ * Campaign-specific metadata stored in the entity's metadata field.
+ * This is used when Campaign is stored as a BaseEntity.
+ */
+export interface CampaignMetadata {
+	customEntityTypes: EntityTypeDefinition[];
+	entityTypeOverrides: EntityTypeOverride[];
+	settings: CampaignSettings;
+}
+
 // For backup/restore
 export interface CampaignBackup {
 	version: string; // Backup format version
 	exportedAt: Date;
-	campaign: Campaign;
+	campaign?: Campaign; // Old format (deprecated, for backward compat)
 	entities: BaseEntity[];
 	chatHistory: ChatMessage[];
+	activeCampaignId?: string; // New: which campaign was active
 }
 
 // Default campaign settings
@@ -53,6 +64,15 @@ export const DEFAULT_CAMPAIGN_SETTINGS: CampaignSettings = {
 		'player_profile'
 	],
 	theme: 'system'
+};
+
+/**
+ * Default campaign metadata for new campaigns
+ */
+export const DEFAULT_CAMPAIGN_METADATA: CampaignMetadata = {
+	customEntityTypes: [],
+	entityTypeOverrides: [],
+	settings: { ...DEFAULT_CAMPAIGN_SETTINGS }
 };
 
 // Helper to create a new campaign

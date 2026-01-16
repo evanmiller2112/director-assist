@@ -96,8 +96,8 @@
 			const campaignContext = campaign
 				? {
 						name: campaign.name,
-						setting: campaign.setting ?? '',
-						system: campaign.system ?? ''
+						setting: (campaign.fields?.setting as string) ?? '',
+						system: (campaign.fields?.system as string) ?? ''
 					}
 				: undefined;
 

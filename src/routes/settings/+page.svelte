@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { campaignStore, notificationStore, uiStore } from '$lib/stores';
 	import { db } from '$lib/db';
-	import { entityRepository, campaignRepository, chatRepository } from '$lib/db/repositories';
+	import { entityRepository, campaignRepository, chatRepository, appConfigRepository } from '$lib/db/repositories';
+	import { convertOldCampaignToEntity } from '$lib/db/migrations/migrateCampaignToEntity';
 	import type { CampaignBackup, ModelInfo } from '$lib/types';
 	import {
 		fetchModels,
@@ -10,31 +11,16 @@
 		clearModelsCache,
 		getFallbackModels
 	} from '$lib/services';
-	import { Download, Upload, Save, Moon, Sun, Monitor, Trash2, Key, RefreshCw, Layers, ChevronRight } from 'lucide-svelte';
+	import { Download, Upload, Moon, Sun, Monitor, Trash2, Key, RefreshCw, Layers, ChevronRight } from 'lucide-svelte';
 
 	// Form state
-	let campaignName = $state(campaignStore.campaign?.name ?? '');
-	let campaignDescription = $state(campaignStore.campaign?.description ?? '');
-	let campaignSystem = $state(campaignStore.campaign?.system ?? '');
-	let campaignSetting = $state(campaignStore.campaign?.setting ?? '');
 	let apiKey = $state('');
-	let isSaving = $state(false);
 
 	// Model selection state
 	let models = $state<ModelInfo[]>([]);
 	let selectedModel = $state('');
 	let isLoadingModels = $state(false);
 	let modelError = $state<string | null>(null);
-
-	// Update form when campaign loads
-	$effect(() => {
-		if (campaignStore.campaign) {
-			campaignName = campaignStore.campaign.name;
-			campaignDescription = campaignStore.campaign.description;
-			campaignSystem = campaignStore.campaign.system;
-			campaignSetting = campaignStore.campaign.setting;
-		}
-	});
 
 	// Load API key and models from storage
 	$effect(() => {
@@ -75,20 +61,6 @@
 		}
 	}
 
-	async function saveCampaign() {
-		isSaving = true;
-		try {
-			await campaignStore.update({
-				name: campaignName,
-				description: campaignDescription,
-				system: campaignSystem,
-				setting: campaignSetting
-			});
-		} finally {
-			isSaving = false;
-		}
-	}
-
 	function saveApiKey() {
 		if (typeof window !== 'undefined') {
 			if (apiKey) {
@@ -105,21 +77,25 @@
 
 	async function exportBackup() {
 		try {
-			const campaign = await campaignRepository.getCurrentSync();
+			// Get all entities including campaigns
 			const entities = await db.entities.toArray();
 			const chatHistory = await db.chatMessages.toArray();
+			const activeCampaignId = await appConfigRepository.getActiveCampaignId();
 
-			if (!campaign) {
+			// Find active campaign for naming the backup
+			const activeCampaign = entities.find(e => e.type === 'campaign' && e.id === activeCampaignId);
+
+			if (!activeCampaign) {
 				notificationStore.error('No campaign to export');
 				return;
 			}
 
 			const backup: CampaignBackup = {
-				version: '1.0.0',
+				version: '2.0.0', // New format version
 				exportedAt: new Date(),
-				campaign,
-				entities,
-				chatHistory
+				entities, // Campaign is now included in entities
+				chatHistory,
+				activeCampaignId: activeCampaignId ?? undefined
 			};
 
 			const json = JSON.stringify(backup, null, 2);
@@ -128,7 +104,7 @@
 
 			const a = document.createElement('a');
 			a.href = url;
-			a.download = `${campaign.name.replace(/\s+/g, '-').toLowerCase()}-backup-${new Date().toISOString().split('T')[0]}.json`;
+			a.download = `${activeCampaign.name.replace(/\s+/g, '-').toLowerCase()}-backup-${new Date().toISOString().split('T')[0]}.json`;
 			a.click();
 
 			URL.revokeObjectURL(url);
@@ -151,9 +127,18 @@
 				const text = await file.text();
 				const backup = JSON.parse(text) as CampaignBackup;
 
-				// Validate backup structure
-				if (!backup.version || !backup.campaign || !backup.entities) {
+				// Validate backup structure - must have entities (new format) or campaign (old format)
+				if (!backup.version || !backup.entities) {
 					throw new Error('Invalid backup file format');
+				}
+
+				// Check if this is old format (has campaign object) or new format (campaign in entities)
+				const isOldFormat = !!backup.campaign;
+				const hasCampaignEntity = backup.entities.some(e => e.type === 'campaign');
+
+				// Validate that we have campaign data in some form
+				if (!isOldFormat && !hasCampaignEntity) {
+					throw new Error('Backup must contain at least one campaign');
 				}
 
 				if (
@@ -167,16 +152,38 @@
 				// Import data
 				await db.transaction(
 					'rw',
-					[db.campaign, db.entities, db.chatMessages],
+					[db.campaign, db.entities, db.chatMessages, db.appConfig],
 					async () => {
 						await db.campaign.clear();
 						await db.entities.clear();
 						await db.chatMessages.clear();
+						await db.appConfig.clear();
 
-						await db.campaign.add(backup.campaign);
-						await db.entities.bulkAdd(backup.entities);
+						// Handle old format: convert campaign to entity
+						let entitiesToImport = [...backup.entities];
+						let activeCampaignId = backup.activeCampaignId;
+
+						if (isOldFormat && backup.campaign) {
+							const campaignEntity = convertOldCampaignToEntity(backup.campaign);
+							entitiesToImport.push(campaignEntity);
+							activeCampaignId = campaignEntity.id;
+						}
+
+						await db.entities.bulkAdd(entitiesToImport);
+
 						if (backup.chatHistory) {
 							await db.chatMessages.bulkAdd(backup.chatHistory);
+						}
+
+						// Set active campaign
+						if (activeCampaignId) {
+							await db.appConfig.put({ key: 'activeCampaignId', value: activeCampaignId });
+						} else {
+							// Use first campaign entity
+							const firstCampaign = entitiesToImport.find(e => e.type === 'campaign');
+							if (firstCampaign) {
+								await db.appConfig.put({ key: 'activeCampaignId', value: firstCampaign.id });
+							}
 						}
 					}
 				);
@@ -235,51 +242,17 @@
 <div class="max-w-2xl mx-auto">
 	<h1 class="text-2xl font-bold text-slate-900 dark:text-white mb-8">Settings</h1>
 
-	<!-- Campaign Settings -->
+	<!-- Campaign Management -->
 	<section class="mb-8">
 		<h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">Campaign</h2>
-		<div class="space-y-4">
-			<div>
-				<label for="name" class="label">Campaign Name</label>
-				<input id="name" type="text" class="input" bind:value={campaignName} />
-			</div>
-
-			<div>
-				<label for="description" class="label">Description</label>
-				<textarea
-					id="description"
-					class="input min-h-[80px]"
-					bind:value={campaignDescription}
-				></textarea>
-			</div>
-
-			<div>
-				<label for="system" class="label">Game System</label>
-				<input
-					id="system"
-					type="text"
-					class="input"
-					bind:value={campaignSystem}
-					placeholder="e.g., D&D 5e, Pathfinder, Draw Steel"
-				/>
-			</div>
-
-			<div>
-				<label for="setting" class="label">Setting</label>
-				<input
-					id="setting"
-					type="text"
-					class="input"
-					bind:value={campaignSetting}
-					placeholder="e.g., Forgotten Realms, Homebrew World"
-				/>
-			</div>
-
-			<button class="btn btn-primary" onclick={saveCampaign} disabled={isSaving}>
-				<Save class="w-4 h-4" />
-				{isSaving ? 'Saving...' : 'Save Campaign'}
-			</button>
-		</div>
+		<p class="text-slate-600 dark:text-slate-400 mb-4">
+			Campaigns are now managed as entities. You can create, edit, and switch between campaigns.
+		</p>
+		<a href="/entities/campaign" class="btn btn-secondary inline-flex items-center gap-2">
+			<Layers class="w-4 h-4" />
+			Manage Campaigns
+			<ChevronRight class="w-4 h-4" />
+		</a>
 	</section>
 
 	<!-- Theme -->

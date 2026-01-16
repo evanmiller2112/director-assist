@@ -1,16 +1,49 @@
-import { campaignRepository } from '$lib/db/repositories';
-import type { Campaign, EntityTypeDefinition, EntityTypeOverride } from '$lib/types';
-import { createCampaign } from '$lib/types';
+import { entityRepository, appConfigRepository } from '$lib/db/repositories';
+import { db } from '$lib/db';
+import type {
+	BaseEntity,
+	EntityTypeDefinition,
+	EntityTypeOverride,
+	CampaignMetadata,
+	CampaignSettings
+} from '$lib/types';
+import { DEFAULT_CAMPAIGN_METADATA, DEFAULT_CAMPAIGN_SETTINGS } from '$lib/types';
+import { nanoid } from 'nanoid';
 
-// Campaign store using Svelte 5 runes
+/**
+ * Helper to get campaign metadata from a campaign entity
+ */
+function getCampaignMetadata(entity: BaseEntity | null): CampaignMetadata {
+	if (!entity) return { ...DEFAULT_CAMPAIGN_METADATA };
+	const metadata = entity.metadata as unknown as CampaignMetadata | undefined;
+	return {
+		customEntityTypes: metadata?.customEntityTypes ?? [],
+		entityTypeOverrides: metadata?.entityTypeOverrides ?? [],
+		settings: metadata?.settings ?? { ...DEFAULT_CAMPAIGN_SETTINGS }
+	};
+}
+
+/**
+ * Campaign store using Svelte 5 runes
+ * Now works with Campaign as a BaseEntity stored in the entities table
+ */
 function createCampaignStore() {
-	let campaign = $state<Campaign | null>(null);
+	let activeCampaignId = $state<string | null>(null);
+	let campaign = $state<BaseEntity | null>(null);
+	let allCampaigns = $state<BaseEntity[]>([]);
 	let isLoading = $state(true);
 	let error = $state<string | null>(null);
 
 	return {
+		// State getters
+		get activeCampaignId() {
+			return activeCampaignId;
+		},
 		get campaign() {
 			return campaign;
+		},
+		get allCampaigns() {
+			return allCampaigns;
 		},
 		get isLoading() {
 			return isLoading;
@@ -19,56 +52,183 @@ function createCampaignStore() {
 			return error;
 		},
 
+		// Derived getters that maintain API compatibility
+		get customEntityTypes(): EntityTypeDefinition[] {
+			return getCampaignMetadata(campaign).customEntityTypes;
+		},
+
+		get entityTypeOverrides(): EntityTypeOverride[] {
+			return getCampaignMetadata(campaign).entityTypeOverrides;
+		},
+
+		get settings(): CampaignSettings {
+			return getCampaignMetadata(campaign).settings;
+		},
+
+		/**
+		 * Load campaigns from database
+		 * If no campaigns exist, creates a default one
+		 */
 		async load() {
 			isLoading = true;
 			error = null;
 
 			try {
-				const existing = await campaignRepository.getCurrentSync();
-				if (existing) {
-					campaign = existing;
-				} else {
-					// Create a default campaign if none exists
-					const newCampaign = await campaignRepository.save({
-						name: 'My Campaign',
+				// Load all campaigns from entities table
+				const campaigns = await db.entities.where('type').equals('campaign').toArray();
+				allCampaigns = campaigns;
+
+				// Get active campaign ID from app config
+				let activeId = await appConfigRepository.getActiveCampaignId();
+
+				// If no active campaign set, use the first one (or create a default)
+				if (!activeId && campaigns.length > 0) {
+					activeId = campaigns[0].id;
+					await appConfigRepository.setActiveCampaignId(activeId);
+				}
+
+				// If still no campaigns, create a default one
+				if (campaigns.length === 0) {
+					const defaultCampaign = await this.create('My Campaign', {
 						description: 'A new adventure begins...',
 						system: 'System Agnostic',
 						setting: ''
 					});
-					campaign = newCampaign;
+					activeId = defaultCampaign.id;
+					allCampaigns = [defaultCampaign];
 				}
+
+				// Set active campaign
+				activeCampaignId = activeId;
+				campaign = allCampaigns.find((c) => c.id === activeId) ?? null;
 			} catch (e) {
-				error = e instanceof Error ? e.message : 'Failed to load campaign';
-				console.error('Failed to load campaign:', e);
+				error = e instanceof Error ? e.message : 'Failed to load campaigns';
+				console.error('Failed to load campaigns:', e);
 			} finally {
 				isLoading = false;
 			}
 		},
 
-		async update(changes: Partial<Campaign>) {
+		/**
+		 * Create a new campaign
+		 */
+		async create(
+			name: string,
+			options: { description?: string; system?: string; setting?: string } = {}
+		): Promise<BaseEntity> {
+			const now = new Date();
+			const newCampaign: BaseEntity = {
+				id: nanoid(),
+				type: 'campaign',
+				name,
+				description: options.description ?? '',
+				summary: undefined,
+				tags: [],
+				imageUrl: undefined,
+				fields: {
+					system: options.system ?? 'System Agnostic',
+					setting: options.setting ?? '',
+					status: 'active'
+				},
+				links: [],
+				notes: '',
+				createdAt: now,
+				updatedAt: now,
+				metadata: { ...DEFAULT_CAMPAIGN_METADATA }
+			};
+
+			await db.entities.add(newCampaign);
+			allCampaigns = [...allCampaigns, newCampaign];
+
+			// Set as active if it's the first one
+			if (allCampaigns.length === 1) {
+				await this.setActiveCampaign(newCampaign.id);
+			}
+
+			return newCampaign;
+		},
+
+		/**
+		 * Set the active campaign
+		 */
+		async setActiveCampaign(id: string) {
+			const newActiveCampaign = allCampaigns.find((c) => c.id === id);
+			if (!newActiveCampaign) {
+				throw new Error(`Campaign ${id} not found`);
+			}
+
+			await appConfigRepository.setActiveCampaignId(id);
+			activeCampaignId = id;
+			campaign = newActiveCampaign;
+		},
+
+		/**
+		 * Update the active campaign's basic fields
+		 */
+		async update(changes: {
+			name?: string;
+			description?: string;
+			system?: string;
+			setting?: string;
+		}) {
 			if (!campaign) return;
 
 			try {
-				const updated = await campaignRepository.save({
-					...campaign,
-					...changes
-				});
-				campaign = updated;
+				const updates: Partial<BaseEntity> = {
+					updatedAt: new Date()
+				};
+
+				if (changes.name !== undefined) updates.name = changes.name;
+				if (changes.description !== undefined) updates.description = changes.description;
+
+				// Handle fields
+				if (changes.system !== undefined || changes.setting !== undefined) {
+					updates.fields = {
+						...campaign.fields,
+						...(changes.system !== undefined && { system: changes.system }),
+						...(changes.setting !== undefined && { setting: changes.setting })
+					};
+				}
+
+				await db.entities.update(campaign.id, updates);
+
+				// Update local state
+				campaign = { ...campaign, ...updates };
+				allCampaigns = allCampaigns.map((c) => (c.id === campaign!.id ? campaign! : c));
 			} catch (e) {
 				error = e instanceof Error ? e.message : 'Failed to update campaign';
 				console.error('Failed to update campaign:', e);
 			}
 		},
 
-		async updateSettings(settings: Partial<Campaign['settings']>) {
+		/**
+		 * Update campaign settings
+		 */
+		async updateSettings(settings: Partial<CampaignSettings>) {
 			if (!campaign) return;
 
 			try {
-				await campaignRepository.updateSettings(settings);
+				const currentMetadata = getCampaignMetadata(campaign);
+				const updatedMetadata: CampaignMetadata = {
+					...currentMetadata,
+					settings: { ...currentMetadata.settings, ...settings }
+				};
+
+				// Deep clone to remove Svelte 5 Proxy wrappers
+				const clonedMetadata = JSON.parse(JSON.stringify(updatedMetadata));
+
+				await db.entities.update(campaign.id, {
+					metadata: clonedMetadata,
+					updatedAt: new Date()
+				});
+
+				// Update local state
 				campaign = {
 					...campaign,
-					settings: { ...campaign.settings, ...settings }
+					metadata: clonedMetadata,
+					updatedAt: new Date()
 				};
+				allCampaigns = allCampaigns.map((c) => (c.id === campaign!.id ? campaign! : c));
 			} catch (e) {
 				error = e instanceof Error ? e.message : 'Failed to update settings';
 				console.error('Failed to update settings:', e);
@@ -76,27 +236,37 @@ function createCampaignStore() {
 		},
 
 		// Custom entity type CRUD methods
-		get customEntityTypes(): EntityTypeDefinition[] {
-			return campaign?.customEntityTypes ?? [];
-		},
 
 		async addCustomEntityType(entityType: EntityTypeDefinition): Promise<void> {
 			if (!campaign) return;
 
-			// Validate type doesn't already exist
-			const existing = campaign.customEntityTypes.find((t) => t.type === entityType.type);
+			const metadata = getCampaignMetadata(campaign);
+			const existing = metadata.customEntityTypes.find((t) => t.type === entityType.type);
 			if (existing) {
 				throw new Error(`Entity type "${entityType.type}" already exists`);
 			}
 
 			try {
-				// Deep clone everything to remove Svelte 5 Proxy wrappers before saving to IndexedDB
-				const clonedType = JSON.parse(JSON.stringify(entityType)) as EntityTypeDefinition;
-				const clonedCampaign = JSON.parse(JSON.stringify(campaign)) as Campaign;
-				clonedCampaign.customEntityTypes = [...clonedCampaign.customEntityTypes, clonedType];
+				const updatedMetadata: CampaignMetadata = {
+					...metadata,
+					customEntityTypes: [...metadata.customEntityTypes, entityType]
+				};
 
-				await campaignRepository.save(clonedCampaign);
-				campaign = clonedCampaign;
+				// Deep clone to remove Svelte 5 Proxy wrappers
+				const clonedMetadata = JSON.parse(JSON.stringify(updatedMetadata));
+
+				await db.entities.update(campaign.id, {
+					metadata: clonedMetadata,
+					updatedAt: new Date()
+				});
+
+				// Update local state
+				campaign = {
+					...campaign,
+					metadata: clonedMetadata,
+					updatedAt: new Date()
+				};
+				allCampaigns = allCampaigns.map((c) => (c.id === campaign!.id ? campaign! : c));
 			} catch (e) {
 				error = e instanceof Error ? e.message : 'Failed to add custom entity type';
 				console.error('Failed to add custom entity type:', e);
@@ -110,24 +280,41 @@ function createCampaignStore() {
 		): Promise<void> {
 			if (!campaign) return;
 
-			const index = campaign.customEntityTypes.findIndex((t) => t.type === type);
+			const metadata = getCampaignMetadata(campaign);
+			const index = metadata.customEntityTypes.findIndex((t) => t.type === type);
 			if (index === -1) {
 				throw new Error(`Entity type "${type}" not found`);
 			}
 
 			try {
-				// Deep clone everything to remove Svelte 5 Proxy wrappers before saving to IndexedDB
-				const clonedUpdates = JSON.parse(JSON.stringify(updates));
-				const clonedCampaign = JSON.parse(JSON.stringify(campaign)) as Campaign;
-				clonedCampaign.customEntityTypes[index] = {
-					...clonedCampaign.customEntityTypes[index],
-					...clonedUpdates,
+				const updatedTypes = [...metadata.customEntityTypes];
+				updatedTypes[index] = {
+					...updatedTypes[index],
+					...updates,
 					type, // Ensure type cannot be changed
 					isBuiltIn: false // Ensure isBuiltIn stays false
 				};
 
-				await campaignRepository.save(clonedCampaign);
-				campaign = clonedCampaign;
+				const updatedMetadata: CampaignMetadata = {
+					...metadata,
+					customEntityTypes: updatedTypes
+				};
+
+				// Deep clone to remove Svelte 5 Proxy wrappers
+				const clonedMetadata = JSON.parse(JSON.stringify(updatedMetadata));
+
+				await db.entities.update(campaign.id, {
+					metadata: clonedMetadata,
+					updatedAt: new Date()
+				});
+
+				// Update local state
+				campaign = {
+					...campaign,
+					metadata: clonedMetadata,
+					updatedAt: new Date()
+				};
+				allCampaigns = allCampaigns.map((c) => (c.id === campaign!.id ? campaign! : c));
 			} catch (e) {
 				error = e instanceof Error ? e.message : 'Failed to update custom entity type';
 				console.error('Failed to update custom entity type:', e);
@@ -138,20 +325,33 @@ function createCampaignStore() {
 		async deleteCustomEntityType(type: string): Promise<void> {
 			if (!campaign) return;
 
-			const index = campaign.customEntityTypes.findIndex((t) => t.type === type);
+			const metadata = getCampaignMetadata(campaign);
+			const index = metadata.customEntityTypes.findIndex((t) => t.type === type);
 			if (index === -1) {
 				throw new Error(`Entity type "${type}" not found`);
 			}
 
 			try {
-				// Deep clone to remove Svelte 5 Proxy wrappers before saving to IndexedDB
-				const clonedCampaign = JSON.parse(JSON.stringify(campaign)) as Campaign;
-				clonedCampaign.customEntityTypes = clonedCampaign.customEntityTypes.filter(
-					(t) => t.type !== type
-				);
+				const updatedMetadata: CampaignMetadata = {
+					...metadata,
+					customEntityTypes: metadata.customEntityTypes.filter((t) => t.type !== type)
+				};
 
-				await campaignRepository.save(clonedCampaign);
-				campaign = clonedCampaign;
+				// Deep clone to remove Svelte 5 Proxy wrappers
+				const clonedMetadata = JSON.parse(JSON.stringify(updatedMetadata));
+
+				await db.entities.update(campaign.id, {
+					metadata: clonedMetadata,
+					updatedAt: new Date()
+				});
+
+				// Update local state
+				campaign = {
+					...campaign,
+					metadata: clonedMetadata,
+					updatedAt: new Date()
+				};
+				allCampaigns = allCampaigns.map((c) => (c.id === campaign!.id ? campaign! : c));
 			} catch (e) {
 				error = e instanceof Error ? e.message : 'Failed to delete custom entity type';
 				console.error('Failed to delete custom entity type:', e);
@@ -160,39 +360,48 @@ function createCampaignStore() {
 		},
 
 		getCustomEntityType(type: string): EntityTypeDefinition | undefined {
-			return campaign?.customEntityTypes.find((t) => t.type === type);
+			return getCampaignMetadata(campaign).customEntityTypes.find((t) => t.type === type);
 		},
 
-		// Entity type override CRUD methods (for customizing built-in types)
-		get entityTypeOverrides(): EntityTypeOverride[] {
-			return campaign?.entityTypeOverrides ?? [];
-		},
+		// Entity type override CRUD methods
 
 		async setEntityTypeOverride(override: EntityTypeOverride): Promise<void> {
 			if (!campaign) return;
 
 			try {
-				// Deep clone to remove Svelte 5 Proxy wrappers
-				const clonedOverride = JSON.parse(JSON.stringify(override)) as EntityTypeOverride;
-				const clonedCampaign = JSON.parse(JSON.stringify(campaign)) as Campaign;
-
-				// Initialize array if not present (for existing campaigns)
-				if (!clonedCampaign.entityTypeOverrides) {
-					clonedCampaign.entityTypeOverrides = [];
-				}
-
-				// Find existing override or add new one
-				const existingIndex = clonedCampaign.entityTypeOverrides.findIndex(
+				const metadata = getCampaignMetadata(campaign);
+				const existingIndex = metadata.entityTypeOverrides.findIndex(
 					(o) => o.type === override.type
 				);
+
+				let updatedOverrides: EntityTypeOverride[];
 				if (existingIndex >= 0) {
-					clonedCampaign.entityTypeOverrides[existingIndex] = clonedOverride;
+					updatedOverrides = [...metadata.entityTypeOverrides];
+					updatedOverrides[existingIndex] = override;
 				} else {
-					clonedCampaign.entityTypeOverrides.push(clonedOverride);
+					updatedOverrides = [...metadata.entityTypeOverrides, override];
 				}
 
-				await campaignRepository.save(clonedCampaign);
-				campaign = clonedCampaign;
+				const updatedMetadata: CampaignMetadata = {
+					...metadata,
+					entityTypeOverrides: updatedOverrides
+				};
+
+				// Deep clone to remove Svelte 5 Proxy wrappers
+				const clonedMetadata = JSON.parse(JSON.stringify(updatedMetadata));
+
+				await db.entities.update(campaign.id, {
+					metadata: clonedMetadata,
+					updatedAt: new Date()
+				});
+
+				// Update local state
+				campaign = {
+					...campaign,
+					metadata: clonedMetadata,
+					updatedAt: new Date()
+				};
+				allCampaigns = allCampaigns.map((c) => (c.id === campaign!.id ? campaign! : c));
 			} catch (e) {
 				error = e instanceof Error ? e.message : 'Failed to save entity type override';
 				console.error('Failed to save entity type override:', e);
@@ -204,13 +413,27 @@ function createCampaignStore() {
 			if (!campaign) return;
 
 			try {
-				const clonedCampaign = JSON.parse(JSON.stringify(campaign)) as Campaign;
-				clonedCampaign.entityTypeOverrides = (clonedCampaign.entityTypeOverrides ?? []).filter(
-					(o) => o.type !== type
-				);
+				const metadata = getCampaignMetadata(campaign);
+				const updatedMetadata: CampaignMetadata = {
+					...metadata,
+					entityTypeOverrides: metadata.entityTypeOverrides.filter((o) => o.type !== type)
+				};
 
-				await campaignRepository.save(clonedCampaign);
-				campaign = clonedCampaign;
+				// Deep clone to remove Svelte 5 Proxy wrappers
+				const clonedMetadata = JSON.parse(JSON.stringify(updatedMetadata));
+
+				await db.entities.update(campaign.id, {
+					metadata: clonedMetadata,
+					updatedAt: new Date()
+				});
+
+				// Update local state
+				campaign = {
+					...campaign,
+					metadata: clonedMetadata,
+					updatedAt: new Date()
+				};
+				allCampaigns = allCampaigns.map((c) => (c.id === campaign!.id ? campaign! : c));
 			} catch (e) {
 				error = e instanceof Error ? e.message : 'Failed to remove entity type override';
 				console.error('Failed to remove entity type override:', e);
@@ -219,7 +442,41 @@ function createCampaignStore() {
 		},
 
 		getEntityTypeOverride(type: string): EntityTypeOverride | undefined {
-			return campaign?.entityTypeOverrides?.find((o) => o.type === type);
+			return getCampaignMetadata(campaign).entityTypeOverrides.find((o) => o.type === type);
+		},
+
+		/**
+		 * Delete a campaign
+		 */
+		async deleteCampaign(id: string): Promise<void> {
+			if (allCampaigns.length <= 1) {
+				throw new Error('Cannot delete the last campaign');
+			}
+
+			try {
+				await entityRepository.delete(id);
+				allCampaigns = allCampaigns.filter((c) => c.id !== id);
+
+				// If deleting active campaign, switch to another
+				if (activeCampaignId === id) {
+					const newActive = allCampaigns[0];
+					if (newActive) {
+						await this.setActiveCampaign(newActive.id);
+					}
+				}
+			} catch (e) {
+				error = e instanceof Error ? e.message : 'Failed to delete campaign';
+				console.error('Failed to delete campaign:', e);
+				throw e;
+			}
+		},
+
+		/**
+		 * Reload campaigns from database
+		 * Useful after import or other external changes
+		 */
+		async reload() {
+			await this.load();
 		}
 	};
 }

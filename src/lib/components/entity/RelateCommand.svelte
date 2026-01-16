@@ -18,6 +18,9 @@
 	let relationship = $state('');
 	let notes = $state('');
 	let bidirectional = $state(true);
+	let strength = $state<'none' | 'strong' | 'moderate' | 'weak'>('none');
+	let tags = $state('');
+	let tension = $state(0);
 	let isSubmitting = $state(false);
 	let errorMessage = $state('');
 
@@ -70,6 +73,9 @@
 		relationship = '';
 		notes = '';
 		bidirectional = true;
+		strength = 'none';
+		tags = '';
+		tension = 0;
 		errorMessage = '';
 		open = false;
 		onClose?.();
@@ -90,7 +96,33 @@
 		errorMessage = '';
 
 		try {
-			await entitiesStore.addLink(sourceEntity.id, selectedEntity.id, relationship, bidirectional, notes.trim());
+			// Parse strength: convert "none" to undefined
+			const finalStrength = strength === 'none' ? undefined : strength;
+
+			// Parse tags: split by comma, trim, and filter out empty strings
+			const parsedTags = tags.trim()
+				? tags.split(',').map(t => t.trim()).filter(t => t.length > 0)
+				: [];
+
+			// Build metadata object
+			const metadata: Record<string, any> = {};
+			if (parsedTags.length > 0) {
+				metadata.tags = parsedTags;
+			}
+			// Always include tension (even if 0)
+			if (tension !== 0) {
+				metadata.tension = tension;
+			}
+
+			await entitiesStore.addLink(
+				sourceEntity.id,
+				selectedEntity.id,
+				relationship,
+				bidirectional,
+				notes.trim(),
+				finalStrength,
+				metadata
+			);
 			handleClose();
 		} catch (error) {
 			errorMessage = error instanceof Error ? error.message : 'Failed to create link';
@@ -260,6 +292,52 @@
 								rows="3"
 								class="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-y"
 							></textarea>
+						</div>
+
+						<!-- Strength selector -->
+						<div>
+							<label for="strength" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+								Strength
+							</label>
+							<select
+								id="strength"
+								bind:value={strength}
+								class="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+							>
+								<option value="none">None</option>
+								<option value="strong">Strong</option>
+								<option value="moderate">Moderate</option>
+								<option value="weak">Weak</option>
+							</select>
+						</div>
+
+						<!-- Tags input -->
+						<div>
+							<label for="tags" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+								Tags
+							</label>
+							<input
+								id="tags"
+								type="text"
+								bind:value={tags}
+								placeholder="Enter comma-separated tags..."
+								class="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+							/>
+						</div>
+
+						<!-- Tension slider -->
+						<div>
+							<label for="tension" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+								Tension: {tension}
+							</label>
+							<input
+								id="tension"
+								type="range"
+								min="0"
+								max="100"
+								bind:value={tension}
+								class="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-600"
+							/>
 						</div>
 
 						<!-- Bidirectional checkbox -->

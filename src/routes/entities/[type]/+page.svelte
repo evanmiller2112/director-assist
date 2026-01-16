@@ -1,11 +1,13 @@
 <script lang="ts">
 	import { page } from '$app/stores';
+	import { goto } from '$app/navigation';
 	import { entitiesStore, campaignStore } from '$lib/stores';
 	import { getEntityTypeDefinition } from '$lib/config/entityTypes';
-	import { Plus, Search } from 'lucide-svelte';
+	import { Plus, Search, Link } from 'lucide-svelte';
+	import RelateCommand from '$lib/components/entity/RelateCommand.svelte';
 	import type { BaseEntity } from '$lib/types';
 
-	const entityType = $derived($page.params.type ?? '');
+	const entityType = $derived($page?.params?.type ?? '');
 	const typeDefinition = $derived(
 		entityType
 			? getEntityTypeDefinition(
@@ -18,6 +20,8 @@
 	const entities = $derived(entityType ? entitiesStore.getByType(entityType) : []);
 
 	let searchQuery = $state('');
+	let relateCommandOpen = $state(false);
+	let selectedEntityForLink = $state<BaseEntity | null>(null);
 
 	const filteredEntities: BaseEntity[] = $derived.by(() => {
 		if (!searchQuery) return entities;
@@ -29,6 +33,13 @@
 				e.tags.some((t) => t.toLowerCase().includes(query))
 		);
 	});
+
+	function openLinkModal(entity: BaseEntity, event: MouseEvent) {
+		event.preventDefault();
+		event.stopPropagation();
+		selectedEntityForLink = entity;
+		relateCommandOpen = true;
+	}
 </script>
 
 <svelte:head>
@@ -48,10 +59,10 @@
 			</p>
 		</div>
 
-		<a href="/entities/{entityType}/new" class="btn btn-primary">
+		<button onclick={() => goto(`/entities/${entityType}/new`)} class="btn btn-primary">
 			<Plus class="w-4 h-4" />
 			Add {typeDefinition?.label ?? 'Entity'}
-		</a>
+		</button>
 	</div>
 
 	<!-- Search -->
@@ -76,10 +87,10 @@
 				<p class="text-slate-500 dark:text-slate-400 mb-4">
 					No {typeDefinition?.labelPlural?.toLowerCase() ?? 'entities'} yet.
 				</p>
-				<a href="/entities/{entityType}/new" class="btn btn-primary">
+				<button onclick={() => goto(`/entities/${entityType}/new`)} class="btn btn-primary">
 					<Plus class="w-4 h-4" />
 					Create Your First {typeDefinition?.label ?? 'Entity'}
-				</a>
+				</button>
 			{/if}
 		</div>
 	{:else}
@@ -87,7 +98,7 @@
 			{#each filteredEntities as entity}
 				<a
 					href="/entities/{entityType}/{entity.id}"
-					class="entity-card flex items-start gap-4"
+					class="entity-card group flex items-start gap-4"
 					data-type={entityType}
 				>
 					<div class="flex-1 min-w-0">
@@ -116,11 +127,29 @@
 							</div>
 						{/if}
 					</div>
-					<div class="text-xs text-slate-400 whitespace-nowrap">
-						{new Date(entity.updatedAt).toLocaleDateString()}
+					<div class="flex items-center gap-2">
+						<div class="text-xs text-slate-400 whitespace-nowrap">
+							{new Date(entity.updatedAt).toLocaleDateString()}
+						</div>
+						<button
+							onclick={(e) => openLinkModal(entity, e)}
+							class="opacity-0 group-hover:opacity-100 transition-opacity p-2 rounded hover:bg-slate-100 dark:hover:bg-slate-700"
+							aria-label="Link {entity.name}"
+							title="Link entity"
+							data-testid="link-button-{entity.id}"
+						>
+							<Link class="w-4 h-4 text-slate-600 dark:text-slate-400" />
+						</button>
 					</div>
 				</a>
 			{/each}
 		</div>
 	{/if}
+{#if selectedEntityForLink}
+	<RelateCommand
+		sourceEntity={selectedEntityForLink}
+		bind:open={relateCommandOpen}
+		onClose={() => { selectedEntityForLink = null; }}
+	/>
+{/if}
 </div>

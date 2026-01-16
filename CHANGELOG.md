@@ -22,6 +22,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Global keyboard shortcut (Cmd+K on Mac, Ctrl+K on Windows/Linux)
   - Click outside to close
   - Comprehensive test suite with 51 tests
+- Command Palette for quick actions (Issue #39)
+  - Type "/" in search bar to enter command mode
+  - Available commands: `/new`, `/search`, `/go`, `/relate`, `/summarize`, `/settings`
+  - Context-aware command filtering (entity-specific commands only show when viewing an entity)
+  - Command arguments support (e.g., `/new npc`, `/search dragons`)
+  - Keyboard navigation and execution (Arrow keys, Enter, Escape)
+  - Seamless integration with existing HeaderSearch component
 - Per-field AI generation buttons on entity forms (Issue #47)
   - Individual generate buttons next to each text, textarea, and richtext field
   - Context-aware generation using other filled fields

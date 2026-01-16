@@ -898,11 +898,13 @@ Backups are JSON files containing:
 interface CampaignBackup {
   version: string;              // Backup format version
   exportedAt: Date;
-  campaign: Campaign;
   entities: BaseEntity[];
   chatHistory: ChatMessage[];
+  activeCampaignId: string | undefined;
 }
 ```
+
+**Security Note:** The export format deliberately excludes all sensitive data stored in localStorage, including API keys and model preferences. See [Backup Security](#backup-security) for details.
 
 ### Export Process
 
@@ -1225,9 +1227,36 @@ IndexedDB indexes are carefully chosen:
 
 ### Backup Security
 
-- Backups are plain JSON (user responsible for encryption)
-- API keys not included in backups (by design)
-- Users should store backups securely
+**Validated Security Posture (Issue #31 - v1.0 Security Audit):**
+
+Director Assist backups are secure by architectural design. The export function only accesses IndexedDB data and never reads from localStorage, ensuring sensitive configuration is never exposed.
+
+**What's Excluded:**
+- API keys (stored in localStorage: `dm-assist-api-key`)
+- Model preferences (stored in localStorage: `dm-assist-selected-model`)
+- Any other localStorage configuration
+
+**What's Included:**
+- Entity data (all campaign entities)
+- Chat history (AI conversation logs)
+- Active campaign ID (database reference)
+- Export metadata (version, timestamp)
+
+**Security Validation:**
+
+The backup export implementation has been validated through comprehensive security tests in `/src/routes/settings/backup-export.test.ts`:
+
+- Verified API keys are never present in backup objects or JSON output
+- Confirmed backup structure contains only expected fields
+- Tested edge cases where user data contains API key-like strings
+- Validated behavior across multiple scenarios (empty API keys, multiple campaigns, etc.)
+
+**User Responsibility:**
+
+- Backups are plain JSON files (no encryption applied)
+- Users should store backup files securely
+- Shared backups do not expose API credentials
+- Consider encrypting backups if they contain sensitive campaign information
 
 ### XSS Prevention
 

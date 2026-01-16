@@ -9,7 +9,7 @@ An AI-powered campaign management tool for Directors running Draw Steel TTRPG ca
 - **Find Anything Fast**: Search across all your campaign data instantly
 - **Never Lose Your Notes**: All data stored locally in your browser with backup/restore
 - **Work Your Way**: Light and dark themes, customizable entity types
-- **AI Assistant Ready**: Framework in place for AI-powered campaign suggestions (coming soon)
+- **AI-Powered Field Generation**: Generate content for individual fields using Claude AI, with context from other fields
 
 ## Quick Start
 
@@ -42,10 +42,27 @@ The app builds to a static site in the `build` directory. Deploy to any static h
 ### First Steps
 
 1. Create a campaign with a name, system (Draw Steel, D&D 5e, or System Agnostic), and setting description
-2. Start adding entities using the sidebar or dashboard
-3. Link entities together to build relationships
-4. Use the search bar to find anything quickly
-5. Export regular backups from Settings
+2. Add your Anthropic API key in Settings to enable AI features (optional)
+3. Start adding entities using the sidebar or dashboard
+4. Link entities together to build relationships
+5. Use the search bar to find anything quickly
+6. Export regular backups from Settings
+
+### AI-Powered Content Generation
+
+Director Assist can generate content for individual fields using Claude AI:
+
+1. Fill in some basic information about your entity (name, description, tags)
+2. Click the sparkle button next to any text field
+3. AI generates context-aware content based on what you've already filled in
+4. DM-only fields (like secrets) are kept private and not shared with AI
+
+**Generatable Field Types:**
+- Single-line text fields
+- Multi-line textarea fields
+- Rich text (markdown) fields
+
+**Requires:** Anthropic API key (add in Settings)
 
 ### Entity Types
 
@@ -104,7 +121,8 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for:
 
 ## Roadmap
 
-- AI assistant for generating NPCs, locations, and plot hooks
+- Full-entity AI generation (create entire NPCs, locations, etc. at once)
+- AI chat assistant for campaign planning and plot suggestions
 - Relationship graph visualization
 - Session prep checklists
 - Dice roller integration

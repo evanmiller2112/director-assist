@@ -128,6 +128,8 @@ All campaign data is stored locally in your browser's IndexedDB:
 
 **Important**: Export regular backups from Settings. Browser data can be cleared accidentally.
 
+**Security**: Exported backups never include your API key or sensitive settings. Backups contain only your campaign data (entities, chat history, and campaign reference). Safe to share or store in cloud services.
+
 ## Browser Support
 
 Requires a modern browser with IndexedDB support:

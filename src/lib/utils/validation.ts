@@ -98,8 +98,27 @@ function validateSelect(definition: FieldDefinition, value: string): string | nu
 
 function validateArray(definition: FieldDefinition, value: FieldValue): string | null {
 	if (value !== null && value !== undefined && !Array.isArray(value)) {
-		return `${definition.label} must be a list`;
+		return `${definition.label} must be an array`;
 	}
+
+	// For multi-select, validate that all selected values are from allowed options
+	if (definition.type === 'multi-select' && Array.isArray(value)) {
+		// Check for duplicates
+		const uniqueValues = new Set(value);
+		if (uniqueValues.size !== value.length) {
+			return `${definition.label} contains duplicate values`;
+		}
+
+		// Only validate against options if options are defined
+		if (definition.options && definition.options.length >= 0) {
+			const invalidValues = value.filter((v) => !definition.options!.includes(v as string));
+			if (invalidValues.length > 0) {
+				// Report only the first invalid value
+				return `${definition.label} contains invalid option: ${invalidValues[0]}`;
+			}
+		}
+	}
+
 	return null;
 }
 

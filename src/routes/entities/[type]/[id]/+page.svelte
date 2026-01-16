@@ -3,7 +3,7 @@
 	import { goto } from '$app/navigation';
 	import { entitiesStore, campaignStore } from '$lib/stores';
 	import { getEntityTypeDefinition } from '$lib/config/entityTypes';
-	import { ArrowLeft, Edit, Trash2, Link, Plus, X } from 'lucide-svelte';
+	import { ArrowLeft, Edit, Trash2, Link, Plus, X, ExternalLink, Check, X as XIcon } from 'lucide-svelte';
 	import { EntitySummary, RelateCommand } from '$lib/components/entity';
 
 	const entityId = $derived($page.params.id ?? '');
@@ -109,7 +109,7 @@
 						{@const fieldDef = typeDefinition?.fieldDefinitions.find(
 							(f) => f.key === key
 						)}
-						{#if value !== null && value !== undefined && value !== ''}
+						{#if value !== null && value !== undefined && (value !== '' || fieldDef?.type === 'boolean')}
 							<div
 								class="bg-slate-50 dark:bg-slate-800 rounded-lg p-4"
 								class:border-l-4={fieldDef?.section === 'hidden'}
@@ -125,7 +125,85 @@
 								</div>
 								<div class="text-slate-900 dark:text-white whitespace-pre-wrap">
 									{#if Array.isArray(value)}
-										{value.join(', ')}
+										{#if fieldDef?.type === 'multi-select'}
+											{value.map((v) => String(v).replace(/_/g, ' ')).join(', ')}
+										{:else}
+											{value.join(', ')}
+										{/if}
+									{:else if fieldDef?.type === 'boolean'}
+										<div class="flex items-center gap-2">
+											{#if value}
+												<Check class="w-5 h-5 text-green-600 dark:text-green-400" />
+												<span>Yes</span>
+											{:else}
+												<XIcon class="w-5 h-5 text-red-600 dark:text-red-400" />
+												<span>No</span>
+											{/if}
+										</div>
+									{:else if fieldDef?.type === 'url' && typeof value === 'string'}
+										<a
+											href={value}
+											target="_blank"
+											rel="noopener noreferrer"
+											class="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:underline"
+										>
+											{value}
+											<ExternalLink class="w-4 h-4" />
+										</a>
+									{:else if fieldDef?.type === 'image' && typeof value === 'string'}
+										<img
+											src={value}
+											alt={fieldDef?.label ?? key}
+											class="max-w-full h-auto max-h-64 rounded-lg border border-slate-200 dark:border-slate-700 mt-2"
+										/>
+									{:else if fieldDef?.type === 'entity-ref' && typeof value === 'string'}
+										{@const referencedEntity = entitiesStore.entities.find(e => e.id === value)}
+										{#if referencedEntity}
+											{@const refTypeDef = getEntityTypeDefinition(
+												referencedEntity.type,
+												campaignStore.customEntityTypes,
+												campaignStore.entityTypeOverrides
+											)}
+											<a
+												href="/entities/{referencedEntity.type}/{referencedEntity.id}"
+												class="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:underline"
+											>
+												{referencedEntity.name}
+												<span class="text-xs text-slate-500 dark:text-slate-400">
+													({refTypeDef?.label ?? referencedEntity.type})
+												</span>
+											</a>
+										{:else}
+											<span class="text-slate-400 dark:text-slate-500">(Deleted)</span>
+										{/if}
+									{:else if fieldDef?.type === 'entity-refs' && Array.isArray(value)}
+										{#if value.length > 0}
+											<div class="flex flex-col gap-1">
+												{#each value as entityId}
+													{@const referencedEntity = entitiesStore.entities.find(e => e.id === entityId)}
+													{#if referencedEntity}
+														{@const refTypeDef = getEntityTypeDefinition(
+															referencedEntity.type,
+															campaignStore.customEntityTypes,
+															campaignStore.entityTypeOverrides
+														)}
+														<a
+															href="/entities/{referencedEntity.type}/{referencedEntity.id}"
+															class="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:underline"
+														>
+															{referencedEntity.name}
+															<span class="text-xs text-slate-500 dark:text-slate-400">
+																({refTypeDef?.label ?? referencedEntity.type})
+															</span>
+														</a>
+													{:else}
+														<span class="text-slate-400 dark:text-slate-500">(Deleted)</span>
+													{/if}
+												{/each}
+											</div>
+										{:else}
+											<span class="text-slate-400 dark:text-slate-500">—</span>
+										{/if}
 									{:else}
 										{value}
 									{/if}

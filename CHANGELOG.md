@@ -41,6 +41,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - User selections always take precedence over auto-selection
   - Falls back to hardcoded default if API unavailable
   - Eliminates need for app updates when new Haiku models release
+- Complete implementation of missing form field types (Issue #10)
+  - Boolean fields with checkbox input and Yes/No display
+  - URL fields with validation and "Open Link" button
+  - Multi-select fields with checkbox options
+  - Image fields with file upload, base64 storage, and preview with remove button
+  - Entity-ref fields with searchable dropdown for single entity references
+  - Entity-refs fields with chips display and search for multiple entity references
+  - All field types fully integrated across create, edit, and detail views
+  - Added 'image' type to FieldDefinitionEditor for custom entity types
 
 ### Planning
 - End-to-end tests (Playwright)

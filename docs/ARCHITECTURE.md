@@ -173,19 +173,19 @@ Entities use a dynamic field system that allows different entity types to have d
 
 ```typescript
 type FieldType =
-  | 'text'           // Single-line text
-  | 'textarea'       // Multi-line text
+  | 'text'           // Single-line text input
+  | 'textarea'       // Multi-line text input
   | 'richtext'       // Markdown editor
   | 'number'         // Numeric input
-  | 'boolean'        // Checkbox
+  | 'boolean'        // Checkbox (Yes/No)
   | 'select'         // Dropdown (single choice)
-  | 'multi-select'   // Dropdown (multiple choices)
-  | 'tags'           // Tag input
-  | 'entity-ref'     // Reference to another entity
-  | 'entity-refs'    // References to multiple entities
-  | 'date'           // Date picker
-  | 'url'            // URL input
-  | 'image';         // Image upload
+  | 'multi-select'   // Multiple checkboxes
+  | 'tags'           // Comma-separated tag input
+  | 'entity-ref'     // Single entity reference with searchable dropdown
+  | 'entity-refs'    // Multiple entity references with chips
+  | 'date'           // Freeform date/timeline input
+  | 'url'            // URL input with validation and link preview
+  | 'image';         // Image upload with base64 storage and preview
 ```
 
 #### Field Definition
@@ -228,6 +228,57 @@ interface EntityTypeDefinition {
 4. Field values are stored in the `fields` object on the entity
 
 **Example:** NPC entity type has fields like `role`, `personality`, `appearance`, `voice`, `motivation`, `secrets`, `status`, and `importance`.
+
+#### Field Type Implementation Details
+
+**Text-based Fields:**
+- `text`, `textarea`, `richtext` - Support AI generation via FieldGenerateButton
+- Values stored as strings
+- Support placeholder text and help text
+
+**Boolean Fields:**
+- Rendered as checkbox input
+- Displays Yes/No on detail view
+- Values stored as boolean
+
+**Selection Fields:**
+- `select` - Dropdown with single selection
+- `multi-select` - Multiple checkboxes, values stored as string array
+- `tags` - Comma-separated input, values stored as string array
+- All support custom options defined in FieldDefinition
+
+**Date Fields:**
+- Freeform text input (not a date picker)
+- Supports fictional dates like "Year 1042, Third Age"
+- Values stored as strings
+
+**URL Fields:**
+- Text input with URL validation
+- Displays "Open Link" button when valid URL entered
+- Opens in new tab with security attributes
+
+**Image Fields:**
+- File upload with image preview
+- Converts to base64 for storage in IndexedDB
+- Shows preview with remove button
+- Warns if file size > 1MB
+- Values stored as base64 data URL strings
+
+**Entity Reference Fields:**
+- `entity-ref` - Single entity reference with searchable dropdown
+  - Shows selected entity name with clear button
+  - Dropdown with search filter
+  - Values stored as entity ID (string)
+- `entity-refs` - Multiple entity references with chips
+  - Shows selected entities as removable chips
+  - Search input to add more entities
+  - Values stored as array of entity IDs (string[])
+- Both support `entityTypes` filter to limit selectable entities
+
+**Field Rendering Locations:**
+- `/src/routes/entities/[type]/new/+page.svelte` - Create form
+- `/src/routes/entities/[type]/[id]/edit/+page.svelte` - Edit form
+- `/src/routes/entities/[type]/[id]/+page.svelte` - Detail view
 
 ## Data Flow
 

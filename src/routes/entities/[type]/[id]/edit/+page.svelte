@@ -7,7 +7,7 @@
 	import { generateField, isGeneratableField } from '$lib/services/fieldGenerationService';
 	import type { FieldValue, FieldDefinition } from '$lib/types';
 	import { validateEntity } from '$lib/utils';
-	import { ArrowLeft, Save } from 'lucide-svelte';
+	import { ArrowLeft, Save, ExternalLink, ImagePlus, X as XIcon, Upload, Search, ChevronDown } from 'lucide-svelte';
 	import FieldGenerateButton from '$lib/components/entity/FieldGenerateButton.svelte';
 
 	const entityId = $derived($page.params.id ?? '');
@@ -35,6 +35,9 @@
 	let isInitialized = $state(false);
 	let errors = $state<Record<string, string>>({});
 	let generatingFieldKey = $state<string | null>(null);
+	let imageLoading = $state<Record<string, boolean>>({});
+	let entityRefSearchQuery = $state<Record<string, string>>({});
+	let entityRefDropdownOpen = $state<Record<string, boolean>>({});
 
 	// Validation
 	function validate(): boolean {
@@ -152,6 +155,106 @@
 		} finally {
 			generatingFieldKey = null;
 		}
+	}
+
+	async function handleImageUpload(key: string, file: File | null) {
+		if (!file) return;
+
+		// Check file size (warn if > 1MB, but allow)
+		if (file.size > 1024 * 1024) {
+			notificationStore.info('Image is larger than 1MB. This may impact performance.');
+		}
+
+		imageLoading = { ...imageLoading, [key]: true };
+
+		try {
+			const base64 = await fileToBase64(file);
+			updateField(key, base64);
+		} catch (error) {
+			console.error('Failed to convert image:', error);
+			notificationStore.error('Failed to upload image');
+		} finally {
+			const newLoading = { ...imageLoading };
+			delete newLoading[key];
+			imageLoading = newLoading;
+		}
+	}
+
+	function fileToBase64(file: File): Promise<string> {
+		return new Promise((resolve, reject) => {
+			const reader = new FileReader();
+			reader.readAsDataURL(file);
+			reader.onload = () => resolve(reader.result as string);
+			reader.onerror = (error) => reject(error);
+		});
+	}
+
+	function clearImage(key: string) {
+		updateField(key, '');
+	}
+
+	// Entity reference helper functions
+	function getEntityName(entityId: string): string {
+		const entity = entitiesStore.entities.find((e) => e.id === entityId);
+		return entity?.name || '(Deleted)';
+	}
+
+	function getFilteredEntitiesForField(field: FieldDefinition): typeof entitiesStore.entities {
+		const allowedTypes = field.entityTypes || [];
+		const currentSelection = field.type === 'entity-refs'
+			? (Array.isArray(fields[field.key]) ? (fields[field.key] as string[]) : [])
+			: [];
+		const query = (entityRefSearchQuery[field.key] || '').toLowerCase();
+
+		return entitiesStore.entities.filter((e) => {
+			// Filter by entity type
+			if (allowedTypes.length > 0 && !allowedTypes.includes(e.type)) {
+				return false;
+			}
+
+			// For entity-refs, exclude already selected entities
+			if (field.type === 'entity-refs' && currentSelection.includes(e.id)) {
+				return false;
+			}
+
+			// Apply search filter
+			if (query) {
+				return (
+					e.name.toLowerCase().includes(query) ||
+					e.description.toLowerCase().includes(query)
+				);
+			}
+
+			return true;
+		});
+	}
+
+	function selectEntityRef(fieldKey: string, entityId: string) {
+		updateField(fieldKey, entityId);
+		entityRefDropdownOpen = { ...entityRefDropdownOpen, [fieldKey]: false };
+		entityRefSearchQuery = { ...entityRefSearchQuery, [fieldKey]: '' };
+	}
+
+	function clearEntityRef(fieldKey: string) {
+		updateField(fieldKey, '');
+	}
+
+	function addEntityRef(fieldKey: string, entityId: string) {
+		const currentValue = Array.isArray(fields[fieldKey]) ? (fields[fieldKey] as string[]) : [];
+		updateField(fieldKey, [...currentValue, entityId]);
+		entityRefSearchQuery = { ...entityRefSearchQuery, [fieldKey]: '' };
+	}
+
+	function removeEntityRef(fieldKey: string, entityId: string) {
+		const currentValue = Array.isArray(fields[fieldKey]) ? (fields[fieldKey] as string[]) : [];
+		updateField(fieldKey, currentValue.filter((id) => id !== entityId));
+	}
+
+	function toggleEntityRefDropdown(fieldKey: string) {
+		entityRefDropdownOpen = {
+			...entityRefDropdownOpen,
+			[fieldKey]: !entityRefDropdownOpen[fieldKey]
+		};
 	}
 </script>
 
@@ -303,6 +406,259 @@
 								oninput={(e) => updateField(field.key, e.currentTarget.value)}
 								placeholder={field.placeholder ?? 'e.g., Year 1042, Third Age'}
 							/>
+						{:else if field.type === 'boolean'}
+							<label class="flex items-center gap-2 cursor-pointer">
+								<input
+									id={field.key}
+									type="checkbox"
+									class="w-4 h-4 rounded border-slate-300 text-slate-900 focus:ring-slate-500 dark:border-slate-600 dark:bg-slate-700 dark:checked:bg-slate-600"
+									checked={(fields[field.key] as boolean) ?? false}
+									onchange={(e) => updateField(field.key, e.currentTarget.checked)}
+								/>
+								<span class="text-sm text-slate-700 dark:text-slate-300">
+									{field.placeholder ?? 'Enable'}
+								</span>
+							</label>
+						{:else if field.type === 'multi-select'}
+							<div class="space-y-2">
+								{#each field.options ?? [] as option}
+									<label class="flex items-center gap-2 cursor-pointer">
+										<input
+											type="checkbox"
+											class="w-4 h-4 rounded border-slate-300 text-slate-900 focus:ring-slate-500 dark:border-slate-600 dark:bg-slate-700 dark:checked:bg-slate-600"
+											checked={Array.isArray(fields[field.key]) &&
+												(fields[field.key] as string[]).includes(option)}
+											onchange={(e) => {
+												const currentValue = Array.isArray(fields[field.key])
+													? (fields[field.key] as string[])
+													: [];
+												const newValue = e.currentTarget.checked
+													? [...currentValue, option]
+													: currentValue.filter((v) => v !== option);
+												updateField(field.key, newValue);
+											}}
+										/>
+										<span class="text-sm text-slate-700 dark:text-slate-300">
+											{option.replace(/_/g, ' ')}
+										</span>
+									</label>
+								{/each}
+							</div>
+						{:else if field.type === 'url'}
+							<div class="space-y-2">
+								<input
+									id={field.key}
+									type="url"
+									class="input {errors[field.key] ? 'input-error' : ''}"
+									value={(fields[field.key] as string) ?? ''}
+									oninput={(e) => updateField(field.key, e.currentTarget.value)}
+									placeholder={field.placeholder ?? 'https://example.com'}
+								/>
+								{#if fields[field.key] && typeof fields[field.key] === 'string' && fields[field.key] !== '' && !errors[field.key]}
+									<a
+										href={fields[field.key] as string}
+										target="_blank"
+										rel="noopener noreferrer"
+										class="inline-flex items-center gap-1 text-sm text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200"
+									>
+										<ExternalLink class="w-3 h-3" />
+										Open Link
+									</a>
+								{/if}
+							</div>
+						{:else if field.type === 'image'}
+							<div class="space-y-2">
+								{#if fields[field.key] && typeof fields[field.key] === 'string' && fields[field.key] !== ''}
+									<div class="relative inline-block">
+										<img
+											src={fields[field.key] as string}
+											alt={field.label}
+											class="max-w-full h-auto max-h-64 rounded-lg border border-slate-200 dark:border-slate-700"
+										/>
+										<button
+											type="button"
+											onclick={() => clearImage(field.key)}
+											class="absolute top-2 right-2 p-1 bg-red-600 hover:bg-red-700 text-white rounded-full shadow-lg transition-colors"
+											aria-label="Remove image"
+										>
+											<XIcon class="w-4 h-4" />
+										</button>
+									</div>
+								{:else}
+									<div class="flex items-center gap-2">
+										<label
+											for={field.key}
+											class="btn btn-secondary cursor-pointer"
+										>
+											{#if imageLoading[field.key]}
+												<Upload class="w-4 h-4 animate-pulse" />
+												Uploading...
+											{:else}
+												<ImagePlus class="w-4 h-4" />
+												Upload Image
+											{/if}
+										</label>
+										<input
+											id={field.key}
+											type="file"
+											accept="image/*"
+											class="hidden"
+											onchange={(e) => handleImageUpload(field.key, e.currentTarget.files?.[0] ?? null)}
+											disabled={imageLoading[field.key]}
+										/>
+										<span class="text-sm text-slate-500">
+											{field.placeholder ?? 'Select an image file'}
+										</span>
+									</div>
+								{/if}
+							</div>
+						{:else if field.type === 'entity-ref'}
+							{@const filteredEntities = getFilteredEntitiesForField(field)}
+							<div class="relative">
+								{#if fields[field.key] && typeof fields[field.key] === 'string'}
+									<!-- Show selected entity -->
+									<div class="flex items-center gap-2 p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700">
+										<span class="flex-1 text-slate-900 dark:text-white">
+											{getEntityName(fields[field.key] as string)}
+										</span>
+										<button
+											type="button"
+											onclick={() => clearEntityRef(field.key)}
+											class="p-1 hover:bg-slate-100 dark:hover:bg-slate-600 rounded text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+											aria-label="Clear selection"
+										>
+											<XIcon class="w-4 h-4" />
+										</button>
+									</div>
+								{:else}
+									<!-- Dropdown selector -->
+									<div>
+										<button
+											type="button"
+											onclick={() => toggleEntityRefDropdown(field.key)}
+											class="w-full flex items-center justify-between gap-2 p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-left text-slate-500 dark:text-slate-400 hover:border-slate-400 dark:hover:border-slate-500"
+										>
+											<span>{field.placeholder ?? 'Select...'}</span>
+											<ChevronDown class="w-4 h-4" />
+										</button>
+
+										{#if entityRefDropdownOpen[field.key]}
+											<div class="absolute z-10 w-full mt-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg shadow-lg max-h-64 overflow-hidden flex flex-col">
+												<!-- Search input -->
+												<div class="p-2 border-b border-slate-200 dark:border-slate-700">
+													<div class="relative">
+														<Search class="absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+														<input
+															type="text"
+															bind:value={entityRefSearchQuery[field.key]}
+															placeholder="Search entities..."
+															class="w-full pl-8 pr-2 py-1 text-sm border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-slate-500 focus:border-transparent"
+														/>
+													</div>
+												</div>
+
+												<!-- Entity list -->
+												<div class="overflow-y-auto max-h-48">
+													{#if filteredEntities.length === 0}
+														<div class="p-3 text-sm text-center text-slate-500 dark:text-slate-400">
+															{entityRefSearchQuery[field.key] ? 'No entities found' : 'No available entities'}
+														</div>
+													{:else}
+														{#each filteredEntities as entity}
+															{@const entityTypeDef = getEntityTypeDefinition(
+																entity.type,
+																campaignStore.customEntityTypes,
+																campaignStore.entityTypeOverrides
+															)}
+															<button
+																type="button"
+																onclick={() => selectEntityRef(field.key, entity.id)}
+																class="w-full text-left p-2 hover:bg-slate-50 dark:hover:bg-slate-700 border-b border-slate-100 dark:border-slate-700 last:border-b-0"
+															>
+																<div class="font-medium text-slate-900 dark:text-white text-sm">
+																	{entity.name}
+																</div>
+																<div class="text-xs text-slate-500 dark:text-slate-400">
+																	{entityTypeDef?.label ?? entity.type}
+																</div>
+															</button>
+														{/each}
+													{/if}
+												</div>
+											</div>
+										{/if}
+									</div>
+								{/if}
+							</div>
+						{:else if field.type === 'entity-refs'}
+							{@const filteredEntities = getFilteredEntitiesForField(field)}
+							{@const selectedIds = Array.isArray(fields[field.key]) ? (fields[field.key] as string[]) : []}
+							<div class="space-y-2">
+								<!-- Selected entities as chips -->
+								{#if selectedIds.length > 0}
+									<div class="flex flex-wrap gap-2">
+										{#each selectedIds as entityId}
+											<div class="inline-flex items-center gap-1 px-2 py-1 bg-slate-100 dark:bg-slate-700 rounded-full text-sm">
+												<span class="text-slate-900 dark:text-white">
+													{getEntityName(entityId)}
+												</span>
+												<button
+													type="button"
+													onclick={() => removeEntityRef(field.key, entityId)}
+													class="hover:bg-slate-200 dark:hover:bg-slate-600 rounded-full p-0.5"
+													aria-label="Remove"
+												>
+													<XIcon class="w-3 h-3" />
+												</button>
+											</div>
+										{/each}
+									</div>
+								{/if}
+
+								<!-- Search and add -->
+								<div>
+									<div class="relative">
+										<Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+										<input
+											type="text"
+											bind:value={entityRefSearchQuery[field.key]}
+											placeholder={field.placeholder ?? 'Search to add entities...'}
+											class="w-full pl-10 pr-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-slate-500 focus:border-transparent"
+											onfocus={() => (entityRefDropdownOpen[field.key] = true)}
+										/>
+									</div>
+
+									{#if entityRefDropdownOpen[field.key] && entityRefSearchQuery[field.key]}
+										<div class="absolute z-10 w-full mt-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+											{#if filteredEntities.length === 0}
+												<div class="p-3 text-sm text-center text-slate-500 dark:text-slate-400">
+													{selectedIds.length === filteredEntities.length ? 'All entities selected' : 'No entities found'}
+												</div>
+											{:else}
+												{#each filteredEntities as entity}
+													{@const entityTypeDef = getEntityTypeDefinition(
+														entity.type,
+														campaignStore.customEntityTypes,
+														campaignStore.entityTypeOverrides
+													)}
+													<button
+														type="button"
+														onclick={() => addEntityRef(field.key, entity.id)}
+														class="w-full text-left p-2 hover:bg-slate-50 dark:hover:bg-slate-700 border-b border-slate-100 dark:border-slate-700 last:border-b-0"
+													>
+														<div class="font-medium text-slate-900 dark:text-white text-sm">
+															{entity.name}
+														</div>
+														<div class="text-xs text-slate-500 dark:text-slate-400">
+															{entityTypeDef?.label ?? entity.type}
+														</div>
+													</button>
+												{/each}
+											{/if}
+										</div>
+									{/if}
+								</div>
+							</div>
 						{:else}
 							<input
 								id={field.key}

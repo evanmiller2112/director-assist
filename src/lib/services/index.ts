@@ -19,5 +19,7 @@ export {
 	clearModelsCache,
 	getSelectedModel,
 	setSelectedModel,
-	getFallbackModels
+	getFallbackModels,
+	extractDateFromModelId,
+	findLatestHaikuModel
 } from './modelService';

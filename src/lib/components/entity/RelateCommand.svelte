@@ -16,6 +16,7 @@
 	let searchQuery = $state('');
 	let selectedEntity = $state<BaseEntity | null>(null);
 	let relationship = $state('');
+	let notes = $state('');
 	let bidirectional = $state(true);
 	let isSubmitting = $state(false);
 	let errorMessage = $state('');
@@ -67,6 +68,7 @@
 		searchQuery = '';
 		selectedEntity = null;
 		relationship = '';
+		notes = '';
 		bidirectional = true;
 		errorMessage = '';
 		open = false;
@@ -88,7 +90,7 @@
 		errorMessage = '';
 
 		try {
-			await entitiesStore.addLink(sourceEntity.id, selectedEntity.id, relationship, bidirectional);
+			await entitiesStore.addLink(sourceEntity.id, selectedEntity.id, relationship, bidirectional, notes.trim());
 			handleClose();
 		} catch (error) {
 			errorMessage = error instanceof Error ? error.message : 'Failed to create link';
@@ -246,6 +248,20 @@
 							</p>
 						</div>
 
+						<!-- Notes textarea -->
+						<div>
+							<label for="notes" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+								Notes
+							</label>
+							<textarea
+								id="notes"
+								bind:value={notes}
+								placeholder="Optional notes about this relationship..."
+								rows="3"
+								class="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-y"
+							></textarea>
+						</div>
+
 						<!-- Bidirectional checkbox -->
 						<div class="flex items-center gap-2">
 							<input
@@ -255,7 +271,7 @@
 								class="w-4 h-4 text-blue-600 bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 rounded focus:ring-blue-500"
 							/>
 							<label for="bidirectional" class="text-sm text-slate-700 dark:text-slate-300">
-								Bidirectional (also create reverse relationship)
+								Bidirectional (also create reverse link)
 							</label>
 						</div>
 

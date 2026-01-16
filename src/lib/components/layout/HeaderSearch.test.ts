@@ -1020,7 +1020,7 @@ describe('HeaderSearch Component', () => {
 			});
 
 			// Press Enter to execute command
-			await fireEvent.keyDown(input, createKeyboardEvent('Enter'));
+			input.dispatchEvent(createKeyboardEvent('Enter'));
 
 			// Should navigate (goto would be called)
 			await waitFor(() => {
@@ -1039,7 +1039,7 @@ describe('HeaderSearch Component', () => {
 			});
 
 			// Press Enter
-			await fireEvent.keyDown(input, createKeyboardEvent('Enter'));
+			input.dispatchEvent(createKeyboardEvent('Enter'));
 
 			// Should execute "new" command with "npc" argument
 			await waitFor(() => {
@@ -1076,7 +1076,7 @@ describe('HeaderSearch Component', () => {
 				expect(screen.getByRole('listbox')).toBeInTheDocument();
 			});
 
-			await fireEvent.keyDown(input, createKeyboardEvent('Enter'));
+			input.dispatchEvent(createKeyboardEvent('Enter'));
 
 			// Dropdown should close
 			await waitFor(() => {
@@ -1094,7 +1094,7 @@ describe('HeaderSearch Component', () => {
 				expect(screen.getByRole('listbox')).toBeInTheDocument();
 			});
 
-			await fireEvent.keyDown(input, createKeyboardEvent('Enter'));
+			input.dispatchEvent(createKeyboardEvent('Enter'));
 
 			// Input should be cleared
 			await waitFor(() => {
@@ -1204,7 +1204,7 @@ describe('HeaderSearch Component', () => {
 				expect(screen.getByRole('listbox')).toBeInTheDocument();
 			});
 
-			await fireEvent.keyDown(input, createKeyboardEvent('Escape'));
+			input.dispatchEvent(createKeyboardEvent('Escape'));
 
 			// Dropdown should close
 			await waitFor(() => {

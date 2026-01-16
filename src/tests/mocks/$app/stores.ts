@@ -3,7 +3,7 @@ import { writable, readable } from 'svelte/store';
 // Create a writable page store that tests can control
 export const page = writable({
 	url: new URL('http://localhost'),
-	params: {},
+	params: { type: 'npc' }, // Default params for tests
 	route: { id: null },
 	status: 200,
 	error: null,

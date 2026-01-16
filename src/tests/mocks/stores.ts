@@ -38,6 +38,8 @@ export function createMockEntitiesStore(entities: BaseEntity[] = []) {
 		delete: vi.fn(),
 		getById: vi.fn(),
 		getByType: vi.fn(),
+		addLink: vi.fn(),
+		removeLink: vi.fn(),
 		// Update method for tests
 		_setEntities: (newEntities: BaseEntity[]) => {
 			_entities = newEntities;

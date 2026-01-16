@@ -152,18 +152,45 @@ Represents a relationship between two entities.
 ```typescript
 interface EntityLink {
   id: EntityId;
+  sourceId?: EntityId;         // Explicit source reference (optional for backward compat)
   targetId: EntityId;
   targetType: EntityType;
   relationship: string;        // "knows", "located_at", "member_of", etc.
   bidirectional: boolean;
+  reverseRelationship?: string; // For asymmetric bidirectional links
   notes?: string;
+  strength?: 'strong' | 'moderate' | 'weak'; // Relationship strength
+  createdAt?: Date;            // When link was created
+  updatedAt?: Date;            // When link was last updated
+  metadata?: {
+    tags?: string[];
+    tension?: number;
+    [key: string]: unknown;    // Allow additional custom fields
+  };
 }
 ```
 
+**Relationship Types:**
+
+Links can be unidirectional or bidirectional. Bidirectional links can be symmetric or asymmetric.
+
+**Symmetric Bidirectional:**
+- Both entities see the same relationship name
+- Example: NPC ↔ "knows" ↔ NPC
+
+**Asymmetric Bidirectional:**
+- Each entity sees a different relationship name that reflects their perspective
+- Uses `reverseRelationship` field to specify the inverse relationship
+- Example: NPC → "patron_of" → NPC (shown on first entity)
+          NPC → "client_of" → NPC (shown on second entity via reverseRelationship)
+- Visual indicator: Blue ↔ symbol in entity detail view
+
 **Examples:**
-- NPC → "located_at" → Location
-- Character → "member_of" → Faction
-- Item → "owned_by" → Character
+- NPC → "located_at" → Location (unidirectional)
+- Character ↔ "member_of" ↔ Faction (symmetric bidirectional)
+- Item → "owned_by" → Character (unidirectional)
+- NPC → "patron_of" ↔ "client_of" ← NPC (asymmetric bidirectional)
+- NPC → "employer_of" ↔ "employee_of" ← NPC (asymmetric bidirectional)
 
 ### Dynamic Field System
 
@@ -664,6 +691,7 @@ Creates a relationship between the current entity and another entity.
 - **Requires Entity:** Yes (only appears when viewing an entity)
 - **Arguments:** None
 - **Navigation:** `/entities/{type}/{id}?action=relate`
+- **Features:** Supports bidirectional relationships, asymmetric relationships (different names for each direction), relationship strength, tags, and tension metadata
 
 #### `/summarize`
 Generates an AI summary of the current entity.

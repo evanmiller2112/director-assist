@@ -375,5 +375,82 @@ export const entityRepository = {
 
 		// Combine and deduplicate
 		return [...new Set([...forwardIds, ...reverseIds])];
+	},
+
+	// Query entities by relationship type (Issue #71)
+	async queryByRelationship(relationship: string): Promise<BaseEntity[]> {
+		await ensureDbReady();
+		return db.entities.filter((entity) => entity.links.some((link) => link.relationship === relationship)).toArray();
+	},
+
+	// Get entities related to a specific entity with a given relationship type (Issue #71)
+	async getEntitiesWithRelationshipType(
+		entityId: string,
+		relationship: string,
+		options?: { direction?: 'outgoing' | 'incoming' | 'both' }
+	): Promise<BaseEntity[]> {
+		await ensureDbReady();
+
+		const direction = options?.direction || 'both';
+		const entity = await db.entities.get(entityId);
+		if (!entity) return [];
+
+		let targetIds: string[] = [];
+
+		// Handle outgoing relationships
+		if (direction === 'outgoing' || direction === 'both') {
+			const outgoingIds = entity.links
+				.filter((link) => link.relationship === relationship)
+				.map((link) => link.targetId);
+			targetIds.push(...outgoingIds);
+		}
+
+		// Handle incoming relationships
+		if (direction === 'incoming' || direction === 'both') {
+			const entitiesLinkingHere = await db.entities
+				.filter((e) => e.links.some((link) => link.targetId === entityId && link.relationship === relationship))
+				.toArray();
+			const incomingIds = entitiesLinkingHere.map((e) => e.id);
+			targetIds.push(...incomingIds);
+		}
+
+		// Deduplicate IDs
+		const uniqueIds = [...new Set(targetIds)];
+
+		// Fetch and return entities
+		if (uniqueIds.length === 0) return [];
+		return db.entities.where('id').anyOf(uniqueIds).toArray();
+	},
+
+	// Get all unique relationship types used in the system (Issue #71)
+	async getRelationshipTypes(): Promise<string[]> {
+		await ensureDbReady();
+
+		const allEntities = await db.entities.toArray();
+		const relationshipSet = new Set<string>();
+
+		for (const entity of allEntities) {
+			for (const link of entity.links) {
+				relationshipSet.add(link.relationship);
+			}
+		}
+
+		return Array.from(relationshipSet).sort();
+	},
+
+	// Get relationship statistics (count by type) (Issue #71)
+	async getRelationshipStats(): Promise<Record<string, number>> {
+		await ensureDbReady();
+
+		const allEntities = await db.entities.toArray();
+		const stats: Record<string, number> = {};
+
+		for (const entity of allEntities) {
+			for (const link of entity.links) {
+				stats[link.relationship] = (stats[link.relationship] || 0) + 1;
+			}
+		}
+
+		return stats;
 	}
 };

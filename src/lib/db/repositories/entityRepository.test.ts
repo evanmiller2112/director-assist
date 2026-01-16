@@ -924,3 +924,485 @@ describe('EntityRepository - Enhanced EntityLink Data Model (Issue #65)', () => 
 		});
 	});
 });
+
+describe('EntityRepository - Relationship Query Methods (Issue #71)', () => {
+	let character1: BaseEntity;
+	let character2: BaseEntity;
+	let character3: BaseEntity;
+	let faction1: BaseEntity;
+	let faction2: BaseEntity;
+	let location1: BaseEntity;
+
+	beforeAll(async () => {
+		// Open the database for tests
+		await db.open();
+	});
+
+	afterAll(async () => {
+		// Close database after all tests
+		await db.close();
+	});
+
+	beforeEach(async () => {
+		// Clear database before each test
+		await db.entities.clear();
+
+		// Create test entities with a variety of relationships
+		character1 = createMockEntity({
+			id: 'char-1',
+			name: 'Aragorn',
+			type: 'character',
+			links: []
+		});
+
+		character2 = createMockEntity({
+			id: 'char-2',
+			name: 'Legolas',
+			type: 'character',
+			links: []
+		});
+
+		character3 = createMockEntity({
+			id: 'char-3',
+			name: 'Gimli',
+			type: 'character',
+			links: []
+		});
+
+		faction1 = createMockEntity({
+			id: 'faction-1',
+			name: 'Fellowship of the Ring',
+			type: 'faction',
+			links: []
+		});
+
+		faction2 = createMockEntity({
+			id: 'faction-2',
+			name: 'Rangers of the North',
+			type: 'faction',
+			links: []
+		});
+
+		location1 = createMockEntity({
+			id: 'loc-1',
+			name: 'Rivendell',
+			type: 'location',
+			links: []
+		});
+
+		// Add all entities to database
+		await db.entities.bulkAdd([
+			character1,
+			character2,
+			character3,
+			faction1,
+			faction2,
+			location1
+		]);
+	});
+
+	afterEach(async () => {
+		// Clean up
+		await db.entities.clear();
+	});
+
+	describe('queryByRelationship', () => {
+		it('should find all entities with a specific relationship type', async () => {
+			// Create various relationships
+			await entityRepository.addLink(character1.id, faction1.id, 'member_of', false);
+			await entityRepository.addLink(character2.id, faction1.id, 'member_of', false);
+			await entityRepository.addLink(character3.id, faction2.id, 'member_of', false);
+			await entityRepository.addLink(character1.id, character2.id, 'friend_of', true);
+
+			const results = await entityRepository.queryByRelationship('member_of');
+
+			expect(results).toHaveLength(3);
+			expect(results.map((e) => e.id).sort()).toEqual(['char-1', 'char-2', 'char-3']);
+		});
+
+		it('should return empty array when no entities have the relationship', async () => {
+			await entityRepository.addLink(character1.id, faction1.id, 'member_of', false);
+
+			const results = await entityRepository.queryByRelationship('enemy_of');
+
+			expect(results).toEqual([]);
+		});
+
+		it('should return empty array when database is empty', async () => {
+			await db.entities.clear();
+
+			const results = await entityRepository.queryByRelationship('member_of');
+
+			expect(results).toEqual([]);
+		});
+
+		it('should find entities with bidirectional relationships', async () => {
+			await entityRepository.addLink(character1.id, character2.id, 'allied_with', true);
+			await entityRepository.addLink(character2.id, character3.id, 'allied_with', true);
+
+			const results = await entityRepository.queryByRelationship('allied_with');
+
+			expect(results).toHaveLength(3);
+			expect(results.map((e) => e.id).sort()).toEqual(['char-1', 'char-2', 'char-3']);
+		});
+
+		it('should not duplicate entities with multiple links of same type', async () => {
+			// Character 1 has two 'member_of' relationships
+			await entityRepository.addLink(character1.id, faction1.id, 'member_of', false);
+			await entityRepository.addLink(character1.id, faction2.id, 'member_of', false);
+
+			const results = await entityRepository.queryByRelationship('member_of');
+
+			expect(results).toHaveLength(1);
+			expect(results[0].id).toBe('char-1');
+		});
+
+		it('should handle case-sensitive relationship names', async () => {
+			await entityRepository.addLink(character1.id, faction1.id, 'member_of', false);
+
+			const results = await entityRepository.queryByRelationship('Member_Of');
+
+			expect(results).toEqual([]);
+		});
+
+		it('should work with custom relationship types', async () => {
+			await entityRepository.addLink(character1.id, location1.id, 'resides_at', false);
+			await entityRepository.addLink(character2.id, location1.id, 'resides_at', false);
+
+			const results = await entityRepository.queryByRelationship('resides_at');
+
+			expect(results).toHaveLength(2);
+		});
+	});
+
+	describe('getEntitiesWithRelationshipType', () => {
+		describe('outgoing direction', () => {
+			it('should find entities linked from source with specific relationship', async () => {
+				await entityRepository.addLink(character1.id, faction1.id, 'member_of', false);
+				await entityRepository.addLink(character1.id, faction2.id, 'member_of', false);
+				await entityRepository.addLink(character1.id, character2.id, 'friend_of', false);
+
+				const results = await entityRepository.getEntitiesWithRelationshipType(
+					character1.id,
+					'member_of',
+					{ direction: 'outgoing' }
+				);
+
+				expect(results).toHaveLength(2);
+				expect(results.map((e) => e.id).sort()).toEqual(['faction-1', 'faction-2']);
+			});
+
+			it('should return empty array when no outgoing relationships match', async () => {
+				await entityRepository.addLink(character1.id, character2.id, 'friend_of', false);
+
+				const results = await entityRepository.getEntitiesWithRelationshipType(
+					character1.id,
+					'member_of',
+					{ direction: 'outgoing' }
+				);
+
+				expect(results).toEqual([]);
+			});
+
+			it('should not include incoming relationships', async () => {
+				await entityRepository.addLink(character2.id, character1.id, 'friend_of', false);
+
+				const results = await entityRepository.getEntitiesWithRelationshipType(
+					character1.id,
+					'friend_of',
+					{ direction: 'outgoing' }
+				);
+
+				expect(results).toEqual([]);
+			});
+		});
+
+		describe('incoming direction', () => {
+			it('should find entities linking to target with specific relationship', async () => {
+				await entityRepository.addLink(character1.id, faction1.id, 'member_of', false);
+				await entityRepository.addLink(character2.id, faction1.id, 'member_of', false);
+				await entityRepository.addLink(character3.id, faction1.id, 'friend_of', false);
+
+				const results = await entityRepository.getEntitiesWithRelationshipType(
+					faction1.id,
+					'member_of',
+					{ direction: 'incoming' }
+				);
+
+				expect(results).toHaveLength(2);
+				expect(results.map((e) => e.id).sort()).toEqual(['char-1', 'char-2']);
+			});
+
+			it('should return empty array when no incoming relationships match', async () => {
+				await entityRepository.addLink(character1.id, faction1.id, 'member_of', false);
+
+				const results = await entityRepository.getEntitiesWithRelationshipType(
+					faction1.id,
+					'friend_of',
+					{ direction: 'incoming' }
+				);
+
+				expect(results).toEqual([]);
+			});
+
+			it('should not include outgoing relationships', async () => {
+				await entityRepository.addLink(character1.id, character2.id, 'friend_of', false);
+
+				const results = await entityRepository.getEntitiesWithRelationshipType(
+					character1.id,
+					'friend_of',
+					{ direction: 'incoming' }
+				);
+
+				expect(results).toEqual([]);
+			});
+		});
+
+		describe('both direction (default)', () => {
+			it('should find entities in both directions with specific relationship', async () => {
+				await entityRepository.addLink(character1.id, character2.id, 'friend_of', false);
+				await entityRepository.addLink(character3.id, character1.id, 'friend_of', false);
+
+				const results = await entityRepository.getEntitiesWithRelationshipType(
+					character1.id,
+					'friend_of',
+					{ direction: 'both' }
+				);
+
+				expect(results).toHaveLength(2);
+				expect(results.map((e) => e.id).sort()).toEqual(['char-2', 'char-3']);
+			});
+
+			it('should use "both" as default when direction not specified', async () => {
+				await entityRepository.addLink(character1.id, character2.id, 'friend_of', false);
+				await entityRepository.addLink(character3.id, character1.id, 'friend_of', false);
+
+				const results = await entityRepository.getEntitiesWithRelationshipType(
+					character1.id,
+					'friend_of'
+				);
+
+				expect(results).toHaveLength(2);
+			});
+
+			it('should not duplicate entities in bidirectional relationships', async () => {
+				await entityRepository.addLink(character1.id, character2.id, 'allied_with', true);
+
+				const results = await entityRepository.getEntitiesWithRelationshipType(
+					character1.id,
+					'allied_with',
+					{ direction: 'both' }
+				);
+
+				expect(results).toHaveLength(1);
+				expect(results[0].id).toBe('char-2');
+			});
+
+			it('should return empty array when no relationships match in either direction', async () => {
+				await entityRepository.addLink(character1.id, character2.id, 'friend_of', false);
+
+				const results = await entityRepository.getEntitiesWithRelationshipType(
+					character1.id,
+					'enemy_of',
+					{ direction: 'both' }
+				);
+
+				expect(results).toEqual([]);
+			});
+		});
+
+		describe('edge cases', () => {
+			it('should return empty array for non-existent entity', async () => {
+				const results = await entityRepository.getEntitiesWithRelationshipType(
+					'nonexistent-id',
+					'member_of'
+				);
+
+				expect(results).toEqual([]);
+			});
+
+			it('should return empty array when entity has no links', async () => {
+				const results = await entityRepository.getEntitiesWithRelationshipType(
+					character1.id,
+					'member_of'
+				);
+
+				expect(results).toEqual([]);
+			});
+
+			it('should handle inverse relationship types for bidirectional links', async () => {
+				await entityRepository.addLink(character1.id, faction1.id, 'member_of', true);
+
+				// Query from faction side for inverse relationship
+				const results = await entityRepository.getEntitiesWithRelationshipType(
+					faction1.id,
+					'has_member',
+					{ direction: 'outgoing' }
+				);
+
+				expect(results).toHaveLength(1);
+				expect(results[0].id).toBe('char-1');
+			});
+		});
+	});
+
+	describe('getRelationshipTypes', () => {
+		it('should return all unique relationship types in the database', async () => {
+			await entityRepository.addLink(character1.id, faction1.id, 'member_of', false);
+			await entityRepository.addLink(character1.id, character2.id, 'friend_of', false);
+			await entityRepository.addLink(character2.id, character3.id, 'allied_with', true);
+
+			const types = await entityRepository.getRelationshipTypes();
+
+			expect(types).toHaveLength(3);
+			expect(types.sort()).toEqual(['allied_with', 'friend_of', 'member_of']);
+		});
+
+		it('should not duplicate relationship types', async () => {
+			await entityRepository.addLink(character1.id, faction1.id, 'member_of', false);
+			await entityRepository.addLink(character2.id, faction1.id, 'member_of', false);
+			await entityRepository.addLink(character3.id, faction2.id, 'member_of', false);
+
+			const types = await entityRepository.getRelationshipTypes();
+
+			expect(types).toHaveLength(1);
+			expect(types[0]).toBe('member_of');
+		});
+
+		it('should return empty array when no links exist', async () => {
+			const types = await entityRepository.getRelationshipTypes();
+
+			expect(types).toEqual([]);
+		});
+
+		it('should return empty array when database is empty', async () => {
+			await db.entities.clear();
+
+			const types = await entityRepository.getRelationshipTypes();
+
+			expect(types).toEqual([]);
+		});
+
+		it('should include inverse relationship types from bidirectional links', async () => {
+			await entityRepository.addLink(character1.id, faction1.id, 'member_of', true);
+
+			const types = await entityRepository.getRelationshipTypes();
+
+			expect(types).toHaveLength(2);
+			expect(types.sort()).toEqual(['has_member', 'member_of']);
+		});
+
+		it('should handle custom relationship types', async () => {
+			await entityRepository.addLink(character1.id, location1.id, 'resides_at', false);
+			await entityRepository.addLink(character2.id, faction1.id, 'commands', false);
+
+			const types = await entityRepository.getRelationshipTypes();
+
+			expect(types).toHaveLength(2);
+			expect(types.sort()).toEqual(['commands', 'resides_at']);
+		});
+
+		it('should include all relationships from entities with multiple links', async () => {
+			await entityRepository.addLink(character1.id, faction1.id, 'member_of', false);
+			await entityRepository.addLink(character1.id, character2.id, 'friend_of', false);
+			await entityRepository.addLink(character1.id, location1.id, 'located_at', false);
+
+			const types = await entityRepository.getRelationshipTypes();
+
+			expect(types).toHaveLength(3);
+		});
+	});
+
+	describe('getRelationshipStats', () => {
+		it('should count relationships by type', async () => {
+			await entityRepository.addLink(character1.id, faction1.id, 'member_of', false);
+			await entityRepository.addLink(character2.id, faction1.id, 'member_of', false);
+			await entityRepository.addLink(character1.id, character2.id, 'friend_of', false);
+
+			const stats = await entityRepository.getRelationshipStats();
+
+			expect(stats).toEqual({
+				member_of: 2,
+				friend_of: 1
+			});
+		});
+
+		it('should return empty object when no links exist', async () => {
+			const stats = await entityRepository.getRelationshipStats();
+
+			expect(stats).toEqual({});
+		});
+
+		it('should return empty object when database is empty', async () => {
+			await db.entities.clear();
+
+			const stats = await entityRepository.getRelationshipStats();
+
+			expect(stats).toEqual({});
+		});
+
+		it('should count bidirectional relationships on both sides', async () => {
+			await entityRepository.addLink(character1.id, character2.id, 'allied_with', true);
+			await entityRepository.addLink(character2.id, character3.id, 'friend_of', true);
+
+			const stats = await entityRepository.getRelationshipStats();
+
+			expect(stats).toEqual({
+				allied_with: 2,
+				friend_of: 2
+			});
+		});
+
+		it('should count inverse relationships separately', async () => {
+			await entityRepository.addLink(character1.id, faction1.id, 'member_of', true);
+
+			const stats = await entityRepository.getRelationshipStats();
+
+			expect(stats).toEqual({
+				member_of: 1,
+				has_member: 1
+			});
+		});
+
+		it('should handle multiple relationships of the same type', async () => {
+			await entityRepository.addLink(character1.id, faction1.id, 'member_of', false);
+			await entityRepository.addLink(character1.id, faction2.id, 'member_of', false);
+			await entityRepository.addLink(character2.id, faction1.id, 'member_of', false);
+			await entityRepository.addLink(character3.id, faction2.id, 'member_of', false);
+
+			const stats = await entityRepository.getRelationshipStats();
+
+			expect(stats).toEqual({
+				member_of: 4
+			});
+		});
+
+		it('should count custom relationship types', async () => {
+			await entityRepository.addLink(character1.id, location1.id, 'resides_at', false);
+			await entityRepository.addLink(character2.id, location1.id, 'resides_at', false);
+			await entityRepository.addLink(character3.id, faction1.id, 'commands', false);
+
+			const stats = await entityRepository.getRelationshipStats();
+
+			expect(stats).toEqual({
+				resides_at: 2,
+				commands: 1
+			});
+		});
+
+		it('should handle mixed relationship types', async () => {
+			await entityRepository.addLink(character1.id, faction1.id, 'member_of', false);
+			await entityRepository.addLink(character1.id, character2.id, 'friend_of', true);
+			await entityRepository.addLink(character2.id, character3.id, 'enemy_of', false);
+			await entityRepository.addLink(character3.id, faction2.id, 'member_of', false);
+
+			const stats = await entityRepository.getRelationshipStats();
+
+			expect(stats).toEqual({
+				member_of: 2,
+				friend_of: 2,
+				enemy_of: 1
+			});
+		});
+	});
+});

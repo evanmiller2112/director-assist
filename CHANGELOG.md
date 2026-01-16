@@ -22,6 +22,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Global keyboard shortcut (Cmd+K on Mac, Ctrl+K on Windows/Linux)
   - Click outside to close
   - Comprehensive test suite with 51 tests
+- Per-field AI generation buttons on entity forms (Issue #47)
+  - Individual generate buttons next to each text, textarea, and richtext field
+  - Context-aware generation using other filled fields
+  - DM-only fields excluded from AI context for privacy
+  - Visual loading states with spinner during generation
+  - User-friendly error handling for API failures
 
 ### Planning
 - End-to-end tests (Playwright)

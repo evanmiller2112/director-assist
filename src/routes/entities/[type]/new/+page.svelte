@@ -4,9 +4,11 @@
 	import { entitiesStore, notificationStore, campaignStore } from '$lib/stores';
 	import { getEntityTypeDefinition } from '$lib/config/entityTypes';
 	import { generateEntity, hasGenerationApiKey } from '$lib/services';
-	import { createEntity, type FieldValue } from '$lib/types';
+	import { generateField, isGeneratableField } from '$lib/services/fieldGenerationService';
+	import { createEntity, type FieldValue, type FieldDefinition } from '$lib/types';
 	import { validateEntity } from '$lib/utils';
 	import { ArrowLeft, Save, Sparkles, Loader2 } from 'lucide-svelte';
+	import FieldGenerateButton from '$lib/components/entity/FieldGenerateButton.svelte';
 
 	const entityType = $derived($page.params.type ?? '');
 	const typeDefinition = $derived(
@@ -30,6 +32,7 @@
 	let isSaving = $state(false);
 	let isGenerating = $state(false);
 	let errors = $state<Record<string, string>>({});
+	let generatingFieldKey = $state<string | null>(null);
 
 	// Validation
 	function validate(): boolean {
@@ -145,6 +148,57 @@
 			isGenerating = false;
 		}
 	}
+
+	async function handleGenerateField(targetField: FieldDefinition) {
+		if (!typeDefinition || generatingFieldKey || isGenerating) return;
+
+		generatingFieldKey = targetField.key;
+
+		try {
+			// Build context from current form values
+			const currentValues = {
+				name: name.trim() || undefined,
+				description: description.trim() || undefined,
+				tags: tags
+					.split(',')
+					.map((t) => t.trim())
+					.filter(Boolean),
+				notes: notes.trim() || undefined,
+				fields: $state.snapshot(fields)
+			};
+
+			// Get campaign context if available
+			const campaign = campaignStore.campaign;
+			const campaignContext = campaign
+				? {
+						name: campaign.name,
+						setting: (campaign.fields?.setting as string) ?? '',
+						system: (campaign.fields?.system as string) ?? ''
+					}
+				: undefined;
+
+			const result = await generateField({
+				entityType,
+				typeDefinition,
+				targetField,
+				currentValues,
+				campaignContext
+			});
+
+			if (result.success && result.value !== undefined) {
+				// Update the field with the generated value
+				updateField(targetField.key, result.value);
+				notificationStore.success(`Generated ${targetField.label}!`);
+			} else {
+				notificationStore.error(result.error ?? 'Failed to generate field');
+			}
+		} catch (error) {
+			console.error('Failed to generate field:', error);
+			notificationStore.error('An unexpected error occurred');
+		} finally {
+			generatingFieldKey = null;
+		}
+	}
 </script>
 
 <svelte:head>
@@ -197,10 +251,19 @@
 		{#if typeDefinition}
 			{#each typeDefinition.fieldDefinitions.filter((f) => f.section !== 'hidden') as field}
 				<div>
-					<label for={field.key} class="label">
-						{field.label}
-						{#if field.required}*{/if}
-					</label>
+					<div class="flex items-center justify-between mb-1">
+						<label for={field.key} class="label mb-0">
+							{field.label}
+							{#if field.required}*{/if}
+						</label>
+						{#if isGeneratableField(field.type) && canGenerate}
+							<FieldGenerateButton
+								disabled={isGenerating || isSaving}
+								loading={generatingFieldKey === field.key}
+								onGenerate={() => handleGenerateField(field)}
+							/>
+						{/if}
+					</div>
 
 					{#if field.helpText}
 						<p class="text-sm text-slate-500 mb-1">{field.helpText}</p>
@@ -299,7 +362,16 @@
 					</h2>
 					{#each secretFields as field}
 						<div class="mb-4">
-							<label for={field.key} class="label">{field.label}</label>
+							<div class="flex items-center justify-between mb-1">
+								<label for={field.key} class="label mb-0">{field.label}</label>
+								{#if isGeneratableField(field.type) && canGenerate}
+									<FieldGenerateButton
+										disabled={isGenerating || isSaving}
+										loading={generatingFieldKey === field.key}
+										onGenerate={() => handleGenerateField(field)}
+									/>
+								{/if}
+							</div>
 							<textarea
 								id={field.key}
 								class="input min-h-[80px]"

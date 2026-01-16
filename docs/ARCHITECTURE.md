@@ -32,8 +32,9 @@ Director Assist is a client-side web application built with SvelteKit 2 and Svel
 - **IndexedDB**: Browser's persistent storage database
 - **nanoid**: Unique ID generation for entities
 
-### AI Integration (Scaffolded)
-- **Anthropic SDK**: Claude AI client (not yet implemented)
+### AI Integration
+- **Anthropic SDK**: Claude AI client for content generation
+- **Field Generation Service**: Per-field AI content generation with context awareness
 
 ## Directory Structure
 
@@ -41,6 +42,8 @@ Director Assist is a client-side web application built with SvelteKit 2 and Svel
 src/
 ├── lib/
 │   ├── components/          # Reusable Svelte components
+│   │   ├── entity/          # Entity-specific components
+│   │   │   └── FieldGenerateButton.svelte
 │   │   └── layout/          # Layout components
 │   │       ├── Header.svelte
 │   │       ├── HeaderSearch.svelte
@@ -53,6 +56,9 @@ src/
 │   │       ├── entityRepository.ts
 │   │       ├── campaignRepository.ts
 │   │       └── chatRepository.ts
+│   ├── services/            # Business logic services
+│   │   ├── fieldGenerationService.ts  # AI field generation
+│   │   └── modelService.ts            # AI model selection
 │   ├── stores/              # Application state
 │   │   ├── campaign.svelte.ts
 │   │   ├── entities.svelte.ts
@@ -598,40 +604,173 @@ When set to "system":
 - Listens for OS theme changes
 - Updates automatically
 
-## AI Integration (Future)
+## AI Integration
 
-The AI integration is scaffolded but not yet implemented. The planned architecture:
+Director Assist uses Claude AI (via the Anthropic SDK) to generate content for entity fields.
 
-### Components
+### Implemented Features
 
-1. **Chat Interface**: Route for conversing with AI
-2. **Context Builder**: Selects relevant entities for AI context
-3. **Prompt Templates**: Pre-built prompts for common tasks
-4. **Entity Generator**: Parses AI responses into entities
-5. **Suggestion System**: AI-generated campaign suggestions
+#### Per-Field Content Generation
 
-### Flow
+**Purpose:** Generate content for individual text-based fields while maintaining context from other filled fields.
+
+**How It Works:**
+
+1. **User Action**: User clicks the sparkle button next to a generatable field
+2. **Context Collection**: Service gathers context from filled fields on the form
+3. **Privacy Protection**: DM-only fields (section: 'hidden') are excluded from context
+4. **Prompt Building**: Service creates a focused prompt for the specific field
+5. **API Call**: Sends request to Claude via Anthropic SDK
+6. **Response**: Extracted text is inserted into the target field
+
+**Generatable Field Types:**
+- `text` - Single-line text fields
+- `textarea` - Multi-line text fields
+- `richtext` - Markdown/rich text fields
+
+**Context Sources:**
+- Entity name
+- Entity description
+- Entity tags
+- Other filled fields (excluding target field and hidden fields)
+- Campaign context (name, setting, system)
+- Field hints (placeholder, helpText)
+
+**Example Flow:**
 
 ```
-User Prompt → Context Builder → API Call → Response Parser → Entity Creation
-                    ↓
-            [Selected Entities]
+User creates NPC, fills in:
+  - Name: "Grimwald the Wise"
+  - Description: "An elderly wizard"
+  - Role: "Quest Giver"
+
+User clicks generate on "Personality" field:
+  1. Service collects: name, description, role, campaign context
+  2. Builds prompt: "Generate personality for NPC named Grimwald..."
+  3. Calls Claude API with context
+  4. Returns: "Quirky and forgetful, but fiercely intelligent..."
+  5. Inserts generated text into Personality field
 ```
 
-### API Integration
+### Architecture
 
-Uses Anthropic SDK:
-- API key stored in settings (not in backup)
-- Configurable model and parameters
-- Streaming responses for better UX
+#### Field Generation Service
 
-### Planned Features
+**Location:** `/src/lib/services/fieldGenerationService.ts`
 
-- Generate NPCs with personality and background
-- Create locations with atmosphere and features
-- Suggest plot hooks based on campaign state
-- Identify inconsistencies in campaign data
-- Generate encounter ideas
+**Key Functions:**
+
+```typescript
+// Check if a field type supports AI generation
+isGeneratableField(fieldType: FieldType): boolean
+
+// Generate content for a specific field
+generateField(context: FieldGenerationContext): Promise<FieldGenerationResult>
+```
+
+**Context Interface:**
+
+```typescript
+interface FieldGenerationContext {
+  entityType: EntityType;
+  typeDefinition: EntityTypeDefinition;
+  targetField: FieldDefinition;
+  currentValues: {
+    name?: string;
+    description?: string;
+    tags?: string[];
+    notes?: string;
+    fields: Record<string, FieldValue>;
+  };
+  campaignContext?: {
+    name: string;
+    setting: string;
+    system: string;
+  };
+}
+```
+
+**Privacy Protection:**
+
+Hidden fields (with `section: 'hidden'`) are automatically excluded from AI context:
+- Protects DM secrets and sensitive information
+- Ensures player-facing content doesn't leak private notes
+- Implemented in `buildFieldPrompt()` via section check
+
+#### Field Generate Button Component
+
+**Location:** `/src/lib/components/entity/FieldGenerateButton.svelte`
+
+**Props:**
+- `disabled`: Disables the button
+- `loading`: Shows loading spinner
+- `onGenerate`: Callback function when clicked
+
+**Visual States:**
+- Normal: Sparkle icon with "Generate" label
+- Loading: Spinning loader icon
+- Disabled: Greyed out, no interaction
+
+#### Integration Points
+
+**Entity Forms:** New and edit pages for entities include generate buttons next to applicable fields:
+- `/src/routes/entities/[type]/new/+page.svelte`
+- `/src/routes/entities/[type]/[id]/edit/+page.svelte`
+
+**Configuration:**
+- API key stored in localStorage (key: 'dm-assist-api-key')
+- Model selection via `modelService.ts`
+- Max tokens: 1024 (configurable per field type)
+
+### Error Handling
+
+The service provides user-friendly error messages for common scenarios:
+
+| Error | User Message |
+|-------|--------------|
+| No API key | "API key not configured. Please add your Anthropic API key in Settings." |
+| Invalid API key (401) | "Invalid API key. Please check your API key in Settings." |
+| Rate limit (429) | "Rate limit exceeded. Please wait a moment and try again." |
+| Network/API error | "Failed to generate field: [error message]" |
+| Empty response | "AI returned empty content" |
+
+### Prompt Engineering
+
+**Prompt Structure:**
+
+```
+1. Role: "You are a TTRPG campaign assistant"
+2. Campaign Context: name, setting, system
+3. Existing Context: filled fields from the form
+4. Field Target: specific field to generate
+5. Field Type & Hints: type, placeholder, helpText
+6. Generation Rules: format, length, consistency guidelines
+7. Output Format: plain text only (no JSON/markdown)
+```
+
+**Field-Specific Guidelines:**
+
+- **Text fields**: 1-2 sentences, concise and descriptive
+- **Textarea fields**: 1-2 paragraphs
+- **Richtext fields**: 1-3 paragraphs, evocative content
+
+**Consistency Rules:**
+- Generated content must align with existing context
+- Tone matches campaign system and setting
+- Maintains internal logic (e.g., personality matches role)
+
+### Future AI Features
+
+**Planned Enhancements:**
+
+1. **Full-Entity Generation**: Create entire entities at once
+2. **Chat Interface**: Conversational AI for campaign planning
+3. **Context Builder**: Select specific entities for AI context
+4. **Suggestion System**: AI-generated plot hooks and campaign ideas
+5. **Consistency Checker**: Identify conflicts in campaign data
+6. **Streaming Responses**: Real-time text generation
+7. **Custom Prompts**: User-defined prompt templates
+8. **Entity Relationships**: AI suggests logical connections between entities
 
 ## Performance Considerations
 

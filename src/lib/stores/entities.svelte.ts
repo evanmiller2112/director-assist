@@ -171,9 +171,10 @@ function createEntitiesStore() {
 			sourceId: string,
 			targetId: string,
 			relationship: string,
-			bidirectional: boolean = false
+			bidirectional: boolean = false,
+			notes?: string
 		): Promise<void> {
-			await entityRepository.addLink(sourceId, targetId, relationship, bidirectional);
+			await entityRepository.addLink(sourceId, targetId, relationship, bidirectional, notes);
 		},
 
 		async removeLink(sourceId: string, targetId: string): Promise<void> {

@@ -150,7 +150,8 @@ export const entityRepository = {
 		sourceId: string,
 		targetId: string,
 		relationship: string,
-		bidirectional: boolean = false
+		bidirectional: boolean = false,
+		notes?: string
 	): Promise<void> {
 		await ensureDbReady();
 
@@ -174,7 +175,8 @@ export const entityRepository = {
 				targetId,
 				targetType: targetEntity.type,
 				relationship,
-				bidirectional
+				bidirectional,
+				notes: notes || undefined
 			};
 
 			// Parse and stringify to avoid Proxy serialization errors

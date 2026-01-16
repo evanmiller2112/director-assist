@@ -147,4 +147,14 @@
 	.search-result-item.selected {
 		@apply bg-slate-100 dark:bg-slate-700;
 	}
+
+	/* Command palette items */
+	.command-item {
+		@apply w-full px-3 py-2 text-left flex items-center gap-3 cursor-pointer
+			hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors;
+	}
+
+	.command-item.selected {
+		@apply bg-slate-100 dark:bg-slate-700;
+	}
 }

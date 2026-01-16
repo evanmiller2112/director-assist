@@ -49,7 +49,10 @@ src/
 │   │       ├── HeaderSearch.svelte
 │   │       └── Sidebar.svelte
 │   ├── config/              # Configuration and definitions
+│   │   ├── commands.ts      # Command palette definitions
 │   │   └── entityTypes.ts   # Entity type definitions
+│   ├── utils/               # Utility functions
+│   │   └── commandUtils.ts  # Command parsing and filtering
 │   ├── db/                  # Database layer
 │   │   ├── index.ts         # Dexie database setup
 │   │   └── repositories/    # Data access layer
@@ -537,6 +540,302 @@ getByType(type: EntityType): Observable<BaseEntity[]> {
   );
 }
 ```
+
+## Command System
+
+The command palette provides quick access to common actions through a keyboard-driven interface integrated into the HeaderSearch component.
+
+### Overview
+
+Users trigger command mode by typing "/" as the first character in the search bar. Commands are context-aware, filtering based on the current page context (e.g., entity-specific commands only appear when viewing an entity).
+
+**Key Files:**
+- `/src/lib/config/commands.ts` - Command definitions and execution logic
+- `/src/lib/utils/commandUtils.ts` - Command parsing and filtering utilities
+- `/src/lib/components/layout/HeaderSearch.svelte` - UI integration
+
+### Command Definition
+
+Commands are defined using the `CommandDefinition` interface:
+
+```typescript
+interface CommandDefinition {
+  id: string;                    // Unique identifier (e.g., "new", "relate")
+  name: string;                  // Display name
+  description: string;           // User-facing description
+  icon: string;                  // Lucide icon name
+  requiresEntity: boolean;       // Whether command needs entity context
+  execute: (context, argument) => void | Promise<void>;
+}
+```
+
+**Command Context:**
+
+```typescript
+interface CommandContext {
+  currentEntityId: string | null;
+  currentEntityType: EntityType | null;
+  goto: (url: string) => Promise<void>;
+}
+```
+
+Commands receive context about the current page and can navigate using the provided `goto` function.
+
+### Available Commands
+
+#### `/new [type]`
+Creates a new entity of the specified type.
+
+- **Requires Entity:** No
+- **Arguments:** Optional entity type (defaults to "character")
+- **Example:** `/new npc`, `/new location`
+- **Navigation:** `/entities/{type}/new`
+
+#### `/search [query]`
+Searches across all entities.
+
+- **Requires Entity:** No
+- **Arguments:** Search query string
+- **Example:** `/search dragons`, `/search tavern`
+- **Navigation:** `/search?q={query}`
+
+#### `/go [destination]`
+Navigates to specific pages.
+
+- **Requires Entity:** No
+- **Arguments:** Page destination (campaign, settings, chat)
+- **Example:** `/go settings`, `/go campaign`
+- **Navigation:** Varies by destination
+
+#### `/relate`
+Creates a relationship between the current entity and another entity.
+
+- **Requires Entity:** Yes (only appears when viewing an entity)
+- **Arguments:** None
+- **Navigation:** `/entities/{type}/{id}?action=relate`
+
+#### `/summarize`
+Generates an AI summary of the current entity.
+
+- **Requires Entity:** Yes (only appears when viewing an entity)
+- **Arguments:** None
+- **Requires:** Anthropic API key configured
+- **Navigation:** `/entities/{type}/{id}?action=summarize`
+
+#### `/settings`
+Opens the settings page.
+
+- **Requires Entity:** No
+- **Arguments:** None
+- **Navigation:** `/settings`
+
+### Command Parsing
+
+Commands support arguments separated by spaces:
+
+```typescript
+parseCommandWithArgument("/new npc")
+// Returns: { command: "new", argument: "npc" }
+
+parseCommandWithArgument("/search ancient ruins")
+// Returns: { command: "search", argument: "ancient ruins" }
+
+parseCommandWithArgument("/relate")
+// Returns: { command: "relate", argument: "" }
+```
+
+**Implementation:**
+
+```typescript
+export function parseCommandWithArgument(input: string): ParsedCommand {
+  const trimmed = input.trim();
+  const withoutSlash = trimmed.startsWith('/') ? trimmed.slice(1) : trimmed;
+  const spaceIndex = withoutSlash.indexOf(' ');
+
+  if (spaceIndex === -1) {
+    return { command: withoutSlash.toLowerCase(), argument: '' };
+  }
+
+  return {
+    command: withoutSlash.slice(0, spaceIndex).toLowerCase(),
+    argument: withoutSlash.slice(spaceIndex + 1).trim()
+  };
+}
+```
+
+### Command Filtering
+
+Commands are filtered based on two criteria:
+
+1. **Context Filtering:** Commands with `requiresEntity: true` are hidden when not viewing an entity
+2. **Query Matching:** Commands are filtered by user input matching command id, name, or description
+
+```typescript
+export function filterCommands(
+  query: string,
+  commands: CommandDefinition[],
+  context: CommandFilterContext
+): CommandDefinition[] {
+  const hasEntity = context.currentEntityId !== null;
+
+  // Filter by entity requirement
+  let filtered = commands.filter(cmd => {
+    if (cmd.requiresEntity && !hasEntity) return false;
+    return true;
+  });
+
+  // Filter by query
+  if (query.trim()) {
+    filtered = filtered.filter(cmd => {
+      const searchable = [cmd.id, cmd.name, cmd.description]
+        .join(' ')
+        .toLowerCase();
+      return searchable.includes(query.toLowerCase());
+    });
+  }
+
+  return filtered;
+}
+```
+
+### UI Integration
+
+The HeaderSearch component handles command mode seamlessly:
+
+**Mode Detection:**
+
+```typescript
+const isCommandMode = $derived(searchInput.startsWith('/'));
+```
+
+**Context Collection:**
+
+```typescript
+const currentEntityId = $derived($page.params.id ?? null);
+const currentEntity = $derived(
+  currentEntityId ? entitiesStore.getById(currentEntityId) : null
+);
+```
+
+**Command Filtering:**
+
+```typescript
+const filteredCommands = $derived.by(() => {
+  if (!isCommandMode) return [];
+
+  const { command } = parseCommandWithArgument(searchInput);
+  const context = {
+    currentEntityId,
+    currentEntityType: currentEntity?.type ?? null
+  };
+
+  return filterCommands(command, COMMANDS, context);
+});
+```
+
+**Execution:**
+
+```typescript
+function executeCommand(command: CommandDefinition) {
+  const { argument } = parseCommandWithArgument(searchInput);
+  const context = {
+    currentEntityId,
+    currentEntityType: currentEntity?.type ?? null,
+    goto
+  };
+
+  command.execute(context, argument);
+  closeDropdown();
+}
+```
+
+### Keyboard Navigation
+
+Commands support full keyboard navigation:
+
+- **Arrow Down/Up:** Navigate through filtered commands
+- **Enter:** Execute selected command
+- **Escape:** Close command palette and clear input
+- **Tab:** Close command palette
+- **Mouse hover:** Update selection
+
+The selected command is tracked with an index that updates reactively:
+
+```typescript
+let selectedIndex = $state(0);
+
+function handleKeydown(e: KeyboardEvent) {
+  switch (e.key) {
+    case 'ArrowDown':
+      selectedIndex = Math.min(selectedIndex + 1, flatResults.length - 1);
+      break;
+    case 'ArrowUp':
+      selectedIndex = Math.max(selectedIndex - 1, 0);
+      break;
+    case 'Enter':
+      executeCommand(flatResults[selectedIndex]);
+      break;
+  }
+}
+```
+
+### Adding New Commands
+
+To add a new command:
+
+1. **Define the command** in `/src/lib/config/commands.ts`:
+
+```typescript
+{
+  id: 'mycommand',
+  name: 'My Command',
+  description: 'What this command does',
+  icon: 'icon-name',              // Lucide icon
+  requiresEntity: false,          // or true if needs entity context
+  execute: async (context, argument) => {
+    // Command logic here
+    await context.goto('/some/path');
+  }
+}
+```
+
+2. **Add to COMMANDS array** in the same file
+3. **Command is automatically available** in the UI (no additional wiring needed)
+
+### Best Practices
+
+**Command Design:**
+
+- Keep command ids short and memorable
+- Use clear, action-oriented names
+- Provide helpful descriptions
+- Choose intuitive icons from Lucide
+- Set `requiresEntity` correctly to avoid confusion
+
+**Execution Logic:**
+
+- Use `context.goto()` for navigation
+- Handle errors gracefully
+- Close command palette after execution
+- Support optional arguments when useful
+
+**Context Awareness:**
+
+- Check `context.currentEntityId` before entity operations
+- Use `context.currentEntityType` for type-specific logic
+- Validate arguments before execution
+
+### Future Enhancements
+
+**Planned Improvements:**
+
+1. **Command History:** Recently used commands appear first
+2. **Command Aliases:** Alternative names for commands (e.g., `n` for `new`)
+3. **Fuzzy Matching:** Better search with typo tolerance
+4. **Command Chaining:** Execute multiple commands in sequence
+5. **Custom Commands:** User-defined commands via settings
+6. **Command Arguments UI:** Visual argument input for complex commands
+7. **Command Preview:** Show what will happen before executing
 
 ## Backup & Restore
 

@@ -15,3 +15,11 @@ export {
 	validateEntity,
 	type ValidationResult
 } from './validation';
+
+// Command utilities
+export {
+	parseCommandWithArgument,
+	filterCommands,
+	type CommandFilterContext,
+	type ParsedCommand
+} from './commandUtils';

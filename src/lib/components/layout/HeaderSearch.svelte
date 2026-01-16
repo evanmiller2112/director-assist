@@ -1,10 +1,13 @@
 <script lang="ts">
 	import { Search } from 'lucide-svelte';
 	import { goto } from '$app/navigation';
+	import { page } from '$app/stores';
 	import { entitiesStore, campaignStore } from '$lib/stores';
 	import { getEntityTypeDefinition, getAllEntityTypes } from '$lib/config/entityTypes';
-	import { getIconComponent } from '$lib/utils';
+	import { getIconComponent, parseCommandWithArgument, filterCommands } from '$lib/utils';
+	import { COMMANDS } from '$lib/config/commands';
 	import type { BaseEntity } from '$lib/types';
+	import type { CommandDefinition } from '$lib/config/commands';
 
 	let searchInput = $state('');
 	let isOpen = $state(false);
@@ -12,14 +15,34 @@
 	let inputElement: HTMLInputElement | undefined = $state();
 	let debounceTimer: ReturnType<typeof setTimeout> | undefined;
 
+	// Command mode detection
+	const isCommandMode = $derived(searchInput.startsWith('/'));
+
+	// Get current entity from URL params
+	const currentEntityId = $derived($page.params.id ?? null);
+	const currentEntity = $derived(currentEntityId ? entitiesStore.getById(currentEntityId) : null);
+
 	// Get all entity types for display
 	const allTypes = $derived(
 		getAllEntityTypes(campaignStore.customEntityTypes, campaignStore.entityTypeOverrides)
 	);
 
+	// Command filtering
+	const filteredCommands = $derived.by(() => {
+		if (!isCommandMode) return [];
+
+		const { command } = parseCommandWithArgument(searchInput);
+		const context = {
+			currentEntityId,
+			currentEntityType: currentEntity?.type ?? null
+		};
+
+		return filterCommands(command, COMMANDS, context);
+	});
+
 	// Group filtered results by type
 	const groupedResults = $derived.by(() => {
-		if (!searchInput.trim()) return {};
+		if (!searchInput.trim() || isCommandMode) return {};
 
 		const filtered = entitiesStore.filteredEntities;
 		const groups: Record<string, BaseEntity[]> = {};
@@ -39,6 +62,10 @@
 
 	// Flatten results for keyboard navigation
 	const flatResults = $derived.by(() => {
+		if (isCommandMode) {
+			return filteredCommands;
+		}
+
 		const results: BaseEntity[] = [];
 		for (const type of Object.keys(groupedResults)) {
 			results.push(...groupedResults[type]);
@@ -47,23 +74,36 @@
 	});
 
 	const hasResults = $derived(flatResults.length > 0);
-	const totalResults = $derived(entitiesStore.filteredEntities.length);
+	const totalResults = $derived(
+		isCommandMode ? filteredCommands.length : entitiesStore.filteredEntities.length
+	);
 
 	function handleInput(e: Event) {
 		const value = (e.target as HTMLInputElement).value;
 		searchInput = value;
 
-		// Debounce the store update
-		if (debounceTimer) clearTimeout(debounceTimer);
-		debounceTimer = setTimeout(() => {
-			entitiesStore.setSearchQuery(value);
-		}, 150);
-
-		if (value.trim()) {
-			isOpen = true;
-			selectedIndex = 0;
+		// In command mode, don't debounce and don't update entity search
+		if (value.startsWith('/')) {
+			// Command mode - show results immediately
+			if (value.trim()) {
+				isOpen = true;
+				selectedIndex = 0;
+			} else {
+				isOpen = false;
+			}
 		} else {
-			isOpen = false;
+			// Search mode - debounce the store update
+			if (debounceTimer) clearTimeout(debounceTimer);
+			debounceTimer = setTimeout(() => {
+				entitiesStore.setSearchQuery(value);
+			}, 150);
+
+			if (value.trim()) {
+				isOpen = true;
+				selectedIndex = 0;
+			} else {
+				isOpen = false;
+			}
 		}
 	}
 
@@ -87,8 +127,18 @@
 				break;
 			case 'Enter':
 				e.preventDefault();
-				if (flatResults[selectedIndex]) {
-					navigateToEntity(flatResults[selectedIndex]);
+				if (isCommandMode) {
+					// Execute command
+					const command = flatResults[selectedIndex] as CommandDefinition;
+					if (command) {
+						executeCommand(command);
+					}
+				} else {
+					// Navigate to entity
+					const entity = flatResults[selectedIndex] as BaseEntity;
+					if (entity) {
+						navigateToEntity(entity);
+					}
 				}
 				break;
 			case 'Escape':
@@ -104,6 +154,18 @@
 	function navigateToEntity(entity: BaseEntity) {
 		closeDropdown();
 		goto(`/entities/${entity.type}/${entity.id}`);
+	}
+
+	function executeCommand(command: CommandDefinition) {
+		const { argument } = parseCommandWithArgument(searchInput);
+		const context = {
+			currentEntityId,
+			currentEntityType: currentEntity?.type ?? null,
+			goto
+		};
+
+		command.execute(context, argument);
+		closeDropdown();
 	}
 
 	function closeDropdown() {
@@ -156,7 +218,7 @@
 	<input
 		bind:this={inputElement}
 		type="text"
-		placeholder="Search entities... (⌘K)"
+		placeholder={isCommandMode ? 'Enter command...' : 'Search entities... (⌘K)'}
 		class="input pl-10 w-64"
 		value={searchInput}
 		oninput={handleInput}
@@ -174,9 +236,37 @@
 			id="search-results"
 			class="search-dropdown"
 			role="listbox"
-			aria-label="Search results"
+			aria-label={isCommandMode ? 'Command suggestions' : 'Search results'}
 		>
-			{#if hasResults}
+			{#if isCommandMode}
+				{#if hasResults}
+					{#each filteredCommands as command, index}
+						{@const IconComponent = getIconComponent(command.icon)}
+						<button
+							type="button"
+							class="command-item {index === selectedIndex ? 'selected' : ''}"
+							onclick={() => executeCommand(command)}
+							onmouseenter={() => (selectedIndex = index)}
+							role="option"
+							aria-selected={index === selectedIndex}
+						>
+							<IconComponent class="w-4 h-4 text-slate-500 dark:text-slate-400" />
+							<div class="flex flex-col flex-1">
+								<span class="font-medium text-slate-900 dark:text-white">
+									/{command.id}
+								</span>
+								<span class="text-sm text-slate-500 dark:text-slate-400">
+									{command.description}
+								</span>
+							</div>
+						</button>
+					{/each}
+				{:else}
+					<div class="px-3 py-4 text-sm text-slate-500 dark:text-slate-400 text-center">
+						No commands found
+					</div>
+				{/if}
+			{:else if hasResults}
 				{#each Object.entries(groupedResults) as [type, entities], groupIndex}
 					{@const typeDef = getTypeDefinition(type)}
 					{@const IconComponent = getIconComponent(typeDef.icon)}

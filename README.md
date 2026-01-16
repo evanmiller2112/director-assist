@@ -7,6 +7,7 @@ An AI-powered campaign management tool for Directors running Draw Steel TTRPG ca
 - **Track Everything**: Characters, NPCs, locations, factions, items, encounters, sessions, deities, timeline events, world rules, and player profiles
 - **Connect the Dots**: Create relationships between entities (knows, allied with, member of, located at)
 - **Find Anything Fast**: Global search with Cmd/Ctrl+K shortcut, results grouped by type, keyboard navigation
+- **Command Palette**: Quick actions by typing "/" in the search bar—create entities, navigate pages, relate entities, and more
 - **Never Lose Your Notes**: All data stored locally in your browser with backup/restore
 - **Work Your Way**: Light and dark themes, customizable entity types
 - **AI-Powered Field Generation**: Generate content for individual fields using Claude AI, with context from other fields
@@ -47,6 +48,29 @@ The app builds to a static site in the `build` directory. Deploy to any static h
 4. Link entities together to build relationships
 5. Use the search bar to find anything quickly
 6. Export regular backups from Settings
+
+### Command Palette
+
+Access quick actions by typing "/" as the first character in the search bar. Commands are context-aware and provide shortcuts for common tasks.
+
+**Available Commands:**
+
+- `/new [type]` - Create a new entity (e.g., `/new npc`, `/new location`)
+- `/search [query]` - Search across all entities
+- `/go [destination]` - Navigate to pages (campaign, settings, chat)
+- `/relate` - Create a relationship to another entity (requires viewing an entity)
+- `/summarize` - Generate an AI summary of the current entity (requires viewing an entity)
+- `/settings` - Open the settings page
+
+**How to Use:**
+
+1. Click the search bar in the header (or press Cmd/Ctrl+K)
+2. Type "/" to enter command mode
+3. Start typing a command name to filter options
+4. Use arrow keys to navigate, Enter to execute, Escape to cancel
+5. Add arguments after the command (e.g., `/new character`)
+
+Commands adapt to your current page. Entity-specific commands like `/relate` and `/summarize` only appear when you're viewing an entity.
 
 ### AI-Powered Content Generation
 

@@ -28,11 +28,21 @@ export type FieldValue =
 // Entity relationship/link
 export interface EntityLink {
 	id: EntityId;
+	sourceId?: EntityId; // Explicit source reference (optional for backward compat)
 	targetId: EntityId;
 	targetType: EntityType;
 	relationship: string; // "member_of", "located_at", "knows", custom...
 	bidirectional: boolean;
 	notes?: string;
+	strength?: 'strong' | 'moderate' | 'weak'; // Relationship strength
+	createdAt?: Date; // When link was created
+	updatedAt?: Date; // When link was last updated
+	metadata?: {
+		// Extensible metadata for additional link properties
+		tags?: string[];
+		tension?: number;
+		[key: string]: unknown; // Allow additional custom fields
+	};
 }
 
 // Base entity interface - all entities extend this

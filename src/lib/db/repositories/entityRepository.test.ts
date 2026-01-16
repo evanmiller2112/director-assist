@@ -1,0 +1,926 @@
+import { describe, it, expect, beforeEach, afterEach, vi, beforeAll, afterAll } from 'vitest';
+import { entityRepository } from './entityRepository';
+import { db } from '../index';
+import { createMockEntity } from '../../../tests/utils/testUtils';
+import type { BaseEntity, EntityLink } from '$lib/types';
+
+describe('EntityRepository - Enhanced EntityLink Data Model (Issue #65)', () => {
+	let sourceEntity: BaseEntity;
+	let targetEntity: BaseEntity;
+
+	beforeAll(async () => {
+		// Open the database for tests
+		await db.open();
+	});
+
+	afterAll(async () => {
+		// Close database after all tests
+		await db.close();
+	});
+
+	beforeEach(async () => {
+		// Clear database before each test
+		await db.entities.clear();
+
+		// Create test entities
+		sourceEntity = createMockEntity({
+			id: 'source-1',
+			name: 'Aragorn',
+			type: 'character',
+			links: []
+		});
+
+		targetEntity = createMockEntity({
+			id: 'target-1',
+			name: 'Fellowship of the Ring',
+			type: 'faction',
+			links: []
+		});
+
+		// Add entities to database
+		await db.entities.add(sourceEntity);
+		await db.entities.add(targetEntity);
+	});
+
+	afterEach(async () => {
+		// Clean up
+		await db.entities.clear();
+	});
+
+	describe('EntityLink Interface - New Fields', () => {
+		describe('sourceId field', () => {
+			it('should populate sourceId when creating a link', async () => {
+				await entityRepository.addLink(
+					sourceEntity.id,
+					targetEntity.id,
+					'member_of',
+					false
+				);
+
+				const updatedSource = await db.entities.get(sourceEntity.id);
+				expect(updatedSource).toBeDefined();
+				expect(updatedSource!.links).toHaveLength(1);
+
+				const link = updatedSource!.links[0];
+				expect(link.sourceId).toBe(sourceEntity.id);
+			});
+
+			it('should populate sourceId for bidirectional links on both sides', async () => {
+				await entityRepository.addLink(
+					sourceEntity.id,
+					targetEntity.id,
+					'member_of',
+					true
+				);
+
+				// Check forward link
+				const updatedSource = await db.entities.get(sourceEntity.id);
+				expect(updatedSource!.links[0].sourceId).toBe(sourceEntity.id);
+
+				// Check reverse link
+				const updatedTarget = await db.entities.get(targetEntity.id);
+				expect(updatedTarget!.links[0].sourceId).toBe(targetEntity.id);
+			});
+
+			it('should require sourceId for new links', async () => {
+				await entityRepository.addLink(
+					sourceEntity.id,
+					targetEntity.id,
+					'knows',
+					false
+				);
+
+				const updatedSource = await db.entities.get(sourceEntity.id);
+				const link = updatedSource!.links[0];
+
+				// sourceId should always be populated
+				expect(link.sourceId).toBeDefined();
+				expect(link.sourceId).toBe(sourceEntity.id);
+			});
+		});
+
+		describe('strength field', () => {
+			it('should accept "strong" strength value', async () => {
+				await entityRepository.addLink(
+					sourceEntity.id,
+					targetEntity.id,
+					'allied_with',
+					false,
+					undefined, // notes
+					'strong'
+				);
+
+				const updatedSource = await db.entities.get(sourceEntity.id);
+				const link = updatedSource!.links[0];
+				expect(link.strength).toBe('strong');
+			});
+
+			it('should accept "moderate" strength value', async () => {
+				await entityRepository.addLink(
+					sourceEntity.id,
+					targetEntity.id,
+					'knows',
+					false,
+					undefined,
+					'moderate'
+				);
+
+				const updatedSource = await db.entities.get(sourceEntity.id);
+				const link = updatedSource!.links[0];
+				expect(link.strength).toBe('moderate');
+			});
+
+			it('should accept "weak" strength value', async () => {
+				await entityRepository.addLink(
+					sourceEntity.id,
+					targetEntity.id,
+					'knows',
+					false,
+					undefined,
+					'weak'
+				);
+
+				const updatedSource = await db.entities.get(sourceEntity.id);
+				const link = updatedSource!.links[0];
+				expect(link.strength).toBe('weak');
+			});
+
+			it('should be optional (undefined when not provided)', async () => {
+				await entityRepository.addLink(
+					sourceEntity.id,
+					targetEntity.id,
+					'knows',
+					false
+				);
+
+				const updatedSource = await db.entities.get(sourceEntity.id);
+				const link = updatedSource!.links[0];
+				expect(link.strength).toBeUndefined();
+			});
+
+			it('should propagate strength to bidirectional reverse links', async () => {
+				await entityRepository.addLink(
+					sourceEntity.id,
+					targetEntity.id,
+					'allied_with',
+					true,
+					undefined,
+					'strong'
+				);
+
+				// Both sides should have the same strength
+				const updatedSource = await db.entities.get(sourceEntity.id);
+				const updatedTarget = await db.entities.get(targetEntity.id);
+
+				expect(updatedSource!.links[0].strength).toBe('strong');
+				expect(updatedTarget!.links[0].strength).toBe('strong');
+			});
+		});
+
+		describe('timestamp fields (createdAt, updatedAt)', () => {
+			it('should set createdAt timestamp when creating a link', async () => {
+				const beforeCreate = new Date();
+				await entityRepository.addLink(
+					sourceEntity.id,
+					targetEntity.id,
+					'member_of',
+					false
+				);
+				const afterCreate = new Date();
+
+				const updatedSource = await db.entities.get(sourceEntity.id);
+				const link = updatedSource!.links[0];
+
+				expect(link.createdAt).toBeDefined();
+				expect(new Date(link.createdAt!).getTime()).toBeGreaterThanOrEqual(beforeCreate.getTime());
+				expect(new Date(link.createdAt!).getTime()).toBeLessThanOrEqual(afterCreate.getTime());
+			});
+
+			it('should set updatedAt timestamp when creating a link', async () => {
+				const beforeCreate = new Date();
+				await entityRepository.addLink(
+					sourceEntity.id,
+					targetEntity.id,
+					'member_of',
+					false
+				);
+				const afterCreate = new Date();
+
+				const updatedSource = await db.entities.get(sourceEntity.id);
+				const link = updatedSource!.links[0];
+
+				expect(link.updatedAt).toBeDefined();
+				expect(new Date(link.updatedAt!).getTime()).toBeGreaterThanOrEqual(beforeCreate.getTime());
+				expect(new Date(link.updatedAt!).getTime()).toBeLessThanOrEqual(afterCreate.getTime());
+			});
+
+			it('should set timestamps for bidirectional links on both sides', async () => {
+				await entityRepository.addLink(
+					sourceEntity.id,
+					targetEntity.id,
+					'allied_with',
+					true
+				);
+
+				const updatedSource = await db.entities.get(sourceEntity.id);
+				const updatedTarget = await db.entities.get(targetEntity.id);
+
+				// Both links should have timestamps
+				expect(updatedSource!.links[0].createdAt).toBeDefined();
+				expect(updatedSource!.links[0].updatedAt).toBeDefined();
+				expect(updatedTarget!.links[0].createdAt).toBeDefined();
+				expect(updatedTarget!.links[0].updatedAt).toBeDefined();
+			});
+
+			it('should have createdAt and updatedAt equal when first created', async () => {
+				await entityRepository.addLink(
+					sourceEntity.id,
+					targetEntity.id,
+					'knows',
+					false
+				);
+
+				const updatedSource = await db.entities.get(sourceEntity.id);
+				const link = updatedSource!.links[0];
+
+				expect(new Date(link.createdAt!).getTime()).toEqual(new Date(link.updatedAt!).getTime());
+			});
+		});
+
+		describe('metadata field', () => {
+			it('should accept metadata with tags', async () => {
+				const metadata = { tags: ['alliance', 'quest'] };
+
+				await entityRepository.addLink(
+					sourceEntity.id,
+					targetEntity.id,
+					'allied_with',
+					false,
+					undefined,
+					undefined,
+					metadata
+				);
+
+				const updatedSource = await db.entities.get(sourceEntity.id);
+				const link = updatedSource!.links[0];
+
+				expect(link.metadata).toBeDefined();
+				expect(link.metadata?.tags).toEqual(['alliance', 'quest']);
+			});
+
+			it('should accept metadata with tension value', async () => {
+				const metadata = { tension: 7 };
+
+				await entityRepository.addLink(
+					sourceEntity.id,
+					targetEntity.id,
+					'enemy_of',
+					false,
+					undefined,
+					undefined,
+					metadata
+				);
+
+				const updatedSource = await db.entities.get(sourceEntity.id);
+				const link = updatedSource!.links[0];
+
+				expect(link.metadata).toBeDefined();
+				expect(link.metadata?.tension).toBe(7);
+			});
+
+			it('should accept metadata with both tags and tension', async () => {
+				const metadata = {
+					tags: ['rivalry', 'conflict'],
+					tension: 8
+				};
+
+				await entityRepository.addLink(
+					sourceEntity.id,
+					targetEntity.id,
+					'enemy_of',
+					false,
+					undefined,
+					undefined,
+					metadata
+				);
+
+				const updatedSource = await db.entities.get(sourceEntity.id);
+				const link = updatedSource!.links[0];
+
+				expect(link.metadata?.tags).toEqual(['rivalry', 'conflict']);
+				expect(link.metadata?.tension).toBe(8);
+			});
+
+			it('should be optional (undefined when not provided)', async () => {
+				await entityRepository.addLink(
+					sourceEntity.id,
+					targetEntity.id,
+					'knows',
+					false
+				);
+
+				const updatedSource = await db.entities.get(sourceEntity.id);
+				const link = updatedSource!.links[0];
+
+				expect(link.metadata).toBeUndefined();
+			});
+
+			it('should accept empty metadata object', async () => {
+				await entityRepository.addLink(
+					sourceEntity.id,
+					targetEntity.id,
+					'knows',
+					false,
+					undefined,
+					undefined,
+					{}
+				);
+
+				const updatedSource = await db.entities.get(sourceEntity.id);
+				const link = updatedSource!.links[0];
+
+				expect(link.metadata).toEqual({});
+			});
+
+			it('should support extensible metadata fields beyond tags and tension', async () => {
+				const metadata = {
+					tags: ['test'],
+					tension: 5,
+					customField: 'custom value',
+					anotherField: 42
+				};
+
+				await entityRepository.addLink(
+					sourceEntity.id,
+					targetEntity.id,
+					'knows',
+					false,
+					undefined,
+					undefined,
+					metadata as any
+				);
+
+				const updatedSource = await db.entities.get(sourceEntity.id);
+				const link = updatedSource!.links[0];
+
+				expect(link.metadata).toMatchObject(metadata);
+			});
+		});
+	});
+
+	describe('addLink() Method - Parameter Updates', () => {
+		it('should accept strength as optional parameter', async () => {
+			// Should not throw when strength is provided
+			await expect(
+				entityRepository.addLink(
+					sourceEntity.id,
+					targetEntity.id,
+					'allied_with',
+					false,
+					undefined,
+					'strong'
+				)
+			).resolves.not.toThrow();
+		});
+
+		it('should accept metadata as optional parameter', async () => {
+			const metadata = { tags: ['test'], tension: 5 };
+
+			// Should not throw when metadata is provided
+			await expect(
+				entityRepository.addLink(
+					sourceEntity.id,
+					targetEntity.id,
+					'knows',
+					false,
+					undefined,
+					undefined,
+					metadata
+				)
+			).resolves.not.toThrow();
+		});
+
+		it('should work with existing notes parameter', async () => {
+			await entityRepository.addLink(
+				sourceEntity.id,
+				targetEntity.id,
+				'member_of',
+				false,
+				'Joined at the Council'
+			);
+
+			const updatedSource = await db.entities.get(sourceEntity.id);
+			const link = updatedSource!.links[0];
+
+			expect(link.notes).toBe('Joined at the Council');
+		});
+
+		it('should accept all new optional parameters together', async () => {
+			await entityRepository.addLink(
+				sourceEntity.id,
+				targetEntity.id,
+				'allied_with',
+				true,
+				'Strong alliance formed',
+				'strong',
+				{ tags: ['alliance'], tension: 2 }
+			);
+
+			const updatedSource = await db.entities.get(sourceEntity.id);
+			const link = updatedSource!.links[0];
+
+			expect(link.notes).toBe('Strong alliance formed');
+			expect(link.strength).toBe('strong');
+			expect(link.metadata).toEqual({ tags: ['alliance'], tension: 2 });
+		});
+
+		it('should maintain backward compatibility with existing call signatures', async () => {
+			// Old signature: (sourceId, targetId, relationship, bidirectional, notes)
+			await expect(
+				entityRepository.addLink(
+					sourceEntity.id,
+					targetEntity.id,
+					'knows',
+					false,
+					'Old style call'
+				)
+			).resolves.not.toThrow();
+
+			const updatedSource = await db.entities.get(sourceEntity.id);
+			expect(updatedSource!.links[0].notes).toBe('Old style call');
+		});
+	});
+
+	describe('updateLink() Method - New Functionality', () => {
+		let linkId: string;
+
+		beforeEach(async () => {
+			// Create a link to update
+			await entityRepository.addLink(
+				sourceEntity.id,
+				targetEntity.id,
+				'knows',
+				false,
+				'Initial notes'
+			);
+
+			const entity = await db.entities.get(sourceEntity.id);
+			linkId = entity!.links[0].id;
+		});
+
+		it('should update link notes', async () => {
+			await entityRepository.updateLink(sourceEntity.id, linkId, {
+				notes: 'Updated notes'
+			});
+
+			const updatedEntity = await db.entities.get(sourceEntity.id);
+			const link = updatedEntity!.links.find((l) => l.id === linkId);
+
+			expect(link?.notes).toBe('Updated notes');
+		});
+
+		it('should update link relationship', async () => {
+			await entityRepository.updateLink(sourceEntity.id, linkId, {
+				relationship: 'friend_of'
+			});
+
+			const updatedEntity = await db.entities.get(sourceEntity.id);
+			const link = updatedEntity!.links.find((l) => l.id === linkId);
+
+			expect(link?.relationship).toBe('friend_of');
+		});
+
+		it('should update link strength', async () => {
+			await entityRepository.updateLink(sourceEntity.id, linkId, {
+				strength: 'strong'
+			});
+
+			const updatedEntity = await db.entities.get(sourceEntity.id);
+			const link = updatedEntity!.links.find((l) => l.id === linkId);
+
+			expect(link?.strength).toBe('strong');
+		});
+
+		it('should update link metadata', async () => {
+			const newMetadata = { tags: ['updated'], tension: 9 };
+
+			await entityRepository.updateLink(sourceEntity.id, linkId, {
+				metadata: newMetadata
+			});
+
+			const updatedEntity = await db.entities.get(sourceEntity.id);
+			const link = updatedEntity!.links.find((l) => l.id === linkId);
+
+			expect(link?.metadata).toEqual(newMetadata);
+		});
+
+		it('should update multiple fields at once', async () => {
+			await entityRepository.updateLink(sourceEntity.id, linkId, {
+				notes: 'Multi-update',
+				relationship: 'allied_with',
+				strength: 'moderate',
+				metadata: { tags: ['multi'], tension: 5 }
+			});
+
+			const updatedEntity = await db.entities.get(sourceEntity.id);
+			const link = updatedEntity!.links.find((l) => l.id === linkId);
+
+			expect(link?.notes).toBe('Multi-update');
+			expect(link?.relationship).toBe('allied_with');
+			expect(link?.strength).toBe('moderate');
+			expect(link?.metadata).toEqual({ tags: ['multi'], tension: 5 });
+		});
+
+		it('should update updatedAt timestamp when link is modified', async () => {
+			// Get initial link
+			const initialEntity = await db.entities.get(sourceEntity.id);
+			const initialLink = initialEntity!.links.find((l) => l.id === linkId);
+			const initialUpdatedAt = new Date(initialLink!.updatedAt!).getTime();
+
+			// Small delay to ensure time difference
+			await new Promise((resolve) => setTimeout(resolve, 10));
+
+			await entityRepository.updateLink(sourceEntity.id, linkId, {
+				notes: 'Time update test'
+			});
+
+			const updatedEntity = await db.entities.get(sourceEntity.id);
+			const updatedLink = updatedEntity!.links.find((l) => l.id === linkId);
+			const newUpdatedAt = new Date(updatedLink!.updatedAt!).getTime();
+
+			expect(newUpdatedAt).toBeGreaterThanOrEqual(initialUpdatedAt);
+		});
+
+		it('should NOT update createdAt timestamp when link is modified', async () => {
+			const initialEntity = await db.entities.get(sourceEntity.id);
+			const initialLink = initialEntity!.links.find((l) => l.id === linkId);
+			const initialCreatedAt = new Date(initialLink!.createdAt!).getTime();
+
+			await entityRepository.updateLink(sourceEntity.id, linkId, {
+				notes: 'Created should not change'
+			});
+
+			const updatedEntity = await db.entities.get(sourceEntity.id);
+			const updatedLink = updatedEntity!.links.find((l) => l.id === linkId);
+
+			expect(new Date(updatedLink!.createdAt!).getTime()).toEqual(initialCreatedAt);
+		});
+
+		it('should throw error if link not found', async () => {
+			await expect(
+				entityRepository.updateLink(sourceEntity.id, 'nonexistent-id', {
+					notes: 'Should fail'
+				})
+			).rejects.toThrow();
+		});
+
+		it('should throw error if source entity not found', async () => {
+			await expect(
+				entityRepository.updateLink('nonexistent-source', linkId, {
+					notes: 'Should fail'
+				})
+			).rejects.toThrow();
+		});
+
+		describe('Bidirectional Link Updates', () => {
+			let bidirectionalLinkId: string;
+			let reverseLinkId: string;
+
+			beforeEach(async () => {
+				// Create bidirectional link
+				await db.entities.update(sourceEntity.id, { links: [] });
+				await db.entities.update(targetEntity.id, { links: [] });
+
+				await entityRepository.addLink(
+					sourceEntity.id,
+					targetEntity.id,
+					'allied_with',
+					true,
+					'Bidirectional alliance'
+				);
+
+				const source = await db.entities.get(sourceEntity.id);
+				const target = await db.entities.get(targetEntity.id);
+				bidirectionalLinkId = source!.links[0].id;
+				reverseLinkId = target!.links[0].id;
+			});
+
+			it('should update relationship on both sides when updating bidirectional link', async () => {
+				await entityRepository.updateLink(sourceEntity.id, bidirectionalLinkId, {
+					relationship: 'enemy_of'
+				});
+
+				const updatedSource = await db.entities.get(sourceEntity.id);
+				const updatedTarget = await db.entities.get(targetEntity.id);
+
+				const forwardLink = updatedSource!.links.find((l) => l.id === bidirectionalLinkId);
+				const reverseLink = updatedTarget!.links.find((l) => l.id === reverseLinkId);
+
+				expect(forwardLink?.relationship).toBe('enemy_of');
+				expect(reverseLink?.relationship).toBe(
+					entityRepository.getInverseRelationship('enemy_of')
+				);
+			});
+
+			it('should update strength on both sides of bidirectional link', async () => {
+				await entityRepository.updateLink(sourceEntity.id, bidirectionalLinkId, {
+					strength: 'weak'
+				});
+
+				const updatedSource = await db.entities.get(sourceEntity.id);
+				const updatedTarget = await db.entities.get(targetEntity.id);
+
+				expect(updatedSource!.links[0].strength).toBe('weak');
+				expect(updatedTarget!.links[0].strength).toBe('weak');
+			});
+
+			it('should update metadata on both sides of bidirectional link', async () => {
+				const metadata = { tags: ['sync'], tension: 7 };
+
+				await entityRepository.updateLink(sourceEntity.id, bidirectionalLinkId, {
+					metadata
+				});
+
+				const updatedSource = await db.entities.get(sourceEntity.id);
+				const updatedTarget = await db.entities.get(targetEntity.id);
+
+				expect(updatedSource!.links[0].metadata).toEqual(metadata);
+				expect(updatedTarget!.links[0].metadata).toEqual(metadata);
+			});
+
+			it('should NOT sync notes field to reverse link', async () => {
+				await entityRepository.updateLink(sourceEntity.id, bidirectionalLinkId, {
+					notes: 'Source-specific notes'
+				});
+
+				const updatedSource = await db.entities.get(sourceEntity.id);
+				const updatedTarget = await db.entities.get(targetEntity.id);
+
+				expect(updatedSource!.links[0].notes).toBe('Source-specific notes');
+				// Target should keep original notes or not have this change
+				expect(updatedTarget!.links[0].notes).not.toBe('Source-specific notes');
+			});
+
+			it('should update updatedAt timestamp on both sides', async () => {
+				// Small delay to ensure time difference
+				await new Promise((resolve) => setTimeout(resolve, 10));
+
+				await entityRepository.updateLink(sourceEntity.id, bidirectionalLinkId, {
+					relationship: 'friend_of'
+				});
+
+				const updatedSource = await db.entities.get(sourceEntity.id);
+				const updatedTarget = await db.entities.get(targetEntity.id);
+
+				// Both sides should have updatedAt defined
+				expect(updatedSource!.links[0].updatedAt).toBeDefined();
+				expect(updatedTarget!.links[0].updatedAt).toBeDefined();
+			});
+		});
+	});
+
+	describe('Backward Compatibility', () => {
+		it('should work with existing links without new fields', async () => {
+			// Create an old-style link without new fields
+			const oldLink: EntityLink = {
+				id: 'old-link-1',
+				targetId: targetEntity.id,
+				targetType: targetEntity.type,
+				relationship: 'knows',
+				bidirectional: false,
+				notes: 'Old link'
+				// No sourceId, strength, metadata, or timestamps
+			} as any;
+
+			await db.entities.update(sourceEntity.id, {
+				links: [oldLink]
+			});
+
+			// Should be able to retrieve and work with this link
+			const entity = await db.entities.get(sourceEntity.id);
+			expect(entity!.links).toHaveLength(1);
+			expect(entity!.links[0].id).toBe('old-link-1');
+			expect(entity!.links[0].notes).toBe('Old link');
+		});
+
+		it('should allow removing old links without new fields', async () => {
+			const oldLink: EntityLink = {
+				id: 'old-link-1',
+				targetId: targetEntity.id,
+				targetType: targetEntity.type,
+				relationship: 'knows',
+				bidirectional: false
+			} as any;
+
+			await db.entities.update(sourceEntity.id, {
+				links: [oldLink]
+			});
+
+			// Should successfully remove old-style link
+			await expect(
+				entityRepository.removeLink(sourceEntity.id, targetEntity.id)
+			).resolves.not.toThrow();
+
+			const entity = await db.entities.get(sourceEntity.id);
+			expect(entity!.links).toHaveLength(0);
+		});
+
+		it('should handle mixed old and new links in same entity', async () => {
+			// Old link without new fields
+			const oldLink: EntityLink = {
+				id: 'old-link',
+				targetId: targetEntity.id,
+				targetType: targetEntity.type,
+				relationship: 'knows',
+				bidirectional: false
+			} as any;
+
+			await db.entities.update(sourceEntity.id, {
+				links: [oldLink]
+			});
+
+			// Add a new link with all new fields
+			const anotherTarget = createMockEntity({
+				id: 'target-2',
+				name: 'Gandalf',
+				type: 'character'
+			});
+			await db.entities.add(anotherTarget);
+
+			await entityRepository.addLink(
+				sourceEntity.id,
+				anotherTarget.id,
+				'friend_of',
+				false,
+				'New link',
+				'strong',
+				{ tags: ['friendship'] }
+			);
+
+			const entity = await db.entities.get(sourceEntity.id);
+			expect(entity!.links).toHaveLength(2);
+
+			// Old link should still be there
+			const oldRetrieved = entity!.links.find((l) => l.id === 'old-link');
+			expect(oldRetrieved).toBeDefined();
+			expect(oldRetrieved!.sourceId).toBeUndefined();
+
+			// New link should have all fields
+			const newRetrieved = entity!.links.find((l) => l.targetId === anotherTarget.id);
+			expect(newRetrieved).toBeDefined();
+			expect(newRetrieved!.sourceId).toBe(sourceEntity.id);
+			expect(newRetrieved!.strength).toBe('strong');
+			expect(newRetrieved!.metadata).toBeDefined();
+		});
+
+		it('should not break getLinkedEntities with old links', async () => {
+			const oldLink: EntityLink = {
+				id: 'old-link',
+				targetId: targetEntity.id,
+				targetType: targetEntity.type,
+				relationship: 'knows',
+				bidirectional: false
+			} as any;
+
+			await db.entities.update(sourceEntity.id, {
+				links: [oldLink]
+			});
+
+			const linkedEntities = await entityRepository.getLinkedEntities(sourceEntity.id);
+			expect(linkedEntities).toHaveLength(1);
+			expect(linkedEntities[0].id).toBe(targetEntity.id);
+		});
+
+		it('should handle updateLink for old links without timestamps', async () => {
+			const oldLink: EntityLink = {
+				id: 'old-link',
+				targetId: targetEntity.id,
+				targetType: targetEntity.type,
+				relationship: 'knows',
+				bidirectional: false,
+				notes: 'Old note'
+			} as any;
+
+			await db.entities.update(sourceEntity.id, {
+				links: [oldLink]
+			});
+
+			// Should be able to update old link
+			await expect(
+				entityRepository.updateLink(sourceEntity.id, 'old-link', {
+					notes: 'Updated old link',
+					strength: 'moderate'
+				})
+			).resolves.not.toThrow();
+
+			const entity = await db.entities.get(sourceEntity.id);
+			const link = entity!.links.find((l) => l.id === 'old-link');
+
+			expect(link?.notes).toBe('Updated old link');
+			expect(link?.strength).toBe('moderate');
+			// Should now have updatedAt timestamp
+			expect(link?.updatedAt).toBeDefined();
+		});
+	});
+
+	describe('Edge Cases and Validation', () => {
+		it('should handle tension values outside 0-10 range', async () => {
+			const metadata = { tension: 15 };
+
+			await entityRepository.addLink(
+				sourceEntity.id,
+				targetEntity.id,
+				'enemy_of',
+				false,
+				undefined,
+				undefined,
+				metadata
+			);
+
+			const entity = await db.entities.get(sourceEntity.id);
+			// Should store the value even if out of typical range
+			expect(entity!.links[0].metadata?.tension).toBe(15);
+		});
+
+		it('should handle empty tags array in metadata', async () => {
+			const metadata = { tags: [] };
+
+			await entityRepository.addLink(
+				sourceEntity.id,
+				targetEntity.id,
+				'knows',
+				false,
+				undefined,
+				undefined,
+				metadata
+			);
+
+			const entity = await db.entities.get(sourceEntity.id);
+			expect(entity!.links[0].metadata?.tags).toEqual([]);
+		});
+
+		it('should handle very long notes with new fields', async () => {
+			const longNotes = 'A'.repeat(5000);
+
+			await entityRepository.addLink(
+				sourceEntity.id,
+				targetEntity.id,
+				'knows',
+				false,
+				longNotes,
+				'weak',
+				{ tags: ['test'] }
+			);
+
+			const entity = await db.entities.get(sourceEntity.id);
+			expect(entity!.links[0].notes).toBe(longNotes);
+			expect(entity!.links[0].strength).toBe('weak');
+		});
+
+		it('should preserve all new fields when updating entity', async () => {
+			await entityRepository.addLink(
+				sourceEntity.id,
+				targetEntity.id,
+				'allied_with',
+				false,
+				'Alliance notes',
+				'strong',
+				{ tags: ['alliance'], tension: 3 }
+			);
+
+			// Update the entity itself (not the link)
+			await entityRepository.update(sourceEntity.id, {
+				name: 'Updated Aragorn'
+			});
+
+			const entity = await db.entities.get(sourceEntity.id);
+			const link = entity!.links[0];
+
+			// All link fields should be preserved
+			expect(link.notes).toBe('Alliance notes');
+			expect(link.strength).toBe('strong');
+			expect(link.metadata).toEqual({ tags: ['alliance'], tension: 3 });
+			expect(link.sourceId).toBe(sourceEntity.id);
+			expect(link.createdAt).toBeDefined();
+			expect(link.updatedAt).toBeDefined();
+		});
+
+		it('should handle null metadata values', async () => {
+			await entityRepository.addLink(
+				sourceEntity.id,
+				targetEntity.id,
+				'knows',
+				false,
+				undefined,
+				undefined,
+				null as any
+			);
+
+			const entity = await db.entities.get(sourceEntity.id);
+			// Should handle null gracefully (either as undefined or null)
+			expect(entity!.links[0].metadata === null || entity!.links[0].metadata === undefined).toBe(
+				true
+			);
+		});
+	});
+});

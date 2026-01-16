@@ -172,9 +172,32 @@ function createEntitiesStore() {
 			targetId: string,
 			relationship: string,
 			bidirectional: boolean = false,
-			notes?: string
+			notes?: string,
+			strength?: 'strong' | 'moderate' | 'weak',
+			metadata?: { tags?: string[]; tension?: number; [key: string]: unknown }
 		): Promise<void> {
-			await entityRepository.addLink(sourceId, targetId, relationship, bidirectional, notes);
+			await entityRepository.addLink(
+				sourceId,
+				targetId,
+				relationship,
+				bidirectional,
+				notes,
+				strength,
+				metadata
+			);
+		},
+
+		async updateLink(
+			sourceId: string,
+			linkId: string,
+			changes: {
+				notes?: string;
+				relationship?: string;
+				strength?: 'strong' | 'moderate' | 'weak';
+				metadata?: { tags?: string[]; tension?: number; [key: string]: unknown };
+			}
+		): Promise<void> {
+			await entityRepository.updateLink(sourceId, linkId, changes);
 		},
 
 		async removeLink(sourceId: string, targetId: string): Promise<void> {

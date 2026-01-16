@@ -43,6 +43,7 @@ src/
 │   ├── components/          # Reusable Svelte components
 │   │   └── layout/          # Layout components
 │   │       ├── Header.svelte
+│   │       ├── HeaderSearch.svelte
 │   │       └── Sidebar.svelte
 │   ├── config/              # Configuration and definitions
 │   │   └── entityTypes.ts   # Entity type definitions
@@ -474,6 +475,25 @@ Manages UI state:
 - `setTheme()`: Change theme
 
 ## Search & Filtering
+
+### Global Search
+
+The HeaderSearch component provides instant access to all campaign entities:
+
+**Features:**
+- Debounced input (150ms) to optimize performance
+- Results grouped by entity type
+- Maximum 5 results per type
+- Keyboard navigation (Arrow Up/Down, Enter, Escape)
+- Global keyboard shortcut (Cmd+K or Ctrl+K)
+- Click outside to close dropdown
+- ARIA attributes for accessibility
+
+**Implementation:**
+- Search query updates the entities store via `setSearchQuery()`
+- Store filters entities reactively based on query
+- Results displayed in dropdown with type headers and icons
+- Selected result highlighted for keyboard navigation
 
 ### Search Implementation
 

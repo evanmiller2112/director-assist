@@ -6,7 +6,7 @@ An AI-powered campaign management tool for Directors running Draw Steel TTRPG ca
 
 - **Track Everything**: Characters, NPCs, locations, factions, items, encounters, sessions, deities, timeline events, world rules, and player profiles
 - **Connect the Dots**: Create relationships between entities (knows, allied with, member of, located at)
-- **Find Anything Fast**: Search across all your campaign data instantly
+- **Find Anything Fast**: Global search with Cmd/Ctrl+K shortcut, results grouped by type, keyboard navigation
 - **Never Lose Your Notes**: All data stored locally in your browser with backup/restore
 - **Work Your Way**: Light and dark themes, customizable entity types
 - **AI Assistant Ready**: Framework in place for AI-powered campaign suggestions (coming soon)

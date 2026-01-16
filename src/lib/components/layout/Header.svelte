@@ -1,13 +1,14 @@
 <script lang="ts">
-	import { Search, MessageSquare, Settings, Menu, ChevronDown, Check } from 'lucide-svelte';
-	import { campaignStore, uiStore, entitiesStore, notificationStore } from '$lib/stores';
+	import { MessageSquare, Settings, Menu, ChevronDown, Check } from 'lucide-svelte';
+	import { campaignStore, uiStore, notificationStore } from '$lib/stores';
+	import HeaderSearch from './HeaderSearch.svelte';
 
-	let searchInput = $state('');
 	let campaignDropdownOpen = $state(false);
+	let searchComponent: ReturnType<typeof HeaderSearch> | undefined = $state();
 
-	function handleSearch(e: Event) {
-		const target = e.target as HTMLInputElement;
-		entitiesStore.setSearchQuery(target.value);
+	// Expose method to focus search from parent (for global keyboard shortcut)
+	export function focusSearch() {
+		searchComponent?.focus();
 	}
 
 	function toggleCampaignDropdown() {
@@ -114,16 +115,7 @@
 
 	<div class="flex items-center gap-2">
 		<!-- Search -->
-		<div class="relative hidden sm:block">
-			<Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-			<input
-				type="text"
-				placeholder="Search entities..."
-				class="input pl-10 w-64"
-				bind:value={searchInput}
-				oninput={handleSearch}
-			/>
-		</div>
+		<HeaderSearch bind:this={searchComponent} />
 
 		<!-- Chat toggle -->
 		<button

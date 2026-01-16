@@ -8,6 +8,7 @@
 	import { initializeDatabase } from '$lib/db';
 
 	let { children } = $props();
+	let headerComponent: ReturnType<typeof Header> | undefined = $state();
 
 	onMount(async () => {
 		// Initialize database
@@ -20,10 +21,20 @@
 		// Load theme preference
 		uiStore.loadTheme();
 	});
+
+	function handleGlobalKeydown(e: KeyboardEvent) {
+		// Cmd+K (Mac) or Ctrl+K (Windows/Linux) to focus search
+		if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+			e.preventDefault();
+			headerComponent?.focusSearch();
+		}
+	}
 </script>
 
+<svelte:window onkeydown={handleGlobalKeydown} />
+
 <div class="dashboard-layout">
-	<Header />
+	<Header bind:this={headerComponent} />
 	<Sidebar />
 	<main class="dashboard-main">
 		<div class="flex-1 overflow-y-auto p-6">

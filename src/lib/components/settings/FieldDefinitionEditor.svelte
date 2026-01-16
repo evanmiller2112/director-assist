@@ -22,6 +22,7 @@
 		{ value: 'tags', label: 'Tags' },
 		{ value: 'date', label: 'Date' },
 		{ value: 'url', label: 'URL' },
+		{ value: 'image', label: 'Image' },
 		{ value: 'entity-ref', label: 'Entity Reference' },
 		{ value: 'entity-refs', label: 'Multiple Entity References' }
 	];

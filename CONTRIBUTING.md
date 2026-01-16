@@ -194,10 +194,30 @@ refactor(db): simplify entity repository queries
 
 ### Adding a New Field Type
 
+The dynamic field system supports 13 field types. To add a new field type:
+
 1. Add the type to `FieldType` in `src/lib/types/entities.ts`
-2. Create a component for the field in `src/lib/components/fields/`
-3. Update field rendering logic in entity forms
-4. Update field value validation
+2. Implement rendering logic in entity forms:
+   - `/src/routes/entities/[type]/new/+page.svelte` (create form)
+   - `/src/routes/entities/[type]/[id]/edit/+page.svelte` (edit form)
+   - `/src/routes/entities/[type]/[id]/+page.svelte` (detail view)
+3. Add to `FieldDefinitionEditor.svelte` if applicable
+4. Update field value validation in `src/lib/utils/validation.ts`
+
+**Supported Field Types:**
+- `text` - Single-line text input
+- `textarea` - Multi-line text input
+- `richtext` - Markdown editor
+- `number` - Numeric input
+- `boolean` - Checkbox (Yes/No)
+- `select` - Single-choice dropdown
+- `multi-select` - Multiple-choice checkboxes
+- `tags` - Comma-separated tag input
+- `entity-ref` - Single entity reference with searchable dropdown
+- `entity-refs` - Multiple entity references with chips
+- `date` - Freeform date/timeline input
+- `url` - URL input with validation and link preview
+- `image` - Image upload with base64 storage and preview
 
 ### Database Changes
 

@@ -61,7 +61,7 @@
 	});
 
 	// Flatten results for keyboard navigation
-	const flatResults = $derived.by(() => {
+	const flatResults = $derived.by((): (CommandDefinition | BaseEntity)[] => {
 		if (isCommandMode) {
 			return filteredCommands;
 		}

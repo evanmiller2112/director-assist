@@ -330,7 +330,7 @@ describe('NPC Entity Type - Greetings Field Configuration', () => {
 			];
 
 			existingFieldKeys.forEach((key) => {
-				const field = npcType.fieldDefinitions.find((f) => f.key === key);
+				const field = npcType!.fieldDefinitions.find((f) => f.key === key);
 				expect(field).toBeDefined();
 			});
 		});

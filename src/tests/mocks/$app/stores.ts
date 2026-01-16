@@ -1,7 +1,18 @@
 import { writable, readable } from 'svelte/store';
 
+// Type for page store
+interface PageStore {
+	url: URL;
+	params: Record<string, string>;
+	route: { id: string | null };
+	status: number;
+	error: Error | null;
+	data: Record<string, unknown>;
+	form: unknown;
+}
+
 // Create a writable page store that tests can control
-export const page = writable({
+export const page = writable<PageStore>({
 	url: new URL('http://localhost'),
 	params: { type: 'npc' }, // Default params for tests
 	route: { id: null },

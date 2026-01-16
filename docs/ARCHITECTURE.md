@@ -227,7 +227,7 @@ interface EntityTypeDefinition {
 3. When creating an entity, the UI renders the appropriate field components
 4. Field values are stored in the `fields` object on the entity
 
-**Example:** NPC entity type has fields like `role`, `personality`, `appearance`, `voice`, `motivation`, `secrets`, `status`, and `importance`.
+**Example:** NPC entity type has fields like `role`, `personality`, `appearance`, `voice`, `greetings`, `motivation`, `secrets`, `status`, and `importance`.
 
 #### Field Type Implementation Details
 

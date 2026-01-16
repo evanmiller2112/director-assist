@@ -105,18 +105,27 @@ export const BUILT_IN_ENTITY_TYPES: EntityTypeDefinition[] = [
 				placeholder: 'e.g., Deep gravelly voice, speaks slowly'
 			},
 			{
+				key: 'greetings',
+				label: 'Greetings',
+				type: 'textarea',
+				required: false,
+				order: 5,
+				placeholder: 'e.g., \'Well met, traveler! What brings ye to these parts?\'',
+				helpText: 'What the NPC says when first meeting players'
+			},
+			{
 				key: 'motivation',
 				label: 'Motivation',
 				type: 'richtext',
 				required: false,
-				order: 5
+				order: 6
 			},
 			{
 				key: 'secrets',
 				label: 'Secrets',
 				type: 'richtext',
 				required: false,
-				order: 6,
+				order: 7,
 				section: 'hidden'
 			},
 			{
@@ -126,7 +135,7 @@ export const BUILT_IN_ENTITY_TYPES: EntityTypeDefinition[] = [
 				options: ['alive', 'deceased', 'unknown'],
 				required: true,
 				defaultValue: 'alive',
-				order: 7
+				order: 8
 			},
 			{
 				key: 'importance',
@@ -135,7 +144,7 @@ export const BUILT_IN_ENTITY_TYPES: EntityTypeDefinition[] = [
 				options: ['major', 'minor', 'background'],
 				required: false,
 				defaultValue: 'minor',
-				order: 8
+				order: 9
 			}
 		],
 		defaultRelationships: ['located_at', 'member_of', 'serves', 'worships', 'knows']

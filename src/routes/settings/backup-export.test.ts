@@ -89,9 +89,10 @@ describe('Backup Export Security (Issue #31)', () => {
 				type: 'campaign',
 				name: 'Test Campaign',
 				description: 'Test Description',
+				notes: '',
 				fields: {},
 				tags: [],
-				relationships: [],
+				links: [],
 				createdAt: new Date(),
 				updatedAt: new Date(),
 				metadata: {}
@@ -124,9 +125,10 @@ describe('Backup Export Security (Issue #31)', () => {
 				type: 'campaign',
 				name: 'Test Campaign',
 				description: '',
+				notes: '',
 				fields: {},
 				tags: [],
-				relationships: [],
+				links: [],
 				createdAt: new Date(),
 				updatedAt: new Date(),
 				metadata: {}
@@ -155,9 +157,10 @@ describe('Backup Export Security (Issue #31)', () => {
 				type: 'campaign',
 				name: 'Test',
 				description: '',
+				notes: '',
 				fields: {},
 				tags: [],
-				relationships: [],
+				links: [],
 				createdAt: new Date(),
 				updatedAt: new Date(),
 				metadata: {}
@@ -188,9 +191,10 @@ describe('Backup Export Security (Issue #31)', () => {
 				type: 'campaign',
 				name: 'Test Campaign',
 				description: 'A campaign for testing',
+				notes: '',
 				fields: {},
 				tags: [],
-				relationships: [],
+				links: [],
 				createdAt: new Date(),
 				updatedAt: new Date(),
 				metadata: {}
@@ -218,9 +222,10 @@ describe('Backup Export Security (Issue #31)', () => {
 				type: 'campaign',
 				name: 'Test',
 				description: '',
+				notes: '',
 				fields: {},
 				tags: [],
-				relationships: [],
+				links: [],
 				createdAt: new Date(),
 				updatedAt: new Date(),
 				metadata: {}
@@ -248,9 +253,10 @@ describe('Backup Export Security (Issue #31)', () => {
 				type: 'campaign',
 				name: 'Test',
 				description: '',
+				notes: '',
 				fields: {},
 				tags: [],
-				relationships: [],
+				links: [],
 				createdAt: new Date(),
 				updatedAt: new Date(),
 				metadata: {}
@@ -278,9 +284,10 @@ describe('Backup Export Security (Issue #31)', () => {
 				type: 'campaign',
 				name: 'Test',
 				description: '',
+				notes: '',
 				fields: {},
 				tags: [],
-				relationships: [],
+				links: [],
 				createdAt: new Date(),
 				updatedAt: new Date(),
 				metadata: {}
@@ -305,9 +312,10 @@ describe('Backup Export Security (Issue #31)', () => {
 				type: 'campaign',
 				name: 'Test',
 				description: '',
+				notes: '',
 				fields: {},
 				tags: [],
-				relationships: [],
+				links: [],
 				createdAt: new Date(),
 				updatedAt: new Date(),
 				metadata: {}
@@ -330,9 +338,10 @@ describe('Backup Export Security (Issue #31)', () => {
 				type: 'campaign',
 				name: 'Test',
 				description: '',
+				notes: '',
 				fields: {},
 				tags: [],
-				relationships: [],
+				links: [],
 				createdAt: new Date(),
 				updatedAt: new Date(),
 				metadata: {}
@@ -355,9 +364,10 @@ describe('Backup Export Security (Issue #31)', () => {
 				type: 'campaign',
 				name: 'Test',
 				description: '',
+				notes: '',
 				fields: {},
 				tags: [],
-				relationships: [],
+				links: [],
 				createdAt: new Date(),
 				updatedAt: new Date(),
 				metadata: {}
@@ -380,9 +390,10 @@ describe('Backup Export Security (Issue #31)', () => {
 				type: 'campaign',
 				name: 'Test',
 				description: '',
+				notes: '',
 				fields: {},
 				tags: [],
-				relationships: [],
+				links: [],
 				createdAt: new Date(),
 				updatedAt: new Date(),
 				metadata: {}
@@ -409,9 +420,10 @@ describe('Backup Export Security (Issue #31)', () => {
 				type: 'campaign',
 				name: 'Campaign about API Keys',
 				description: 'This campaign discusses sk-ant-fake-example-key as an example',
+				notes: '',
 				fields: {},
 				tags: [],
-				relationships: [],
+				links: [],
 				createdAt: new Date(),
 				updatedAt: new Date(),
 				metadata: {}
@@ -440,12 +452,13 @@ describe('Backup Export Security (Issue #31)', () => {
 				type: 'campaign',
 				name: 'Test',
 				description: '',
+				notes: '',
 				fields: {
 					// Entity might have a custom field, but not the actual localStorage API key
 					'some-field': 'some-value'
 				},
 				tags: [],
-				relationships: [],
+				links: [],
 				createdAt: new Date(),
 				updatedAt: new Date(),
 				metadata: {}
@@ -475,9 +488,10 @@ describe('Backup Export Security (Issue #31)', () => {
 					type: 'campaign',
 					name: 'Test Campaign',
 					description: '',
+					notes: '',
 					fields: {},
 					tags: [],
-					relationships: [],
+					links: [],
 					createdAt: new Date(),
 					updatedAt: new Date(),
 					metadata: {}
@@ -487,9 +501,10 @@ describe('Backup Export Security (Issue #31)', () => {
 					type: 'character',
 					name: 'Hero',
 					description: 'A brave hero',
+					notes: '',
 					fields: { level: 5 },
 					tags: ['player'],
-					relationships: [],
+					links: [],
 					createdAt: new Date(),
 					updatedAt: new Date(),
 					metadata: {}
@@ -499,9 +514,10 @@ describe('Backup Export Security (Issue #31)', () => {
 					type: 'npc',
 					name: 'Villain',
 					description: 'An evil villain',
+					notes: '',
 					fields: {},
 					tags: [],
-					relationships: [],
+					links: [],
 					createdAt: new Date(),
 					updatedAt: new Date(),
 					metadata: {}
@@ -528,9 +544,10 @@ describe('Backup Export Security (Issue #31)', () => {
 				type: 'campaign',
 				name: 'Test',
 				description: '',
+				notes: '',
 				fields: {},
 				tags: [],
-				relationships: [],
+				links: [],
 				createdAt: new Date(),
 				updatedAt: new Date(),
 				metadata: {}
@@ -570,9 +587,10 @@ describe('Backup Export Security (Issue #31)', () => {
 				type: 'campaign',
 				name: 'Active Campaign',
 				description: '',
+				notes: '',
 				fields: {},
 				tags: [],
-				relationships: [],
+				links: [],
 				createdAt: new Date(),
 				updatedAt: new Date(),
 				metadata: {}
@@ -587,24 +605,27 @@ describe('Backup Export Security (Issue #31)', () => {
 			expect(backup.activeCampaignId).toBe('campaign-123');
 		});
 
-		it('should preserve entity fields, tags, and relationships', async () => {
+		it('should preserve entity fields, tags, and links', async () => {
 			// Arrange
 			const campaignEntity: BaseEntity = {
 				id: 'campaign-1',
 				type: 'campaign',
 				name: 'Test Campaign',
 				description: 'Campaign with complex data',
+				notes: '',
 				fields: {
 					setting: 'Forgotten Realms',
 					level: 10,
 					active: true
 				},
 				tags: ['high-level', 'forgotten-realms'],
-				relationships: [
+				links: [
 					{
+						id: 'link-1',
 						targetId: 'npc-1',
-						type: 'contains',
-						metadata: {}
+						targetType: 'npc',
+						relationship: 'contains',
+						bidirectional: false
 					}
 				],
 				createdAt: new Date(),
@@ -626,7 +647,7 @@ describe('Backup Export Security (Issue #31)', () => {
 				active: true
 			});
 			expect(exportedEntity?.tags).toEqual(['high-level', 'forgotten-realms']);
-			expect(exportedEntity?.relationships).toHaveLength(1);
+			expect(exportedEntity?.links).toHaveLength(1);
 			expect(exportedEntity?.metadata).toEqual({ customData: 'test' });
 		});
 	});
@@ -643,9 +664,10 @@ describe('Backup Export Security (Issue #31)', () => {
 					type: 'campaign',
 					name: 'Campaign 1',
 					description: '',
+					notes: '',
 					fields: {},
 					tags: [],
-					relationships: [],
+					links: [],
 					createdAt: new Date(),
 					updatedAt: new Date(),
 					metadata: {}
@@ -655,9 +677,10 @@ describe('Backup Export Security (Issue #31)', () => {
 					type: 'campaign',
 					name: 'Campaign 2',
 					description: '',
+					notes: '',
 					fields: {},
 					tags: [],
-					relationships: [],
+					links: [],
 					createdAt: new Date(),
 					updatedAt: new Date(),
 					metadata: {}
@@ -682,9 +705,10 @@ describe('Backup Export Security (Issue #31)', () => {
 				type: 'campaign',
 				name: 'Test',
 				description: '',
+				notes: '',
 				fields: {},
 				tags: [],
-				relationships: [],
+				links: [],
 				createdAt: new Date(),
 				updatedAt: new Date(),
 				metadata: {}
@@ -711,9 +735,10 @@ describe('Backup Export Security (Issue #31)', () => {
 				type: 'campaign',
 				name: 'Test',
 				description: '',
+				notes: '',
 				fields: {},
 				tags: [],
-				relationships: [],
+				links: [],
 				createdAt: new Date(),
 				updatedAt: new Date(),
 				metadata: {}
@@ -742,9 +767,10 @@ describe('Backup Export Security (Issue #31)', () => {
 				type: 'campaign',
 				name: 'Production Campaign',
 				description: 'Important production data',
+				notes: '',
 				fields: { critical: true },
 				tags: ['production'],
-				relationships: [],
+				links: [],
 				createdAt: new Date(),
 				updatedAt: new Date(),
 				metadata: {}

@@ -2091,7 +2091,7 @@ describe('RelateCommand Component - Notes Field', () => {
 			await fireEvent.click(asymmetricCheckbox);
 
 			// Verify input is visible
-			let reverseRelationshipInput = screen.getByLabelText(/reverse relationship/i);
+			let reverseRelationshipInput: HTMLElement | null = screen.getByLabelText(/reverse relationship/i);
 			expect(reverseRelationshipInput).toBeInTheDocument();
 
 			// Uncheck asymmetric checkbox

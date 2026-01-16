@@ -914,8 +914,8 @@ describe('HeaderSearch Component', () => {
 				const count1 = options1.length;
 
 				// Navigate to entity page (would trigger context change)
-				// Rerender with new context
-				rerender(HeaderSearch);
+				// Rerender with new context (empty props since component has no props)
+				rerender({});
 
 				// Should show more commands now
 				const options2 = screen.getAllByRole('option');

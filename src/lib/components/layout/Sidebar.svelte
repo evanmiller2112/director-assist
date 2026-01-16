@@ -4,6 +4,9 @@
 	import { getAllEntityTypes } from '$lib/config/entityTypes';
 	import { entitiesStore, campaignStore } from '$lib/stores';
 	import { getIconComponent } from '$lib/utils/icons';
+	import QuickAddModal from './QuickAddModal.svelte';
+
+	let quickAddOpen = $state(false);
 
 	function getEntityCount(type: string): number {
 		const byType = entitiesStore.entitiesByType;
@@ -64,7 +67,7 @@
 		<button
 			class="btn btn-primary w-full"
 			onclick={() => {
-				/* TODO: Open create entity modal */
+				quickAddOpen = true;
 			}}
 		>
 			<Plus class="w-4 h-4" />
@@ -72,3 +75,5 @@
 		</button>
 	</div>
 </aside>
+
+<QuickAddModal bind:open={quickAddOpen} />

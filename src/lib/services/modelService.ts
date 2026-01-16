@@ -28,6 +28,66 @@ const FALLBACK_MODELS: ModelInfo[] = [
 ];
 
 /**
+ * Extract 8-digit date (YYYYMMDD) from model ID.
+ * Returns parsed integer or null if no date found.
+ *
+ * @param id Model ID (e.g., "claude-haiku-4-5-20250514")
+ * @returns Date as integer (e.g., 20250514) or null
+ */
+export function extractDateFromModelId(id: string): number | null {
+	// Match exactly 8 consecutive digits (not preceded or followed by another digit)
+	const match = id.match(/(?<!\d)(\d{8})(?!\d)/);
+	if (!match) return null;
+	return parseInt(match[1], 10);
+}
+
+/**
+ * Find the latest Haiku model from a list of models.
+ * Sorting priority:
+ * 1. Date in model ID (descending)
+ * 2. created_at field (descending)
+ * 3. Reverse alphabetical by ID
+ *
+ * @param models Array of ModelInfo objects
+ * @returns Latest Haiku model or null if none found
+ */
+export function findLatestHaikuModel(models: ModelInfo[]): ModelInfo | null {
+	// Filter to only Haiku models (case-insensitive)
+	const haikuModels = models.filter(m => m.id.toLowerCase().includes('haiku'));
+
+	if (haikuModels.length === 0) return null;
+
+	// Sort by priority: date in ID > created_at > alphabetical
+	const sorted = haikuModels.sort((a, b) => {
+		const dateA = extractDateFromModelId(a.id);
+		const dateB = extractDateFromModelId(b.id);
+
+		// Priority 1: Both have dates in ID - compare dates
+		if (dateA !== null && dateB !== null) {
+			if (dateA !== dateB) return dateB - dateA; // Descending
+			// Same date, fall through to alphabetical
+		}
+
+		// Priority 2: Only one has date in ID - prioritize the one with date
+		if (dateA !== null && dateB === null) return -1;
+		if (dateA === null && dateB !== null) return 1;
+
+		// Priority 3: Neither has date, try created_at
+		const timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
+		const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
+
+		if (timeA !== timeB && !isNaN(timeA) && !isNaN(timeB)) {
+			return timeB - timeA; // Descending
+		}
+
+		// Priority 4: Alphabetical descending (reverse)
+		return b.id.localeCompare(a.id);
+	});
+
+	return sorted[0];
+}
+
+/**
  * Get cached models if still valid.
  */
 function getCachedModels(): ModelInfo[] | null {
@@ -107,10 +167,31 @@ export function clearModelsCache(): void {
 
 /**
  * Get the currently selected model ID.
+ * Priority:
+ * 1. Stored user selection (localStorage)
+ * 2. Latest Haiku from cached models
+ * 3. DEFAULT_MODEL fallback
  */
 export function getSelectedModel(): string {
 	if (typeof window === 'undefined') return DEFAULT_MODEL;
-	return localStorage.getItem(STORAGE_KEY) ?? DEFAULT_MODEL;
+
+	// Priority 1: Return stored selection if exists
+	const stored = localStorage.getItem(STORAGE_KEY);
+	if (stored && stored.trim()) {
+		return stored;
+	}
+
+	// Priority 2: Auto-select latest Haiku from cache
+	const cached = getCachedModels();
+	if (cached && cached.length > 0) {
+		const latestHaiku = findLatestHaikuModel(cached);
+		if (latestHaiku) {
+			return latestHaiku.id;
+		}
+	}
+
+	// Priority 3: Fall back to default
+	return DEFAULT_MODEL;
 }
 
 /**

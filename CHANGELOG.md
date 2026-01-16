@@ -28,6 +28,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - DM-only fields excluded from AI context for privacy
   - Visual loading states with spinner during generation
   - User-friendly error handling for API failures
+- Auto-select latest Claude Haiku model as default (Issue #36)
+  - Automatically selects the newest Haiku model from Anthropic API
+  - Parses dates from model IDs to determine latest version
+  - User selections always take precedence over auto-selection
+  - Falls back to hardcoded default if API unavailable
+  - Eliminates need for app updates when new Haiku models release
 
 ### Planning
 - End-to-end tests (Playwright)

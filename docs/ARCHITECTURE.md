@@ -722,6 +722,77 @@ Hidden fields (with `section: 'hidden'`) are automatically excluded from AI cont
 - Model selection via `modelService.ts`
 - Max tokens: 1024 (configurable per field type)
 
+#### Model Service
+
+**Location:** `/src/lib/services/modelService.ts`
+
+**Purpose:** Manages AI model selection with automatic fallback to the latest Claude Haiku model.
+
+**Key Functions:**
+
+```typescript
+// Fetch available models from Anthropic API (with 1-hour cache)
+fetchModels(apiKey: string): Promise<ModelInfo[]>
+
+// Get the currently selected model ID
+getSelectedModel(): string
+
+// Save user's model selection
+setSelectedModel(modelId: string): void
+
+// Extract date from model ID for comparison
+extractDateFromModelId(id: string): number | null
+
+// Find latest Haiku model from a list
+findLatestHaikuModel(models: ModelInfo[]): ModelInfo | null
+
+// Clear cached models
+clearModelsCache(): void
+
+// Get fallback models when API unavailable
+getFallbackModels(): ModelInfo[]
+```
+
+**Model Selection Priority:**
+
+The service uses a three-tier priority system for selecting the default model:
+
+1. **User Selection** (highest priority): If the user explicitly selected a model, always use that choice
+2. **Auto-selected Latest Haiku**: Find the newest Haiku model from cached API data by comparing dates in model IDs
+3. **Hardcoded Fallback** (lowest priority): Use `claude-haiku-4-5-20250514` if API unavailable
+
+**Auto-Selection Logic:**
+
+When no user selection exists, the service automatically finds the latest Haiku model by:
+
+1. Filtering models to only Haiku variants (case-insensitive: "haiku", "HAIKU", "Haiku")
+2. Sorting by multiple criteria (highest priority first):
+   - Date extracted from model ID (descending)
+   - `created_at` timestamp if no ID date available
+   - Reverse alphabetical by ID as final tiebreaker
+3. Returning the top result
+
+**Date Extraction:**
+
+Model IDs contain 8-digit dates (YYYYMMDD format). The service uses regex to extract these dates:
+- Pattern: `/(?<!\d)(\d{8})(?!\d)/`
+- Example: `claude-haiku-4-5-20250514` → `20250514`
+- Used to determine which model is newer
+
+**Caching Strategy:**
+
+- Models are cached in localStorage for 1 hour to reduce API calls
+- Cache key: `dm-assist-models-cache`
+- Cache cleared automatically when API key changes
+- Cache format: `{ models: ModelInfo[], timestamp: number }`
+
+**Benefits:**
+
+- Users always get the latest Haiku model without app updates
+- Manual selections always respected (never overridden)
+- Graceful degradation when API unavailable
+- Reduces API calls through intelligent caching
+
 ### Error Handling
 
 The service provides user-friendly error messages for common scenarios:

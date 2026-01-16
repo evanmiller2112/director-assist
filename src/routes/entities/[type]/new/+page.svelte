@@ -5,6 +5,7 @@
 	import { getEntityTypeDefinition } from '$lib/config/entityTypes';
 	import { generateEntity, hasGenerationApiKey } from '$lib/services';
 	import { createEntity, type FieldValue } from '$lib/types';
+	import { validateEntity } from '$lib/utils';
 	import { ArrowLeft, Save, Sparkles, Loader2 } from 'lucide-svelte';
 
 	const entityType = $derived($page.params.type ?? '');
@@ -28,6 +29,26 @@
 	let fields = $state<Record<string, FieldValue>>({});
 	let isSaving = $state(false);
 	let isGenerating = $state(false);
+	let errors = $state<Record<string, string>>({});
+
+	// Validation
+	function validate(): boolean {
+		const result = validateEntity(
+			name,
+			$state.snapshot(fields),
+			typeDefinition?.fieldDefinitions ?? []
+		);
+		errors = result.errors;
+		return result.valid;
+	}
+
+	function clearError(key: string) {
+		if (errors[key]) {
+			const newErrors = { ...errors };
+			delete newErrors[key];
+			errors = newErrors;
+		}
+	}
 
 	// Initialize default field values
 	$effect(() => {
@@ -44,7 +65,8 @@
 
 	async function handleSubmit(e: Event) {
 		e.preventDefault();
-		if (!name.trim() || !entityType) return;
+		if (!entityType) return;
+		if (!validate()) return;
 
 		isSaving = true;
 
@@ -72,6 +94,7 @@
 
 	function updateField(key: string, value: FieldValue) {
 		fields = { ...fields, [key]: value };
+		clearError(key);
 	}
 
 	async function handleGenerate() {
@@ -149,11 +172,14 @@
 			<input
 				id="name"
 				type="text"
-				class="input"
+				class="input {errors.name ? 'input-error' : ''}"
 				bind:value={name}
-				required
+				oninput={() => clearError('name')}
 				placeholder="Enter a name..."
 			/>
+			{#if errors.name}
+				<p class="error-message">{errors.name}</p>
+			{/if}
 		</div>
 
 		<!-- Description -->
@@ -184,38 +210,34 @@
 						<input
 							id={field.key}
 							type="text"
-							class="input"
+							class="input {errors[field.key] ? 'input-error' : ''}"
 							value={(fields[field.key] as string) ?? ''}
 							oninput={(e) => updateField(field.key, e.currentTarget.value)}
 							placeholder={field.placeholder}
-							required={field.required}
 						/>
 					{:else if field.type === 'textarea' || field.type === 'richtext'}
 						<textarea
 							id={field.key}
-							class="input min-h-[80px]"
+							class="input min-h-[80px] {errors[field.key] ? 'input-error' : ''}"
 							value={(fields[field.key] as string) ?? ''}
 							oninput={(e) => updateField(field.key, e.currentTarget.value)}
 							placeholder={field.placeholder}
-							required={field.required}
 						></textarea>
 					{:else if field.type === 'number'}
 						<input
 							id={field.key}
 							type="number"
-							class="input"
+							class="input {errors[field.key] ? 'input-error' : ''}"
 							value={(fields[field.key] as number) ?? ''}
 							oninput={(e) =>
 								updateField(field.key, parseFloat(e.currentTarget.value) || 0)}
-							required={field.required}
 						/>
 					{:else if field.type === 'select'}
 						<select
 							id={field.key}
-							class="input"
+							class="input {errors[field.key] ? 'input-error' : ''}"
 							value={(fields[field.key] as string) ?? ''}
 							onchange={(e) => updateField(field.key, e.currentTarget.value)}
-							required={field.required}
 						>
 							<option value="">Select...</option>
 							{#each field.options ?? [] as option}
@@ -226,7 +248,7 @@
 						<input
 							id={field.key}
 							type="text"
-							class="input"
+							class="input {errors[field.key] ? 'input-error' : ''}"
 							value={Array.isArray(fields[field.key])
 								? (fields[field.key] as string[]).join(', ')
 								: ''}
@@ -244,7 +266,7 @@
 						<input
 							id={field.key}
 							type="text"
-							class="input"
+							class="input {errors[field.key] ? 'input-error' : ''}"
 							value={(fields[field.key] as string) ?? ''}
 							oninput={(e) => updateField(field.key, e.currentTarget.value)}
 							placeholder={field.placeholder ?? 'e.g., Year 1042, Third Age'}
@@ -253,11 +275,15 @@
 						<input
 							id={field.key}
 							type="text"
-							class="input"
+							class="input {errors[field.key] ? 'input-error' : ''}"
 							value={(fields[field.key] as string) ?? ''}
 							oninput={(e) => updateField(field.key, e.currentTarget.value)}
 							placeholder={field.placeholder}
 						/>
+					{/if}
+
+					{#if errors[field.key]}
+						<p class="error-message">{errors[field.key]}</p>
 					{/if}
 				</div>
 			{/each}
@@ -312,7 +338,7 @@
 
 		<!-- Submit -->
 		<div class="flex gap-3 pt-4">
-			<button type="submit" class="btn btn-primary" disabled={isSaving || isGenerating || !name.trim()}>
+			<button type="submit" class="btn btn-primary" disabled={isSaving || isGenerating}>
 				<Save class="w-4 h-4" />
 				{isSaving ? 'Saving...' : 'Create'}
 			</button>

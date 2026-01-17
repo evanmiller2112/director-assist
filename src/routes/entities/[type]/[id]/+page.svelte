@@ -4,7 +4,7 @@
 	import { entitiesStore, campaignStore } from '$lib/stores';
 	import { getEntityTypeDefinition } from '$lib/config/entityTypes';
 	import { ArrowLeft, Edit, Trash2, Link, Plus, X, ExternalLink, Check, X as XIcon } from 'lucide-svelte';
-	import { EntitySummary, RelateCommand } from '$lib/components/entity';
+	import { EntitySummary, RelateCommand, RelationshipCard } from '$lib/components/entity';
 
 	const entityId = $derived($page.params.id ?? '');
 	const entityType = $derived($page.params.type ?? '');
@@ -32,10 +32,14 @@
 		}
 	}
 
-	async function handleRemoveLink(targetId: string) {
+	async function handleRemoveLink(linkId: string) {
 		if (!entity) return;
 		if (confirm('Remove this relationship?')) {
-			await entitiesStore.removeLink(entity.id, targetId);
+			// Find the link to get the targetId
+			const link = entity.links.find(l => l.id === linkId);
+			if (link) {
+				await entitiesStore.removeLink(entity.id, link.targetId);
+			}
 		}
 	}
 </script>
@@ -234,52 +238,15 @@
 			</div>
 
 			{#if linkedEntitiesWithRelationships.length > 0}
-				<div class="grid gap-2">
-					{#each linkedEntitiesWithRelationships as { entity: linkedEntity, relationship, reverseRelationship, isReverse, bidirectional }}
-						{@const linkedTypeDefinition = getEntityTypeDefinition(
-							linkedEntity.type,
-							campaignStore.customEntityTypes,
-							campaignStore.entityTypeOverrides
-						)}
-						{@const isAsymmetric = bidirectional && reverseRelationship && reverseRelationship !== relationship}
-						<div class="entity-card group relative" data-type={linkedEntity.type}>
-							<a
-								href="/entities/{linkedEntity.type}/{linkedEntity.id}"
-								class="flex items-center gap-3 flex-1"
-							>
-								<span class="text-sm text-slate-500 dark:text-slate-400 w-28 flex-shrink-0">
-									{#if isReverse}
-										<span class="opacity-60">← </span>
-									{/if}
-									{relationship.replace(/_/g, ' ')}
-									{#if bidirectional}
-										{#if isAsymmetric}
-											<span class="text-xs ml-1 text-blue-500" title="Asymmetric: {reverseRelationship?.replace(/_/g, ' ')}">↔</span>
-										{:else}
-											<span class="text-xs ml-1" title="Bidirectional">↔</span>
-										{/if}
-									{/if}
-								</span>
-								<span class="font-medium text-slate-900 dark:text-white flex-1">
-									{linkedEntity.name}
-								</span>
-								<span class="text-xs text-slate-400 dark:text-slate-500">
-									{linkedTypeDefinition?.label ?? linkedEntity.type}
-								</span>
-							</a>
-							{#if !isReverse}
-								<button
-									onclick={(e) => {
-										e.preventDefault();
-										handleRemoveLink(linkedEntity.id);
-									}}
-									class="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-red-50 dark:hover:bg-red-900/20 rounded text-red-600 dark:text-red-400"
-									aria-label="Remove relationship"
-								>
-									<X class="w-4 h-4" />
-								</button>
-							{/if}
-						</div>
+				<div class="grid gap-4">
+					{#each linkedEntitiesWithRelationships as { entity: linkedEntity, link, isReverse }}
+						<RelationshipCard
+							{linkedEntity}
+							{link}
+							{isReverse}
+							{typeDefinition}
+							onRemove={handleRemoveLink}
+						/>
 					{/each}
 				</div>
 			{:else}

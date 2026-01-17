@@ -124,20 +124,16 @@ function createEntitiesStore() {
 		// Get linked entities with relationship info
 		getLinkedWithRelationships(entityId: string): Array<{
 			entity: BaseEntity;
-			relationship: string;
-			reverseRelationship?: string;
+			link: import('$lib/types').EntityLink;
 			isReverse: boolean;
-			bidirectional: boolean;
 		}> {
 			const entity = entities.find((e) => e.id === entityId);
 			if (!entity) return [];
 
 			const result: Array<{
 				entity: BaseEntity;
-				relationship: string;
-				reverseRelationship?: string;
+				link: import('$lib/types').EntityLink;
 				isReverse: boolean;
-				bidirectional: boolean;
 			}> = [];
 
 			// Add forward links
@@ -146,10 +142,8 @@ function createEntitiesStore() {
 				if (linkedEntity) {
 					result.push({
 						entity: linkedEntity,
-						relationship: link.relationship,
-						reverseRelationship: link.reverseRelationship,
-						isReverse: false,
-						bidirectional: link.bidirectional
+						link: link,
+						isReverse: false
 					});
 				}
 			});
@@ -160,10 +154,8 @@ function createEntitiesStore() {
 				if (linkToThisEntity && !linkToThisEntity.bidirectional) {
 					result.push({
 						entity: e,
-						relationship: linkToThisEntity.relationship,
-						reverseRelationship: linkToThisEntity.reverseRelationship,
-						isReverse: true,
-						bidirectional: false
+						link: linkToThisEntity,
+						isReverse: true
 					});
 				}
 			});

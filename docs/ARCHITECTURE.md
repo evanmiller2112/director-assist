@@ -43,7 +43,10 @@ src/
 ├── lib/
 │   ├── components/          # Reusable Svelte components
 │   │   ├── entity/          # Entity-specific components
-│   │   │   └── FieldGenerateButton.svelte
+│   │   │   ├── FieldGenerateButton.svelte
+│   │   │   ├── RelationshipCard.svelte
+│   │   │   ├── RelateCommand.svelte
+│   │   │   └── EntitySummary.svelte
 │   │   └── layout/          # Layout components
 │   │       ├── Header.svelte
 │   │       ├── HeaderSearch.svelte
@@ -191,6 +194,68 @@ Links can be unidirectional or bidirectional. Bidirectional links can be symmetr
 - Item → "owned_by" → Character (unidirectional)
 - NPC → "patron_of" ↔ "client_of" ← NPC (asymmetric bidirectional)
 - NPC → "employer_of" ↔ "employee_of" ← NPC (asymmetric bidirectional)
+
+#### RelationshipCard Component
+
+The RelationshipCard component provides a rich visual display for entity relationships on the entity detail page.
+
+**Location:** `/src/lib/components/entity/RelationshipCard.svelte`
+
+**Purpose:** Display complete relationship metadata in an easy-to-read card format with visual indicators for relationship direction, strength, and other attributes.
+
+**Props:**
+
+```typescript
+interface RelationshipCardProps {
+  linkedEntity: BaseEntity;        // The entity being linked to
+  link: EntityLink;                // Complete link object with all metadata
+  isReverse: boolean;              // Whether this is an incoming relationship
+  typeDefinition?: EntityTypeDefinition;
+  onRemove?: (linkId: string) => void;  // Callback for removing the link
+}
+```
+
+**Features:**
+
+- **Entity Display**: Shows linked entity name (as clickable link) and type badge
+- **Relationship Direction**: Visual indicators for unidirectional (→), bidirectional (↔), and asymmetric relationships
+- **Strength Badge**: Color-coded badges for relationship strength (strong/moderate/weak)
+- **Notes Section**: Displays relationship notes with preserved formatting
+- **Tags**: Shows relationship tags as colored badges
+- **Tension Indicator**: Visual progress bar showing tension level (0-100) with color coding
+- **Timestamps**: Displays creation and update dates in readable format
+- **Delete Action**: Remove button for forward links (hidden for reverse links)
+- **Reverse Link Indicator**: Left border highlight for incoming relationships
+
+**Visual States:**
+
+- **Forward Links**: Show delete button on hover, standard border
+- **Reverse Links**: Blue left border, no delete button, left arrow indicator
+- **Asymmetric Bidirectional**: Blue ↔ symbol with both relationship names shown
+
+**Integration:**
+
+Used on entity detail pages (`/src/routes/entities/[type]/[id]/+page.svelte`) to display all relationships for an entity. The card receives its data from the `getLinkedWithRelationships()` store method, which returns the complete EntityLink object along with the linked entity and direction indicator.
+
+**Example Usage:**
+
+```svelte
+<script>
+  const linkedEntitiesWithRelationships = $derived(
+    entity ? entitiesStore.getLinkedWithRelationships(entity.id) : []
+  );
+</script>
+
+{#each linkedEntitiesWithRelationships as { entity: linkedEntity, link, isReverse }}
+  <RelationshipCard
+    {linkedEntity}
+    {link}
+    {isReverse}
+    {typeDefinition}
+    onRemove={handleRemoveLink}
+  />
+{/each}
+```
 
 ### Dynamic Field System
 
@@ -551,6 +616,36 @@ Manages all entities:
 - `update()`: Update existing entity
 - `delete()`: Delete entity
 - `linkEntities()`: Create relationship between entities
+- `getLinkedWithRelationships()`: Get all linked entities with complete link metadata
+
+**getLinkedWithRelationships() Method:**
+
+Returns an array of linked entities along with their complete relationship metadata. This method supports the RelationshipCard component by providing all the data needed to display rich relationship information.
+
+**Return Type:**
+
+```typescript
+Array<{
+  entity: BaseEntity;        // The linked entity
+  link: EntityLink;          // Complete link object with all metadata
+  isReverse: boolean;        // True for incoming links, false for outgoing
+}>
+```
+
+**What's Included:**
+
+- Complete EntityLink object with all optional fields (strength, notes, tags, tension, timestamps)
+- Linked entity data (for display name, type, etc.)
+- Direction indicator (forward vs reverse relationships)
+- Support for asymmetric bidirectional relationships
+
+**Usage Example:**
+
+```typescript
+const linkedEntitiesWithRelationships = entitiesStore.getLinkedWithRelationships(entityId);
+// Returns both forward links (where this entity is the source) and reverse links
+// (where this entity is the target in a bidirectional relationship)
+```
 
 #### UI Store (`ui.svelte.ts`)
 

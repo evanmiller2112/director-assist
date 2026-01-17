@@ -6,7 +6,7 @@ export default defineConfig({
 	plugins: [sveltekit()],
 	test: {
 		globals: true,
-		environment: 'jsdom',
+		environment: 'happy-dom',
 		setupFiles: ['./src/tests/setup.ts'],
 		include: ['src/**/*.{test,spec}.{js,ts}'],
 		alias: {

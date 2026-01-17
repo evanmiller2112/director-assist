@@ -119,6 +119,20 @@ export interface EntityTypeOverride {
 // Helper type for creating new entities
 export type NewEntity = Omit<BaseEntity, 'id' | 'createdAt' | 'updatedAt'>;
 
+// Relationship chain types for graph traversal
+export interface ChainNode {
+	entity: BaseEntity;
+	depth: number;
+	path: EntityLink[];
+}
+
+export interface RelationshipChainOptions {
+	maxDepth?: number; // Maximum traversal depth (default: 3)
+	relationshipTypes?: string[]; // Filter by specific relationship types
+	entityTypes?: EntityType[]; // Filter by entity types to include
+	direction?: 'outgoing' | 'incoming' | 'both'; // Direction to traverse (default: 'both')
+}
+
 // Helper to create a new entity with defaults
 export function createEntity(
 	type: EntityType,

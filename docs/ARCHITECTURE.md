@@ -929,10 +929,11 @@ interface CampaignBackup {
   entities: BaseEntity[];
   chatHistory: ChatMessage[];
   activeCampaignId: string | undefined;
+  selectedModel?: string;       // User's selected Claude model preference
 }
 ```
 
-**Security Note:** The export format deliberately excludes all sensitive data stored in localStorage, including API keys and model preferences. See [Backup Security](#backup-security) for details.
+**Security Note:** The export format deliberately excludes sensitive data stored in localStorage, specifically API keys. The selected Claude model preference (e.g., "claude-3-haiku-20240307") is included to preserve user preferences across backup/restore operations. See [Backup Security](#backup-security) for details.
 
 ### Export Process
 
@@ -1255,19 +1256,19 @@ IndexedDB indexes are carefully chosen:
 
 ### Backup Security
 
-**Validated Security Posture (Issue #31 - v1.0 Security Audit):**
+**Validated Security Posture (Issue #31 - v1.0 Security Audit, Updated Issue #34):**
 
-Director Assist backups are secure by architectural design. The export function only accesses IndexedDB data and never reads from localStorage, ensuring sensitive configuration is never exposed.
+Director Assist backups are secure by architectural design. The export function carefully selects which data to include, ensuring sensitive credentials are never exposed.
 
 **What's Excluded:**
 - API keys (stored in localStorage: `dm-assist-api-key`)
-- Model preferences (stored in localStorage: `dm-assist-selected-model`)
-- Any other localStorage configuration
+- Any other sensitive localStorage configuration
 
 **What's Included:**
 - Entity data (all campaign entities)
 - Chat history (AI conversation logs)
 - Active campaign ID (database reference)
+- Selected Claude model preference (Issue #34: stored in localStorage: `dm-assist-selected-model`)
 - Export metadata (version, timestamp)
 
 **Security Validation:**

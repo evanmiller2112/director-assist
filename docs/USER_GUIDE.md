@@ -525,12 +525,12 @@ Your campaign data is stored in your browser's local storage. It's important to 
 - All relationships between entities
 - Campaign information (name, setting, system)
 - Chat history (if you've used AI chat)
+- Your selected Claude model preference (e.g., Haiku, Sonnet, Opus)
 
 ### What's NOT Included in Backups
 
 For security, backups never include:
 - Your API key
-- AI model preferences
 - Any settings stored outside the campaign database
 
 This means you can safely share backups with other Directors or store them in cloud services without exposing your API credentials.
@@ -546,7 +546,7 @@ This means you can safely share backups with other Directors or store them in cl
 5. Confirm the import
 6. Your campaign data is restored
 
-After importing, you'll need to re-enter your API key in Settings if you want to use AI features.
+After importing, you'll need to re-enter your API key in Settings if you want to use AI features. Your Claude model preference (Haiku, Sonnet, or Opus) will be restored automatically from the backup.
 
 ### Backup Best Practices
 
@@ -762,7 +762,8 @@ Relationship display depends on proper creation.
 This is expected behavior for security.
 
 **Solutions**:
-- API keys are never included in backups
+- API keys are never included in backups for security reasons
+- Your Claude model preference (Haiku, Sonnet, Opus) IS restored from the backup
 - Re-enter your API key in Settings after importing
 - Keep your API key stored securely elsewhere
 

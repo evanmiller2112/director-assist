@@ -45,6 +45,7 @@ export interface CampaignBackup {
 	entities: BaseEntity[];
 	chatHistory: ChatMessage[];
 	activeCampaignId?: string; // New: which campaign was active
+	selectedModel?: string; // Issue #34: User's selected Claude model preference
 }
 
 // Default campaign settings

@@ -1341,6 +1341,70 @@ IndexedDB indexes are carefully chosen:
 - Derived state uses `$derived` for memoization
 - Components only re-render when dependencies change
 
+### Svelte 5 Reactive Patterns Best Practices
+
+**Avoiding state_unsafe_mutation Errors**
+
+Svelte 5 enforces strict reactivity rules to ensure predictable state updates. Follow these patterns to avoid common pitfalls:
+
+**Wrong Pattern - Accessing reactive state in {@const} blocks:**
+
+```svelte
+<!-- WRONG: Triggers state_unsafe_mutation error -->
+{#each fieldValues as value}
+  {@const referencedEntity = entitiesStore.entities.find(e => e.id === value)}
+  {#if referencedEntity}
+    <span>{referencedEntity.name}</span>
+  {/if}
+{/each}
+```
+
+**Correct Pattern - Use helper functions or $derived:**
+
+```svelte
+<script lang="ts">
+  // Option 1: Helper function in script section
+  function getEntityById(entityId: string) {
+    return entitiesStore.getById(entityId);
+  }
+</script>
+
+{#each fieldValues as value}
+  {@const referencedEntity = getEntityById(value)}
+  {#if referencedEntity}
+    <span>{referencedEntity.name}</span>
+  {/if}
+{/each}
+```
+
+```svelte
+<script lang="ts">
+  // Option 2: Use $derived for computed values
+  const referencedEntity = $derived(
+    entityId ? entitiesStore.getById(entityId) : undefined
+  );
+</script>
+
+{#if referencedEntity}
+  <span>{referencedEntity.name}</span>
+{/if}
+```
+
+**Key Rules:**
+
+1. **{@const} blocks** - Only use for non-reactive transformations (string formatting, math, etc.)
+2. **Store access** - Use getter methods (e.g., `getById()`) instead of direct array access
+3. **Computed values** - Move complex computations to `$derived` in the script section
+4. **Array operations** - Avoid `.find()`, `.filter()`, `.map()` on reactive state inside templates
+
+**Safe {@const} Usage:**
+
+```svelte
+<!-- Safe: Simple transformation, no reactive state access -->
+{@const displayName = name.toUpperCase()}
+{@const formattedDate = timestamp ? new Date(timestamp).toLocaleDateString() : 'N/A'}
+```
+
 ## Security Considerations
 
 ### Local-First Security

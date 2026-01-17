@@ -57,6 +57,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Item count display ("Showing X-Y of Z items")
   - Integrates with search filtering
   - Pagination controls appear only when needed
+- Relationship graph data export (Issue #70)
+  - New `getRelationshipMap()` method in entity repository
+  - Returns graph-ready data structure with nodes (entities) and edges (links)
+  - Compatible with D3.js, vis.js, and Cytoscape.js visualization libraries
+  - Supports filtering by entity types
+  - Automatic edge deduplication for bidirectional relationships
+  - Accurate link count calculation for each entity node
+  - Exports interfaces: RelationshipMapNode, RelationshipMapEdge, RelationshipMap, RelationshipMapOptions
+  - Comprehensive JSDoc documentation with usage examples
 
 ### Fixed
 - Resolved Svelte 5 state_unsafe_mutation error in entity pages (Issue #98)

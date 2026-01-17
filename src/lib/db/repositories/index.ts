@@ -2,3 +2,11 @@ export { entityRepository } from './entityRepository';
 export { campaignRepository } from './campaignRepository';
 export { chatRepository } from './chatRepository';
 export { appConfigRepository, APP_CONFIG_KEYS } from './appConfigRepository';
+
+// Re-export types for graph visualization
+export type {
+	RelationshipMap,
+	RelationshipMapNode,
+	RelationshipMapEdge,
+	RelationshipMapOptions
+} from './entityRepository';

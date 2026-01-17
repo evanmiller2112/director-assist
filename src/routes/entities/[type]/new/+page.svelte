@@ -359,7 +359,7 @@
 							{field.label}
 							{#if field.required}*{/if}
 						</label>
-						{#if isGeneratableField(field.type) && canGenerate}
+						{#if isGeneratableField(field) && canGenerate}
 							<FieldGenerateButton
 								disabled={isGenerating || isSaving}
 								loading={generatingFieldKey === field.key}
@@ -720,7 +720,7 @@
 						<div class="mb-4">
 							<div class="flex items-center justify-between mb-1">
 								<label for={field.key} class="label mb-0">{field.label}</label>
-								{#if isGeneratableField(field.type) && canGenerate}
+								{#if isGeneratableField(field) && canGenerate}
 									<FieldGenerateButton
 										disabled={isGenerating || isSaving}
 										loading={generatingFieldKey === field.key}

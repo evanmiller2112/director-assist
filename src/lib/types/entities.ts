@@ -92,6 +92,7 @@ export interface FieldDefinition {
 	helpText?: string;
 	section?: string; // For grouping fields in UI (e.g., "hidden" for secrets)
 	order: number;
+	aiGenerate?: boolean; // Explicitly enable/disable AI generation for this field (default: enabled for text-based fields)
 }
 
 // Entity type definition (defines what fields an entity type has)

@@ -12,9 +12,12 @@
 		getFallbackModels
 	} from '$lib/services';
 	import { Download, Upload, Moon, Sun, Monitor, Trash2, Key, RefreshCw, Layers, ChevronRight } from 'lucide-svelte';
+	import LoadingButton from '$lib/components/ui/LoadingButton.svelte';
 
 	// Form state
 	let apiKey = $state('');
+	let isExporting = $state(false);
+	let isImporting = $state(false);
 
 	// Model selection state
 	let models = $state<ModelInfo[]>([]);
@@ -76,6 +79,7 @@
 	}
 
 	async function exportBackup() {
+		isExporting = true;
 		try {
 			// Get all entities including campaigns
 			const entities = await db.entities.toArray();
@@ -116,6 +120,8 @@
 		} catch (error) {
 			console.error('Export failed:', error);
 			notificationStore.error('Failed to export backup');
+		} finally {
+			isExporting = false;
 		}
 	}
 
@@ -128,6 +134,7 @@
 			const file = (e.target as HTMLInputElement).files?.[0];
 			if (!file) return;
 
+			isImporting = true;
 			try {
 				const text = await file.text();
 				const backup = JSON.parse(text) as CampaignBackup;
@@ -209,6 +216,8 @@
 			} catch (error) {
 				console.error('Import failed:', error);
 				notificationStore.error('Failed to import backup. Please check the file format.');
+			} finally {
+				isImporting = false;
 			}
 		};
 
@@ -403,14 +412,30 @@
 			Export your campaign data to a JSON file for backup or to switch between campaigns.
 		</p>
 		<div class="flex gap-2">
-			<button class="btn btn-secondary" onclick={exportBackup}>
-				<Download class="w-4 h-4" />
+			<LoadingButton
+				variant="secondary"
+				loading={isExporting}
+				disabled={isImporting}
+				loadingText="Exporting..."
+				onclick={exportBackup}
+			>
+				{#snippet leftIcon()}
+					<Download class="w-4 h-4" />
+				{/snippet}
 				Export Backup
-			</button>
-			<button class="btn btn-secondary" onclick={importBackup}>
-				<Upload class="w-4 h-4" />
+			</LoadingButton>
+			<LoadingButton
+				variant="secondary"
+				loading={isImporting}
+				disabled={isExporting}
+				loadingText="Importing..."
+				onclick={importBackup}
+			>
+				{#snippet leftIcon()}
+					<Upload class="w-4 h-4" />
+				{/snippet}
 				Import Backup
-			</button>
+			</LoadingButton>
 		</div>
 	</section>
 

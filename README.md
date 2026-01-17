@@ -11,6 +11,7 @@ An AI-powered campaign management tool for Directors running Draw Steel TTRPG ca
 - **Never Lose Your Notes**: All data stored locally in your browser with backup/restore
 - **Work Your Way**: Light and dark themes, customizable entity types
 - **AI-Powered Field Generation**: Generate content for individual fields using Claude AI, with context from other fields
+- **Responsive Loading States**: Polished loading feedback with skeleton screens, spinners, and loading buttons
 
 ## Quick Start
 

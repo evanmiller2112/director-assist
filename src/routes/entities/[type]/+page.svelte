@@ -5,6 +5,7 @@
 	import { getEntityTypeDefinition } from '$lib/config/entityTypes';
 	import { Plus, Search, Link } from 'lucide-svelte';
 	import RelateCommand from '$lib/components/entity/RelateCommand.svelte';
+	import LoadingSkeleton from '$lib/components/ui/LoadingSkeleton.svelte';
 	import type { BaseEntity } from '$lib/types';
 
 	const entityType = $derived($page?.params?.type ?? '');
@@ -77,7 +78,9 @@
 	</div>
 
 	<!-- Entity List -->
-	{#if filteredEntities.length === 0}
+	{#if entitiesStore.isLoading}
+		<LoadingSkeleton variant="entityCard" count={5} />
+	{:else if filteredEntities.length === 0}
 		<div class="text-center py-12 bg-slate-50 dark:bg-slate-800 rounded-lg">
 			{#if searchQuery}
 				<p class="text-slate-500 dark:text-slate-400">

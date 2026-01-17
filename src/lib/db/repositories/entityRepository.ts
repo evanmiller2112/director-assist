@@ -808,5 +808,148 @@ export const entityRepository = {
 			nodes,
 			edges
 		};
+	},
+	// Get relationship chain using BFS traversal (Issue #69)
+	async getRelationshipChain(
+		startId: string,
+		options?: {
+			maxDepth?: number;
+			relationshipTypes?: string[];
+			entityTypes?: EntityType[];
+			direction?: 'outgoing' | 'incoming' | 'both';
+		}
+	): Promise<Array<{ entity: BaseEntity; depth: number; path: BaseEntity['links'] }>> {
+		await ensureDbReady();
+
+		// Get the starting entity
+		const startEntity = await db.entities.get(startId);
+		if (!startEntity) {
+			return [];
+		}
+
+		// Parse options with defaults
+		const maxDepth = options?.maxDepth ?? 3;
+		const relationshipTypes = options?.relationshipTypes;
+		const entityTypes = options?.entityTypes;
+		const direction = options?.direction ?? 'both';
+
+		// Handle maxDepth = 0 edge case
+		if (maxDepth === 0) {
+			return [];
+		}
+
+		// Handle empty filter arrays (should match nothing)
+		if (relationshipTypes && relationshipTypes.length === 0) {
+			return [];
+		}
+		if (entityTypes && entityTypes.length === 0) {
+			return [];
+		}
+
+		// BFS queue: [entityId, depth, path]
+		const queue: Array<[string, number, BaseEntity['links']]> = [[startId, 0, []]];
+		const visited = new Set<string>([startId]);
+		const results: Array<{ entity: BaseEntity; depth: number; path: BaseEntity['links'] }> = [];
+
+		// Pre-fetch all entities for efficient lookup
+		const allEntities = await db.entities.toArray();
+		const entityMap = new Map(allEntities.map((e) => [e.id, e]));
+
+		// Build reverse link map for incoming relationships
+		const incomingLinksMap = new Map<string, BaseEntity['links']>();
+		if (direction === 'incoming' || direction === 'both') {
+			for (const entity of allEntities) {
+				for (const link of entity.links) {
+					if (!incomingLinksMap.has(link.targetId)) {
+						incomingLinksMap.set(link.targetId, []);
+					}
+					incomingLinksMap.get(link.targetId)!.push(link);
+				}
+			}
+		}
+
+		while (queue.length > 0) {
+			const [currentId, currentDepth, currentPath] = queue.shift()!;
+
+			// Stop if we've reached max depth
+			if (currentDepth >= maxDepth) {
+				continue;
+			}
+
+			const currentEntity = entityMap.get(currentId);
+			if (!currentEntity) {
+				continue;
+			}
+
+			const nextDepth = currentDepth + 1;
+			const neighbors: Array<{ link: BaseEntity['links'][0]; targetId: string }> = [];
+
+			// Collect outgoing relationships
+			if (direction === 'outgoing' || direction === 'both') {
+				for (const link of currentEntity.links) {
+					// Filter by relationship type if specified
+					if (relationshipTypes && !relationshipTypes.includes(link.relationship)) {
+						continue;
+					}
+					neighbors.push({ link, targetId: link.targetId });
+				}
+			}
+
+			// Collect incoming relationships
+			if (direction === 'incoming' || direction === 'both') {
+				const incomingLinks = incomingLinksMap.get(currentId) || [];
+				for (const link of incomingLinks) {
+					// Filter by relationship type if specified
+					if (relationshipTypes && !relationshipTypes.includes(link.relationship)) {
+						continue;
+					}
+					neighbors.push({ link, targetId: link.sourceId! });
+				}
+			}
+
+			// Process each neighbor
+			for (const { link, targetId } of neighbors) {
+				// Skip if already visited (prevents cycles)
+				if (visited.has(targetId)) {
+					continue;
+				}
+
+				const targetEntity = entityMap.get(targetId);
+				if (!targetEntity) {
+					continue;
+				}
+
+				// Mark as visited
+				visited.add(targetId);
+
+				// Build the path to this entity
+				const newPath = [...currentPath, link];
+
+				// Check if this entity matches the entity type filter
+				const matchesEntityType = !entityTypes || entityTypes.includes(targetEntity.type);
+
+				// Add to results if it matches the entity type filter
+				if (matchesEntityType) {
+					results.push({
+						entity: targetEntity,
+						depth: nextDepth,
+						path: newPath
+					});
+				}
+
+				// Continue traversal through this entity (even if filtered out)
+				queue.push([targetId, nextDepth, newPath]);
+			}
+		}
+
+		// Sort results by depth first, then by entity name
+		results.sort((a, b) => {
+			if (a.depth !== b.depth) {
+				return a.depth - b.depth;
+			}
+			return a.entity.name.localeCompare(b.entity.name);
+		});
+
+		return results;
 	}
 };

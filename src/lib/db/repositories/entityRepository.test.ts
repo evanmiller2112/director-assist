@@ -2397,3 +2397,819 @@ describe('EntityRepository - getRelationshipMap (Graph Visualization Support)', 
 		});
 	});
 });
+
+describe('EntityRepository - getRelationshipChain() (Issue #69)', () => {
+	// Test entities for building complex relationship graphs
+	let aragorn: BaseEntity;
+	let legolas: BaseEntity;
+	let gimli: BaseEntity;
+	let gandalf: BaseEntity;
+	let frodo: BaseEntity;
+	let sam: BaseEntity;
+	let fellowship: BaseEntity;
+	let rivendell: BaseEntity;
+	let gondor: BaseEntity;
+	let rohan: BaseEntity;
+
+	beforeAll(async () => {
+		await db.open();
+	});
+
+	afterAll(async () => {
+		await db.close();
+	});
+
+	beforeEach(async () => {
+		await db.entities.clear();
+
+		// Create a network of entities for testing graph traversal
+		aragorn = createMockEntity({
+			id: 'aragorn',
+			name: 'Aragorn',
+			type: 'character',
+			links: []
+		});
+
+		legolas = createMockEntity({
+			id: 'legolas',
+			name: 'Legolas',
+			type: 'character',
+			links: []
+		});
+
+		gimli = createMockEntity({
+			id: 'gimli',
+			name: 'Gimli',
+			type: 'character',
+			links: []
+		});
+
+		gandalf = createMockEntity({
+			id: 'gandalf',
+			name: 'Gandalf',
+			type: 'npc',
+			links: []
+		});
+
+		frodo = createMockEntity({
+			id: 'frodo',
+			name: 'Frodo',
+			type: 'character',
+			links: []
+		});
+
+		sam = createMockEntity({
+			id: 'sam',
+			name: 'Sam',
+			type: 'character',
+			links: []
+		});
+
+		fellowship = createMockEntity({
+			id: 'fellowship',
+			name: 'Fellowship of the Ring',
+			type: 'faction',
+			links: []
+		});
+
+		rivendell = createMockEntity({
+			id: 'rivendell',
+			name: 'Rivendell',
+			type: 'location',
+			links: []
+		});
+
+		gondor = createMockEntity({
+			id: 'gondor',
+			name: 'Gondor',
+			type: 'faction',
+			links: []
+		});
+
+		rohan = createMockEntity({
+			id: 'rohan',
+			name: 'Rohan',
+			type: 'faction',
+			links: []
+		});
+
+		await db.entities.bulkAdd([
+			aragorn,
+			legolas,
+			gimli,
+			gandalf,
+			frodo,
+			sam,
+			fellowship,
+			rivendell,
+			gondor,
+			rohan
+		]);
+	});
+
+	afterEach(async () => {
+		await db.entities.clear();
+	});
+
+	describe('Basic Traversal', () => {
+		it('should return empty array for entity with no links', async () => {
+			const chain = await entityRepository.getRelationshipChain(aragorn.id);
+
+			expect(chain).toEqual([]);
+		});
+
+		it('should return direct connections at depth 1', async () => {
+			// Aragorn -> Fellowship
+			await entityRepository.addLink(aragorn.id, fellowship.id, 'member_of', false);
+
+			const chain = await entityRepository.getRelationshipChain(aragorn.id);
+
+			expect(chain).toHaveLength(1);
+			expect(chain[0].entity.id).toBe(fellowship.id);
+			expect(chain[0].depth).toBe(1);
+			expect(chain[0].path).toHaveLength(1);
+			expect(chain[0].path[0].relationship).toBe('member_of');
+		});
+
+		it('should find multiple direct connections', async () => {
+			// Aragorn -> Fellowship, Gondor, Rivendell
+			await entityRepository.addLink(aragorn.id, fellowship.id, 'member_of', false);
+			await entityRepository.addLink(aragorn.id, gondor.id, 'heir_of', false);
+			await entityRepository.addLink(aragorn.id, rivendell.id, 'located_at', false);
+
+			const chain = await entityRepository.getRelationshipChain(aragorn.id);
+
+			expect(chain).toHaveLength(3);
+			expect(chain.every((node) => node.depth === 1)).toBe(true);
+			expect(chain.map((n) => n.entity.id).sort()).toEqual([
+				'fellowship',
+				'gondor',
+				'rivendell'
+			]);
+		});
+
+		it('should find indirect connections at depth 2', async () => {
+			// Aragorn -> Fellowship -> Legolas
+			await entityRepository.addLink(aragorn.id, fellowship.id, 'member_of', false);
+			await entityRepository.addLink(fellowship.id, legolas.id, 'has_member', false);
+
+			const chain = await entityRepository.getRelationshipChain(aragorn.id);
+
+			expect(chain).toHaveLength(2);
+
+			const fellowshipNode = chain.find((n) => n.entity.id === 'fellowship');
+			const legolasNode = chain.find((n) => n.entity.id === 'legolas');
+
+			expect(fellowshipNode?.depth).toBe(1);
+			expect(legolasNode?.depth).toBe(2);
+		});
+
+		it('should track complete path through chain', async () => {
+			// Aragorn -> Fellowship -> Gandalf
+			await entityRepository.addLink(aragorn.id, fellowship.id, 'member_of', false);
+			await entityRepository.addLink(fellowship.id, gandalf.id, 'has_member', false);
+
+			const chain = await entityRepository.getRelationshipChain(aragorn.id);
+			const gandalfNode = chain.find((n) => n.entity.id === 'gandalf');
+
+			expect(gandalfNode).toBeDefined();
+			expect(gandalfNode!.path).toHaveLength(2);
+			expect(gandalfNode!.path[0].targetId).toBe('fellowship');
+			expect(gandalfNode!.path[0].relationship).toBe('member_of');
+			expect(gandalfNode!.path[1].targetId).toBe('gandalf');
+			expect(gandalfNode!.path[1].relationship).toBe('has_member');
+		});
+
+		it('should handle bidirectional relationships', async () => {
+			// Aragorn <-> Legolas (bidirectional)
+			await entityRepository.addLink(aragorn.id, legolas.id, 'friend_of', true);
+
+			const chain = await entityRepository.getRelationshipChain(aragorn.id);
+
+			expect(chain).toHaveLength(1);
+			expect(chain[0].entity.id).toBe('legolas');
+			expect(chain[0].depth).toBe(1);
+		});
+	});
+
+	describe('Cycle Handling', () => {
+		it('should not revisit already visited entities', async () => {
+			// Create a cycle: Aragorn -> Fellowship -> Aragorn
+			await entityRepository.addLink(aragorn.id, fellowship.id, 'member_of', false);
+			await entityRepository.addLink(fellowship.id, aragorn.id, 'has_member', false);
+
+			const chain = await entityRepository.getRelationshipChain(aragorn.id);
+
+			// Should only include Fellowship once (at depth 1), not revisit Aragorn
+			expect(chain).toHaveLength(1);
+			expect(chain[0].entity.id).toBe('fellowship');
+			expect(chain.some((n) => n.entity.id === 'aragorn')).toBe(false);
+		});
+
+		it('should handle self-referential links', async () => {
+			// Entity links to itself
+			await entityRepository.addLink(aragorn.id, aragorn.id, 'mentors', false);
+
+			const chain = await entityRepository.getRelationshipChain(aragorn.id);
+
+			// Should not include itself in the chain
+			expect(chain).toEqual([]);
+		});
+
+		it('should handle circular relationships in larger graphs', async () => {
+			// Create: Aragorn -> Legolas -> Gimli -> Aragorn (circular, outgoing only)
+			await entityRepository.addLink(aragorn.id, legolas.id, 'friend_of', false);
+			await entityRepository.addLink(legolas.id, gimli.id, 'friend_of', false);
+			await entityRepository.addLink(gimli.id, aragorn.id, 'friend_of', false);
+
+			// Use direction: 'outgoing' to test directional cycle handling
+			const chain = await entityRepository.getRelationshipChain(aragorn.id, { direction: 'outgoing' });
+
+			// Should find Legolas (depth 1) and Gimli (depth 2), but not revisit Aragorn
+			expect(chain).toHaveLength(2);
+			expect(chain.map((n) => n.entity.id).sort()).toEqual(['gimli', 'legolas']);
+			expect(chain.find((n) => n.entity.id === 'legolas')?.depth).toBe(1);
+			expect(chain.find((n) => n.entity.id === 'gimli')?.depth).toBe(2);
+		});
+
+		it('should handle diamond-shaped graph without duplication', async () => {
+			// Aragorn -> Legolas -> Gandalf
+			//        -> Gimli    -> Gandalf (Gandalf reachable via two paths)
+			await entityRepository.addLink(aragorn.id, legolas.id, 'friend_of', false);
+			await entityRepository.addLink(aragorn.id, gimli.id, 'friend_of', false);
+			await entityRepository.addLink(legolas.id, gandalf.id, 'knows', false);
+			await entityRepository.addLink(gimli.id, gandalf.id, 'knows', false);
+
+			const chain = await entityRepository.getRelationshipChain(aragorn.id);
+
+			// Should find each entity only once
+			const entityIds = chain.map((n) => n.entity.id).sort();
+			expect(entityIds).toEqual(['gandalf', 'gimli', 'legolas']);
+
+			// Gandalf should appear at depth 2 (first discovery via BFS)
+			const gandalfNode = chain.find((n) => n.entity.id === 'gandalf');
+			expect(gandalfNode?.depth).toBe(2);
+		});
+	});
+
+	describe('maxDepth Parameter', () => {
+		it('should respect maxDepth = 1', async () => {
+			// Aragorn -> Fellowship -> Legolas -> Gimli
+			await entityRepository.addLink(aragorn.id, fellowship.id, 'member_of', false);
+			await entityRepository.addLink(fellowship.id, legolas.id, 'has_member', false);
+			await entityRepository.addLink(legolas.id, gimli.id, 'friend_of', false);
+
+			const chain = await entityRepository.getRelationshipChain(aragorn.id, { maxDepth: 1 });
+
+			expect(chain).toHaveLength(1);
+			expect(chain[0].entity.id).toBe('fellowship');
+			expect(chain[0].depth).toBe(1);
+		});
+
+		it('should respect maxDepth = 2', async () => {
+			// Aragorn -> Fellowship -> Legolas -> Gimli
+			await entityRepository.addLink(aragorn.id, fellowship.id, 'member_of', false);
+			await entityRepository.addLink(fellowship.id, legolas.id, 'has_member', false);
+			await entityRepository.addLink(legolas.id, gimli.id, 'friend_of', false);
+
+			const chain = await entityRepository.getRelationshipChain(aragorn.id, { maxDepth: 2 });
+
+			expect(chain).toHaveLength(2);
+			expect(chain.map((n) => n.entity.id).sort()).toEqual(['fellowship', 'legolas']);
+			expect(chain.every((n) => n.depth <= 2)).toBe(true);
+		});
+
+		it('should use default maxDepth = 3', async () => {
+			// Aragorn -> Fellowship -> Legolas -> Gimli -> Gandalf
+			await entityRepository.addLink(aragorn.id, fellowship.id, 'member_of', false);
+			await entityRepository.addLink(fellowship.id, legolas.id, 'has_member', false);
+			await entityRepository.addLink(legolas.id, gimli.id, 'friend_of', false);
+			await entityRepository.addLink(gimli.id, gandalf.id, 'friend_of', false);
+
+			const chain = await entityRepository.getRelationshipChain(aragorn.id);
+
+			// Default depth of 3 should include Fellowship, Legolas, Gimli (not Gandalf at depth 4)
+			expect(chain).toHaveLength(3);
+			expect(chain.map((n) => n.entity.id).sort()).toEqual(['fellowship', 'gimli', 'legolas']);
+			expect(chain.some((n) => n.entity.id === 'gandalf')).toBe(false);
+		});
+
+		it('should handle maxDepth = 0', async () => {
+			await entityRepository.addLink(aragorn.id, fellowship.id, 'member_of', false);
+
+			const chain = await entityRepository.getRelationshipChain(aragorn.id, { maxDepth: 0 });
+
+			expect(chain).toEqual([]);
+		});
+
+		it('should handle very large maxDepth', async () => {
+			// Aragorn -> Fellowship -> Legolas
+			await entityRepository.addLink(aragorn.id, fellowship.id, 'member_of', false);
+			await entityRepository.addLink(fellowship.id, legolas.id, 'has_member', false);
+
+			const chain = await entityRepository.getRelationshipChain(aragorn.id, { maxDepth: 100 });
+
+			// Should find all reachable nodes regardless of high maxDepth
+			expect(chain).toHaveLength(2);
+		});
+	});
+
+	describe('relationshipTypes Filter', () => {
+		it('should filter by single relationship type', async () => {
+			// Aragorn -> Fellowship (member_of)
+			// Aragorn -> Legolas (friend_of)
+			// Aragorn -> Gondor (heir_of)
+			await entityRepository.addLink(aragorn.id, fellowship.id, 'member_of', false);
+			await entityRepository.addLink(aragorn.id, legolas.id, 'friend_of', false);
+			await entityRepository.addLink(aragorn.id, gondor.id, 'heir_of', false);
+
+			const chain = await entityRepository.getRelationshipChain(aragorn.id, {
+				relationshipTypes: ['member_of']
+			});
+
+			expect(chain).toHaveLength(1);
+			expect(chain[0].entity.id).toBe('fellowship');
+		});
+
+		it('should filter by multiple relationship types', async () => {
+			// Aragorn -> Fellowship (member_of)
+			// Aragorn -> Legolas (friend_of)
+			// Aragorn -> Gondor (heir_of)
+			await entityRepository.addLink(aragorn.id, fellowship.id, 'member_of', false);
+			await entityRepository.addLink(aragorn.id, legolas.id, 'friend_of', false);
+			await entityRepository.addLink(aragorn.id, gondor.id, 'heir_of', false);
+
+			const chain = await entityRepository.getRelationshipChain(aragorn.id, {
+				relationshipTypes: ['member_of', 'friend_of']
+			});
+
+			expect(chain).toHaveLength(2);
+			expect(chain.map((n) => n.entity.id).sort()).toEqual(['fellowship', 'legolas']);
+		});
+
+		it('should apply relationship filter across all depths', async () => {
+			// Aragorn -> Fellowship (member_of) -> Legolas (has_member) -> Gimli (friend_of)
+			await entityRepository.addLink(aragorn.id, fellowship.id, 'member_of', false);
+			await entityRepository.addLink(fellowship.id, legolas.id, 'has_member', false);
+			await entityRepository.addLink(legolas.id, gimli.id, 'friend_of', false);
+
+			const chain = await entityRepository.getRelationshipChain(aragorn.id, {
+				relationshipTypes: ['member_of', 'has_member']
+			});
+
+			// Should only traverse member_of and has_member links
+			expect(chain).toHaveLength(2);
+			expect(chain.map((n) => n.entity.id).sort()).toEqual(['fellowship', 'legolas']);
+			expect(chain.some((n) => n.entity.id === 'gimli')).toBe(false);
+		});
+
+		it('should return empty array when no relationships match filter', async () => {
+			await entityRepository.addLink(aragorn.id, fellowship.id, 'member_of', false);
+
+			const chain = await entityRepository.getRelationshipChain(aragorn.id, {
+				relationshipTypes: ['enemy_of']
+			});
+
+			expect(chain).toEqual([]);
+		});
+
+		it('should handle empty relationshipTypes array', async () => {
+			await entityRepository.addLink(aragorn.id, fellowship.id, 'member_of', false);
+
+			const chain = await entityRepository.getRelationshipChain(aragorn.id, {
+				relationshipTypes: []
+			});
+
+			// Empty filter should match nothing
+			expect(chain).toEqual([]);
+		});
+	});
+
+	describe('entityTypes Filter', () => {
+		it('should filter by single entity type', async () => {
+			// Aragorn -> Fellowship (faction), Legolas (character), Rivendell (location)
+			await entityRepository.addLink(aragorn.id, fellowship.id, 'member_of', false);
+			await entityRepository.addLink(aragorn.id, legolas.id, 'friend_of', false);
+			await entityRepository.addLink(aragorn.id, rivendell.id, 'located_at', false);
+
+			const chain = await entityRepository.getRelationshipChain(aragorn.id, {
+				entityTypes: ['faction']
+			});
+
+			expect(chain).toHaveLength(1);
+			expect(chain[0].entity.id).toBe('fellowship');
+			expect(chain[0].entity.type).toBe('faction');
+		});
+
+		it('should filter by multiple entity types', async () => {
+			// Aragorn -> Fellowship (faction), Legolas (character), Rivendell (location)
+			await entityRepository.addLink(aragorn.id, fellowship.id, 'member_of', false);
+			await entityRepository.addLink(aragorn.id, legolas.id, 'friend_of', false);
+			await entityRepository.addLink(aragorn.id, rivendell.id, 'located_at', false);
+
+			const chain = await entityRepository.getRelationshipChain(aragorn.id, {
+				entityTypes: ['faction', 'character']
+			});
+
+			expect(chain).toHaveLength(2);
+			expect(chain.map((n) => n.entity.id).sort()).toEqual(['fellowship', 'legolas']);
+		});
+
+		it('should apply entity type filter across all depths', async () => {
+			// Aragorn -> Legolas (character) -> Fellowship (faction) -> Gandalf (npc)
+			await entityRepository.addLink(aragorn.id, legolas.id, 'friend_of', false);
+			await entityRepository.addLink(legolas.id, fellowship.id, 'member_of', false);
+			await entityRepository.addLink(fellowship.id, gandalf.id, 'has_member', false);
+
+			const chain = await entityRepository.getRelationshipChain(aragorn.id, {
+				entityTypes: ['character']
+			});
+
+			// Should only include character type entities
+			expect(chain).toHaveLength(1);
+			expect(chain[0].entity.id).toBe('legolas');
+		});
+
+		it('should return empty array when no entities match type filter', async () => {
+			await entityRepository.addLink(aragorn.id, fellowship.id, 'member_of', false);
+
+			const chain = await entityRepository.getRelationshipChain(aragorn.id, {
+				entityTypes: ['location']
+			});
+
+			expect(chain).toEqual([]);
+		});
+
+		it('should handle empty entityTypes array', async () => {
+			await entityRepository.addLink(aragorn.id, fellowship.id, 'member_of', false);
+
+			const chain = await entityRepository.getRelationshipChain(aragorn.id, {
+				entityTypes: []
+			});
+
+			// Empty filter should match nothing
+			expect(chain).toEqual([]);
+		});
+
+		it('should still traverse through filtered-out entities', async () => {
+			// Aragorn -> Fellowship (faction) -> Legolas (character)
+			// Filter for character types only
+			await entityRepository.addLink(aragorn.id, fellowship.id, 'member_of', false);
+			await entityRepository.addLink(fellowship.id, legolas.id, 'has_member', false);
+
+			const chain = await entityRepository.getRelationshipChain(aragorn.id, {
+				entityTypes: ['character']
+			});
+
+			// Should find Legolas even though Fellowship is filtered out
+			expect(chain).toHaveLength(1);
+			expect(chain[0].entity.id).toBe('legolas');
+			expect(chain[0].depth).toBe(2);
+		});
+	});
+
+	describe('direction Filter', () => {
+		it('should traverse only outgoing relationships', async () => {
+			// Aragorn -> Fellowship (outgoing)
+			// Legolas -> Aragorn (incoming)
+			await entityRepository.addLink(aragorn.id, fellowship.id, 'member_of', false);
+			await entityRepository.addLink(legolas.id, aragorn.id, 'friend_of', false);
+
+			const chain = await entityRepository.getRelationshipChain(aragorn.id, {
+				direction: 'outgoing'
+			});
+
+			expect(chain).toHaveLength(1);
+			expect(chain[0].entity.id).toBe('fellowship');
+		});
+
+		it('should traverse only incoming relationships', async () => {
+			// Aragorn -> Fellowship (outgoing)
+			// Legolas -> Aragorn (incoming)
+			await entityRepository.addLink(aragorn.id, fellowship.id, 'member_of', false);
+			await entityRepository.addLink(legolas.id, aragorn.id, 'friend_of', false);
+
+			const chain = await entityRepository.getRelationshipChain(aragorn.id, {
+				direction: 'incoming'
+			});
+
+			expect(chain).toHaveLength(1);
+			expect(chain[0].entity.id).toBe('legolas');
+		});
+
+		it('should traverse both directions by default', async () => {
+			// Aragorn -> Fellowship (outgoing)
+			// Legolas -> Aragorn (incoming)
+			await entityRepository.addLink(aragorn.id, fellowship.id, 'member_of', false);
+			await entityRepository.addLink(legolas.id, aragorn.id, 'friend_of', false);
+
+			const chain = await entityRepository.getRelationshipChain(aragorn.id, {
+				direction: 'both'
+			});
+
+			expect(chain).toHaveLength(2);
+			expect(chain.map((n) => n.entity.id).sort()).toEqual(['fellowship', 'legolas']);
+		});
+
+		it('should use both as default when direction not specified', async () => {
+			// Aragorn -> Fellowship (outgoing)
+			// Legolas -> Aragorn (incoming)
+			await entityRepository.addLink(aragorn.id, fellowship.id, 'member_of', false);
+			await entityRepository.addLink(legolas.id, aragorn.id, 'friend_of', false);
+
+			const chain = await entityRepository.getRelationshipChain(aragorn.id);
+
+			expect(chain).toHaveLength(2);
+		});
+
+		it('should handle bidirectional links with outgoing direction', async () => {
+			// Aragorn <-> Fellowship (bidirectional)
+			await entityRepository.addLink(aragorn.id, fellowship.id, 'member_of', true);
+
+			const chain = await entityRepository.getRelationshipChain(aragorn.id, {
+				direction: 'outgoing'
+			});
+
+			// Should find Fellowship via the outgoing link
+			expect(chain).toHaveLength(1);
+			expect(chain[0].entity.id).toBe('fellowship');
+		});
+
+		it('should handle bidirectional links with incoming direction', async () => {
+			// Aragorn <-> Fellowship (bidirectional)
+			await entityRepository.addLink(aragorn.id, fellowship.id, 'member_of', true);
+
+			const chain = await entityRepository.getRelationshipChain(aragorn.id, {
+				direction: 'incoming'
+			});
+
+			// Should find Fellowship via the reverse link
+			expect(chain).toHaveLength(1);
+			expect(chain[0].entity.id).toBe('fellowship');
+		});
+	});
+
+	describe('Path Tracking', () => {
+		it('should maintain complete path for each node', async () => {
+			// Aragorn -> Fellowship -> Legolas
+			await entityRepository.addLink(aragorn.id, fellowship.id, 'member_of', false);
+			await entityRepository.addLink(fellowship.id, legolas.id, 'has_member', false);
+
+			const chain = await entityRepository.getRelationshipChain(aragorn.id);
+			const legolasNode = chain.find((n) => n.entity.id === 'legolas');
+
+			expect(legolasNode?.path).toHaveLength(2);
+			expect(legolasNode?.path[0].targetId).toBe('fellowship');
+			expect(legolasNode?.path[1].targetId).toBe('legolas');
+		});
+
+		it('should track shortest path with BFS', async () => {
+			// Create two paths to Gimli:
+			// Aragorn -> Fellowship -> Gimli (length 2)
+			// Aragorn -> Legolas -> Gandalf -> Gimli (length 3)
+			await entityRepository.addLink(aragorn.id, fellowship.id, 'member_of', false);
+			await entityRepository.addLink(fellowship.id, gimli.id, 'has_member', false);
+			await entityRepository.addLink(aragorn.id, legolas.id, 'friend_of', false);
+			await entityRepository.addLink(legolas.id, gandalf.id, 'friend_of', false);
+			await entityRepository.addLink(gandalf.id, gimli.id, 'friend_of', false);
+
+			const chain = await entityRepository.getRelationshipChain(aragorn.id);
+			const gimliNode = chain.find((n) => n.entity.id === 'gimli');
+
+			// Should find shortest path (via Fellowship)
+			expect(gimliNode?.depth).toBe(2);
+			expect(gimliNode?.path).toHaveLength(2);
+			expect(gimliNode?.path[0].targetId).toBe('fellowship');
+			expect(gimliNode?.path[1].targetId).toBe('gimli');
+		});
+
+		it('should track path for depth 1 nodes', async () => {
+			await entityRepository.addLink(aragorn.id, fellowship.id, 'member_of', false);
+
+			const chain = await entityRepository.getRelationshipChain(aragorn.id);
+
+			expect(chain[0].path).toHaveLength(1);
+			expect(chain[0].path[0].targetId).toBe('fellowship');
+		});
+
+		it('should have unique paths for each node', async () => {
+			// Aragorn -> Fellowship -> Legolas
+			//        -> Gondor     -> Gimli
+			await entityRepository.addLink(aragorn.id, fellowship.id, 'member_of', false);
+			await entityRepository.addLink(fellowship.id, legolas.id, 'has_member', false);
+			await entityRepository.addLink(aragorn.id, gondor.id, 'heir_of', false);
+			await entityRepository.addLink(gondor.id, gimli.id, 'allied_with', false);
+
+			const chain = await entityRepository.getRelationshipChain(aragorn.id);
+			const legolasNode = chain.find((n) => n.entity.id === 'legolas');
+			const gimliNode = chain.find((n) => n.entity.id === 'gimli');
+
+			expect(legolasNode?.path[0].targetId).toBe('fellowship');
+			expect(gimliNode?.path[0].targetId).toBe('gondor');
+		});
+	});
+
+	describe('Result Ordering', () => {
+		it('should sort results by depth first', async () => {
+			// Create entities at different depths
+			// Aragorn -> Fellowship (depth 1) -> Legolas (depth 2)
+			//        -> Gimli (depth 1)
+			await entityRepository.addLink(aragorn.id, fellowship.id, 'member_of', false);
+			await entityRepository.addLink(fellowship.id, legolas.id, 'has_member', false);
+			await entityRepository.addLink(aragorn.id, gimli.id, 'friend_of', false);
+
+			const chain = await entityRepository.getRelationshipChain(aragorn.id);
+
+			// First two should be depth 1, last should be depth 2
+			expect(chain[0].depth).toBe(1);
+			expect(chain[1].depth).toBe(1);
+			expect(chain[2].depth).toBe(2);
+		});
+
+		it('should sort by name within same depth', async () => {
+			// Create multiple entities at depth 1
+			// Aragorn -> Legolas, Gimli, Gandalf
+			await entityRepository.addLink(aragorn.id, legolas.id, 'friend_of', false);
+			await entityRepository.addLink(aragorn.id, gimli.id, 'friend_of', false);
+			await entityRepository.addLink(aragorn.id, gandalf.id, 'knows', false);
+
+			const chain = await entityRepository.getRelationshipChain(aragorn.id);
+
+			const depth1Names = chain.filter((n) => n.depth === 1).map((n) => n.entity.name);
+			expect(depth1Names).toEqual(['Gandalf', 'Gimli', 'Legolas']);
+		});
+
+		it('should maintain depth and name ordering across multiple depths', async () => {
+			// Aragorn -> Gimli (1), Legolas (1) -> Fellowship (2), Gandalf (2)
+			await entityRepository.addLink(aragorn.id, gimli.id, 'friend_of', false);
+			await entityRepository.addLink(aragorn.id, legolas.id, 'friend_of', false);
+			await entityRepository.addLink(gimli.id, fellowship.id, 'member_of', false);
+			await entityRepository.addLink(legolas.id, gandalf.id, 'knows', false);
+
+			const chain = await entityRepository.getRelationshipChain(aragorn.id);
+
+			expect(chain[0].depth).toBe(1);
+			expect(chain[0].entity.name).toBe('Gimli');
+			expect(chain[1].depth).toBe(1);
+			expect(chain[1].entity.name).toBe('Legolas');
+			expect(chain[2].depth).toBe(2);
+			// Either Fellowship or Gandalf, alphabetically sorted
+			expect(chain[2].entity.name).toBe('Fellowship of the Ring');
+			expect(chain[3].depth).toBe(2);
+			expect(chain[3].entity.name).toBe('Gandalf');
+		});
+	});
+
+	describe('Edge Cases', () => {
+		it('should handle non-existent start entity', async () => {
+			const chain = await entityRepository.getRelationshipChain('nonexistent-id');
+
+			expect(chain).toEqual([]);
+		});
+
+		it('should handle entity with many connections', async () => {
+			// Fellowship connected to many members
+			await entityRepository.addLink(fellowship.id, aragorn.id, 'has_member', false);
+			await entityRepository.addLink(fellowship.id, legolas.id, 'has_member', false);
+			await entityRepository.addLink(fellowship.id, gimli.id, 'has_member', false);
+			await entityRepository.addLink(fellowship.id, gandalf.id, 'has_member', false);
+			await entityRepository.addLink(fellowship.id, frodo.id, 'has_member', false);
+			await entityRepository.addLink(fellowship.id, sam.id, 'has_member', false);
+
+			const chain = await entityRepository.getRelationshipChain(fellowship.id);
+
+			expect(chain).toHaveLength(6);
+			expect(chain.every((n) => n.depth === 1)).toBe(true);
+		});
+
+		it('should handle deep chains beyond maxDepth', async () => {
+			// Create chain: A -> B -> C -> D -> E -> F
+			const entities = [aragorn, legolas, gimli, gandalf, frodo, sam];
+			for (let i = 0; i < entities.length - 1; i++) {
+				await entityRepository.addLink(entities[i].id, entities[i + 1].id, 'friend_of', false);
+			}
+
+			const chain = await entityRepository.getRelationshipChain(aragorn.id, { maxDepth: 3 });
+
+			// Should stop at depth 3
+			expect(chain).toHaveLength(3);
+			expect(chain[chain.length - 1].depth).toBe(3);
+		});
+
+		it('should handle disconnected graph components', async () => {
+			// Aragorn -> Fellowship
+			// Legolas -> Gimli (disconnected from Aragorn)
+			await entityRepository.addLink(aragorn.id, fellowship.id, 'member_of', false);
+			await entityRepository.addLink(legolas.id, gimli.id, 'friend_of', false);
+
+			const chain = await entityRepository.getRelationshipChain(aragorn.id);
+
+			// Should only find Fellowship (not Legolas or Gimli)
+			expect(chain).toHaveLength(1);
+			expect(chain[0].entity.id).toBe('fellowship');
+		});
+
+		it('should combine multiple filters', async () => {
+			// Aragorn -> Fellowship (faction, member_of) -> Legolas (character, has_member)
+			//        -> Gandalf (npc, knows)
+			//        -> Rivendell (location, located_at)
+			await entityRepository.addLink(aragorn.id, fellowship.id, 'member_of', false);
+			await entityRepository.addLink(fellowship.id, legolas.id, 'has_member', false);
+			await entityRepository.addLink(aragorn.id, gandalf.id, 'knows', false);
+			await entityRepository.addLink(aragorn.id, rivendell.id, 'located_at', false);
+
+			const chain = await entityRepository.getRelationshipChain(aragorn.id, {
+				entityTypes: ['faction', 'character'],
+				relationshipTypes: ['member_of', 'has_member'],
+				maxDepth: 2
+			});
+
+			// Should find Fellowship (faction, member_of, depth 1)
+			// and Legolas (character, has_member, depth 2)
+			expect(chain).toHaveLength(2);
+			expect(chain.map((n) => n.entity.id).sort()).toEqual(['fellowship', 'legolas']);
+		});
+
+		it('should handle empty database', async () => {
+			await db.entities.clear();
+
+			const chain = await entityRepository.getRelationshipChain('any-id');
+
+			expect(chain).toEqual([]);
+		});
+
+		it('should handle undefined options', async () => {
+			await entityRepository.addLink(aragorn.id, fellowship.id, 'member_of', false);
+
+			const chain = await entityRepository.getRelationshipChain(aragorn.id, undefined);
+
+			expect(chain).toHaveLength(1);
+		});
+	});
+
+	describe('Complex Graph Scenarios', () => {
+		it('should handle complete graph traversal', async () => {
+			// Create a complex network
+			// Aragorn -> Fellowship, Gondor
+			// Fellowship -> Legolas, Gimli
+			// Gondor -> Rohan
+			// Legolas -> Rivendell
+			await entityRepository.addLink(aragorn.id, fellowship.id, 'member_of', false);
+			await entityRepository.addLink(aragorn.id, gondor.id, 'heir_of', false);
+			await entityRepository.addLink(fellowship.id, legolas.id, 'has_member', false);
+			await entityRepository.addLink(fellowship.id, gimli.id, 'has_member', false);
+			await entityRepository.addLink(gondor.id, rohan.id, 'allied_with', false);
+			await entityRepository.addLink(legolas.id, rivendell.id, 'from', false);
+
+			const chain = await entityRepository.getRelationshipChain(aragorn.id);
+
+			// Should find all reachable entities
+			expect(chain).toHaveLength(6);
+			const depths = new Map(chain.map((n) => [n.entity.id, n.depth]));
+			expect(depths.get('fellowship')).toBe(1);
+			expect(depths.get('gondor')).toBe(1);
+			expect(depths.get('legolas')).toBe(2);
+			expect(depths.get('gimli')).toBe(2);
+			expect(depths.get('rohan')).toBe(2);
+			expect(depths.get('rivendell')).toBe(3);
+		});
+
+		it('should handle asymmetric bidirectional relationships', async () => {
+			// Aragorn <-> Fellowship (patron_of / client_of)
+			await entityRepository.addLink(
+				aragorn.id,
+				fellowship.id,
+				'patron_of',
+				true,
+				undefined,
+				undefined,
+				undefined,
+				'client_of'
+			);
+
+			const chain = await entityRepository.getRelationshipChain(aragorn.id);
+
+			expect(chain).toHaveLength(1);
+			expect(chain[0].entity.id).toBe('fellowship');
+		});
+
+		it('should work with relationship metadata', async () => {
+			// Links with strength and metadata should still be traversed
+			await entityRepository.addLink(
+				aragorn.id,
+				fellowship.id,
+				'member_of',
+				false,
+				'Strong bond',
+				'strong',
+				{ tags: ['fellowship'], tension: 2 }
+			);
+
+			const chain = await entityRepository.getRelationshipChain(aragorn.id);
+
+			expect(chain).toHaveLength(1);
+			expect(chain[0].path[0].strength).toBe('strong');
+			expect(chain[0].path[0].metadata?.tags).toEqual(['fellowship']);
+		});
+	});
+});

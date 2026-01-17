@@ -1021,6 +1021,87 @@ const linkedEntitiesWithRelationships = entitiesStore.getLinkedWithRelationships
 // (where this entity is the target in a bidirectional relationship)
 ```
 
+#### Entity Repository Methods
+
+The entity repository provides data access methods for querying and manipulating entities. In addition to basic CRUD operations, it includes advanced relationship traversal methods.
+
+**getRelationshipChain() Method:**
+
+Traverses entity relationships using breadth-first search to find all entities within a specified number of connections (degrees of separation). Returns the path taken to reach each entity.
+
+**Method Signature:**
+
+```typescript
+getRelationshipChain(
+  startId: EntityId,
+  options?: RelationshipChainOptions
+): Promise<ChainNode[]>
+```
+
+**Options:**
+
+```typescript
+interface RelationshipChainOptions {
+  maxDepth?: number;              // Maximum degrees of separation (default: 3)
+  relationshipTypes?: string[];   // Filter by specific relationship types
+  entityTypes?: EntityType[];     // Filter by specific entity types
+  direction?: 'outgoing' | 'incoming' | 'both';  // Link direction (default: 'both')
+}
+```
+
+**Return Type:**
+
+```typescript
+interface ChainNode {
+  entity: BaseEntity;     // The entity found in the chain
+  depth: number;          // Degrees of separation from start entity
+  path: EntityLink[];     // Sequence of links to reach this entity
+}
+```
+
+**Use Cases:**
+
+- "Who knows someone who knows this NPC?" (social network analysis)
+- "What's the shortest path between Faction A and Location B?" (relationship paths)
+- "Show me all entities within 2 degrees of connection" (relationship exploration)
+- Finding indirect relationships and hidden connections in the campaign
+
+**Example Usage:**
+
+```typescript
+// Find all entities within 2 connections of an NPC
+const chain = await entityRepository.getRelationshipChain('npc-123', {
+  maxDepth: 2
+});
+
+// Find factions connected through "allied_with" relationships
+const alliedFactions = await entityRepository.getRelationshipChain('faction-456', {
+  relationshipTypes: ['allied_with'],
+  entityTypes: ['faction'],
+  direction: 'both'
+});
+
+// Trace the path to a specific entity
+const pathToTarget = chain.find(node => node.entity.id === 'target-id');
+console.log(`Reached in ${pathToTarget.depth} steps via:`, pathToTarget.path);
+```
+
+**How It Works:**
+
+1. Starts at the specified entity (depth 0)
+2. Uses BFS to explore relationships level by level
+3. Tracks visited entities to avoid cycles
+4. Records the path of links to reach each entity
+5. Applies filters for relationship types, entity types, and direction
+6. Stops when maxDepth is reached
+
+**Performance Notes:**
+
+- Uses BFS for shortest-path guarantees
+- Tracks visited nodes to prevent infinite loops
+- Efficient for small-to-medium relationship networks
+- Consider limiting maxDepth for large datasets
+
 #### UI Store (`ui.svelte.ts`)
 
 Manages UI state:

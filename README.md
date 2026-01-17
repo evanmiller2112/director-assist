@@ -22,7 +22,7 @@ An AI-powered campaign management tool for Directors running Draw Steel TTRPG ca
 ### Installation
 
 ```bash
-git clone https://github.com/yourusername/director-assist.git
+git clone https://github.com/evanmiller2112/director-assist.git
 cd director-assist
 npm install
 npm run dev
@@ -163,4 +163,4 @@ MIT License - see LICENSE file for details.
 
 ## Support
 
-Found a bug or have a feature request? [Open an issue on GitHub](https://github.com/yourusername/director-assist/issues).
+Found a bug or have a feature request? [Open an issue on GitHub](https://github.com/evanmiller2112/director-assist/issues).

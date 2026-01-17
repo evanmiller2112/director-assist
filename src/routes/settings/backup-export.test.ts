@@ -42,7 +42,7 @@ async function exportBackup(): Promise<CampaignBackup> {
 		| string
 		| undefined;
 
-	// Issue #34: Get selected model from localStorage (trim whitespace to match actual implementation)
+	// Issue #34: Get selected model from localStorage (trim whitespace, treat empty as undefined)
 	const storedModel = localStorage.getItem('dm-assist-selected-model');
 	const selectedModel = storedModel?.trim() || undefined;
 

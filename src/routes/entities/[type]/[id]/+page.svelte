@@ -22,6 +22,11 @@
 		entity ? entitiesStore.getLinkedWithRelationships(entity.id) : []
 	);
 
+	// Helper to get entity by ID for template rendering
+	function getEntityById(id: string) {
+		return entitiesStore.getById(id);
+	}
+
 	let relateCommandOpen = $state(false);
 
 	async function handleDelete() {
@@ -161,7 +166,7 @@
 											class="max-w-full h-auto max-h-64 rounded-lg border border-slate-200 dark:border-slate-700 mt-2"
 										/>
 									{:else if fieldDef?.type === 'entity-ref' && typeof value === 'string'}
-										{@const referencedEntity = entitiesStore.entities.find(e => e.id === value)}
+										{@const referencedEntity = getEntityById(value)}
 										{#if referencedEntity}
 											{@const refTypeDef = getEntityTypeDefinition(
 												referencedEntity.type,
@@ -184,7 +189,7 @@
 										{#if value.length > 0}
 											<div class="flex flex-col gap-1">
 												{#each value as entityId}
-													{@const referencedEntity = entitiesStore.entities.find(e => e.id === entityId)}
+													{@const referencedEntity = getEntityById(entityId)}
 													{#if referencedEntity}
 														{@const refTypeDef = getEntityTypeDefinition(
 															referencedEntity.type,

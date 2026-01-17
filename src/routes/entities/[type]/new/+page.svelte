@@ -241,7 +241,7 @@
 
 	// Entity reference helper functions
 	function getEntityName(entityId: string): string {
-		const entity = entitiesStore.entities.find((e) => e.id === entityId);
+		const entity = entitiesStore.getById(entityId);
 		return entity?.name || '(Deleted)';
 	}
 

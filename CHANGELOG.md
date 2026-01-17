@@ -51,6 +51,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - All field types fully integrated across create, edit, and detail views
   - Added 'image' type to FieldDefinitionEditor for custom entity types
 
+### Fixed
+- Resolved Svelte 5 state_unsafe_mutation error in entity pages (Issue #98)
+  - Fixed reactive state access in template {@const} blocks on entity detail page
+  - Updated entity reference rendering to use store getter methods instead of direct array access
+  - Added helper functions to prevent unsafe state mutations during template rendering
+  - Affects entity detail, edit, and new pages
+
 ### Planning
 - End-to-end tests (Playwright)
 - Accessibility improvements

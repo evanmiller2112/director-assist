@@ -9,6 +9,7 @@
 	import { validateEntity } from '$lib/utils';
 	import { ArrowLeft, Save, ExternalLink, ImagePlus, X as XIcon, Upload, Search, ChevronDown } from 'lucide-svelte';
 	import FieldGenerateButton from '$lib/components/entity/FieldGenerateButton.svelte';
+	import LoadingButton from '$lib/components/ui/LoadingButton.svelte';
 
 	const entityId = $derived($page.params.id ?? '');
 	const entityType = $derived($page.params.type ?? '');
@@ -735,10 +736,17 @@
 
 			<!-- Submit -->
 			<div class="flex gap-3 pt-4">
-				<button type="submit" class="btn btn-primary" disabled={isSaving}>
-					<Save class="w-4 h-4" />
-					{isSaving ? 'Saving...' : 'Save Changes'}
-				</button>
+				<LoadingButton
+					type="submit"
+					variant="primary"
+					loading={isSaving}
+					loadingText="Saving..."
+				>
+					{#snippet leftIcon()}
+						<Save class="w-4 h-4" />
+					{/snippet}
+					Save Changes
+				</LoadingButton>
 				<a href="/entities/{entityType}/{entityId}" class="btn btn-secondary"> Cancel </a>
 			</div>
 		</form>

@@ -26,6 +26,7 @@ Director Assist is a client-side web application built with SvelteKit 2 and Svel
 - **Tailwind CSS**: Utility-first CSS framework
 - **Lucide Svelte**: Icon library
 - **CSS Custom Properties**: Theme variables for dark/light mode
+- **Loading Components**: Reusable loading states for async operations
 
 ### Data Layer
 - **Dexie.js**: IndexedDB wrapper with a clean API
@@ -47,6 +48,10 @@ src/
 │   │   │   ├── RelationshipCard.svelte
 │   │   │   ├── RelateCommand.svelte
 │   │   │   └── EntitySummary.svelte
+│   │   ├── ui/              # UI components
+│   │   │   ├── LoadingSpinner.svelte
+│   │   │   ├── LoadingSkeleton.svelte
+│   │   │   └── LoadingButton.svelte
 │   │   └── layout/          # Layout components
 │   │       ├── Header.svelte
 │   │       ├── HeaderSearch.svelte
@@ -256,6 +261,260 @@ Used on entity detail pages (`/src/routes/entities/[type]/[id]/+page.svelte`) to
   />
 {/each}
 ```
+
+### Loading State Components
+
+Director Assist provides three reusable components for displaying loading states during async operations. These components ensure consistent UX and accessibility across the application.
+
+#### LoadingSpinner Component
+
+**Location:** `/src/lib/components/ui/LoadingSpinner.svelte`
+
+**Purpose:** Display a spinning loader icon for async operations like data fetching or processing.
+
+**Props:**
+
+```typescript
+interface LoadingSpinnerProps {
+  size?: 'sm' | 'md' | 'lg' | number;  // Preset or custom size in pixels
+  color?: 'primary' | 'white' | 'gray'; // Color variant
+  label?: string;                       // Optional visible label
+  center?: boolean;                     // Center in container (default: true)
+  fullscreen?: boolean;                 // Cover entire viewport
+  class?: string;                       // Additional CSS classes
+}
+```
+
+**Features:**
+
+- Size variants: sm (16px), md (32px), lg (48px), or custom pixel size
+- Color variants: primary (blue), white, gray
+- Fullscreen mode with backdrop blur
+- ARIA attributes for screen readers
+- Dark mode support
+
+**Usage Example:**
+
+```svelte
+<!-- Basic spinner -->
+<LoadingSpinner />
+
+<!-- Large spinner with label -->
+<LoadingSpinner size="lg" label="Loading entities..." />
+
+<!-- Fullscreen loading overlay -->
+<LoadingSpinner fullscreen label="Importing backup..." />
+
+<!-- Custom size and color -->
+<LoadingSpinner size={64} color="white" />
+```
+
+**Accessibility:**
+
+- `role="status"` and `aria-live="polite"` for screen readers
+- Screen reader text ("Loading") when no visible label
+- Semantic HTML structure
+
+#### LoadingSkeleton Component
+
+**Location:** `/src/lib/components/ui/LoadingSkeleton.svelte`
+
+**Purpose:** Show placeholder content while data loads, maintaining layout stability and providing visual feedback.
+
+**Props:**
+
+```typescript
+interface LoadingSkeletonProps {
+  variant?: 'text' | 'card' | 'circular' | 'rectangular'
+          | 'entityCard' | 'tableRow' | 'entityDetail'
+          | 'settingsPage' | 'campaignCard';
+  width?: string | number;              // Tailwind class or pixel value
+  height?: string | number;             // Tailwind class or pixel value
+  count?: number;                       // Number of skeleton items
+  columns?: number;                     // Columns for tableRow variant
+  animate?: boolean;                    // Enable animation (default: true)
+  animation?: 'pulse' | 'shimmer';      // Animation style
+  class?: string;                       // Additional CSS classes
+}
+```
+
+**Variants:**
+
+- **text**: Single line text placeholder (h-4)
+- **card**: Generic card skeleton (min-h-32)
+- **circular**: Round placeholder for avatars
+- **rectangular**: Basic rectangle shape
+- **entityCard**: Entity list card with header and content lines
+- **tableRow**: Row with configurable columns
+- **entityDetail**: Full entity detail page layout
+- **settingsPage**: Settings page with form fields
+- **campaignCard**: Campaign card with title and description
+
+**Features:**
+
+- Preset variants for common UI patterns
+- Customizable dimensions (Tailwind classes or pixel values)
+- Multiple animation styles (pulse, shimmer)
+- Composable with count parameter
+- Dark mode support
+- ARIA attributes for accessibility
+
+**Usage Examples:**
+
+```svelte
+<!-- Entity list skeleton -->
+<LoadingSkeleton variant="entityCard" count={5} />
+
+<!-- Table row skeleton -->
+<LoadingSkeleton variant="tableRow" count={3} columns={4} />
+
+<!-- Custom text skeleton -->
+<LoadingSkeleton variant="text" width="w-3/4" height="h-6" />
+
+<!-- Entity detail page skeleton -->
+<LoadingSkeleton variant="entityDetail" />
+
+<!-- Circular avatar placeholder -->
+<LoadingSkeleton variant="circular" width={48} height={48} />
+```
+
+**Accessibility:**
+
+- `role="status"` and `aria-busy="true"` for loading state
+- `aria-label="Loading content"` for screen readers
+- Semantic structure matching final content
+
+#### LoadingButton Component
+
+**Location:** `/src/lib/components/ui/LoadingButton.svelte`
+
+**Purpose:** Button with integrated loading state for async actions like saving, submitting, or processing.
+
+**Props:**
+
+```typescript
+interface LoadingButtonProps {
+  loading?: boolean;                    // Show loading state
+  disabled?: boolean;                   // Disable button
+  variant?: 'primary' | 'secondary' | 'danger' | 'ghost' | 'outline';
+  size?: 'sm' | 'md' | 'lg';
+  type?: 'button' | 'submit' | 'reset'; // HTML button type
+  fullWidth?: boolean;                  // Full width button
+  loadingText?: string;                 // Text to show when loading
+  onclick?: (e: MouseEvent) => void;    // Click handler
+  class?: string;                       // Additional CSS classes
+  children?: Snippet | string;          // Button content
+  leftIcon?: Snippet | boolean;         // Left icon slot
+  rightIcon?: Snippet | boolean;        // Right icon slot
+}
+```
+
+**Variants:**
+
+- **primary**: Blue background, white text (default)
+- **secondary**: Gray background, white text
+- **danger**: Red background, white text
+- **ghost**: Transparent background, hover effect
+- **outline**: Bordered with transparent background
+
+**Size Variants:**
+
+- **sm**: px-3 py-1.5, text-sm
+- **md**: px-4 py-2, text-base (default)
+- **lg**: px-6 py-3, text-lg
+
+**Features:**
+
+- Automatic spinner display when loading
+- Disabled state during loading
+- Optional loading text replacement
+- Icon slots (left/right)
+- Full keyboard and focus support
+- ARIA attributes for accessibility
+- Dark mode support
+
+**Usage Examples:**
+
+```svelte
+<script>
+  let saving = $state(false);
+
+  async function handleSave() {
+    saving = true;
+    try {
+      await saveEntity();
+    } finally {
+      saving = false;
+    }
+  }
+</script>
+
+<!-- Basic loading button -->
+<LoadingButton loading={saving} onclick={handleSave}>
+  Save
+</LoadingButton>
+
+<!-- With loading text -->
+<LoadingButton
+  loading={saving}
+  loadingText="Saving..."
+  onclick={handleSave}
+>
+  Save Changes
+</LoadingButton>
+
+<!-- Danger variant with full width -->
+<LoadingButton
+  loading={deleting}
+  variant="danger"
+  fullWidth
+  onclick={handleDelete}
+>
+  Delete Entity
+</LoadingButton>
+
+<!-- With icon -->
+<LoadingButton loading={exporting} onclick={handleExport}>
+  {#snippet leftIcon()}
+    <Download class="w-4 h-4" />
+  {/snippet}
+  Export Backup
+</LoadingButton>
+```
+
+**Accessibility:**
+
+- `aria-busy={loading}` to indicate loading state
+- `aria-disabled={disabled || loading}` for disabled state
+- Screen reader text for spinner
+- Proper focus management
+- Keyboard navigation support
+
+#### Integration Points
+
+**Entity List Pages** (`/src/routes/entities/[type]/+page.svelte`)
+- Use LoadingSkeleton while fetching entity lists
+- Show 5 entityCard skeletons during initial load
+- Smooth transition to actual content
+
+**Entity Create/Edit Forms**
+- Use LoadingButton for save/create actions
+- Prevent double-submission during async operations
+- Clear visual feedback for form submission
+
+**Settings Page** (`/src/routes/settings/+page.svelte`)
+- Use LoadingButton for export/import operations
+- Provide loading text for long-running operations
+- Fullscreen LoadingSpinner for backup imports
+
+**Best Practices:**
+
+1. **Choose the Right Component**: Use LoadingSkeleton for content loading, LoadingSpinner for operations, LoadingButton for async actions
+2. **Match Layout**: LoadingSkeleton variants should match the content being loaded
+3. **Provide Context**: Use labels or loadingText to explain what's happening
+4. **Accessibility**: Always include ARIA attributes and screen reader text
+5. **Consistent Sizing**: Use matching size props across related components
+6. **Dark Mode**: All components support dark mode automatically
 
 ### Dynamic Field System
 

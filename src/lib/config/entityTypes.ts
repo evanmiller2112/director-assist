@@ -15,7 +15,8 @@ export const BUILT_IN_ENTITY_TYPES: EntityTypeDefinition[] = [
 				type: 'text',
 				required: true,
 				order: 1,
-				placeholder: 'Who plays this character?'
+				placeholder: 'Who plays this character?',
+				aiGenerate: false
 			},
 			{
 				key: 'concept',

@@ -58,8 +58,11 @@ export interface FieldGenerationResult {
  * Only text-based fields are generatable. Other field types like numbers,
  * booleans, selects, etc. are not suitable for AI text generation.
  *
- * @param fieldType - The type of field to check
- * @returns True if the field type supports AI generation
+ * When a FieldDefinition is provided, also checks the aiGenerate property.
+ * If aiGenerate is explicitly set to false, returns false even for text-based fields.
+ *
+ * @param fieldTypeOrDefinition - The type of field or the full field definition to check
+ * @returns True if the field type supports AI generation and aiGenerate is not false
  *
  * @example
  * ```typescript
@@ -67,9 +70,25 @@ export interface FieldGenerationResult {
  * isGeneratableField('richtext') // true
  * isGeneratableField('number')   // false
  * isGeneratableField('boolean')  // false
+ * isGeneratableField({ type: 'text', aiGenerate: false, ... }) // false
+ * isGeneratableField({ type: 'text', aiGenerate: true, ... })  // true
+ * isGeneratableField({ type: 'text', ... })                    // true (default)
  * ```
  */
-export function isGeneratableField(fieldType: FieldType): boolean {
+export function isGeneratableField(fieldTypeOrDefinition: FieldType | FieldDefinition): boolean {
+	// If a FieldDefinition object is passed
+	if (typeof fieldTypeOrDefinition === 'object' && 'type' in fieldTypeOrDefinition) {
+		const field = fieldTypeOrDefinition as FieldDefinition;
+		// If aiGenerate is explicitly false, return false
+		if (field.aiGenerate === false) {
+			return false;
+		}
+		// Otherwise check the field type
+		return field.type === 'text' || field.type === 'textarea' || field.type === 'richtext';
+	}
+
+	// Backward compatibility: if just a FieldType string is passed
+	const fieldType = fieldTypeOrDefinition as FieldType;
 	return fieldType === 'text' || fieldType === 'textarea' || fieldType === 'richtext';
 }
 

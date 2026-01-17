@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi, beforeAll, afterAll } 
 import { entityRepository } from './entityRepository';
 import { db } from '../index';
 import { createMockEntity } from '../../../tests/utils/testUtils';
-import type { BaseEntity, EntityLink, ChainNode } from '$lib/types';
+import type { BaseEntity, EntityLink } from '$lib/types';
 
 describe('EntityRepository - Enhanced EntityLink Data Model (Issue #65)', () => {
 	let sourceEntity: BaseEntity;
@@ -1770,6 +1770,629 @@ describe('EntityRepository - Relationship Query Methods (Issue #71)', () => {
 				member_of: 2,
 				friend_of: 2,
 				enemy_of: 1
+			});
+		});
+	});
+});
+
+describe('EntityRepository - getRelationshipMap (Graph Visualization Support)', () => {
+	let character1: BaseEntity;
+	let character2: BaseEntity;
+	let character3: BaseEntity;
+	let faction1: BaseEntity;
+	let faction2: BaseEntity;
+	let location1: BaseEntity;
+
+	beforeAll(async () => {
+		await db.open();
+	});
+
+	afterAll(async () => {
+		await db.close();
+	});
+
+	beforeEach(async () => {
+		await db.entities.clear();
+
+		// Create test entities
+		character1 = createMockEntity({
+			id: 'char-1',
+			name: 'Aragorn',
+			type: 'character',
+			links: []
+		});
+
+		character2 = createMockEntity({
+			id: 'char-2',
+			name: 'Legolas',
+			type: 'character',
+			links: []
+		});
+
+		character3 = createMockEntity({
+			id: 'char-3',
+			name: 'Gimli',
+			type: 'character',
+			links: []
+		});
+
+		faction1 = createMockEntity({
+			id: 'faction-1',
+			name: 'Fellowship of the Ring',
+			type: 'faction',
+			links: []
+		});
+
+		faction2 = createMockEntity({
+			id: 'faction-2',
+			name: 'Rangers of the North',
+			type: 'faction',
+			links: []
+		});
+
+		location1 = createMockEntity({
+			id: 'loc-1',
+			name: 'Rivendell',
+			type: 'location',
+			links: []
+		});
+
+		await db.entities.bulkAdd([
+			character1,
+			character2,
+			character3,
+			faction1,
+			faction2,
+			location1
+		]);
+	});
+
+	afterEach(async () => {
+		await db.entities.clear();
+	});
+
+	describe('Basic Functionality', () => {
+		it('should return all entities as nodes', async () => {
+			const result = await entityRepository.getRelationshipMap();
+
+			expect(result.nodes).toHaveLength(6);
+			expect(result.nodes.map(n => n.id).sort()).toEqual([
+				'char-1',
+				'char-2',
+				'char-3',
+				'faction-1',
+				'faction-2',
+				'loc-1'
+			]);
+		});
+
+		it('should include correct node properties for each entity', async () => {
+			const result = await entityRepository.getRelationshipMap();
+
+			const aragornNode = result.nodes.find(n => n.id === 'char-1');
+			expect(aragornNode).toBeDefined();
+			expect(aragornNode?.name).toBe('Aragorn');
+			expect(aragornNode?.type).toBe('character');
+			expect(aragornNode?.linkCount).toBe(0);
+		});
+
+		it('should return all links as edges with proper source/target mapping', async () => {
+			await entityRepository.addLink(character1.id, faction1.id, 'member_of', false);
+			await entityRepository.addLink(character2.id, faction1.id, 'member_of', false);
+			await entityRepository.addLink(character1.id, character2.id, 'friend_of', false);
+
+			const result = await entityRepository.getRelationshipMap();
+
+			expect(result.edges).toHaveLength(3);
+
+			const edge1 = result.edges.find(e => e.source === 'char-1' && e.target === 'faction-1');
+			expect(edge1).toBeDefined();
+			expect(edge1?.relationship).toBe('member_of');
+			expect(edge1?.bidirectional).toBe(false);
+
+			const edge2 = result.edges.find(e => e.source === 'char-2' && e.target === 'faction-1');
+			expect(edge2).toBeDefined();
+			expect(edge2?.relationship).toBe('member_of');
+
+			const edge3 = result.edges.find(e => e.source === 'char-1' && e.target === 'char-2');
+			expect(edge3).toBeDefined();
+			expect(edge3?.relationship).toBe('friend_of');
+		});
+
+		it('should include bidirectional flag for relationships', async () => {
+			await entityRepository.addLink(character1.id, character2.id, 'friend_of', false);
+			await entityRepository.addLink(character1.id, faction1.id, 'member_of', true);
+
+			const result = await entityRepository.getRelationshipMap();
+
+			const unidirectionalEdge = result.edges.find(
+				e => e.source === 'char-1' && e.target === 'char-2'
+			);
+			expect(unidirectionalEdge?.bidirectional).toBe(false);
+
+			const bidirectionalEdge = result.edges.find(
+				e => e.source === 'char-1' && e.target === 'faction-1'
+			);
+			expect(bidirectionalEdge?.bidirectional).toBe(true);
+		});
+
+		it('should assign numeric IDs to edges', async () => {
+			await entityRepository.addLink(character1.id, faction1.id, 'member_of', false);
+			await entityRepository.addLink(character2.id, faction1.id, 'member_of', false);
+
+			const result = await entityRepository.getRelationshipMap();
+
+			expect(result.edges).toHaveLength(2);
+			result.edges.forEach(edge => {
+				expect(typeof edge.id).toBe('number');
+			});
+
+			// IDs should be unique
+			const edgeIds = result.edges.map(e => e.id);
+			expect(new Set(edgeIds).size).toBe(edgeIds.length);
+		});
+	});
+
+	describe('Link Count Calculation', () => {
+		it('should calculate linkCount for nodes (outgoing links)', async () => {
+			await entityRepository.addLink(character1.id, faction1.id, 'member_of', false);
+			await entityRepository.addLink(character1.id, character2.id, 'friend_of', false);
+
+			const result = await entityRepository.getRelationshipMap();
+
+			const aragornNode = result.nodes.find(n => n.id === 'char-1');
+			expect(aragornNode?.linkCount).toBe(2);
+		});
+
+		it('should calculate linkCount for nodes (incoming links)', async () => {
+			await entityRepository.addLink(character1.id, faction1.id, 'member_of', false);
+			await entityRepository.addLink(character2.id, faction1.id, 'member_of', false);
+
+			const result = await entityRepository.getRelationshipMap();
+
+			const factionNode = result.nodes.find(n => n.id === 'faction-1');
+			expect(factionNode?.linkCount).toBe(2);
+		});
+
+		it('should calculate linkCount for nodes (both outgoing and incoming)', async () => {
+			await entityRepository.addLink(character1.id, faction1.id, 'member_of', false);
+			await entityRepository.addLink(character2.id, character1.id, 'friend_of', false);
+
+			const result = await entityRepository.getRelationshipMap();
+
+			const aragornNode = result.nodes.find(n => n.id === 'char-1');
+			expect(aragornNode?.linkCount).toBe(2); // 1 outgoing + 1 incoming
+		});
+
+		it('should handle entities with no links (linkCount: 0)', async () => {
+			await entityRepository.addLink(character1.id, character2.id, 'friend_of', false);
+
+			const result = await entityRepository.getRelationshipMap();
+
+			const gimliNode = result.nodes.find(n => n.id === 'char-3');
+			expect(gimliNode?.linkCount).toBe(0);
+
+			const factionNode = result.nodes.find(n => n.id === 'faction-1');
+			expect(factionNode?.linkCount).toBe(0);
+		});
+
+		it('should count bidirectional links only once per node', async () => {
+			await entityRepository.addLink(character1.id, character2.id, 'allied_with', true);
+
+			const result = await entityRepository.getRelationshipMap();
+
+			const char1Node = result.nodes.find(n => n.id === 'char-1');
+			const char2Node = result.nodes.find(n => n.id === 'char-2');
+
+			// Each node should count the bidirectional link once
+			expect(char1Node?.linkCount).toBe(1);
+			expect(char2Node?.linkCount).toBe(1);
+		});
+	});
+
+	describe('Empty Database Handling', () => {
+		it('should handle empty database gracefully', async () => {
+			await db.entities.clear();
+
+			const result = await entityRepository.getRelationshipMap();
+
+			expect(result.nodes).toEqual([]);
+			expect(result.edges).toEqual([]);
+		});
+
+		it('should handle database with entities but no links', async () => {
+			const result = await entityRepository.getRelationshipMap();
+
+			expect(result.nodes).toHaveLength(6);
+			expect(result.edges).toEqual([]);
+
+			result.nodes.forEach(node => {
+				expect(node.linkCount).toBe(0);
+			});
+		});
+	});
+
+	describe('Entity Type Filtering', () => {
+		it('should filter nodes by single entity type', async () => {
+			await entityRepository.addLink(character1.id, faction1.id, 'member_of', false);
+			await entityRepository.addLink(character2.id, faction1.id, 'member_of', false);
+
+			const result = await entityRepository.getRelationshipMap({
+				entityTypes: ['character']
+			});
+
+			expect(result.nodes).toHaveLength(3);
+			expect(result.nodes.every(n => n.type === 'character')).toBe(true);
+		});
+
+		it('should filter nodes by multiple entity types', async () => {
+			await entityRepository.addLink(character1.id, faction1.id, 'member_of', false);
+			await entityRepository.addLink(character1.id, location1.id, 'located_at', false);
+
+			const result = await entityRepository.getRelationshipMap({
+				entityTypes: ['character', 'faction']
+			});
+
+			expect(result.nodes).toHaveLength(5); // 3 characters + 2 factions
+			expect(result.nodes.every(n => n.type === 'character' || n.type === 'faction')).toBe(true);
+		});
+
+		it('should exclude edges when filtering removes linked entities', async () => {
+			await entityRepository.addLink(character1.id, faction1.id, 'member_of', false);
+			await entityRepository.addLink(character1.id, character2.id, 'friend_of', false);
+
+			const result = await entityRepository.getRelationshipMap({
+				entityTypes: ['character']
+			});
+
+			// Should only include the edge between two characters
+			expect(result.edges).toHaveLength(1);
+			expect(result.edges[0].source).toBe('char-1');
+			expect(result.edges[0].target).toBe('char-2');
+		});
+
+		it('should return empty result when filtering excludes all entities', async () => {
+			const result = await entityRepository.getRelationshipMap({
+				entityTypes: ['nonexistent_type']
+			});
+
+			expect(result.nodes).toEqual([]);
+			expect(result.edges).toEqual([]);
+		});
+
+		it('should update linkCount after filtering', async () => {
+			await entityRepository.addLink(character1.id, faction1.id, 'member_of', false);
+			await entityRepository.addLink(character1.id, character2.id, 'friend_of', false);
+
+			const result = await entityRepository.getRelationshipMap({
+				entityTypes: ['character']
+			});
+
+			const char1Node = result.nodes.find(n => n.id === 'char-1');
+			// Only character-to-character link should count
+			expect(char1Node?.linkCount).toBe(1);
+		});
+	});
+
+	describe('Edge Deduplication (Bidirectional Links)', () => {
+		it('should create only one edge for bidirectional relationships', async () => {
+			await entityRepository.addLink(character1.id, character2.id, 'allied_with', true);
+
+			const result = await entityRepository.getRelationshipMap();
+
+			// Should only have one edge, not two
+			expect(result.edges).toHaveLength(1);
+			expect(result.edges[0].bidirectional).toBe(true);
+		});
+
+		it('should choose consistent direction for bidirectional edges', async () => {
+			await entityRepository.addLink(character1.id, character2.id, 'allied_with', true);
+
+			const result = await entityRepository.getRelationshipMap();
+
+			const edge = result.edges[0];
+			// Should use lexicographically smaller ID as source for consistency
+			expect(edge.source).toBe('char-1');
+			expect(edge.target).toBe('char-2');
+		});
+
+		it('should not deduplicate unidirectional links in opposite directions', async () => {
+			await entityRepository.addLink(character1.id, character2.id, 'knows', false);
+			await entityRepository.addLink(character2.id, character1.id, 'knows', false);
+
+			const result = await entityRepository.getRelationshipMap();
+
+			// Should have two separate edges
+			expect(result.edges).toHaveLength(2);
+			expect(result.edges.every(e => e.bidirectional === false)).toBe(true);
+		});
+
+		it('should handle multiple bidirectional relationships between same entities', async () => {
+			await entityRepository.addLink(character1.id, character2.id, 'allied_with', true);
+			await entityRepository.addLink(character1.id, character2.id, 'friend_of', true);
+
+			const result = await entityRepository.getRelationshipMap();
+
+			// Should have two edges (different relationships)
+			expect(result.edges).toHaveLength(2);
+			expect(result.edges.every(e => e.bidirectional === true)).toBe(true);
+
+			const relationships = result.edges.map(e => e.relationship).sort();
+			expect(relationships).toEqual(['allied_with', 'friend_of']);
+		});
+	});
+
+	describe('Self-Referencing Links', () => {
+		it('should handle self-referencing links', async () => {
+			await entityRepository.addLink(character1.id, character1.id, 'doubts_self', false);
+
+			const result = await entityRepository.getRelationshipMap();
+
+			const selfEdge = result.edges.find(e => e.source === 'char-1' && e.target === 'char-1');
+			expect(selfEdge).toBeDefined();
+			expect(selfEdge?.relationship).toBe('doubts_self');
+		});
+
+		it('should count self-referencing links in linkCount', async () => {
+			await entityRepository.addLink(character1.id, character1.id, 'doubts_self', false);
+
+			const result = await entityRepository.getRelationshipMap();
+
+			const char1Node = result.nodes.find(n => n.id === 'char-1');
+			// Self-reference counts as both outgoing and incoming
+			expect(char1Node?.linkCount).toBe(2);
+		});
+
+		it('should handle bidirectional self-referencing links', async () => {
+			await entityRepository.addLink(character1.id, character1.id, 'self_aware', true);
+
+			const result = await entityRepository.getRelationshipMap();
+
+			const selfEdge = result.edges.find(e => e.source === 'char-1' && e.target === 'char-1');
+			expect(selfEdge).toBeDefined();
+			expect(selfEdge?.bidirectional).toBe(true);
+		});
+	});
+
+	describe('Edge Metadata', () => {
+		it('should include strength in edge metadata', async () => {
+			await entityRepository.addLink(
+				character1.id,
+				character2.id,
+				'friend_of',
+				false,
+				undefined,
+				'strong'
+			);
+
+			const result = await entityRepository.getRelationshipMap();
+
+			expect(result.edges[0].strength).toBe('strong');
+		});
+
+		it('should include custom metadata in edges', async () => {
+			await entityRepository.addLink(
+				character1.id,
+				faction1.id,
+				'member_of',
+				false,
+				undefined,
+				'moderate',
+				{ tags: ['alliance'], tension: 5 }
+			);
+
+			const result = await entityRepository.getRelationshipMap();
+
+			expect(result.edges[0].metadata).toBeDefined();
+			expect(result.edges[0].metadata?.tags).toEqual(['alliance']);
+			expect(result.edges[0].metadata?.tension).toBe(5);
+		});
+
+		it('should handle edges without metadata', async () => {
+			await entityRepository.addLink(character1.id, character2.id, 'knows', false);
+
+			const result = await entityRepository.getRelationshipMap();
+
+			expect(result.edges[0].strength).toBeUndefined();
+			expect(result.edges[0].metadata).toBeUndefined();
+		});
+	});
+
+	describe('Graph Library Compatibility', () => {
+		it('should use source/target terminology (not from/to)', async () => {
+			await entityRepository.addLink(character1.id, character2.id, 'friend_of', false);
+
+			const result = await entityRepository.getRelationshipMap();
+
+			expect(result.edges[0]).toHaveProperty('source');
+			expect(result.edges[0]).toHaveProperty('target');
+			expect(result.edges[0]).not.toHaveProperty('from');
+			expect(result.edges[0]).not.toHaveProperty('to');
+		});
+
+		it('should use numeric edge IDs for compatibility', async () => {
+			await entityRepository.addLink(character1.id, faction1.id, 'member_of', false);
+
+			const result = await entityRepository.getRelationshipMap();
+
+			expect(typeof result.edges[0].id).toBe('number');
+			expect(Number.isInteger(result.edges[0].id)).toBe(true);
+		});
+
+		it('should have string node IDs matching entity IDs', async () => {
+			const result = await entityRepository.getRelationshipMap();
+
+			result.nodes.forEach(node => {
+				expect(typeof node.id).toBe('string');
+			});
+		});
+
+		it('should ensure all edge source/target IDs exist in nodes', async () => {
+			await entityRepository.addLink(character1.id, character2.id, 'friend_of', false);
+			await entityRepository.addLink(character1.id, faction1.id, 'member_of', false);
+
+			const result = await entityRepository.getRelationshipMap();
+
+			const nodeIds = new Set(result.nodes.map(n => n.id));
+
+			result.edges.forEach(edge => {
+				expect(nodeIds.has(edge.source)).toBe(true);
+				expect(nodeIds.has(edge.target)).toBe(true);
+			});
+		});
+	});
+
+	describe('Complex Scenarios', () => {
+		it('should handle complex network with multiple relationship types', async () => {
+			await entityRepository.addLink(character1.id, faction1.id, 'member_of', false);
+			await entityRepository.addLink(character2.id, faction1.id, 'member_of', false);
+			await entityRepository.addLink(character3.id, faction1.id, 'member_of', false);
+			await entityRepository.addLink(character1.id, character2.id, 'friend_of', true);
+			await entityRepository.addLink(character1.id, location1.id, 'located_at', false);
+
+			const result = await entityRepository.getRelationshipMap();
+
+			expect(result.nodes).toHaveLength(6);
+			expect(result.edges.length).toBeGreaterThan(0);
+
+			// Verify different relationship types exist
+			const relationships = new Set(result.edges.map(e => e.relationship));
+			expect(relationships.has('member_of')).toBe(true);
+			expect(relationships.has('friend_of')).toBe(true);
+			expect(relationships.has('located_at')).toBe(true);
+		});
+
+		it('should handle entities with many links', async () => {
+			// Create a hub entity with many connections
+			await entityRepository.addLink(faction1.id, character1.id, 'has_member', false);
+			await entityRepository.addLink(faction1.id, character2.id, 'has_member', false);
+			await entityRepository.addLink(faction1.id, character3.id, 'has_member', false);
+			await entityRepository.addLink(faction1.id, location1.id, 'headquartered_at', false);
+
+			const result = await entityRepository.getRelationshipMap();
+
+			const factionNode = result.nodes.find(n => n.id === 'faction-1');
+			expect(factionNode?.linkCount).toBe(4);
+		});
+
+		it('should handle disconnected subgraphs', async () => {
+			// Create two separate networks
+			await entityRepository.addLink(character1.id, character2.id, 'friend_of', true);
+			await entityRepository.addLink(faction1.id, location1.id, 'located_at', false);
+
+			const result = await entityRepository.getRelationshipMap();
+
+			expect(result.nodes).toHaveLength(6);
+			expect(result.edges).toHaveLength(2);
+		});
+
+		it('should maintain performance with large number of entities', async () => {
+			// Add more entities to stress test
+			const moreEntities = Array.from({ length: 20 }, (_, i) =>
+				createMockEntity({
+					id: `extra-${i}`,
+					name: `Extra ${i}`,
+					type: 'npc',
+					links: []
+				})
+			);
+
+			await db.entities.bulkAdd(moreEntities);
+
+			const result = await entityRepository.getRelationshipMap();
+
+			expect(result.nodes).toHaveLength(26); // 6 original + 20 new
+		});
+	});
+
+	describe('Edge Cases', () => {
+		it('should handle entities with special characters in IDs', async () => {
+			const specialEntity = createMockEntity({
+				id: 'entity-with-special-chars-!@#',
+				name: 'Special Entity',
+				type: 'npc',
+				links: []
+			});
+
+			await db.entities.add(specialEntity);
+			await entityRepository.addLink(character1.id, specialEntity.id, 'knows', false);
+
+			const result = await entityRepository.getRelationshipMap();
+
+			const edge = result.edges.find(e => e.target === specialEntity.id);
+			expect(edge).toBeDefined();
+		});
+
+		it('should handle entities with very long names', async () => {
+			const longNameEntity = createMockEntity({
+				id: 'long-name',
+				name: 'A'.repeat(500),
+				type: 'character',
+				links: []
+			});
+
+			await db.entities.add(longNameEntity);
+
+			const result = await entityRepository.getRelationshipMap();
+
+			const node = result.nodes.find(n => n.id === 'long-name');
+			expect(node?.name).toHaveLength(500);
+		});
+
+		it('should handle deleted target entities gracefully', async () => {
+			await entityRepository.addLink(character1.id, character2.id, 'friend_of', false);
+
+			// Manually delete character2 (simulating dangling reference)
+			await db.entities.delete(character2.id);
+
+			const result = await entityRepository.getRelationshipMap();
+
+			// Should not crash, should skip invalid edges
+			expect(result.nodes.find(n => n.id === 'char-2')).toBeUndefined();
+		});
+	});
+
+	describe('Return Value Structure', () => {
+		it('should return object with nodes and edges arrays', async () => {
+			const result = await entityRepository.getRelationshipMap();
+
+			expect(result).toHaveProperty('nodes');
+			expect(result).toHaveProperty('edges');
+			expect(Array.isArray(result.nodes)).toBe(true);
+			expect(Array.isArray(result.edges)).toBe(true);
+		});
+
+		it('should return nodes with required properties', async () => {
+			const result = await entityRepository.getRelationshipMap();
+
+			result.nodes.forEach(node => {
+				expect(node).toHaveProperty('id');
+				expect(node).toHaveProperty('type');
+				expect(node).toHaveProperty('name');
+				expect(node).toHaveProperty('linkCount');
+				expect(typeof node.id).toBe('string');
+				expect(typeof node.type).toBe('string');
+				expect(typeof node.name).toBe('string');
+				expect(typeof node.linkCount).toBe('number');
+			});
+		});
+
+		it('should return edges with required properties', async () => {
+			await entityRepository.addLink(character1.id, character2.id, 'friend_of', false);
+
+			const result = await entityRepository.getRelationshipMap();
+
+			result.edges.forEach(edge => {
+				expect(edge).toHaveProperty('id');
+				expect(edge).toHaveProperty('source');
+				expect(edge).toHaveProperty('target');
+				expect(edge).toHaveProperty('relationship');
+				expect(edge).toHaveProperty('bidirectional');
+				expect(typeof edge.id).toBe('number');
+				expect(typeof edge.source).toBe('string');
+				expect(typeof edge.target).toBe('string');
+				expect(typeof edge.relationship).toBe('string');
+				expect(typeof edge.bidirectional).toBe('boolean');
 			});
 		});
 	});

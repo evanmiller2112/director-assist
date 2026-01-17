@@ -1,3 +1,4 @@
 export { default as EntitySummary } from './EntitySummary.svelte';
 export { default as RelateCommand } from './RelateCommand.svelte';
 export { default as FieldGenerateButton } from './FieldGenerateButton.svelte';
+export { default as RelationshipCard } from './RelationshipCard.svelte';

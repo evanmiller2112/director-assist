@@ -1150,6 +1150,20 @@ The workflow variants allow you to skip unnecessary steps for simple work while 
 
 ---
 
+## Related Workflows
+
+### Release Workflow
+
+For creating new releases (version bumps, tagging, GitHub releases), see **[RELEASE_WORKFLOW.md](./RELEASE_WORKFLOW.md)**.
+
+The release workflow uses these agents:
+- **mergemaster** → Merge branches into main
+- **docs-specialist** → Update changelog
+- **git-manager** → Create version tags
+- **github-project-manager** → Publish GitHub releases
+
+---
+
 ## Future Enhancements
 
 Potential improvements to consider:

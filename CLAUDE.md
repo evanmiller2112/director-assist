@@ -45,6 +45,22 @@ For any feature or bug fix, use the appropriate agents in order:
 "Commit the changes" → git-manager
 ```
 
+### Release Workflow
+
+For creating new releases, see `docs/RELEASE_WORKFLOW.md`. The release pipeline:
+
+1. **mergemaster** - Merge feature branch into main
+2. **docs-specialist** - Update changelog and release notes
+3. **git-manager** - Create version tag
+4. **github-project-manager** - Publish GitHub release
+
+```
+"Merge branch into main" → mergemaster
+"Update changelog" → docs-specialist
+"Create tag vX.Y.Z" → git-manager
+"Publish GitHub release" → github-project-manager
+```
+
 ## Tech Stack
 
 - SvelteKit with Svelte 5 runes ($state, $derived, $effect)

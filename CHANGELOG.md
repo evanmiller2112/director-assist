@@ -50,6 +50,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Entity-refs fields with chips display and search for multiple entity references
   - All field types fully integrated across create, edit, and detail views
   - Added 'image' type to FieldDefinitionEditor for custom entity types
+- Pagination for entity list pages (Issue #20)
+  - URL-based pagination with page and perPage query parameters
+  - Configurable items per page (20, 50, or 100)
+  - Previous/Next navigation buttons
+  - Item count display ("Showing X-Y of Z items")
+  - Integrates with search filtering
+  - Pagination controls appear only when needed
 
 ### Planning
 - End-to-end tests (Playwright)

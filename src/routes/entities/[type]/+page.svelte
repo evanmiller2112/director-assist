@@ -5,6 +5,7 @@
 	import { getEntityTypeDefinition } from '$lib/config/entityTypes';
 	import { Plus, Search, Link } from 'lucide-svelte';
 	import RelateCommand from '$lib/components/entity/RelateCommand.svelte';
+	import Pagination from '$lib/components/ui/Pagination.svelte';
 	import type { BaseEntity } from '$lib/types';
 
 	const entityType = $derived($page?.params?.type ?? '');
@@ -22,6 +23,20 @@
 	let searchQuery = $state('');
 	let relateCommandOpen = $state(false);
 	let selectedEntityForLink = $state<BaseEntity | null>(null);
+	let isInitialLoad = $state(true);
+
+	// Read pagination parameters from URL
+	const currentPage = $derived.by(() => {
+		const pageParam = $page.url.searchParams.get('page');
+		const parsed = parseInt(pageParam || '1', 10);
+		return isNaN(parsed) || parsed < 1 ? 1 : parsed;
+	});
+
+	const perPage = $derived.by(() => {
+		const perPageParam = $page.url.searchParams.get('perPage');
+		const parsed = parseInt(perPageParam || '20', 10);
+		return isNaN(parsed) || parsed < 1 ? 20 : parsed;
+	});
 
 	const filteredEntities: BaseEntity[] = $derived.by(() => {
 		if (!searchQuery) return entities;
@@ -34,12 +49,56 @@
 		);
 	});
 
+	// Calculate total pages and clamp current page to valid range
+	const totalPages = $derived(Math.ceil(filteredEntities.length / perPage));
+	const clampedPage = $derived.by(() => {
+		if (filteredEntities.length === 0) return 1;
+		return Math.min(currentPage, Math.max(1, totalPages));
+	});
+
+	// Paginate filtered entities
+	const paginatedEntities: BaseEntity[] = $derived.by(() => {
+		const start = (clampedPage - 1) * perPage;
+		const end = start + perPage;
+		return filteredEntities.slice(start, end);
+	});
+
+	// Show pagination when total items exceed perPage
+	const showPagination = $derived(filteredEntities.length > perPage);
+
 	function openLinkModal(entity: BaseEntity, event: MouseEvent) {
 		event.preventDefault();
 		event.stopPropagation();
 		selectedEntityForLink = entity;
 		relateCommandOpen = true;
 	}
+
+	function handlePageChange(newPage: number) {
+		const url = new URL($page.url);
+		url.searchParams.set('page', newPage.toString());
+		url.searchParams.set('perPage', perPage.toString());
+		goto(url.toString());
+	}
+
+	function handlePerPageChange(newPerPage: number) {
+		const url = new URL($page.url);
+		url.searchParams.set('page', '1'); // Reset to page 1 when changing perPage
+		url.searchParams.set('perPage', newPerPage.toString());
+		goto(url.toString());
+	}
+
+	// Reset to page 1 when search changes (but not on initial load)
+	$effect(() => {
+		if (searchQuery && !isInitialLoad) {
+			const url = new URL($page.url);
+			url.searchParams.set('page', '1');
+			url.searchParams.set('perPage', perPage.toString());
+			goto(url.toString());
+		}
+		if (isInitialLoad) {
+			isInitialLoad = false;
+		}
+	});
 </script>
 
 <svelte:head>
@@ -95,7 +154,7 @@
 		</div>
 	{:else}
 		<div class="grid gap-3">
-			{#each filteredEntities as entity}
+			{#each paginatedEntities as entity}
 				<a
 					href="/entities/{entityType}/{entity.id}"
 					class="entity-card group flex items-start gap-4"
@@ -144,6 +203,16 @@
 				</a>
 			{/each}
 		</div>
+
+		{#if showPagination}
+			<Pagination
+				currentPage={clampedPage}
+				totalItems={filteredEntities.length}
+				perPage={perPage}
+				onPageChange={handlePageChange}
+				onPerPageChange={handlePerPageChange}
+			/>
+		{/if}
 	{/if}
 {#if selectedEntityForLink}
 	<RelateCommand

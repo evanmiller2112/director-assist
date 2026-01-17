@@ -3,6 +3,94 @@ import { liveQuery, type Observable } from 'dexie';
 import type { BaseEntity, EntityType, NewEntity } from '$lib/types';
 import { nanoid } from 'nanoid';
 
+// Relationship Map interfaces for graph visualization
+
+/**
+ * Represents a node (entity) in the relationship graph.
+ *
+ * Compatible with D3.js, vis.js, and Cytoscape.js graph libraries.
+ */
+export interface RelationshipMapNode {
+	/** Unique entity identifier */
+	id: string;
+	/** Entity type (e.g., 'character', 'location', 'faction') */
+	type: EntityType;
+	/** Display name of the entity */
+	name: string;
+	/** Optional numeric ID for graph library compatibility */
+	entityId?: number;
+	/**
+	 * Total count of relationships (links) for this entity.
+	 *
+	 * Calculation rules:
+	 * - Outgoing unidirectional links: +1 for source entity
+	 * - Incoming unidirectional links: +1 for target entity
+	 * - Bidirectional links: +1 for both source and target entities
+	 * - Self-referencing links: +1 (counted once, not doubled)
+	 *
+	 * Note: Bidirectional links do not double-count. Each bidirectional
+	 * relationship adds exactly 1 to the count for each participating entity.
+	 */
+	linkCount: number;
+}
+
+/**
+ * Represents an edge (relationship) in the relationship graph.
+ *
+ * Compatible with D3.js, vis.js, and Cytoscape.js graph libraries.
+ *
+ * Edge deduplication behavior:
+ * - Bidirectional links are deduplicated to prevent duplicate edges
+ * - The lexicographically smaller entity ID is used as the source
+ * - Edge key format for bidirectional: `{source}-{target}-{relationship}`
+ * - Edge key format for unidirectional: `{source}-{target}-{relationship}-uni`
+ * - Multiple different relationships between the same entities are allowed
+ */
+export interface RelationshipMapEdge {
+	/** Unique numeric edge identifier */
+	id: number;
+	/** Source entity ID */
+	source: string;
+	/** Target entity ID */
+	target: string;
+	/** Relationship type (e.g., 'member_of', 'located_at', 'knows') */
+	relationship: string;
+	/** Whether the relationship is bidirectional (mutual) */
+	bidirectional: boolean;
+	/** Optional relationship strength indicator */
+	strength?: 'strong' | 'moderate' | 'weak';
+	/** Optional metadata (tags, tension, custom fields) */
+	metadata?: Record<string, unknown>;
+}
+
+/**
+ * Complete relationship graph data structure.
+ *
+ * Compatible with D3.js, vis.js, and Cytoscape.js graph libraries.
+ * Use this structure to visualize entity relationships in graph visualizations.
+ */
+export interface RelationshipMap {
+	/** Array of all entity nodes in the graph */
+	nodes: RelationshipMapNode[];
+	/** Array of all relationship edges in the graph */
+	edges: RelationshipMapEdge[];
+}
+
+/**
+ * Options for filtering the relationship map.
+ */
+export interface RelationshipMapOptions {
+	/**
+	 * Filter graph to only include specific entity types.
+	 * When specified, only entities of the given types will be included as nodes,
+	 * and only links between those entities will be included as edges.
+	 *
+	 * Example: `{ entityTypes: ['character', 'faction'] }` will return only
+	 * characters, factions, and relationships between them.
+	 */
+	entityTypes?: EntityType[];
+}
+
 export const entityRepository = {
 	// Get all entities as a live query (reactive)
 	getAll(): Observable<BaseEntity[]> {
@@ -166,8 +254,8 @@ export const entityRepository = {
 				throw new Error('Source or target entity not found');
 			}
 
-			// Check if link already exists
-			const existingLink = sourceEntity.links.find((l) => l.targetId === targetId);
+			// Check if link with same relationship already exists
+			const existingLink = sourceEntity.links.find((l) => l.targetId === targetId && l.relationship === relationship);
 			if (existingLink) {
 				throw new Error('Link already exists');
 			}
@@ -380,13 +468,55 @@ export const entityRepository = {
 		return [...new Set([...forwardIds, ...reverseIds])];
 	},
 
-	// Query entities by relationship type (Issue #71)
+	/**
+	 * Query all entities that have a specific relationship type.
+	 *
+	 * Finds all entities that have at least one link with the specified relationship,
+	 * regardless of direction (outgoing or incoming).
+	 *
+	 * @param relationship - The relationship type to search for (e.g., 'member_of', 'knows', 'located_at')
+	 * @returns Promise resolving to array of entities that have this relationship type
+	 *
+	 * @example
+	 * ```typescript
+	 * // Find all entities with 'member_of' relationships
+	 * const members = await entityRepository.queryByRelationship('member_of');
+	 * ```
+	 */
 	async queryByRelationship(relationship: string): Promise<BaseEntity[]> {
 		await ensureDbReady();
 		return db.entities.filter((entity) => entity.links.some((link) => link.relationship === relationship)).toArray();
 	},
 
-	// Get entities related to a specific entity with a given relationship type (Issue #71)
+	/**
+	 * Get all entities related to a specific entity with a given relationship type.
+	 *
+	 * Filters relationships by direction (outgoing, incoming, or both) and returns
+	 * the entities on the other end of those relationships.
+	 *
+	 * @param entityId - The entity ID to query relationships for
+	 * @param relationship - The relationship type to filter by
+	 * @param options - Query options
+	 * @param options.direction - Direction filter: 'outgoing' (from entity), 'incoming' (to entity), or 'both' (default: 'both')
+	 * @returns Promise resolving to array of related entities
+	 *
+	 * @example
+	 * ```typescript
+	 * // Find all factions this character is a member of
+	 * const factions = await entityRepository.getEntitiesWithRelationshipType(
+	 *   characterId,
+	 *   'member_of',
+	 *   { direction: 'outgoing' }
+	 * );
+	 *
+	 * // Find all characters who are members of this faction
+	 * const members = await entityRepository.getEntitiesWithRelationshipType(
+	 *   factionId,
+	 *   'member_of',
+	 *   { direction: 'incoming' }
+	 * );
+	 * ```
+	 */
 	async getEntitiesWithRelationshipType(
 		entityId: string,
 		relationship: string,
@@ -425,7 +555,21 @@ export const entityRepository = {
 		return db.entities.where('id').anyOf(uniqueIds).toArray();
 	},
 
-	// Get all unique relationship types used in the system (Issue #71)
+	/**
+	 * Get all unique relationship types used in the campaign.
+	 *
+	 * Scans all entities and returns a sorted list of distinct relationship types
+	 * currently in use. Useful for populating relationship type dropdowns or
+	 * analytics dashboards.
+	 *
+	 * @returns Promise resolving to sorted array of unique relationship type strings
+	 *
+	 * @example
+	 * ```typescript
+	 * const types = await entityRepository.getRelationshipTypes();
+	 * console.log(types); // ['allied_with', 'enemy_of', 'knows', 'located_at', 'member_of']
+	 * ```
+	 */
 	async getRelationshipTypes(): Promise<string[]> {
 		await ensureDbReady();
 
@@ -441,7 +585,27 @@ export const entityRepository = {
 		return Array.from(relationshipSet).sort();
 	},
 
-	// Get relationship statistics (count by type) (Issue #71)
+	/**
+	 * Get relationship statistics showing usage count by type.
+	 *
+	 * Counts how many times each relationship type is used across all entities.
+	 * Useful for analytics, reports, or understanding relationship patterns in
+	 * your campaign.
+	 *
+	 * @returns Promise resolving to object mapping relationship types to their count
+	 *
+	 * @example
+	 * ```typescript
+	 * const stats = await entityRepository.getRelationshipStats();
+	 * console.log(stats);
+	 * // {
+	 * //   'member_of': 15,
+	 * //   'knows': 42,
+	 * //   'located_at': 8,
+	 * //   'enemy_of': 5
+	 * // }
+	 * ```
+	 */
 	async getRelationshipStats(): Promise<Record<string, number>> {
 		await ensureDbReady();
 
@@ -455,5 +619,194 @@ export const entityRepository = {
 		}
 
 		return stats;
+	},
+
+	/**
+	 * Get relationship map for graph visualization.
+	 *
+	 * Returns a graph data structure containing all entities as nodes and their
+	 * relationships as edges. The output format is compatible with popular graph
+	 * visualization libraries including D3.js, vis.js, and Cytoscape.js.
+	 *
+	 * @param options - Optional filtering options
+	 * @param options.entityTypes - Array of entity types to include (e.g., ['character', 'faction'])
+	 *                               When provided, only entities of these types and links between
+	 *                               them will be included in the result.
+	 *
+	 * @returns Promise resolving to a RelationshipMap with nodes and edges arrays
+	 *
+	 * @example
+	 * ```typescript
+	 * // Get all entities and relationships
+	 * const fullMap = await entityRepository.getRelationshipMap();
+	 * console.log(fullMap.nodes.length); // All entities
+	 * console.log(fullMap.edges.length); // All relationships
+	 *
+	 * // Get only characters and factions
+	 * const filteredMap = await entityRepository.getRelationshipMap({
+	 *   entityTypes: ['character', 'faction']
+	 * });
+	 * ```
+	 *
+	 * Edge Deduplication:
+	 * - Bidirectional links appear only once in the edges array
+	 * - The lexicographically smaller ID is used as the source
+	 * - Unidirectional links maintain their specified direction
+	 * - Multiple relationships between the same entities are preserved
+	 *
+	 * Link Count Calculation:
+	 * - Each outgoing link adds 1 to the source entity's linkCount
+	 * - Each incoming unidirectional link adds 1 to the target entity's linkCount
+	 * - Bidirectional links do NOT double-count (add 1 to each entity, not 2)
+	 * - Self-referencing links add 1 (not doubled)
+	 *
+	 * Graph Library Compatibility:
+	 * - D3.js: Use nodes and edges directly with force-directed layouts
+	 * - vis.js: Map to { nodes: [...], edges: [...] } format
+	 * - Cytoscape.js: Transform to { nodes: [...], edges: [...] } with data wrappers
+	 *
+	 * Performance:
+	 * - Processes all entities and links in a single pass
+	 * - Uses Map for O(1) edge deduplication
+	 * - Efficient for graphs with thousands of entities
+	 *
+	 * @see {@link RelationshipMap}
+	 * @see {@link RelationshipMapNode}
+	 * @see {@link RelationshipMapEdge}
+	 * @see {@link RelationshipMapOptions}
+	 */
+	async getRelationshipMap(options?: RelationshipMapOptions): Promise<RelationshipMap> {
+		await ensureDbReady();
+
+		// Get all entities
+		let allEntities = await db.entities.toArray();
+
+		// Filter by entity types if specified
+		if (options?.entityTypes && options.entityTypes.length > 0) {
+			const typeSet = new Set(options.entityTypes);
+			allEntities = allEntities.filter((entity) => typeSet.has(entity.type));
+		}
+
+		// Create a set of valid entity IDs for filtering edges
+		const validEntityIds = new Set(allEntities.map((e) => e.id));
+
+		// Build nodes from entities
+		const nodes: RelationshipMapNode[] = allEntities.map((entity) => ({
+			id: entity.id,
+			type: entity.type,
+			name: entity.name,
+			linkCount: 0 // Will be calculated later
+		}));
+
+		// Build edges from links
+		const edgeMap = new Map<string, RelationshipMapEdge>();
+		let edgeIdCounter = 0;
+
+		for (const entity of allEntities) {
+			for (const link of entity.links) {
+				// Skip links to entities that don't exist or are filtered out
+				if (!validEntityIds.has(link.targetId)) {
+					continue;
+				}
+
+				const sourceId = link.sourceId || entity.id;
+				const targetId = link.targetId;
+
+				// For bidirectional links, deduplicate by using lexicographically smaller ID as source
+				let edgeKey: string;
+				let actualSource: string;
+				let actualTarget: string;
+
+				if (link.bidirectional) {
+					// Sort IDs to ensure consistent direction
+					if (sourceId < targetId) {
+						actualSource = sourceId;
+						actualTarget = targetId;
+					} else {
+						actualSource = targetId;
+						actualTarget = sourceId;
+					}
+					// Use relationship in the key to allow multiple bidirectional relationships between same entities
+					edgeKey = `${actualSource}-${actualTarget}-${link.relationship}`;
+				} else {
+					actualSource = sourceId;
+					actualTarget = targetId;
+					// For unidirectional, direction matters
+					edgeKey = `${actualSource}-${actualTarget}-${link.relationship}-uni`;
+				}
+
+				// Only add edge if not already added (for bidirectional deduplication)
+				if (!edgeMap.has(edgeKey)) {
+					const edge: RelationshipMapEdge = {
+						id: edgeIdCounter++,
+						source: actualSource,
+						target: actualTarget,
+						relationship: link.relationship,
+						bidirectional: link.bidirectional
+					};
+
+					// Add optional fields if present
+					if (link.strength) {
+						edge.strength = link.strength;
+					}
+					if (link.metadata) {
+						edge.metadata = link.metadata;
+					}
+
+					edgeMap.set(edgeKey, edge);
+				}
+			}
+		}
+
+		const edges = Array.from(edgeMap.values());
+
+		// Calculate linkCount for each node
+		const linkCounts = new Map<string, number>();
+
+		// Initialize all nodes with 0
+		for (const entity of allEntities) {
+			linkCounts.set(entity.id, 0);
+		}
+
+		// Count links from entities (outgoing)
+		for (const entity of allEntities) {
+			for (const link of entity.links) {
+				// Only count if target exists in our filtered set
+				if (!validEntityIds.has(link.targetId)) {
+					continue;
+				}
+
+				const sourceId = link.sourceId || entity.id;
+				linkCounts.set(sourceId, (linkCounts.get(sourceId) || 0) + 1);
+			}
+		}
+
+		// Count incoming links
+		for (const entity of allEntities) {
+			for (const link of entity.links) {
+				// Only count if target exists in our filtered set
+				if (!validEntityIds.has(link.targetId)) {
+					continue;
+				}
+
+				const targetId = link.targetId;
+				const sourceId = link.sourceId || entity.id;
+
+				// For bidirectional links, don't double count on the same node
+				if (!link.bidirectional) {
+					linkCounts.set(targetId, (linkCounts.get(targetId) || 0) + 1);
+				}
+			}
+		}
+
+		// Update nodes with calculated linkCount
+		for (const node of nodes) {
+			node.linkCount = linkCounts.get(node.id) || 0;
+		}
+
+		return {
+			nodes,
+			edges
+		};
 	}
 };

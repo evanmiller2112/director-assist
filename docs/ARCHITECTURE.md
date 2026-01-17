@@ -200,6 +200,120 @@ Links can be unidirectional or bidirectional. Bidirectional links can be symmetr
 - NPC → "patron_of" ↔ "client_of" ← NPC (asymmetric bidirectional)
 - NPC → "employer_of" ↔ "employee_of" ← NPC (asymmetric bidirectional)
 
+#### Relationship Map for Graph Visualization
+
+The entity repository provides a `getRelationshipMap()` method that exports the entire relationship network as a graph data structure compatible with popular JavaScript graph visualization libraries.
+
+**Purpose:** Generate graph-ready data for visualizing entity relationships in network diagrams, force-directed layouts, or other graph-based UIs.
+
+**Method Signature:**
+
+```typescript
+async getRelationshipMap(options?: RelationshipMapOptions): Promise<RelationshipMap>
+```
+
+**Return Structure:**
+
+```typescript
+interface RelationshipMap {
+  nodes: RelationshipMapNode[];  // All entities as graph nodes
+  edges: RelationshipMapEdge[];  // All relationships as graph edges
+}
+
+interface RelationshipMapNode {
+  id: string;           // Entity ID
+  type: EntityType;     // Entity type
+  name: string;         // Display name
+  linkCount: number;    // Total relationship count
+}
+
+interface RelationshipMapEdge {
+  id: number;              // Numeric edge ID
+  source: string;          // Source entity ID
+  target: string;          // Target entity ID
+  relationship: string;    // Relationship type
+  bidirectional: boolean;  // Mutual relationship flag
+  strength?: 'strong' | 'moderate' | 'weak';
+  metadata?: Record<string, unknown>;
+}
+```
+
+**Key Features:**
+
+1. **Graph Library Compatibility**
+   - D3.js: Use nodes and edges directly with force simulations
+   - vis.js: Compatible with Network API format
+   - Cytoscape.js: Easily transformed to Cytoscape format
+
+2. **Edge Deduplication**
+   - Bidirectional links appear only once in the edges array
+   - Source/target determined by lexicographic ordering of entity IDs
+   - Unidirectional links maintain their specified direction
+   - Multiple different relationships between same entities preserved
+
+3. **Link Count Calculation**
+   - Counts all relationships (incoming + outgoing) for each entity
+   - Bidirectional links: +1 for each participating entity (not doubled)
+   - Unidirectional outgoing: +1 for source entity
+   - Unidirectional incoming: +1 for target entity
+   - Self-referencing links: +1 (not doubled)
+
+4. **Type Filtering**
+   - Filter to specific entity types via `options.entityTypes`
+   - Only entities of specified types included as nodes
+   - Only links between included entities appear as edges
+   - Useful for focused visualizations (e.g., character-only network)
+
+**Example Usage:**
+
+```typescript
+// Get complete relationship graph
+const fullGraph = await entityRepository.getRelationshipMap();
+console.log(`${fullGraph.nodes.length} entities, ${fullGraph.edges.length} relationships`);
+
+// Get only character and faction relationships
+const socialGraph = await entityRepository.getRelationshipMap({
+  entityTypes: ['character', 'faction']
+});
+
+// Use with D3.js force simulation
+const simulation = d3.forceSimulation(fullGraph.nodes)
+  .force('link', d3.forceLink(fullGraph.edges).id(d => d.id))
+  .force('charge', d3.forceManyBody())
+  .force('center', d3.forceCenter(width / 2, height / 2));
+```
+
+**Edge Deduplication Details:**
+
+For bidirectional relationships, edges are deduplicated to prevent showing the same relationship twice:
+
+```typescript
+// Example: NPC A ↔ NPC B (bidirectional "knows" relationship)
+// Storage: Entity A has link to B, Entity B has link to A
+// Graph output: ONE edge from A to B (or B to A, whichever is lexicographically first)
+
+// Deduplication key format:
+// Bidirectional: "{smaller_id}-{larger_id}-{relationship}"
+// Unidirectional: "{source}-{target}-{relationship}-uni"
+```
+
+This ensures graph visualizations show each bidirectional relationship as a single undirected edge rather than two overlapping directed edges.
+
+**Performance Characteristics:**
+
+- Single database query to fetch all entities
+- O(n) iteration through entities and links
+- O(1) edge deduplication via Map
+- Efficient for graphs with thousands of entities and relationships
+
+**Integration Points:**
+
+Currently used for future graph visualization features. Can be integrated with:
+- Network diagram component for campaign relationship visualization
+- Entity detail page to show local relationship network
+- Dashboard analytics to display relationship statistics
+- Export feature to share graph data with external tools
+
 #### RelationshipCard Component
 
 The RelationshipCard component provides a rich visual display for entity relationships on the entity detail page.
@@ -667,6 +781,7 @@ User Action → Store → Repository → Database
 - Provide clean API for CRUD operations
 - Handle IndexedDB queries
 - Return Observables for reactive queries
+- Provide graph data structures for visualization
 
 #### 4. Dexie Database
 - Wraps IndexedDB

@@ -90,12 +90,17 @@
 				return;
 			}
 
+			// Read selected model from localStorage
+			const storedModel = localStorage.getItem('dm-assist-selected-model');
+			const modelToExport = storedModel?.trim() || undefined;
+
 			const backup: CampaignBackup = {
 				version: '2.0.0', // New format version
 				exportedAt: new Date(),
 				entities, // Campaign is now included in entities
 				chatHistory,
-				activeCampaignId: activeCampaignId ?? undefined
+				activeCampaignId: activeCampaignId ?? undefined,
+				selectedModel: modelToExport
 			};
 
 			const json = JSON.stringify(backup, null, 2);
@@ -187,6 +192,14 @@
 						}
 					}
 				);
+
+				// Restore selected model from backup
+				if (backup.selectedModel) {
+					localStorage.setItem('dm-assist-selected-model', backup.selectedModel);
+					selectedModel = backup.selectedModel;
+				} else {
+					localStorage.removeItem('dm-assist-selected-model');
+				}
 
 				// Reload stores
 				await campaignStore.load();

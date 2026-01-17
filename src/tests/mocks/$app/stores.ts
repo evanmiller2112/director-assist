@@ -27,5 +27,10 @@ export function setPageParams(params: Record<string, string>) {
 	page.update(p => ({ ...p, params }));
 }
 
+// Helper to set URL search params for pagination tests
+export function setPageUrl(url: string) {
+	page.update(p => ({ ...p, url: new URL(url) }));
+}
+
 export const navigating = readable(null);
 export const updated = readable(false);

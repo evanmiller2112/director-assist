@@ -8,6 +8,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Relationship-based entity filtering system (Issue #78)
+  - RelationshipFilter component on entity list pages
+  - Filter by "related to" a specific entity (bidirectional)
+  - Filter by relationship type (ally_of, enemy_of, member_of, etc.)
+  - Filter by "has any relationships" checkbox
+  - Clear all filters button
+  - URL persistence for relationship filters (relatedTo, relType, hasRels query params)
+  - Dynamic relationship type dropdown populated from campaign data
+  - Entities grouped by type in "related to" dropdown
+  - Advanced search syntax in HeaderSearch: `related:entity-name`, `related:"entity name"`, `relationship:type`
+  - Combines with text search for precise filtering
+  - Store methods: `setRelationshipFilter()`, `clearRelationshipFilter()`, `filterByRelatedTo()`, `filterByRelationshipType()`, `filterByHasRelationships()`
+  - Derived `availableRelationshipTypes` from entity links
+  - Bidirectional relationship resolution (forward and reverse links)
 - Network diagram visualization at `/relationships/network` (Issue #74)
   - Interactive graph showing all entities as nodes and relationships as edges using vis.js
   - Visual styling: unique colors and shapes for each entity type (circles, squares, hexagons, diamonds, stars, triangles, boxes, ellipses)

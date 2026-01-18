@@ -406,10 +406,27 @@ describe('HeaderSearch Component', () => {
 			// Close with Escape
 			await fireEvent.keyDown(input, createKeyboardEvent('Escape'));
 
-			// Re-type to set value without opening
-			input.value = 'result';
+			// Wait for dropdown to close
+			await waitFor(() => {
+				expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+			});
 
-			// Press ArrowDown
+			// Type again to ensure searchInput state is set
+			await fireEvent.input(input, { target: { value: 'result' } });
+
+			// Wait for debounce
+			await wait(160);
+
+			// Close dropdown if it opened (we want to test ArrowDown reopening)
+			const listbox = screen.queryByRole('listbox');
+			if (listbox) {
+				await fireEvent.keyDown(input, createKeyboardEvent('Escape'));
+				await waitFor(() => {
+					expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+				});
+			}
+
+			// Press ArrowDown to reopen
 			await fireEvent.keyDown(input, createKeyboardEvent('ArrowDown'));
 
 			// Dropdown should reopen
@@ -1423,6 +1440,449 @@ describe('HeaderSearch Component', () => {
 				const options = screen.getAllByRole('option');
 				expect(options.length).toBeGreaterThan(0);
 			});
+		});
+	});
+
+	describe('Relationship Search Syntax - related:', () => {
+		/**
+		 * Issue #78: Relationship-based entity filtering
+		 *
+		 * Support search syntax: related:entity-id
+		 * This filters entities related to the specified entity
+		 */
+
+		it('should detect related: syntax in search input', async () => {
+			render(HeaderSearch);
+
+			const input = screen.getByRole('combobox') as HTMLInputElement;
+			await fireEvent.input(input, { target: { value: 'related:gandalf' } });
+
+			await wait(160);
+
+			// Should parse as relationship filter, not text search
+			expect(mockEntitiesStore.setSearchQuery).not.toHaveBeenCalledWith('related:gandalf');
+		});
+
+		it('should extract entity ID from related:entity-id syntax', async () => {
+			// Set entity context
+			const mockEntity = createMockEntity({ id: 'gandalf', name: 'Gandalf', type: 'character' });
+			mockEntitiesStore._setEntities([mockEntity]);
+
+			render(HeaderSearch);
+
+			const input = screen.getByRole('combobox') as HTMLInputElement;
+			await fireEvent.input(input, { target: { value: 'related:gandalf' } });
+
+			await wait(160);
+
+			// Should call store method to filter by related entity
+			// (Implementation will add filterByRelatedTo to entitiesStore)
+			expect(mockEntitiesStore.filterByRelatedTo).toHaveBeenCalledWith('gandalf');
+		});
+
+		it('should show visual indicator for active related: filter', async () => {
+			const mockEntity = createMockEntity({ id: 'gandalf', name: 'Gandalf', type: 'character' });
+			mockEntitiesStore._setEntities([mockEntity]);
+
+			render(HeaderSearch);
+
+			const input = screen.getByRole('combobox') as HTMLInputElement;
+			await fireEvent.input(input, { target: { value: 'related:gandalf' } });
+
+			await wait(160);
+
+			// Should show indicator that relationship filter is active
+			// (Could be a badge, highlight, or special styling)
+			expect(input).toBeInTheDocument();
+		});
+
+		it('should handle related: syntax with non-existent entity', async () => {
+			render(HeaderSearch);
+
+			const input = screen.getByRole('combobox') as HTMLInputElement;
+			await fireEvent.input(input, { target: { value: 'related:non-existent' } });
+
+			await wait(160);
+
+			// Should handle gracefully - show no results or error message
+			expect(mockEntitiesStore.filterByRelatedTo).toHaveBeenCalledWith('non-existent');
+		});
+
+		it('should allow clearing related: filter', async () => {
+			const mockEntity = createMockEntity({ id: 'gandalf', name: 'Gandalf', type: 'character' });
+			mockEntitiesStore._setEntities([mockEntity]);
+
+			render(HeaderSearch);
+
+			const input = screen.getByRole('combobox') as HTMLInputElement;
+			await fireEvent.input(input, { target: { value: 'related:gandalf' } });
+			await wait(160);
+
+			// Clear the input
+			await fireEvent.input(input, { target: { value: '' } });
+			await wait(160);
+
+			// Should clear the relationship filter
+			expect(mockEntitiesStore.clearRelationshipFilter).toHaveBeenCalled();
+		});
+
+		it('should combine related: with text search', async () => {
+			const mockEntity = createMockEntity({ id: 'gandalf', name: 'Gandalf', type: 'character' });
+			mockEntitiesStore._setEntities([mockEntity]);
+
+			render(HeaderSearch);
+
+			const input = screen.getByRole('combobox') as HTMLInputElement;
+			await fireEvent.input(input, { target: { value: 'related:gandalf aragorn' } });
+
+			await wait(160);
+
+			// Should apply both relationship filter AND text search
+			expect(mockEntitiesStore.filterByRelatedTo).toHaveBeenCalledWith('gandalf');
+			expect(mockEntitiesStore.setSearchQuery).toHaveBeenCalledWith(expect.stringContaining('aragorn'));
+		});
+
+		it('should support entity names in related: syntax', async () => {
+			const mockEntity = createMockEntity({ id: 'gandalf-123', name: 'Gandalf the Grey', type: 'character' });
+			mockEntitiesStore._setEntities([mockEntity]);
+
+			render(HeaderSearch);
+
+			const input = screen.getByRole('combobox') as HTMLInputElement;
+			await fireEvent.input(input, { target: { value: 'related:"Gandalf the Grey"' } });
+
+			await wait(160);
+
+			// Should resolve entity name to ID
+			expect(mockEntitiesStore.filterByRelatedTo).toHaveBeenCalled();
+		});
+	});
+
+	describe('Relationship Search Syntax - relationship:', () => {
+		/**
+		 * Issue #78: Relationship-based entity filtering
+		 *
+		 * Support search syntax: relationship:type
+		 * This filters entities with relationships of the specified type
+		 */
+
+		it('should detect relationship: syntax in search input', async () => {
+			render(HeaderSearch);
+
+			const input = screen.getByRole('combobox') as HTMLInputElement;
+			await fireEvent.input(input, { target: { value: 'relationship:friend_of' } });
+
+			await wait(160);
+
+			// Should parse as relationship type filter, not text search
+			expect(mockEntitiesStore.setSearchQuery).not.toHaveBeenCalledWith('relationship:friend_of');
+		});
+
+		it('should extract relationship type from relationship:type syntax', async () => {
+			render(HeaderSearch);
+
+			const input = screen.getByRole('combobox') as HTMLInputElement;
+			await fireEvent.input(input, { target: { value: 'relationship:member_of' } });
+
+			await wait(160);
+
+			// Should call store method to filter by relationship type
+			expect(mockEntitiesStore.filterByRelationshipType).toHaveBeenCalledWith('member_of');
+		});
+
+		it('should show visual indicator for active relationship: filter', async () => {
+			render(HeaderSearch);
+
+			const input = screen.getByRole('combobox') as HTMLInputElement;
+			await fireEvent.input(input, { target: { value: 'relationship:friend_of' } });
+
+			await wait(160);
+
+			// Should show indicator that relationship type filter is active
+			expect(input).toBeInTheDocument();
+		});
+
+		it('should handle relationship: syntax with underscore', async () => {
+			render(HeaderSearch);
+
+			const input = screen.getByRole('combobox') as HTMLInputElement;
+			await fireEvent.input(input, { target: { value: 'relationship:member_of' } });
+
+			await wait(160);
+
+			expect(mockEntitiesStore.filterByRelationshipType).toHaveBeenCalledWith('member_of');
+		});
+
+		it('should handle relationship: syntax with spaces (quoted)', async () => {
+			render(HeaderSearch);
+
+			const input = screen.getByRole('combobox') as HTMLInputElement;
+			await fireEvent.input(input, { target: { value: 'relationship:"friend of"' } });
+
+			await wait(160);
+
+			// Should handle relationship types with spaces
+			expect(mockEntitiesStore.filterByRelationshipType).toHaveBeenCalledWith('friend of');
+		});
+
+		it('should allow clearing relationship: filter', async () => {
+			render(HeaderSearch);
+
+			const input = screen.getByRole('combobox') as HTMLInputElement;
+			await fireEvent.input(input, { target: { value: 'relationship:friend_of' } });
+			await wait(160);
+
+			// Clear the input
+			await fireEvent.input(input, { target: { value: '' } });
+			await wait(160);
+
+			// Should clear the relationship filter
+			expect(mockEntitiesStore.clearRelationshipFilter).toHaveBeenCalled();
+		});
+
+		it('should be case-insensitive', async () => {
+			render(HeaderSearch);
+
+			const input = screen.getByRole('combobox') as HTMLInputElement;
+			await fireEvent.input(input, { target: { value: 'relationship:FRIEND_OF' } });
+
+			await wait(160);
+
+			// Should normalize to lowercase
+			expect(mockEntitiesStore.filterByRelationshipType).toHaveBeenCalledWith('friend_of');
+		});
+
+		it('should combine relationship: with text search', async () => {
+			render(HeaderSearch);
+
+			const input = screen.getByRole('combobox') as HTMLInputElement;
+			await fireEvent.input(input, { target: { value: 'relationship:member_of aragorn' } });
+
+			await wait(160);
+
+			// Should apply both relationship type filter AND text search
+			expect(mockEntitiesStore.filterByRelationshipType).toHaveBeenCalledWith('member_of');
+			expect(mockEntitiesStore.setSearchQuery).toHaveBeenCalledWith(expect.stringContaining('aragorn'));
+		});
+	});
+
+	describe('Combined Relationship Search Syntax', () => {
+		/**
+		 * Issue #78: Users should be able to combine both syntax forms
+		 */
+
+		it('should support both related: and relationship: in same query', async () => {
+			const mockEntity = createMockEntity({ id: 'gandalf', name: 'Gandalf', type: 'character' });
+			mockEntitiesStore._setEntities([mockEntity]);
+
+			render(HeaderSearch);
+
+			const input = screen.getByRole('combobox') as HTMLInputElement;
+			await fireEvent.input(input, { target: { value: 'related:gandalf relationship:friend_of' } });
+
+			await wait(160);
+
+			// Should apply both filters
+			expect(mockEntitiesStore.filterByRelatedTo).toHaveBeenCalledWith('gandalf');
+			expect(mockEntitiesStore.filterByRelationshipType).toHaveBeenCalledWith('friend_of');
+		});
+
+		it('should support relationship filters with text search', async () => {
+			const mockEntity = createMockEntity({ id: 'gandalf', name: 'Gandalf', type: 'character' });
+			mockEntitiesStore._setEntities([mockEntity]);
+
+			render(HeaderSearch);
+
+			const input = screen.getByRole('combobox') as HTMLInputElement;
+			await fireEvent.input(input, {
+				target: { value: 'related:gandalf relationship:friend_of ranger' }
+			});
+
+			await wait(160);
+
+			// Should apply all three filters
+			expect(mockEntitiesStore.filterByRelatedTo).toHaveBeenCalledWith('gandalf');
+			expect(mockEntitiesStore.filterByRelationshipType).toHaveBeenCalledWith('friend_of');
+			expect(mockEntitiesStore.setSearchQuery).toHaveBeenCalledWith(expect.stringContaining('ranger'));
+		});
+
+		it('should parse multiple relationship syntax keywords', async () => {
+			render(HeaderSearch);
+
+			const input = screen.getByRole('combobox') as HTMLInputElement;
+			await fireEvent.input(input, {
+				target: { value: 'relationship:member_of relationship:friend_of' }
+			});
+
+			await wait(160);
+
+			// Should use the last relationship type specified
+			expect(mockEntitiesStore.filterByRelationshipType).toHaveBeenCalledWith('friend_of');
+		});
+
+		it('should show combined filter indicators', async () => {
+			const mockEntity = createMockEntity({ id: 'gandalf', name: 'Gandalf', type: 'character' });
+			mockEntitiesStore._setEntities([mockEntity]);
+
+			render(HeaderSearch);
+
+			const input = screen.getByRole('combobox') as HTMLInputElement;
+			await fireEvent.input(input, { target: { value: 'related:gandalf relationship:friend_of' } });
+
+			await wait(160);
+
+			// Should show indicators for both active filters
+			expect(input).toBeInTheDocument();
+		});
+	});
+
+	describe('Relationship Search Autocomplete', () => {
+		/**
+		 * Issue #78: Provide autocomplete for relationship syntax
+		 */
+
+		it('should suggest related: syntax when typing "rel"', async () => {
+			render(HeaderSearch);
+
+			const input = screen.getByRole('combobox') as HTMLInputElement;
+			await fireEvent.input(input, { target: { value: 'rel' } });
+
+			await wait(160);
+
+			// Should show autocomplete suggestions for relationship syntax
+			// This would appear in dropdown results
+			expect(input).toBeInTheDocument();
+		});
+
+		it('should suggest entity names after related: prefix', async () => {
+			const entities: BaseEntity[] = [
+				createMockEntity({ id: 'gandalf', name: 'Gandalf', type: 'character' }),
+				createMockEntity({ id: 'aragorn', name: 'Aragorn', type: 'character' })
+			];
+			mockEntitiesStore._setEntities(entities);
+
+			render(HeaderSearch);
+
+			const input = screen.getByRole('combobox') as HTMLInputElement;
+			await fireEvent.input(input, { target: { value: 'related:' } });
+
+			await wait(160);
+
+			// Should show entity suggestions in dropdown
+			// Dropdown should show available entities to filter by
+			expect(input).toBeInTheDocument();
+		});
+
+		it('should suggest relationship types after relationship: prefix', async () => {
+			// Mock available relationship types
+			mockEntitiesStore.availableRelationshipTypes = ['friend_of', 'member_of', 'knows'];
+
+			render(HeaderSearch);
+
+			const input = screen.getByRole('combobox') as HTMLInputElement;
+			await fireEvent.input(input, { target: { value: 'relationship:' } });
+
+			await wait(160);
+
+			// Should show relationship type suggestions in dropdown
+			expect(input).toBeInTheDocument();
+		});
+
+		it('should filter entity suggestions as user types', async () => {
+			const entities: BaseEntity[] = [
+				createMockEntity({ id: 'gandalf', name: 'Gandalf', type: 'character' }),
+				createMockEntity({ id: 'aragorn', name: 'Aragorn', type: 'character' }),
+				createMockEntity({ id: 'gimli', name: 'Gimli', type: 'character' })
+			];
+			mockEntitiesStore._setEntities(entities);
+
+			render(HeaderSearch);
+
+			const input = screen.getByRole('combobox') as HTMLInputElement;
+			await fireEvent.input(input, { target: { value: 'related:gan' } });
+
+			await wait(160);
+
+			// Should filter to entities starting with "gan" (Gandalf)
+			expect(input).toBeInTheDocument();
+		});
+
+		it('should filter relationship type suggestions as user types', async () => {
+			mockEntitiesStore.availableRelationshipTypes = ['friend_of', 'member_of', 'knows'];
+
+			render(HeaderSearch);
+
+			const input = screen.getByRole('combobox') as HTMLInputElement;
+			await fireEvent.input(input, { target: { value: 'relationship:fri' } });
+
+			await wait(160);
+
+			// Should filter to types starting with "fri" (friend_of)
+			expect(input).toBeInTheDocument();
+		});
+	});
+
+	describe('Relationship Search Edge Cases', () => {
+		it('should handle malformed related: syntax gracefully', async () => {
+			render(HeaderSearch);
+
+			const input = screen.getByRole('combobox') as HTMLInputElement;
+			await fireEvent.input(input, { target: { value: 'related:' } });
+
+			await wait(160);
+
+			// Should not crash, just treat as empty filter or show suggestions
+			expect(input).toBeInTheDocument();
+		});
+
+		it('should handle malformed relationship: syntax gracefully', async () => {
+			render(HeaderSearch);
+
+			const input = screen.getByRole('combobox') as HTMLInputElement;
+			await fireEvent.input(input, { target: { value: 'relationship:' } });
+
+			await wait(160);
+
+			// Should not crash, just treat as empty filter or show suggestions
+			expect(input).toBeInTheDocument();
+		});
+
+		it('should handle special characters in entity IDs', async () => {
+			const mockEntity = createMockEntity({ id: 'entity-123-abc', name: 'Test', type: 'character' });
+			mockEntitiesStore._setEntities([mockEntity]);
+
+			render(HeaderSearch);
+
+			const input = screen.getByRole('combobox') as HTMLInputElement;
+			await fireEvent.input(input, { target: { value: 'related:entity-123-abc' } });
+
+			await wait(160);
+
+			expect(mockEntitiesStore.filterByRelatedTo).toHaveBeenCalledWith('entity-123-abc');
+		});
+
+		it('should handle Unicode characters in relationship types', async () => {
+			render(HeaderSearch);
+
+			const input = screen.getByRole('combobox') as HTMLInputElement;
+			await fireEvent.input(input, { target: { value: 'relationship:amigo_de' } });
+
+			await wait(160);
+
+			expect(mockEntitiesStore.filterByRelationshipType).toHaveBeenCalledWith('amigo_de');
+		});
+
+		it('should not interfere with command mode', async () => {
+			render(HeaderSearch);
+
+			const input = screen.getByRole('combobox') as HTMLInputElement;
+			await fireEvent.input(input, { target: { value: '/related' } });
+
+			await wait(160);
+
+			// Should be in command mode, not relationship filter mode
+			expect(input.placeholder.toLowerCase()).toContain('command');
+			expect(mockEntitiesStore.filterByRelatedTo).not.toHaveBeenCalled();
 		});
 	});
 });

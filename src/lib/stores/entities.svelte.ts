@@ -7,17 +7,83 @@ function createEntitiesStore() {
 	let isLoading = $state(true);
 	let error = $state<string | null>(null);
 	let searchQuery = $state('');
+	let relationshipFilter = $state<{
+		relatedToEntityId: string | undefined;
+		relationshipType: string | undefined;
+		hasRelationships: boolean | undefined;
+	}>({
+		relatedToEntityId: undefined,
+		relationshipType: undefined,
+		hasRelationships: undefined
+	});
 
-	// Derived: entities filtered by search
+	// Derived: available relationship types from all entities
+	const availableRelationshipTypes = $derived.by(() => {
+		const types = new Set<string>();
+		for (const entity of entities) {
+			for (const link of entity.links) {
+				types.add(link.relationship);
+			}
+		}
+		return Array.from(types).sort();
+	});
+
+	// Derived: entities filtered by search and relationship filters
 	const filteredEntities = $derived.by(() => {
-		if (!searchQuery) return entities;
-		const query = searchQuery.toLowerCase();
-		return entities.filter(
-			(e) =>
-				e.name.toLowerCase().includes(query) ||
-				e.description.toLowerCase().includes(query) ||
-				e.tags.some((t) => t.toLowerCase().includes(query))
-		);
+		let result = entities;
+
+		// Apply relationship filters first
+		const { relatedToEntityId, relationshipType, hasRelationships } = relationshipFilter;
+
+		// Filter by "has relationships"
+		if (hasRelationships === true) {
+			result = result.filter((e) => e.links.length > 0);
+		} else if (hasRelationships === false) {
+			result = result.filter((e) => e.links.length === 0);
+		}
+
+		// Filter by relationship type
+		if (relationshipType) {
+			const typeLower = relationshipType.toLowerCase();
+			result = result.filter((e) =>
+				e.links.some((link) => link.relationship.toLowerCase() === typeLower)
+			);
+		}
+
+		// Filter by related to entity
+		if (relatedToEntityId) {
+			const relatedEntity = entities.find((e) => e.id === relatedToEntityId);
+			if (relatedEntity) {
+				// Get entities that this entity links to
+				const forwardLinkedIds = relatedEntity.links.map((l) => l.targetId);
+
+				// Get entities that link to this entity (reverse links)
+				const reverseLinkedIds = entities
+					.filter((e) => e.links.some((l) => l.targetId === relatedToEntityId))
+					.map((e) => e.id);
+
+				// Combine both directions
+				const allRelatedIds = new Set([...forwardLinkedIds, ...reverseLinkedIds]);
+
+				result = result.filter((e) => allRelatedIds.has(e.id));
+			} else {
+				// Entity not found - return empty
+				result = [];
+			}
+		}
+
+		// Apply text search filter
+		if (searchQuery) {
+			const query = searchQuery.toLowerCase();
+			result = result.filter(
+				(e) =>
+					e.name.toLowerCase().includes(query) ||
+					e.description.toLowerCase().includes(query) ||
+					e.tags.some((t) => t.toLowerCase().includes(query))
+			);
+		}
+
+		return result;
 	});
 
 	// Derived: entities grouped by type
@@ -53,9 +119,56 @@ function createEntitiesStore() {
 		get entitiesByType() {
 			return entitiesByType;
 		},
+		get relationshipFilter() {
+			return relationshipFilter;
+		},
+		get availableRelationshipTypes() {
+			return availableRelationshipTypes;
+		},
 
 		setSearchQuery(query: string) {
 			searchQuery = query;
+		},
+
+		setRelationshipFilter(filter: {
+			relatedToEntityId?: string;
+			relationshipType?: string;
+			hasRelationships?: boolean;
+		}) {
+			relationshipFilter = {
+				relatedToEntityId: filter.relatedToEntityId ?? relationshipFilter.relatedToEntityId,
+				relationshipType: filter.relationshipType ?? relationshipFilter.relationshipType,
+				hasRelationships: filter.hasRelationships ?? relationshipFilter.hasRelationships
+			};
+		},
+
+		clearRelationshipFilter() {
+			relationshipFilter = {
+				relatedToEntityId: undefined,
+				relationshipType: undefined,
+				hasRelationships: undefined
+			};
+		},
+
+		filterByRelatedTo(entityId: string | undefined) {
+			relationshipFilter = {
+				...relationshipFilter,
+				relatedToEntityId: entityId
+			};
+		},
+
+		filterByRelationshipType(type: string | undefined) {
+			relationshipFilter = {
+				...relationshipFilter,
+				relationshipType: type ? type.toLowerCase() : undefined
+			};
+		},
+
+		filterByHasRelationships(hasRels: boolean | undefined) {
+			relationshipFilter = {
+				...relationshipFilter,
+				hasRelationships: hasRels
+			};
 		},
 
 		async load() {
@@ -205,8 +318,26 @@ function createEntitiesStore() {
 		},
 
 		// Testing utility - allows tests to set entities directly
+		// Also resets filters to ensure clean state for tests
 		_setEntities(newEntities: BaseEntity[]): void {
 			entities = newEntities;
+			// Reset filters to ensure clean state between tests
+			searchQuery = '';
+			relationshipFilter = {
+				relatedToEntityId: undefined,
+				relationshipType: undefined,
+				hasRelationships: undefined
+			};
+		},
+
+		// Testing utility - resets all filters
+		_resetFilters(): void {
+			searchQuery = '';
+			relationshipFilter = {
+				relatedToEntityId: undefined,
+				relationshipType: undefined,
+				hasRelationships: undefined
+			};
 		}
 	};
 }

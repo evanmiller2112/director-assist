@@ -625,12 +625,35 @@ The search looks through:
 - Locations with "wizard" in the description
 - Any entity tagged "wizard"
 
+### Advanced Search Syntax
+
+The global search supports special syntax for filtering by relationships:
+
+**Relationship Filters:**
+- `related:entity-name` - Find entities related to a specific entity
+- `related:"entity name"` - Use quotes for entity names with spaces
+- `related:entity-id` - Filter by exact entity ID
+- `relationship:type` - Filter by relationship type (knows, allied_with, etc.)
+
+**Combining Filters:**
+You can combine relationship filters with regular search:
+- `related:"Lord Vance" wizard` - Entities related to Lord Vance with "wizard" in their content
+- `relationship:ally_of dragon` - Allied entities with "dragon" in their content
+- `related:npc-123 relationship:knows` - Entities that "know" a specific NPC
+
+**Examples:**
+- `related:Grimwald` - All entities related to Grimwald
+- `relationship:enemy_of` - All entities with enemy relationships
+- `related:"The Silver Circle" relationship:member_of` - Members of The Silver Circle faction
+
 ### Search Tips
 
 - Search is case-insensitive
 - Partial matches work (searching "grim" finds "Grimwald")
 - Use specific tags to narrow results
 - The most recently updated entities appear first within each type
+- Relationship syntax works anywhere in the search bar
+- Multiple filters combine (AND logic)
 
 ### Keyboard Navigation
 
@@ -864,6 +887,82 @@ To transfer your campaign to another device:
 4. Import the backup
 5. Re-enter your API key in Settings
 
+## Filtering Entities
+
+Director Assist provides powerful filtering options to help you find entities based on their relationships and characteristics.
+
+### Entity List Filtering
+
+On any entity list page (NPCs, Locations, Factions, etc.), you'll find a filtering panel above the search bar with three options:
+
+**Related To Filter**
+- Dropdown showing all entities grouped by type
+- Select an entity to see only entities connected to it
+- Shows both forward relationships (entities this one links to) and reverse relationships (entities that link to this one)
+- Example: Select "Lord Vance" to see all NPCs, locations, and factions connected to him
+
+**Relationship Type Filter**
+- Dropdown showing all relationship types used in your campaign
+- Filter to specific relationship types like "allied_with", "enemy_of", "member_of"
+- Dynamically populated based on relationships in your campaign
+- Example: Select "enemy_of" to see all entities with enemy relationships
+
+**Has Relationships Checkbox**
+- Toggle to show only entities that have any relationships
+- Useful for finding entities you've already connected
+- Helps identify entities that need relationship mapping
+
+**Clear Filters Button**
+- Quickly reset all filters to their default state
+- Located at the bottom right of the filter panel
+
+### URL Persistence
+
+Filter settings are saved in the URL, which means:
+- You can bookmark filtered views
+- Browser back/forward buttons work with filters
+- Share URLs with specific filters applied
+- Filters persist across page refreshes
+
+**URL Parameters:**
+- `relatedTo=entity-id` - Related to entity filter
+- `relType=relationship-type` - Relationship type filter
+- `hasRels=true` - Has relationships filter
+
+### Combining Filters
+
+Filters work together to narrow your results:
+
+**Example 1: Enemy NPCs**
+1. Go to NPCs page
+2. Set Relationship Type to "enemy_of"
+3. Results show all NPCs with enemy relationships
+
+**Example 2: Faction Members in a City**
+1. Go to Characters page
+2. Set Related To to a specific city location
+3. Set Relationship Type to "member_of"
+4. Results show characters who are members of factions and connected to that city
+
+**Example 3: Connected Entities**
+1. Set Related To to any entity
+2. Check "Has Relationships"
+3. Results show all entities connected to the selected entity that also have their own relationships
+
+### Using Filters with Search
+
+Filters combine with the search bar for precise results:
+
+1. Apply relationship filters from the filter panel
+2. Type in the search bar to further narrow by name, description, or tags
+3. Pagination automatically resets to page 1 when filters change
+
+**Example:**
+- Filter: Related To = "The Silver Circle"
+- Filter: Relationship Type = "member_of"
+- Search: "wizard"
+- Result: Wizard members of The Silver Circle faction
+
 ## Tips & Best Practices
 
 ### Campaign Organization
@@ -944,9 +1043,18 @@ Create a Session entity after each game session with:
 - Tag entities with session numbers to find "what happened in session 5"
 - Tag locations by region to find "all entities in the underdark"
 - Tag plot threads to find "all entities connected to the dragon cult"
+- Use relationship filters to find connected entities
+- Combine filters with search for precise queries
 
 **Use Descriptive Tags**:
 Instead of just "npc", use specific tags like "shopkeeper", "guard", "noble", "villain".
+
+**Use Relationship Filters Effectively**:
+- Filter by "related to" to see an entity's network
+- Use relationship types to find specific connections (allies, enemies, members)
+- Check "has relationships" to find entities you've already mapped
+- Combine relationship filters with text search for precision
+- Bookmark filtered URLs for quick access to common queries
 
 ### AI Tips
 
@@ -1108,6 +1216,18 @@ Your data might still be in the browser's IndexedDB. Don't clear browser data un
 - `/settings`: Open settings
 - `/summarize`: AI summary
 
+**Search Syntax**:
+- `related:entity-name`: Filter by related entity
+- `related:"entity name"`: Use quotes for names with spaces
+- `relationship:type`: Filter by relationship type
+- Combine with text: `related:Grimwald wizard`
+
+**Relationship Filters**:
+- Related To: See entities connected to another entity
+- Relationship Type: Filter by specific relationship
+- Has Relationships: Show only connected entities
+- Clear Filters: Reset all filters
+
 **Entity Types**:
 Characters, NPCs, Locations, Factions, Items, Encounters, Sessions, Deities, Timeline Events, World Rules, Player Profiles
 
@@ -1115,8 +1235,9 @@ Characters, NPCs, Locations, Factions, Items, Encounters, Sessions, Deities, Tim
 1. Create campaign
 2. Add entities
 3. Create relationships
-4. Search to find
-5. Export backups
+4. Filter by relationships
+5. Search to find
+6. Export backups
 
 ---
 

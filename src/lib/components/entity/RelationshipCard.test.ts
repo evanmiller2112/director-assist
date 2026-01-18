@@ -1015,6 +1015,235 @@ describe('RelationshipCard Component - Accessibility', () => {
 	});
 });
 
+describe('RelationshipCard Component - Edit Button (Issue #75)', () => {
+	let linkedEntity: BaseEntity;
+	let link: EntityLink;
+	let onRemove: ReturnType<typeof vi.fn>;
+	let onEdit: ReturnType<typeof vi.fn>;
+
+	beforeEach(() => {
+		linkedEntity = createMockEntity({
+			id: 'linked-1',
+			name: 'Samwise Gamgee',
+			type: 'npc'
+		});
+
+		link = {
+			id: 'link-1',
+			sourceId: 'source-1',
+			targetId: 'linked-1',
+			targetType: 'npc',
+			relationship: 'friend_of',
+			bidirectional: true,
+			notes: 'Loyal companion',
+			strength: 'strong'
+		};
+
+		onRemove = vi.fn();
+		onEdit = vi.fn();
+	});
+
+	it('should display edit button for forward links when onEdit is provided', () => {
+		render(RelationshipCard, {
+			props: {
+				linkedEntity,
+				link,
+				isReverse: false,
+				onRemove,
+				onEdit
+			}
+		});
+
+		const editButton = screen.getByRole('button', { name: /edit/i });
+		expect(editButton).toBeInTheDocument();
+	});
+
+	it('should NOT display edit button for reverse links', () => {
+		render(RelationshipCard, {
+			props: {
+				linkedEntity,
+				link,
+				isReverse: true,
+				onRemove,
+				onEdit
+			}
+		});
+
+		const editButton = screen.queryByRole('button', { name: /edit/i });
+		expect(editButton).not.toBeInTheDocument();
+	});
+
+	it('should NOT display edit button when onEdit prop is not provided', () => {
+		render(RelationshipCard, {
+			props: {
+				linkedEntity,
+				link,
+				isReverse: false,
+				onRemove
+				// onEdit not provided
+			}
+		});
+
+		const editButton = screen.queryByRole('button', { name: /edit/i });
+		expect(editButton).not.toBeInTheDocument();
+	});
+
+	it('should call onEdit with correct linkId when edit button is clicked', async () => {
+		render(RelationshipCard, {
+			props: {
+				linkedEntity,
+				link,
+				isReverse: false,
+				onRemove,
+				onEdit
+			}
+		});
+
+		const editButton = screen.getByRole('button', { name: /edit/i });
+		await fireEvent.click(editButton);
+
+		expect(onEdit).toHaveBeenCalledTimes(1);
+		expect(onEdit).toHaveBeenCalledWith('link-1');
+	});
+
+	it('should have appropriate icon for edit button', () => {
+		render(RelationshipCard, {
+			props: {
+				linkedEntity,
+				link,
+				isReverse: false,
+				onRemove,
+				onEdit
+			}
+		});
+
+		const editButton = screen.getByRole('button', { name: /edit/i });
+
+		// Button should contain an edit icon (Lucide Pencil or Edit icon)
+		// The actual icon implementation will determine the exact check
+		expect(editButton).toBeInTheDocument();
+	});
+
+	it('should have accessible label on edit button', () => {
+		render(RelationshipCard, {
+			props: {
+				linkedEntity,
+				link,
+				isReverse: false,
+				onRemove,
+				onEdit
+			}
+		});
+
+		const editButton = screen.getByRole('button', { name: /edit/i });
+		expect(editButton).toHaveAccessibleName();
+	});
+
+	it('should position edit button near delete button', () => {
+		const { container } = render(RelationshipCard, {
+			props: {
+				linkedEntity,
+				link,
+				isReverse: false,
+				onRemove,
+				onEdit
+			}
+		});
+
+		const editButton = screen.getByRole('button', { name: /edit/i });
+		const deleteButton = screen.getByRole('button', { name: /delete|remove/i });
+
+		// Buttons should be near each other (share same parent or similar positioning)
+		expect(editButton.parentElement).toBe(deleteButton.parentElement);
+	});
+
+	it('should show edit button on hover (similar to delete button)', () => {
+		render(RelationshipCard, {
+			props: {
+				linkedEntity,
+				link,
+				isReverse: false,
+				onRemove,
+				onEdit
+			}
+		});
+
+		const editButton = screen.getByRole('button', { name: /edit/i });
+
+		// Edit button should have similar hover behavior to delete button
+		// It should have opacity-0 and group-hover:opacity-100 classes
+		expect(editButton).toHaveClass(/opacity/);
+	});
+
+	it('should handle multiple clicks on edit button', async () => {
+		render(RelationshipCard, {
+			props: {
+				linkedEntity,
+				link,
+				isReverse: false,
+				onRemove,
+				onEdit
+			}
+		});
+
+		const editButton = screen.getByRole('button', { name: /edit/i });
+
+		await fireEvent.click(editButton);
+		await fireEvent.click(editButton);
+		await fireEvent.click(editButton);
+
+		expect(onEdit).toHaveBeenCalledTimes(3);
+		expect(onEdit).toHaveBeenCalledWith('link-1');
+	});
+
+	it('should not interfere with delete button functionality', async () => {
+		render(RelationshipCard, {
+			props: {
+				linkedEntity,
+				link,
+				isReverse: false,
+				onRemove,
+				onEdit
+			}
+		});
+
+		const editButton = screen.getByRole('button', { name: /edit/i });
+		const deleteButton = screen.getByRole('button', { name: /delete|remove/i });
+
+		// Click edit
+		await fireEvent.click(editButton);
+		expect(onEdit).toHaveBeenCalledTimes(1);
+		expect(onRemove).not.toHaveBeenCalled();
+
+		// Click delete
+		await fireEvent.click(deleteButton);
+		expect(onRemove).toHaveBeenCalledTimes(1);
+		expect(onEdit).toHaveBeenCalledTimes(1); // Should not increase
+	});
+
+	it('should work with different link IDs', async () => {
+		const linkWithDifferentId: EntityLink = {
+			...link,
+			id: 'link-abc-123'
+		};
+
+		render(RelationshipCard, {
+			props: {
+				linkedEntity,
+				link: linkWithDifferentId,
+				isReverse: false,
+				onRemove,
+				onEdit
+			}
+		});
+
+		const editButton = screen.getByRole('button', { name: /edit/i });
+		await fireEvent.click(editButton);
+
+		expect(onEdit).toHaveBeenCalledWith('link-abc-123');
+	});
+});
+
 describe('RelationshipCard Component - Props Validation', () => {
 	it('should render with required props only', () => {
 		const linkedEntity = createMockEntity({

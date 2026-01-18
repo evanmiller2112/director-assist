@@ -66,6 +66,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Accurate link count calculation for each entity node
   - Exports interfaces: RelationshipMapNode, RelationshipMapEdge, RelationshipMap, RelationshipMapOptions
   - Comprehensive JSDoc documentation with usage examples
+- In-place relationship editing (Issue #75)
+  - New EditRelationshipModal component for editing relationships without delete/recreate
+  - Edit button added to relationship cards (forward links only)
+  - Modify relationship type, strength, notes, tags, and tension
+  - Toggle bidirectional status on existing relationships
+  - Creating reverse link when toggling bidirectional ON
+  - Removing reverse link when toggling bidirectional OFF
+  - Preserves timestamps and metadata during edits
+  - Success notification after saving changes
 
 ### Fixed
 - Resolved Svelte 5 state_unsafe_mutation error in entity pages (Issue #98)

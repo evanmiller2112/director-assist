@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
-	import { entitiesStore, campaignStore } from '$lib/stores';
+	import { entitiesStore, campaignStore, notificationStore } from '$lib/stores';
 	import { getEntityTypeDefinition } from '$lib/config/entityTypes';
 	import { ArrowLeft, Edit, Trash2, Link, Plus, X, ExternalLink, Check, X as XIcon } from 'lucide-svelte';
-	import { EntitySummary, RelateCommand, RelationshipCard } from '$lib/components/entity';
+	import { EntitySummary, RelateCommand, RelationshipCard, EditRelationshipModal } from '$lib/components/entity';
 
 	const entityId = $derived($page.params.id ?? '');
 	const entityType = $derived($page.params.type ?? '');
@@ -28,6 +28,17 @@
 	}
 
 	let relateCommandOpen = $state(false);
+	let editingLinkId = $state<string | null>(null);
+
+	// Get the link being edited and the target entity
+	const editingLink = $derived(
+		editingLinkId && entity
+			? entity.links.find(l => l.id === editingLinkId)
+			: null
+	);
+	const editingTargetEntity = $derived(
+		editingLink ? entitiesStore.getById(editingLink.targetId) : null
+	);
 
 	async function handleDelete() {
 		if (!entity) return;
@@ -46,6 +57,27 @@
 				await entitiesStore.removeLink(entity.id, link.targetId);
 			}
 		}
+	}
+
+	function handleEditLink(linkId: string) {
+		editingLinkId = linkId;
+	}
+
+	function handleCloseEditModal() {
+		editingLinkId = null;
+	}
+
+	async function handleSaveLink(changes: {
+		relationship: string;
+		notes?: string;
+		strength?: 'strong' | 'moderate' | 'weak';
+		metadata?: { tags?: string[]; tension?: number };
+		bidirectional?: boolean;
+	}) {
+		if (!entity || !editingLinkId) return;
+
+		await entitiesStore.updateLink(entity.id, editingLinkId, changes);
+		notificationStore.success('Relationship updated successfully');
 	}
 </script>
 
@@ -251,6 +283,7 @@
 							{isReverse}
 							{typeDefinition}
 							onRemove={handleRemoveLink}
+							onEdit={handleEditLink}
 						/>
 					{/each}
 				</div>
@@ -299,4 +332,16 @@
 <!-- Relate Command Modal -->
 {#if entity}
 	<RelateCommand sourceEntity={entity} bind:open={relateCommandOpen} />
+{/if}
+
+<!-- Edit Relationship Modal -->
+{#if entity && editingLink && editingTargetEntity}
+	<EditRelationshipModal
+		sourceEntity={entity}
+		targetEntity={editingTargetEntity}
+		link={editingLink}
+		open={!!editingLinkId}
+		onClose={handleCloseEditModal}
+		onSave={handleSaveLink}
+	/>
 {/if}

@@ -284,13 +284,30 @@ On any entity's detail page, the Relationships section shows:
 
 ### Editing Relationships
 
-To modify a relationship:
+You can modify existing relationships without having to delete and recreate them.
+
+**To edit a relationship:**
 
 1. View the entity's detail page
 2. Find the relationship in the Relationships section
-3. Click the edit icon
-4. Update the fields
-5. Click "Save Changes"
+3. Click the edit icon (pencil button) on the relationship card
+4. The edit modal opens with current values
+5. Update any fields you want to change:
+   - Relationship type
+   - Strength (strong, moderate, weak)
+   - Notes
+   - Tags
+   - Tension level (0-100)
+   - Bidirectional toggle
+6. Click "Save Changes"
+
+**Important Notes:**
+
+- Only forward links show the edit button. Reverse links (incoming relationships from bidirectional connections) must be edited from the other entity.
+- When you toggle bidirectional ON, a reverse link is automatically created on the target entity.
+- When you toggle bidirectional OFF, the reverse link is removed from the target entity.
+- Timestamps are updated to reflect when the relationship was last modified.
+- All changes are saved immediately after you click "Save Changes".
 
 ### Deleting Relationships
 

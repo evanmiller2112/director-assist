@@ -282,6 +282,47 @@ On any entity's detail page, the Relationships section shows:
 - Relationship strength, tags, and tension if set
 - Quick links to view the connected entities
 
+### Navigating Relationship Chains
+
+When exploring how entities connect, Director Assist shows a breadcrumb trail to help you track your path through the relationship network.
+
+**How It Works:**
+
+When you click on a related entity from the Relationships section, a breadcrumb trail appears at the top of the page showing the chain of entities you've visited.
+
+**Example:**
+```
+Lord Vance → Elena the Bard → Grimwald the Wise (current)
+```
+
+This shows you navigated from Lord Vance to Elena, and then to Grimwald.
+
+**Using Breadcrumbs:**
+
+- **Click any entity** in the trail to jump back to that entity
+- **Click the X button** to clear the trail and view the current entity without navigation context
+- The trail shows up to **6 most recent entities** (older entries are automatically removed)
+- The trail persists when using browser back/forward buttons
+
+**When Breadcrumbs Appear:**
+
+Breadcrumbs appear only when you navigate through relationships by clicking links in the Relationships section.
+
+**When Breadcrumbs Clear:**
+
+The trail automatically clears when you:
+- Use the global search to find an entity
+- Click an entity in the sidebar
+- Navigate directly via URL
+- Click the X button to clear manually
+
+**Why Use Breadcrumbs:**
+
+- Track complex relationship chains ("How did I get here?")
+- Quickly backtrack through your exploration path
+- Understand the context of how entities connect
+- Avoid getting lost in deep relationship networks
+
 ### Managing Relationships (Advanced)
 
 For comprehensive relationship management, use the dedicated relationships page. This page provides powerful tools for viewing, filtering, and managing all relationships for an entity in one place.

@@ -23,3 +23,12 @@ export {
 	type CommandFilterContext,
 	type ParsedCommand
 } from './commandUtils';
+
+// Breadcrumb utilities
+export {
+	parseBreadcrumbPath,
+	serializeBreadcrumbPath,
+	truncatePath,
+	buildNavigationUrl,
+	type BreadcrumbSegment
+} from './breadcrumbUtils';

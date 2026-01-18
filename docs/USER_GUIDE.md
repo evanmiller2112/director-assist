@@ -282,9 +282,50 @@ On any entity's detail page, the Relationships section shows:
 - Relationship strength, tags, and tension if set
 - Quick links to view the connected entities
 
-### Editing Relationships
+### Managing Relationships (Advanced)
 
-To modify a relationship:
+For comprehensive relationship management, use the dedicated relationships page. This page provides powerful tools for viewing, filtering, and managing all relationships for an entity in one place.
+
+**How to Access:**
+
+1. View any entity's detail page
+2. Navigate to `/entities/{type}/{id}/relationships` (or click "Manage Relationships" when available in Phase 2)
+
+**Features:**
+
+**Filter Relationships**
+- Filter by relationship type (knows, allied_with, etc.)
+- Filter by target entity type (character, faction, location, etc.)
+- Filter by relationship strength (strong, moderate, weak)
+- Search across entity names, relationship types, notes, and tags
+
+**Sort and View**
+- Sort by target entity name, relationship type, strength, or creation date
+- View relationships in a comprehensive table format
+- See all relationship metadata at a glance
+- Paginate through large relationship sets (20, 50, or 100 per page)
+
+**Bulk Operations**
+- Select multiple relationships using checkboxes
+- Delete multiple relationships at once
+- Update strength for all selected relationships
+- Add tags to multiple relationships simultaneously
+- Clear selection when done
+
+**Quick Actions**
+- Quick add button to create new relationships without leaving the page
+- Individual delete buttons for single relationships
+- Empty states guide you when there are no relationships
+
+**Tips:**
+- Use filters to find specific relationships quickly
+- Bulk operations save time when managing many relationships
+- The page remembers your pagination settings via URL parameters
+- Filters reset pagination to page 1 automatically
+
+### Editing Individual Relationships
+
+To modify a single relationship:
 
 1. View the entity's detail page
 2. Find the relationship in the Relationships section
@@ -294,11 +335,16 @@ To modify a relationship:
 
 ### Deleting Relationships
 
-To remove a relationship:
-
+**Single Relationship:**
 1. View the entity's detail page
 2. Find the relationship in the Relationships section
 3. Click the delete icon
+4. Confirm the deletion
+
+**Multiple Relationships:**
+1. Navigate to the relationships management page
+2. Select the relationships to delete using checkboxes
+3. Click "Delete" in the bulk actions bar
 4. Confirm the deletion
 
 **Note**: Deleting a bidirectional relationship removes it from both entities.

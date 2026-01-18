@@ -48,10 +48,16 @@ src/
 │   │   │   ├── RelationshipCard.svelte
 │   │   │   ├── RelateCommand.svelte
 │   │   │   └── EntitySummary.svelte
+│   │   ├── relationships/   # Relationship management components
+│   │   │   ├── RelationshipsFilter.svelte
+│   │   │   ├── RelationshipsTable.svelte
+│   │   │   ├── RelationshipRow.svelte
+│   │   │   └── BulkActionsBar.svelte
 │   │   ├── ui/              # UI components
 │   │   │   ├── LoadingSpinner.svelte
 │   │   │   ├── LoadingSkeleton.svelte
-│   │   │   └── LoadingButton.svelte
+│   │   │   ├── LoadingButton.svelte
+│   │   │   └── Pagination.svelte
 │   │   └── layout/          # Layout components
 │   │       ├── Header.svelte
 │   │       ├── HeaderSearch.svelte
@@ -78,6 +84,7 @@ src/
 │       ├── entities.ts      # Entity type system
 │       ├── campaign.ts      # Campaign types
 │       ├── ai.ts            # AI integration types
+│       ├── relationships.ts # Relationship filtering and sorting types
 │       └── index.ts         # Type exports
 ├── routes/                  # SvelteKit routes (pages)
 │   ├── +layout.svelte       # Root layout
@@ -89,8 +96,10 @@ src/
 │   │       │   └── +page.svelte # Create entity (/entities/npc/new)
 │   │       └── [id]/
 │   │           ├── +page.svelte # View entity (/entities/npc/abc123)
-│   │           └── edit/
-│   │               └── +page.svelte # Edit entity (/entities/npc/abc123/edit)
+│   │           ├── edit/
+│   │           │   └── +page.svelte # Edit entity (/entities/npc/abc123/edit)
+│   │           └── relationships/
+│   │               └── +page.svelte # Manage relationships (/entities/npc/abc123/relationships)
 │   └── settings/
 │       └── +page.svelte     # Settings page
 ├── app.css                  # Global styles & Tailwind
@@ -298,6 +307,161 @@ For bidirectional relationships, edges are deduplicated to prevent showing the s
 ```
 
 This ensures graph visualizations show each bidirectional relationship as a single undirected edge rather than two overlapping directed edges.
+
+#### Dedicated Relationships Management Page
+
+**Location:** `/src/routes/entities/[type]/[id]/relationships/+page.svelte`
+
+**Purpose:** Provide a comprehensive interface for managing all relationships for an entity with advanced filtering, sorting, bulk operations, and pagination.
+
+**Route:** `/entities/[type]/[id]/relationships`
+
+**Key Features:**
+
+1. **Advanced Filtering**
+   - Filter by relationship type (dynamically populated from entity's relationships)
+   - Filter by target entity type (dynamically populated from linked entities)
+   - Filter by relationship strength (strong, moderate, weak, or all)
+   - Search across entity names, relationship types, notes, and tags
+   - Filters combine for precise results
+
+2. **Sortable Table**
+   - Sort by target entity name (alphabetical)
+   - Sort by relationship type (alphabetical)
+   - Sort by strength (strong > moderate > weak > none)
+   - Sort by creation date (newest/oldest)
+   - Ascending or descending order
+   - Sort state preserved in URL
+
+3. **Bulk Operations**
+   - Select individual relationships via checkboxes
+   - Select all visible relationships on current page
+   - Delete multiple relationships at once
+   - Update strength for all selected relationships
+   - Add tags to multiple relationships simultaneously
+   - Sticky bulk actions bar appears when items selected
+   - Selection cleared after bulk operation
+
+4. **Pagination**
+   - URL-based pagination (page and perPage query parameters)
+   - Configurable items per page: 20, 50, or 100
+   - Previous/Next navigation
+   - Item count display ("Showing X-Y of Z items")
+   - Filters reset pagination to page 1
+   - Pagination controls hidden when not needed
+
+5. **Quick Add Relationship**
+   - Floating action button for creating new relationships
+   - Opens RelateCommand modal
+   - No need to navigate back to entity detail page
+
+6. **Empty States**
+   - "No relationships yet" state with add relationship button
+   - "No matches" state when filters return no results
+   - Clear messaging guides user action
+
+**Component Architecture:**
+
+```
++page.svelte (Container)
+├── RelationshipsFilter.svelte (Filter panel)
+├── RelationshipsTable.svelte (Table wrapper)
+│   └── RelationshipRow.svelte (Individual rows)
+├── Pagination.svelte (Page navigation)
+├── BulkActionsBar.svelte (Sticky bottom bar)
+└── RelateCommand.svelte (Add relationship modal)
+```
+
+**State Management:**
+
+All filtering, sorting, and pagination state is managed via Svelte 5 runes (`$state`, `$derived`):
+
+```typescript
+// Filter state
+let filterOptions = $state<RelationshipFilterOptions>({});
+let sortOptions = $state<RelationshipSortOptions>({
+  field: 'targetName',
+  direction: 'asc'
+});
+let selectedIds = $state<Set<string>>(new Set());
+
+// Derived from URL params
+const currentPage = $derived.by(() => {
+  const pageParam = $page.url.searchParams.get('page');
+  return parseInt(pageParam || '1', 10);
+});
+
+const perPage = $derived.by(() => {
+  const perPageParam = $page.url.searchParams.get('perPage');
+  return parseInt(perPageParam || '20', 10);
+});
+
+// Data pipeline: all → filtered → sorted → paginated
+const filteredRelationships = $derived.by(() => { /* filtering logic */ });
+const sortedRelationships = $derived.by(() => { /* sorting logic */ });
+const paginatedRelationships = $derived.by(() => { /* pagination logic */ });
+```
+
+**Type Definitions:**
+
+```typescript
+// /src/lib/types/relationships.ts
+interface RelationshipFilterOptions {
+  relationshipType?: string;
+  targetEntityType?: string;
+  strength?: 'strong' | 'moderate' | 'weak' | 'all';
+  searchQuery?: string;
+}
+
+interface RelationshipSortOptions {
+  field: 'targetName' | 'relationship' | 'strength' | 'createdAt';
+  direction: 'asc' | 'desc';
+}
+
+interface BulkActionType {
+  type: 'delete' | 'updateStrength' | 'addTag';
+  payload?: unknown;
+}
+```
+
+**Data Flow:**
+
+1. Page loads → fetch all relationships via `entitiesStore.getLinkedWithRelationships()`
+2. User changes filter → `filterOptions` updates → filtered list recalculates
+3. User changes sort → `sortOptions` updates → sorted list recalculates
+4. User changes page → URL updates → `goto()` → derived `currentPage` recalculates
+5. User selects items → `selectedIds` updates → bulk actions bar appears
+6. User performs bulk action → store methods called → data updates → selection cleared
+
+**Navigation Integration:**
+
+- Back link to entity detail page
+- Quick add button opens RelateCommand modal
+- Pagination uses `goto()` to update URL
+- Filter changes reset pagination to page 1
+
+**Accessibility:**
+
+- ARIA labels on bulk actions bar (`role="toolbar"`)
+- Keyboard navigation for table rows
+- Accessible form controls (labels, select dropdowns)
+- Clear focus states throughout
+
+**Performance Considerations:**
+
+- Filters apply client-side (all relationships loaded once)
+- Sorting uses JavaScript sort (efficient for <1000 items)
+- Pagination reduces DOM nodes for large relationship sets
+- Derived state uses memoization to prevent unnecessary recalculation
+
+**Future Enhancements (Phase 2):**
+
+- Edit button integration from entity detail page
+- "Manage Relationships" link on entity detail page
+- Inline relationship editing
+- Advanced search with field-specific filters
+- Export filtered relationships to CSV
+- Relationship visualization toggle
 
 **Performance Characteristics:**
 

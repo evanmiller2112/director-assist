@@ -343,13 +343,14 @@ interface RelationshipCardProps {
 - **Tags**: Shows relationship tags as colored badges
 - **Tension Indicator**: Visual progress bar showing tension level (0-100) with color coding
 - **Timestamps**: Displays creation and update dates in readable format
+- **Edit Action**: Edit button for forward links (hidden for reverse links) opens EditRelationshipModal
 - **Delete Action**: Remove button for forward links (hidden for reverse links)
 - **Reverse Link Indicator**: Left border highlight for incoming relationships
 
 **Visual States:**
 
-- **Forward Links**: Show delete button on hover, standard border
-- **Reverse Links**: Blue left border, no delete button, left arrow indicator
+- **Forward Links**: Show edit and delete buttons on hover, standard border
+- **Reverse Links**: Blue left border, no edit/delete buttons, left arrow indicator
 - **Asymmetric Bidirectional**: Blue ↔ symbol with both relationship names shown
 
 **Integration:**
@@ -375,6 +376,118 @@ Used on entity detail pages (`/src/routes/entities/[type]/[id]/+page.svelte`) to
   />
 {/each}
 ```
+
+#### EditRelationshipModal Component
+
+The EditRelationshipModal component provides a modal dialog for editing existing relationships in-place, eliminating the need to delete and recreate links.
+
+**Location:** `/src/lib/components/entity/EditRelationshipModal.svelte`
+
+**Purpose:** Allow users to modify all aspects of an existing relationship while preserving metadata like creation timestamps.
+
+**Props:**
+
+```typescript
+interface EditRelationshipModalProps {
+  sourceEntity: BaseEntity;           // The entity that owns the link
+  targetEntity: BaseEntity;           // The entity being linked to
+  link: EntityLink;                   // The link being edited
+  open: boolean;                      // Controls modal visibility
+  onClose: () => void;                // Callback when modal closes
+  onSave: (changes: {
+    relationship: string;
+    notes?: string;
+    strength?: 'strong' | 'moderate' | 'weak';
+    metadata?: { tags?: string[]; tension?: number };
+    bidirectional?: boolean;
+  }) => Promise<void>;  // Save callback with specific change structure
+}
+```
+
+**Features:**
+
+- **Relationship Type Selector**: Text input for specifying the relationship type
+- **Strength Selector**: Dropdown to choose between strong, moderate, or weak relationship strength
+- **Notes Field**: Textarea for relationship context and details
+- **Tags Input**: Tag input with press-Enter-to-add functionality for categorizing relationships
+- **Tension Input**: Number input for setting tension level (0-100)
+- **Bidirectional Toggle**: Checkbox to create/remove reverse link on target entity
+- **Asymmetric Support**: When toggling bidirectional, automatically selects appropriate reverse relationship type
+- **Validation**: Ensures required fields are filled before saving
+- **Loading States**: Disables form and shows loading indicator during save operation
+- **Success Feedback**: Shows success notification after saving changes
+
+**Editable Fields:**
+
+- Relationship type (text input)
+- Strength (strong/moderate/weak dropdown)
+- Notes (textarea)
+- Tags (press-Enter-to-add input)
+- Tension (0-100 number input)
+- Bidirectional status (checkbox)
+
+**Bidirectional Toggle Behavior:**
+
+When toggling bidirectional status, the component automatically handles reverse link creation/removal:
+
+- **Toggling ON**: Creates a reverse link on the target entity with the appropriate inverse relationship type
+- **Toggling OFF**: Removes the reverse link from the target entity
+- **Asymmetric Relationships**: Automatically determines the correct reverse relationship (e.g., "patron_of" → "client_of")
+- **Symmetric Relationships**: Uses the same relationship type for both directions
+
+**Integration:**
+
+Used on entity detail pages via the RelationshipCard's edit button. The modal receives the current link data and entity references, allowing users to modify the relationship without losing metadata.
+
+**Repository Support:**
+
+The modal calls the entity repository's `updateLink()` method, which handles:
+- Updating the link on the source entity
+- Managing bidirectional link updates
+- Setting the `updatedAt` timestamp
+- Notifying the reactive store of changes
+
+**Example Usage:**
+
+```svelte
+<script>
+  let editingLink = $state<EntityLink | null>(null);
+  let showEditModal = $state(false);
+
+  function handleEditLink(link: EntityLink, linkedEntity: BaseEntity) {
+    editingLink = link;
+    showEditModal = true;
+  }
+
+  async function handleSaveLink(updates: Partial<EntityLink>) {
+    if (!editingLink || !entity) return;
+
+    await entitiesStore.updateLink(entity.id, editingLink.id, updates);
+    showEditModal = false;
+    editingLink = null;
+  }
+</script>
+
+{#if editingLink && targetEntityForEdit}
+  <EditRelationshipModal
+    sourceEntity={entity}
+    targetEntity={targetEntityForEdit}
+    link={editingLink}
+    open={showEditModal}
+    onClose={() => { showEditModal = false; editingLink = null; }}
+    onSave={handleSaveLink}
+  />
+{/if}
+```
+
+**User Experience Benefits:**
+
+- Eliminates tedious delete/recreate workflow
+- Preserves relationship metadata and timestamps
+- Clear visual feedback for all relationship properties
+- Intuitive bidirectional toggle with automatic reverse link management
+- Immediate validation prevents invalid configurations
+- Success notifications confirm changes were saved
 
 ### Loading State Components
 

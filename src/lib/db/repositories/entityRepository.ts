@@ -325,6 +325,7 @@ export const entityRepository = {
 			relationship?: string;
 			strength?: 'strong' | 'moderate' | 'weak';
 			metadata?: { tags?: string[]; tension?: number; [key: string]: unknown };
+			bidirectional?: boolean;
 		}
 	): Promise<void> {
 		await ensureDbReady();
@@ -343,6 +344,8 @@ export const entityRepository = {
 
 			const link = sourceEntity.links[linkIndex];
 			const now = new Date();
+			const wasBidirectional = link.bidirectional;
+			const willBeBidirectional = changes.bidirectional !== undefined ? changes.bidirectional : link.bidirectional;
 
 			// Update the link with changes
 			const updatedLink = {
@@ -362,47 +365,83 @@ export const entityRepository = {
 				updatedAt: new Date()
 			});
 
-			// If bidirectional and relationship/strength/metadata changed, update reverse link
-			if (link.bidirectional) {
-				const targetEntity = await db.entities.get(link.targetId);
-				if (targetEntity) {
-					// Find the reverse link
-					const reverseLinkIndex = targetEntity.links.findIndex((l) => l.targetId === sourceId);
+			const targetEntity = await db.entities.get(link.targetId);
+			if (!targetEntity) {
+				return;
+			}
 
-					if (reverseLinkIndex !== -1) {
-						const reverseLink = targetEntity.links[reverseLinkIndex];
-						const updatedReverseLink = {
-							...reverseLink,
-							updatedAt: now
-						};
+			// Handle bidirectional status change
+			if (wasBidirectional && !willBeBidirectional) {
+				// Turning OFF bidirectional - remove reverse link
+				const updatedTargetLinks = JSON.parse(
+					JSON.stringify(targetEntity.links.filter((l) => l.targetId !== sourceId))
+				);
 
-						// Update relationship if it changed (use inverse)
-						if (changes.relationship !== undefined) {
-							updatedReverseLink.relationship = this.getInverseRelationship(changes.relationship);
-						}
+				await db.entities.update(link.targetId, {
+					links: updatedTargetLinks,
+					updatedAt: new Date()
+				});
+			} else if (!wasBidirectional && willBeBidirectional) {
+				// Turning ON bidirectional - create reverse link
+				const reverseLink: BaseEntity['links'][0] = {
+					id: nanoid(),
+					sourceId: link.targetId,
+					targetId: sourceId,
+					targetType: sourceEntity.type,
+					relationship: this.getInverseRelationship(updatedLink.relationship),
+					bidirectional: true,
+					strength: updatedLink.strength,
+					createdAt: now,
+					updatedAt: now,
+					metadata: updatedLink.metadata
+				};
 
-						// Update strength if it changed
-						if (changes.strength !== undefined) {
-							updatedReverseLink.strength = changes.strength;
-						}
+				const updatedTargetLinks = JSON.parse(
+					JSON.stringify([...targetEntity.links, reverseLink])
+				);
 
-						// Update metadata if it changed
-						if (changes.metadata !== undefined) {
-							updatedReverseLink.metadata = changes.metadata;
-						}
+				await db.entities.update(link.targetId, {
+					links: updatedTargetLinks,
+					updatedAt: new Date()
+				});
+			} else if (wasBidirectional && willBeBidirectional) {
+				// Still bidirectional - update reverse link if relationship/strength/metadata changed
+				// Find the reverse link
+				const reverseLinkIndex = targetEntity.links.findIndex((l) => l.targetId === sourceId);
 
-						// Note: Do NOT update notes - notes are link-specific
+				if (reverseLinkIndex !== -1) {
+					const reverseLink = targetEntity.links[reverseLinkIndex];
+					const updatedReverseLink = {
+						...reverseLink,
+						updatedAt: now
+					};
 
-						const updatedTargetLinks = [...targetEntity.links];
-						updatedTargetLinks[reverseLinkIndex] = updatedReverseLink;
-
-						const serializedTargetLinks = JSON.parse(JSON.stringify(updatedTargetLinks));
-
-						await db.entities.update(link.targetId, {
-							links: serializedTargetLinks,
-							updatedAt: new Date()
-						});
+					// Update relationship if it changed (use inverse)
+					if (changes.relationship !== undefined) {
+						updatedReverseLink.relationship = this.getInverseRelationship(changes.relationship);
 					}
+
+					// Update strength if it changed
+					if (changes.strength !== undefined) {
+						updatedReverseLink.strength = changes.strength;
+					}
+
+					// Update metadata if it changed
+					if (changes.metadata !== undefined) {
+						updatedReverseLink.metadata = changes.metadata;
+					}
+
+					// Note: Do NOT update notes - notes are link-specific
+
+					const updatedTargetLinks = [...targetEntity.links];
+					updatedTargetLinks[reverseLinkIndex] = updatedReverseLink;
+
+					const serializedTargetLinks = JSON.parse(JSON.stringify(updatedTargetLinks));
+
+					await db.entities.update(link.targetId, {
+						links: serializedTargetLinks,
+						updatedAt: new Date()
+					});
 				}
 			}
 		});

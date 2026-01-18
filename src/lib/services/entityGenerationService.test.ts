@@ -171,7 +171,7 @@ describe('entityGenerationService', () => {
 		// Get the mock function from the mocked Anthropic constructor
 		const AnthropicModule = await import('@anthropic-ai/sdk');
 		const testClient = new AnthropicModule.default({ apiKey: 'test' });
-		mockCreate = testClient.messages.create;
+		mockCreate = testClient.messages.create as unknown as ReturnType<typeof vi.fn>;
 
 		// Mock localStorage for API key
 		global.localStorage = {

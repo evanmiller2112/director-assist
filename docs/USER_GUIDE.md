@@ -408,6 +408,103 @@ You can modify existing relationships without having to delete and recreate them
 
 **Note**: Deleting a bidirectional relationship removes it from both entities.
 
+### Visualizing Relationships with the Matrix View
+
+The Relationship Matrix View provides a bird's-eye view of how entities connect across your campaign. Think of it as a spreadsheet where rows and columns are entities, and cells show their relationships.
+
+**How to Access:**
+
+Navigate to `/relationships/matrix` or click "Relationship Matrix" from the main navigation.
+
+**What You'll See:**
+
+A grid where:
+- Rows represent one entity type (like NPCs)
+- Columns represent another entity type (like Locations)
+- Cells show how many relationships exist between specific entities
+- Color intensity indicates relationship density (darker blue = more connections)
+
+**Using the Matrix View:**
+
+**Select Entity Types**
+1. Choose what entity type to display in rows (default: Characters)
+2. Choose what entity type to display in columns (default: Characters)
+3. The matrix updates automatically to show those entity types
+
+You can compare the same type (NPCs vs NPCs) or different types (NPCs vs Locations, Factions vs Items, etc.).
+
+**View Relationships**
+1. Look for colored cells in the grid
+2. Hover over a cell to see the relationship count
+3. Click a cell to see details of all relationships between those two entities
+4. An empty (gray) cell means no relationships exist between those entities
+
+**Create Relationships**
+1. Click any cell in the matrix
+2. If no relationship exists, the create relationship dialog opens
+3. Fill in relationship details
+4. Click "Create Link"
+
+**Edit Relationships**
+1. Click a cell that has existing relationships
+2. Click the edit button next to any relationship
+3. Modify relationship details
+4. Click "Save Changes"
+
+**Filter the View**
+
+**By Relationship Type**
+1. Click the relationship type dropdown in the controls
+2. Select a specific type (knows, allied_with, located_at, etc.)
+3. The matrix now shows only cells containing that relationship type
+
+**Hide Empty Entities**
+1. Toggle "Hide rows with no relationships" to remove entities that aren't connected to anything in the current column type
+2. Toggle "Hide columns with no relationships" to remove entities that aren't connected to anything in the current row type
+3. This focuses the matrix on entities that actually have connections
+
+**Sort the Matrix**
+
+**By Name**
+1. Set row or column sort to "Alphabetical"
+2. Choose ascending (A-Z) or descending (Z-A)
+3. Entities display in alphabetical order
+
+**By Connection Count**
+1. Set row or column sort to "Connection Count"
+2. Choose ascending (fewest connections first) or descending (most connections first)
+3. Quickly identify well-connected entities or isolated ones
+
+**Practical Use Cases:**
+
+**Faction Network Mapping**
+- Rows: Factions, Columns: Factions
+- Filter: "allied_with" relationship type
+- Result: See which factions are allied with each other at a glance
+
+**NPC Location Tracking**
+- Rows: NPCs, Columns: Locations
+- Filter: "located_at" relationship type
+- Result: See which NPCs are at which locations
+
+**Item Ownership**
+- Rows: NPCs, Columns: Items
+- Filter: "owns" relationship type
+- Result: Track who owns what items
+
+**Character Connections**
+- Rows: Characters, Columns: NPCs
+- Sort by: Connection count
+- Result: Identify which PCs know the most NPCs
+
+**Tips:**
+
+- Use the matrix to spot gaps in your campaign (isolated entities with no connections)
+- Quickly identify hub entities with many connections (important NPCs, central locations)
+- Compare different entity type combinations to discover unexpected patterns
+- Hide empty entities to focus on the connected parts of your campaign
+- The matrix uses the same relationship data as the entity detail pages—changes in one place appear everywhere
+
 ## Using Search
 
 The global search feature helps you find anything in your campaign instantly.

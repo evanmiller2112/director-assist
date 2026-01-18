@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
-	import { entitiesStore, campaignStore } from '$lib/stores';
+	import { entitiesStore, campaignStore, notificationStore } from '$lib/stores';
 	import { getEntityTypeDefinition } from '$lib/config/entityTypes';
 	import { ArrowLeft, Plus } from 'lucide-svelte';
 	import RelationshipsFilter from '$lib/components/relationships/RelationshipsFilter.svelte';
@@ -9,6 +9,7 @@
 	import BulkActionsBar from '$lib/components/relationships/BulkActionsBar.svelte';
 	import Pagination from '$lib/components/ui/Pagination.svelte';
 	import RelateCommand from '$lib/components/entity/RelateCommand.svelte';
+	import EditRelationshipModal from '$lib/components/entity/EditRelationshipModal.svelte';
 	import type { RelationshipFilterOptions, RelationshipSortOptions } from '$lib/types/relationships';
 	import type { BaseEntity, EntityLink } from '$lib/types';
 
@@ -36,6 +37,11 @@
 	let sortOptions = $state<RelationshipSortOptions>({ field: 'targetName', direction: 'asc' });
 	let selectedIds = $state<Set<string>>(new Set());
 	let relateCommandOpen = $state(false);
+
+	// Edit modal state
+	let editModalOpen = $state(false);
+	let editingLink = $state<EntityLink | null>(null);
+	let editingTargetEntity = $state<BaseEntity | null>(null);
 
 	// Pagination state from URL
 	const currentPage = $derived.by(() => {
@@ -268,6 +274,42 @@
 		selectedIds = new Set();
 	}
 
+	function handleEdit(linkId: string, linkedEntity: BaseEntity) {
+		const relationship = allRelationships.find((r) => r.link.id === linkId);
+		if (relationship) {
+			editingLink = relationship.link;
+			editingTargetEntity = linkedEntity;
+			editModalOpen = true;
+		}
+	}
+
+	function handleEditClose() {
+		editModalOpen = false;
+		editingLink = null;
+		editingTargetEntity = null;
+	}
+
+	async function handleEditSave(changes: {
+		relationship: string;
+		notes?: string;
+		strength?: 'strong' | 'moderate' | 'weak';
+		metadata?: { tags?: string[]; tension?: number };
+		bidirectional?: boolean;
+	}) {
+		if (!entity || !editingLink) return;
+
+		await entitiesStore.updateLink(entity.id, editingLink.id, {
+			relationship: changes.relationship,
+			notes: changes.notes,
+			strength: changes.strength,
+			metadata: changes.metadata,
+			bidirectional: changes.bidirectional
+		});
+
+		notificationStore.success('Relationship updated');
+		handleEditClose();
+	}
+
 	function handlePageChange(newPage: number) {
 		const url = new URL($page.url);
 		url.searchParams.set('page', newPage.toString());
@@ -350,6 +392,7 @@
 					onSelectAll={handleSelectAll}
 					onSort={handleSort}
 					onRemove={handleRemove}
+					onEdit={handleEdit}
 				/>
 			</div>
 
@@ -376,6 +419,18 @@
 
 	<!-- Relate Command Modal -->
 	<RelateCommand sourceEntity={entity} bind:open={relateCommandOpen} />
+
+	<!-- Edit Relationship Modal -->
+	{#if editingLink && editingTargetEntity}
+		<EditRelationshipModal
+			sourceEntity={entity}
+			targetEntity={editingTargetEntity}
+			link={editingLink}
+			bind:open={editModalOpen}
+			onClose={handleEditClose}
+			onSave={handleEditSave}
+		/>
+	{/if}
 {:else}
 	<div class="text-center py-12">
 		<p class="text-slate-500 dark:text-slate-400">Entity not found</p>

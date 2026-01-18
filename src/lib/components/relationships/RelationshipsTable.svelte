@@ -12,9 +12,10 @@
 		onSelectAll: (selected: boolean) => void;
 		onSort: (options: RelationshipSortOptions) => void;
 		onRemove: (linkId: string) => void;
+		onEdit?: (linkId: string, linkedEntity: BaseEntity) => void;
 	}
 
-	let { relationships, selectedIds, sortOptions, onSelect, onSelectAll, onSort, onRemove }: Props = $props();
+	let { relationships, selectedIds, sortOptions, onSelect, onSelectAll, onSort, onRemove, onEdit }: Props = $props();
 
 	// Determine checkbox state
 	const allSelected = $derived(
@@ -123,6 +124,7 @@
 						selected={selectedIds.has(link.id)}
 						onSelect={(selected) => onSelect(link.id, selected)}
 						onRemove={() => onRemove(link.id)}
+						onEdit={onEdit ? () => onEdit(link.id, entity) : undefined}
 					/>
 				{/each}
 			{/if}

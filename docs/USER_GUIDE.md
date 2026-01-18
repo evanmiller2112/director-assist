@@ -289,7 +289,8 @@ For comprehensive relationship management, use the dedicated relationships page.
 **How to Access:**
 
 1. View any entity's detail page
-2. Navigate to `/entities/{type}/{id}/relationships` (or click "Manage Relationships" when available in Phase 2)
+2. Click "Manage Relationships" in the Relationships section header
+3. Or navigate directly to `/entities/{type}/{id}/relationships`
 
 **Features:**
 
@@ -314,7 +315,7 @@ For comprehensive relationship management, use the dedicated relationships page.
 
 **Quick Actions**
 - Quick add button to create new relationships without leaving the page
-- Individual delete buttons for single relationships
+- Edit and delete buttons for individual relationships
 - Empty states guide you when there are no relationships
 
 **Tips:**
@@ -325,13 +326,30 @@ For comprehensive relationship management, use the dedicated relationships page.
 
 ### Editing Individual Relationships
 
-To modify a single relationship:
+You can modify existing relationships without having to delete and recreate them.
+
+**To edit a relationship:**
 
 1. View the entity's detail page
 2. Find the relationship in the Relationships section
-3. Click the edit icon
-4. Update the fields
-5. Click "Save Changes"
+3. Click the edit icon (pencil button) on the relationship card
+4. The edit modal opens with current values
+5. Update any fields you want to change:
+   - Relationship type
+   - Strength (strong, moderate, weak)
+   - Notes
+   - Tags
+   - Tension level (0-100)
+   - Bidirectional toggle
+6. Click "Save Changes"
+
+**Important Notes:**
+
+- Only forward links show the edit button. Reverse links (incoming relationships from bidirectional connections) must be edited from the other entity.
+- When you toggle bidirectional ON, a reverse link is automatically created on the target entity.
+- When you toggle bidirectional OFF, the reverse link is removed from the target entity.
+- Timestamps are updated to reflect when the relationship was last modified.
+- All changes are saved immediately after you click "Save Changes".
 
 ### Deleting Relationships
 

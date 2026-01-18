@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { BaseEntity, EntityLink } from '$lib/types';
-	import { ArrowRight, ArrowLeftRight, X } from 'lucide-svelte';
+	import { ArrowRight, ArrowLeftRight, Edit, X } from 'lucide-svelte';
 
 	interface Props {
 		linkedEntity: BaseEntity;
@@ -9,9 +9,10 @@
 		selected: boolean;
 		onSelect: (selected: boolean) => void;
 		onRemove: () => void;
+		onEdit?: () => void;
 	}
 
-	let { linkedEntity, link, isReverse, selected, onSelect, onRemove }: Props = $props();
+	let { linkedEntity, link, isReverse, selected, onSelect, onRemove, onEdit }: Props = $props();
 
 	const isAsymmetric = $derived(
 		link.bidirectional && link.reverseRelationship && link.reverseRelationship !== link.relationship
@@ -116,14 +117,26 @@
 	<!-- Actions -->
 	<td class="px-4 py-3">
 		{#if !isReverse}
-			<button
-				type="button"
-				onclick={handleRemoveClick}
-				class="p-1.5 hover:bg-red-50 dark:hover:bg-red-900/20 rounded text-red-600 dark:text-red-400 danger"
-				aria-label="Remove relationship"
-			>
-				<X class="w-4 h-4" />
-			</button>
+			<div class="flex items-center gap-1">
+				{#if onEdit}
+					<button
+						type="button"
+						onclick={onEdit}
+						class="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded text-slate-500 dark:text-slate-400"
+						aria-label="Edit relationship"
+					>
+						<Edit class="w-4 h-4" />
+					</button>
+				{/if}
+				<button
+					type="button"
+					onclick={handleRemoveClick}
+					class="p-1.5 hover:bg-red-50 dark:hover:bg-red-900/20 rounded text-red-600 dark:text-red-400 danger"
+					aria-label="Remove relationship"
+				>
+					<X class="w-4 h-4" />
+				</button>
+			</div>
 		{/if}
 	</td>
 </tr>

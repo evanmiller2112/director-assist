@@ -65,11 +65,8 @@ function validateByType(definition: FieldDefinition, value: FieldValue): string 
 			return null;
 
 		case 'image':
-			// Image URLs can be validated as URLs if present
-			if (typeof value === 'string' && value.trim()) {
-				return validateUrl(definition, value);
-			}
-			return null;
+			// Image URLs - validates format and security concerns
+			return validateImageUrl(definition, value);
 
 		default:
 			return null;
@@ -131,6 +128,51 @@ function validateUrl(definition: FieldDefinition, value: string): string | null 
 		return null;
 	} catch {
 		return `${definition.label} must be a valid URL`;
+	}
+}
+
+function validateImageUrl(definition: FieldDefinition, value: FieldValue): string | null {
+	// Type check: must be a string
+	if (value !== null && value !== undefined && typeof value !== 'string') {
+		return `${definition.label} must be a string`;
+	}
+
+	// Empty/null is ok if not required
+	if (typeof value !== 'string' || !value.trim()) {
+		return null;
+	}
+
+	const trimmedValue = value.trim().toLowerCase();
+
+	// Security: Reject javascript: protocol (XSS prevention)
+	if (trimmedValue.startsWith('javascript:')) {
+		return `${definition.label} must be a valid image URL or data URL`;
+	}
+
+	// Security: Reject data:text/html (XSS prevention)
+	if (trimmedValue.startsWith('data:text/html')) {
+		return `${definition.label} must be a valid image URL or data URL`;
+	}
+
+	// Security: Reject blob: URLs (not persistable)
+	if (trimmedValue.startsWith('blob:')) {
+		return `${definition.label} must be a valid image URL or data URL`;
+	}
+
+	// For data: URLs, verify it's an image MIME type
+	if (trimmedValue.startsWith('data:')) {
+		if (!trimmedValue.startsWith('data:image/')) {
+			return `${definition.label} must be a valid image URL or data URL`;
+		}
+		return null; // Valid data:image/* URL
+	}
+
+	// For other URLs, validate as URL but return image-specific error message
+	try {
+		new URL(value);
+		return null;
+	} catch {
+		return `${definition.label} must be a valid image URL or data URL`;
 	}
 }
 

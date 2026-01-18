@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { getEntityTypeDefinition } from '$lib/config/entityTypes';
 	import { campaignStore } from '$lib/stores';
-	import { X, ArrowRight, ArrowLeftRight } from 'lucide-svelte';
+	import { X, ArrowRight, ArrowLeftRight, Edit } from 'lucide-svelte';
 	import type { BaseEntity, EntityLink, EntityTypeDefinition } from '$lib/types';
 
 	interface Props {
@@ -10,16 +10,19 @@
 		isReverse: boolean;
 		typeDefinition?: EntityTypeDefinition;
 		onRemove?: (linkId: string) => void;
+		onEdit?: (linkId: string) => void;
 	}
 
-	let { linkedEntity, link, isReverse, typeDefinition, onRemove }: Props = $props();
+	let { linkedEntity, link, isReverse, typeDefinition, onRemove, onEdit }: Props = $props();
 
 	const linkedTypeDefinition = $derived(
-		getEntityTypeDefinition(
-			linkedEntity.type,
-			campaignStore.customEntityTypes,
-			campaignStore.entityTypeOverrides
-		)
+		linkedEntity
+			? getEntityTypeDefinition(
+					linkedEntity.type,
+					campaignStore.customEntityTypes,
+					campaignStore.entityTypeOverrides
+				)
+			: undefined
 	);
 
 	const isAsymmetric = $derived(
@@ -56,13 +59,22 @@
 			onRemove(link.id);
 		}
 	}
+
+	function handleEdit() {
+		if (onEdit && !isReverse) {
+			onEdit(link.id);
+		}
+	}
 </script>
 
 <article
 	class="border border-slate-200 dark:border-slate-700 rounded-lg p-4 bg-white dark:bg-slate-800 hover:shadow-md transition-shadow group relative"
 	class:border-l-4={isReverse}
 	class:border-l-blue-400={isReverse}
+	class:reverse={isReverse}
+	class:incoming={isReverse}
 >
+	{#if linkedEntity}
 	<!-- Header with entity name and type -->
 	<div class="flex items-start justify-between mb-2">
 		<div class="flex-1 min-w-0">
@@ -81,29 +93,43 @@
 			</div>
 		</div>
 
-		<!-- Delete button (only for forward links) -->
-		{#if !isReverse && onRemove}
-			<button
-				onclick={handleRemove}
-				class="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 hover:bg-red-50 dark:hover:bg-red-900/20 rounded text-red-600 dark:text-red-400"
-				aria-label="Remove relationship"
-				type="button"
-			>
-				<X class="w-4 h-4" />
-			</button>
+		<!-- Action buttons (only for forward links) -->
+		{#if !isReverse}
+			<div class="flex items-center gap-1">
+				{#if onEdit}
+					<button
+						onclick={handleEdit}
+						class="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded text-blue-600 dark:text-blue-400"
+						aria-label="Edit relationship"
+						type="button"
+					>
+						<Edit class="w-4 h-4" />
+					</button>
+				{/if}
+				{#if onRemove}
+					<button
+						onclick={handleRemove}
+						class="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 hover:bg-red-50 dark:hover:bg-red-900/20 rounded text-red-600 dark:text-red-400"
+						aria-label="Remove relationship"
+						type="button"
+					>
+						<X class="w-4 h-4" />
+					</button>
+				{/if}
+			</div>
 		{/if}
 	</div>
 
 	<!-- Relationship -->
 	<div class="flex items-center gap-2 mb-3">
 		{#if isReverse}
-			<span class="text-slate-400 dark:text-slate-500" title="Incoming relationship">
+			<span class="reverse incoming arrow text-slate-400 dark:text-slate-500" title="Incoming relationship">
 				←
 			</span>
 		{/if}
 
 		<span class="text-sm font-medium text-slate-600 dark:text-slate-400">
-			{link.relationship.replace(/_/g, ' ')}
+			{link.relationship}
 		</span>
 
 		{#if link.bidirectional}
@@ -112,7 +138,7 @@
 					<ArrowLeftRight class="w-3.5 h-3.5 text-blue-500" />
 				</span>
 				<span class="text-xs text-blue-500 dark:text-blue-400">
-					{link.reverseRelationship?.replace(/_/g, ' ')}
+					{link.reverseRelationship}
 				</span>
 			{:else}
 				<span title="Bidirectional">
@@ -130,7 +156,7 @@
 	{#if link.strength}
 		<div class="mb-2">
 			<span
-				class="inline-block px-2 py-1 rounded-md text-xs font-medium {getStrengthClasses(link.strength)}"
+				class="strength-{link.strength} inline-block px-2 py-1 rounded-md text-xs font-medium {getStrengthClasses(link.strength)}"
 			>
 				{link.strength}
 			</span>
@@ -139,10 +165,7 @@
 
 	<!-- Notes -->
 	{#if link.notes && link.notes.trim()}
-		<div class="mb-3">
-			<div class="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
-				Notes
-			</div>
+		<div class="mb-3 notes">
 			<p class="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap">
 				{link.notes}
 			</p>
@@ -151,11 +174,11 @@
 
 	<!-- Tags -->
 	{#if link.metadata?.tags && link.metadata.tags.length > 0}
-		<div class="mb-3">
+		<div class="mb-3 tags">
 			<div class="flex flex-wrap gap-1.5">
 				{#each link.metadata.tags as tag}
 					<span
-						class="inline-block px-2 py-0.5 rounded-full text-xs bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
+						class="tag badge inline-block px-2 py-0.5 rounded-full text-xs bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
 					>
 						{tag}
 					</span>
@@ -166,14 +189,14 @@
 
 	<!-- Tension indicator -->
 	{#if link.metadata?.tension !== undefined && link.metadata.tension !== null}
-		<div class="mb-3">
+		<div class="mb-3 tension">
 			<div class="flex items-center justify-between text-xs mb-1">
 				<span class="font-medium text-slate-500 dark:text-slate-400">Tension</span>
 				<span class="font-semibold text-slate-700 dark:text-slate-300">{link.metadata.tension}</span>
 			</div>
-			<div class="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+			<div class="progress-bar w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
 				<div
-					class="h-full rounded-full transition-all duration-300"
+					class="bar h-full rounded-full transition-all duration-300"
 					class:bg-green-500={link.metadata.tension < 30}
 					class:bg-yellow-500={link.metadata.tension >= 30 && link.metadata.tension < 70}
 					class:bg-red-500={link.metadata.tension >= 70}
@@ -185,13 +208,13 @@
 
 	<!-- Timestamps -->
 	{#if link.createdAt || link.updatedAt}
-		<div class="text-xs text-slate-400 dark:text-slate-500 space-y-0.5">
-			{#if link.createdAt}
-				<div>Created: {formatDate(link.createdAt)}</div>
-			{/if}
+		<div class="text-xs text-slate-400 dark:text-slate-500">
 			{#if link.updatedAt && link.updatedAt !== link.createdAt}
 				<div>Updated: {formatDate(link.updatedAt)}</div>
+			{:else if link.createdAt}
+				<div>Created: {formatDate(link.createdAt)}</div>
 			{/if}
 		</div>
+	{/if}
 	{/if}
 </article>

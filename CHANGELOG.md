@@ -8,14 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Dedicated relationships management page at `/entities/[type]/[id]/relationships` (Issue #76 Phase 1)
+- Dedicated relationships management page at `/entities/[type]/[id]/relationships` (Issue #76)
   - Filter panel: filter by relationship type, target entity type, strength, or search by name
   - Sortable table with columns for target, type, relationship, strength, and actions
   - Bulk operations: select multiple relationships for bulk delete, strength update, or tag addition
   - Pagination with configurable items per page
   - Quick add button to create new relationships
+  - Edit button for individual relationships (integrates with EditRelationshipModal from #75)
+  - "Manage Relationships" link from entity detail page
   - Empty state handling for no relationships or no filter matches
-  - Note: Integration with entity detail page link and edit modal coming in Phase 2
 - Initial project structure with SvelteKit and static adapter
 - Client-side storage with Dexie (IndexedDB)
 - Tailwind CSS styling
@@ -74,17 +75,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Accurate link count calculation for each entity node
   - Exports interfaces: RelationshipMapNode, RelationshipMapEdge, RelationshipMap, RelationshipMapOptions
   - Comprehensive JSDoc documentation with usage examples
-- Dedicated Relationships Management Page (Issue #76 Phase 1)
-  - New route at `/entities/[type]/[id]/relationships` for comprehensive relationship management
-  - Advanced filtering by relationship type, entity type, strength, and search query
-  - Sortable table with columns for target entity, relationship type, strength, and creation date
-  - Bulk operations: delete multiple relationships, update strength, and add tags to selected items
-  - URL-based pagination with configurable items per page (20, 50, or 100)
-  - Quick add relationship button for fast relationship creation
-  - Empty states for both no relationships and no matching filters
-  - Dedicated relationships filter component with dynamic options
-  - New type definitions: RelationshipFilterOptions, RelationshipSortOptions, BulkActionType
-  - Full integration with existing relationship system and metadata
+- In-place relationship editing (Issue #75)
+  - New EditRelationshipModal component for editing relationships without delete/recreate
+  - Edit button added to relationship cards (forward links only)
+  - Modify relationship type, strength, notes, tags, and tension
+  - Toggle bidirectional status on existing relationships
+  - Creating reverse link when toggling bidirectional ON
+  - Removing reverse link when toggling bidirectional OFF
+  - Preserves timestamps and metadata during edits
+  - Success notification after saving changes
 
 ### Fixed
 - Resolved Svelte 5 state_unsafe_mutation error in entity pages (Issue #98)

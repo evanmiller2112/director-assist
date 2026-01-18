@@ -28,6 +28,10 @@ Director Assist is a client-side web application built with SvelteKit 2 and Svel
 - **CSS Custom Properties**: Theme variables for dark/light mode
 - **Loading Components**: Reusable loading states for async operations
 
+### Visualization
+- **vis-network**: Interactive network graph visualization library
+- **vis-data**: Data structures for vis.js (DataSet, DataView)
+
 ### Data Layer
 - **Dexie.js**: IndexedDB wrapper with a clean API
 - **IndexedDB**: Browser's persistent storage database
@@ -55,7 +59,11 @@ src/
 │   │   │   ├── BulkActionsBar.svelte
 │   │   │   ├── RelationshipMatrix.svelte     # Matrix grid visualization
 │   │   │   ├── MatrixControls.svelte         # Matrix filtering/sorting controls
-│   │   │   └── MatrixCell.svelte             # Individual matrix cell
+│   │   │   ├── MatrixCell.svelte             # Individual matrix cell
+│   │   │   ├── NetworkDiagram.svelte        # vis.js network visualization
+│   │   │   ├── NetworkFilterPanel.svelte    # Network filter controls
+│   │   │   ├── NetworkNodeDetails.svelte    # Node detail panel
+│   │   │   └── NetworkEdgeDetails.svelte    # Edge detail panel
 │   │   ├── navigation/      # Navigation components
 │   │   │   └── RelationshipBreadcrumbs.svelte
 │   │   ├── ui/              # UI components
@@ -73,7 +81,8 @@ src/
 │   ├── utils/               # Utility functions
 │   │   ├── commandUtils.ts       # Command parsing and filtering
 │   │   ├── matrixUtils.ts        # Matrix data processing and sorting
-│   │   └── breadcrumbUtils.ts    # Breadcrumb path parsing and serialization
+│   │   ├── breadcrumbUtils.ts    # Breadcrumb path parsing and serialization
+│   │   └── networkGraph.ts       # Network graph visualization utilities
 │   ├── db/                  # Database layer
 │   │   ├── index.ts         # Dexie database setup
 │   │   └── repositories/    # Data access layer
@@ -93,6 +102,7 @@ src/
 │       ├── ai.ts            # AI integration types
 │       ├── relationships.ts # Relationship filtering and sorting types
 │       ├── matrix.ts        # Matrix view types
+│       ├── network.ts       # Network visualization types
 │       └── index.ts         # Type exports
 ├── routes/                  # SvelteKit routes (pages)
 │   ├── +layout.svelte       # Root layout
@@ -108,9 +118,11 @@ src/
 │   │           │   └── +page.svelte # Edit entity (/entities/npc/abc123/edit)
 │   │           └── relationships/
 │   │               └── +page.svelte # Manage relationships (/entities/npc/abc123/relationships)
-│   ├── relationships/
-│   │   └── matrix/
-│   │       └── +page.svelte # Relationship matrix view (/relationships/matrix)
+│   ├── relationships/       # Relationship routes
+│   │   ├── matrix/
+│   │   │   └── +page.svelte # Relationship matrix view (/relationships/matrix)
+│   │   └── network/
+│   │       └── +page.svelte     # Network diagram (/relationships/network)
 │   └── settings/
 │       └── +page.svelte     # Settings page
 ├── app.css                  # Global styles & Tailwind
@@ -483,11 +495,291 @@ interface BulkActionType {
 
 **Integration Points:**
 
-Currently used for future graph visualization features. Can be integrated with:
-- Network diagram component for campaign relationship visualization
-- Entity detail page to show local relationship network
-- Dashboard analytics to display relationship statistics
-- Export feature to share graph data with external tools
+The relationship map data structure is consumed by the network diagram visualization at `/relationships/network`. The graph-ready format allows seamless integration with vis.js for interactive network rendering.
+
+### Network Diagram Visualization (Issue #74)
+
+The network diagram provides an interactive visual representation of the entire campaign relationship network using vis.js.
+
+**Location:** `/src/routes/relationships/network/+page.svelte`
+
+**Purpose:** Visualize all entities as nodes and relationships as edges in an interactive force-directed graph, enabling Directors to see patterns, identify key figures, and explore connections.
+
+**Route:** `/relationships/network`
+
+**Architecture:**
+
+```
++page.svelte (Container & State Management)
+├── NetworkFilterPanel.svelte (Left sidebar - filters)
+├── NetworkDiagram.svelte (Center - vis.js visualization)
+└── NetworkNodeDetails.svelte / NetworkEdgeDetails.svelte (Right sidebar - details)
+```
+
+**Key Features:**
+
+1. **Interactive Graph Rendering**
+   - Uses vis.js Network for force-directed layout
+   - Pan, zoom, and drag interactions
+   - Click to select nodes or edges
+   - Automatic physics simulation for natural positioning
+   - Stabilization on initial render
+
+2. **Visual Entity Type Styling**
+   - Each entity type has unique color and shape:
+     - Characters/NPCs/Player Profiles: Circles (blue/purple/cyan)
+     - Locations: Squares (green)
+     - Factions: Hexagons (orange)
+     - Items: Diamonds (yellow)
+     - Encounters/Sessions: Stars (red/pink)
+     - Deities: Triangles (purple)
+     - Timeline Events: Boxes (teal)
+     - World Rules/Campaigns: Ellipses (gray)
+   - Color schemes adapt for dark mode
+
+3. **Relationship Edge Styling**
+   - Directional arrows for unidirectional relationships
+   - No arrows for bidirectional relationships
+   - Line thickness based on strength:
+     - Strong: 3px width
+     - Moderate: 2px width
+     - Weak: 1px width
+   - Color-coded by strength (green/yellow/red)
+
+4. **Filtering System**
+   - Filter by entity types (multi-select)
+   - Filter by relationship types (multi-select)
+   - Filters combine (AND logic)
+   - Automatic graph update on filter change
+   - Orphaned nodes removed when relationship filtering applied
+
+5. **Detail Panels**
+   - Node details: entity name, type, link count, navigate button
+   - Edge details: source/target names, relationship type, bidirectional status, strength, navigate buttons
+   - Selection state managed reactively
+   - Cleared when filtered out
+
+6. **Dark Mode Support**
+   - Detects system color scheme preference
+   - Listens for theme changes
+   - Automatically updates node/edge colors
+   - Background and text colors adapt
+
+**Component Breakdown:**
+
+**NetworkDiagram.svelte:**
+- Wraps vis.js Network instance
+- Converts RelationshipMap to vis.js DataSet format
+- Configures network options (physics, interaction, layout)
+- Handles node and edge click events
+- Manages network lifecycle (init, update, destroy)
+- Responsive to container size changes
+
+**NetworkFilterPanel.svelte:**
+- Multi-select for entity types
+- Multi-select for relationship types (dynamically populated)
+- Emits filter change events
+- Shows filter count badges
+
+**NetworkNodeDetails.svelte:**
+- Displays selected node information
+- Shows entity type badge
+- Link count indicator
+- Navigate to entity button
+- Close button
+
+**NetworkEdgeDetails.svelte:**
+- Displays selected edge information
+- Shows source and target entities
+- Relationship type and direction
+- Bidirectional indicator
+- Strength badge (if set)
+- Navigate to source/target buttons
+- Close button
+
+**Data Flow:**
+
+1. Page loads → fetch `getRelationshipMap()` from entity repository
+2. Initial map stored in `relationshipMap` state
+3. Filters applied → `filteredMap` computed
+4. NetworkDiagram receives `filteredMap` and renders vis.js graph
+5. User clicks node/edge → selection state updated → detail panel shows
+6. User changes filter → `applyFilters()` runs → `filteredMap` updates → graph re-renders
+
+**State Management:**
+
+All state managed with Svelte 5 runes (`$state`, `$derived`):
+
+```typescript
+let relationshipMap = $state<RelationshipMap>({ nodes: [], edges: [] });
+let filteredMap = $state<RelationshipMap>({ nodes: [], edges: [] });
+let filters = $state<NetworkFilterOptions>({});
+let selectedNode = $state<SelectedNode | null>(null);
+let selectedEdge = $state<SelectedEdge | null>(null);
+let isDark = $state(false);
+let isLoading = $state(true);
+
+const availableRelationships = $derived(
+  Array.from(new Set(relationshipMap.edges.map(e => e.relationship)))
+);
+```
+
+**Type Definitions:**
+
+```typescript
+// /src/lib/types/network.ts
+interface NetworkFilterOptions {
+  entityTypes?: EntityType[];
+  relationshipTypes?: string[];
+  minStrength?: 'weak' | 'moderate' | 'strong';
+}
+
+interface SelectedNode {
+  id: string;
+  name: string;
+  type: EntityType;
+  linkCount: number;
+}
+
+interface SelectedEdge {
+  id: number;
+  source: string;
+  target: string;
+  sourceName: string;
+  targetName: string;
+  relationship: string;
+  bidirectional: boolean;
+  strength?: 'strong' | 'moderate' | 'weak';
+}
+```
+
+**vis.js Integration:**
+
+The NetworkDiagram component converts the RelationshipMap to vis.js format:
+
+```typescript
+// Nodes
+const nodes = new DataSet(
+  filteredMap.nodes.map(node => ({
+    id: node.id,
+    label: node.name,
+    shape: getShapeForEntityType(node.type),
+    color: getColorForEntityType(node.type, isDark),
+    size: Math.max(15, 10 + node.linkCount * 2), // Size based on connections
+    font: { color: isDark ? '#fff' : '#000' }
+  }))
+);
+
+// Edges
+const edges = new DataSet(
+  filteredMap.edges.map(edge => ({
+    id: edge.id,
+    from: edge.source,
+    to: edge.target,
+    label: edge.relationship,
+    arrows: edge.bidirectional ? 'none' : 'to',
+    width: getWidthForStrength(edge.strength),
+    color: getColorForStrength(edge.strength)
+  }))
+);
+```
+
+**Network Configuration:**
+
+```typescript
+const options = {
+  physics: {
+    enabled: true,
+    stabilization: { iterations: 100 },
+    barnesHut: { gravitationalConstant: -2000, springLength: 95 }
+  },
+  interaction: {
+    dragNodes: true,
+    dragView: true,
+    zoomView: true,
+    hover: true
+  },
+  layout: {
+    improvedLayout: true,
+    randomSeed: undefined // Different layout each time
+  }
+};
+```
+
+**Performance Considerations:**
+
+- vis.js handles thousands of nodes/edges efficiently
+- Physics stabilization on initial load (~100 iterations)
+- Filtering reuses vis.js DataSet for efficient updates
+- Dark mode colors computed once and cached
+- Selection state prevents unnecessary re-renders
+
+**User Experience Benefits:**
+
+- Instant visual overview of entire campaign network
+- Identify central/important entities by connection count
+- Discover indirect connections and patterns
+- Filter to specific subgraphs (e.g., character social networks)
+- Navigate directly to entities from the visualization
+- Responsive layout adapts to screen size
+
+**Dependencies:**
+
+- `vis-network`: ^10.0.2 - Network visualization library
+- `vis-data`: ^8.0.3 - DataSet/DataView for vis.js
+
+**Network Graph Utilities:**
+
+The `/src/lib/utils/networkGraph.ts` module provides utility functions for converting relationship data to vis.js format:
+
+```typescript
+// Get node shape for entity type
+getNodeShape(entityType: EntityType): string
+// Returns: 'circle', 'square', 'hexagon', 'diamond', 'star', 'triangle', 'box', 'ellipse'
+
+// Get color for entity type (theme-aware)
+getEntityColor(entityType: EntityType, isDark: boolean): string
+// Returns: Hex color code based on entity type and dark mode setting
+
+// Convert RelationshipMap to vis.js DataSet
+toVisNetworkData(map: RelationshipMap, options: NetworkDisplayOptions): { nodes: DataSet, edges: DataSet }
+// Returns: vis.js compatible data structure
+
+// Get edge width based on strength
+getEdgeWidth(strength?: 'strong' | 'moderate' | 'weak'): number
+// Returns: 3 (strong), 2 (moderate), 1 (weak), 2 (default)
+
+// Get edge dash pattern based on strength
+getEdgeDashes(strength?: 'strong' | 'moderate' | 'weak'): boolean | number[]
+// Returns: false (solid), [5,5] (medium dashes), [2,4] (short dashes)
+```
+
+**Shape Mapping:**
+- Characters/NPCs/Player Profiles → Circle
+- Locations → Square
+- Factions → Hexagon
+- Items → Diamond
+- Encounters/Sessions → Star
+- Deities → Triangle
+- Timeline Events → Box
+- World Rules/Campaigns → Ellipse
+
+**Color Palette:**
+- Separate color sets for light and dark modes
+- Each entity type has a unique, recognizable color
+- Fallback to gray for unknown entity types
+- Colors chosen for accessibility and visual distinction
+
+**Future Enhancements:**
+
+- Save/load custom layouts
+- Export graph as image (PNG/SVG)
+- Clustering for large networks
+- Search/highlight specific nodes
+- Shortest path visualization
+- Community detection algorithms
+- Time-based filtering (show relationships as of a date)
+- Mini-map for navigation in large graphs
 
 #### Relationship Matrix View
 

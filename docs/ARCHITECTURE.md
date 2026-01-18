@@ -28,6 +28,12 @@ Director Assist is a client-side web application built with SvelteKit 2 and Svel
 - **CSS Custom Properties**: Theme variables for dark/light mode
 - **Loading Components**: Reusable loading states for async operations
 
+### Rich Text Editing
+- **marked**: Markdown parsing library for converting markdown to HTML
+- **DOMPurify**: HTML sanitization library for XSS protection
+- **MarkdownEditor**: Rich text editor component with toolbar and live preview
+- **MarkdownViewer**: Markdown rendering component for display-only views
+
 ### Visualization
 - **vis-network**: Interactive network graph visualization library
 - **vis-data**: Data structures for vis.js (DataSet, DataView)
@@ -66,6 +72,9 @@ src/
 │   │   │   └── NetworkEdgeDetails.svelte    # Edge detail panel
 │   │   ├── navigation/      # Navigation components
 │   │   │   └── RelationshipBreadcrumbs.svelte
+│   │   ├── markdown/        # Markdown editing and rendering
+│   │   │   ├── MarkdownEditor.svelte
+│   │   │   └── MarkdownViewer.svelte
 │   │   ├── ui/              # UI components
 │   │   │   ├── LoadingSpinner.svelte
 │   │   │   ├── LoadingSkeleton.svelte
@@ -82,7 +91,8 @@ src/
 │   │   ├── commandUtils.ts       # Command parsing and filtering
 │   │   ├── matrixUtils.ts        # Matrix data processing and sorting
 │   │   ├── breadcrumbUtils.ts    # Breadcrumb path parsing and serialization
-│   │   └── networkGraph.ts       # Network graph visualization utilities
+│   │   ├── networkGraph.ts       # Network graph visualization utilities
+│   │   └── markdownUtils.ts      # HTML sanitization for markdown rendering
 │   ├── db/                  # Database layer
 │   │   ├── index.ts         # Dexie database setup
 │   │   └── repositories/    # Data access layer
@@ -1548,6 +1558,173 @@ interface LoadingButtonProps {
 - Proper focus management
 - Keyboard navigation support
 
+#### MarkdownEditor Component
+
+**Location:** `/src/lib/components/markdown/MarkdownEditor.svelte`
+
+**Purpose:** Rich text editor with markdown support, toolbar formatting options, and live preview for editing richtext fields.
+
+**Props:**
+
+```typescript
+interface MarkdownEditorProps {
+  value: string;                        // Current markdown content (bindable)
+  placeholder?: string;                 // Placeholder text for empty editor
+  disabled?: boolean;                   // Disable editing
+  readonly?: boolean;                   // Read-only mode
+  mode?: 'edit' | 'preview' | 'split';  // Editor display mode (default: 'split')
+  minHeight?: string;                   // Minimum height (default: '150px')
+  maxHeight?: string;                   // Maximum height (default: '400px')
+  class?: string;                       // Additional CSS classes
+  showToolbar?: boolean;                // Show formatting toolbar (default: true)
+  error?: string;                       // Error message to display
+  onchange?: (value: string) => void;   // Change callback
+}
+```
+
+**Features:**
+
+- Formatting toolbar with buttons for bold, italic, heading, code, link, and list
+- Three editing modes:
+  - **Edit**: Show only markdown editor
+  - **Preview**: Show only rendered preview
+  - **Split**: Show editor and preview side-by-side
+- Keyboard shortcuts: Ctrl+B (bold), Ctrl+I (italic)
+- Real-time preview with HTML sanitization
+- Automatic textarea resizing within min/max bounds
+- Selection-aware formatting (wraps selected text)
+- Dark mode support
+
+**Usage Examples:**
+
+```svelte
+<script>
+  let content = $state('# Welcome\n\nEdit your markdown here...');
+</script>
+
+<!-- Basic markdown editor -->
+<MarkdownEditor bind:value={content} />
+
+<!-- Edit-only mode with custom height -->
+<MarkdownEditor
+  bind:value={content}
+  mode="edit"
+  minHeight="200px"
+  maxHeight="600px"
+/>
+
+<!-- Read-only preview mode -->
+<MarkdownEditor
+  value={content}
+  mode="preview"
+  readonly
+  showToolbar={false}
+/>
+
+<!-- With change handler -->
+<MarkdownEditor
+  bind:value={content}
+  onchange={(newValue) => console.log('Changed:', newValue)}
+/>
+```
+
+**Toolbar Buttons:**
+
+- **Bold (B)**: Wraps selection with `**`
+- **Italic (I)**: Wraps selection with `*`
+- **Heading (H)**: Adds `## ` at line start
+- **Code (`<>`)**: Wraps selection with backticks
+- **Link (🔗)**: Inserts `[text](url)` template
+- **List (≡)**: Adds `- ` at line start
+
+**Accessibility:**
+
+- ARIA labels on toolbar buttons
+- Keyboard navigation support
+- Screen reader friendly mode indicators
+- Proper focus management
+
+#### MarkdownViewer Component
+
+**Location:** `/src/lib/components/markdown/MarkdownViewer.svelte`
+
+**Purpose:** Display markdown content as rendered HTML with sanitization for security.
+
+**Props:**
+
+```typescript
+interface MarkdownViewerProps {
+  content: string;        // Markdown content to render
+  class?: string;         // Additional CSS classes
+  sanitize?: boolean;     // Enable HTML sanitization (default: true)
+}
+```
+
+**Features:**
+
+- Markdown parsing using the `marked` library
+- HTML sanitization using DOMPurify to prevent XSS attacks
+- GitHub Flavored Markdown (GFM) support
+- Converts newlines to `<br>` tags
+- External links open in new tabs with `rel="noopener noreferrer"`
+- Tailwind Typography (`prose`) styling
+- Dark mode support with `prose-invert`
+
+**Usage Examples:**
+
+```svelte
+<script>
+  const markdown = `
+    ## Features
+
+    - **Bold** text
+    - *Italic* text
+    - [External link](https://example.com)
+
+    \`\`\`javascript
+    console.log('Code blocks too!');
+    \`\`\`
+  `;
+</script>
+
+<!-- Basic viewer -->
+<MarkdownViewer content={markdown} />
+
+<!-- Without sanitization (trusted content only) -->
+<MarkdownViewer content={markdown} sanitize={false} />
+
+<!-- Custom styling -->
+<MarkdownViewer content={markdown} class="p-4 bg-white rounded" />
+```
+
+**Supported Markdown:**
+
+- Headings (h1-h6)
+- Bold and italic text
+- Lists (ordered and unordered)
+- Code blocks and inline code
+- Links (automatically open in new tabs)
+- Blockquotes
+- Tables
+- Horizontal rules
+- Images
+
+**Security:**
+
+- HTML sanitization enabled by default
+- Removes potentially dangerous tags and attributes
+- Allows safe formatting tags only
+- External links include `rel="noopener noreferrer"`
+
+**Styling:**
+
+All markdown elements are styled consistently with the application theme:
+- Code blocks: Slate background with syntax highlighting
+- Blockquotes: Left border with italic text
+- Tables: Full-width with cell borders
+- Links: Blue with hover underline
+- Headings: Bold with appropriate sizing
+
 #### Integration Points
 
 **Entity List Pages** (`/src/routes/entities/[type]/+page.svelte`)
@@ -1555,10 +1732,16 @@ interface LoadingButtonProps {
 - Show 5 entityCard skeletons during initial load
 - Smooth transition to actual content
 
-**Entity Create/Edit Forms**
+**Entity Create/Edit Forms** (`/src/routes/entities/[type]/new/+page.svelte`, `/src/routes/entities/[type]/[id]/edit/+page.svelte`)
 - Use LoadingButton for save/create actions
+- Use MarkdownEditor for all richtext field types
 - Prevent double-submission during async operations
 - Clear visual feedback for form submission
+
+**Entity Detail Pages** (`/src/routes/entities/[type]/[id]/+page.svelte`)
+- Use MarkdownViewer to render richtext field content
+- Automatically sanitizes HTML to prevent XSS attacks
+- Displays formatted markdown in read-only mode
 
 **Settings Page** (`/src/routes/settings/+page.svelte`)
 - Use LoadingButton for export/import operations

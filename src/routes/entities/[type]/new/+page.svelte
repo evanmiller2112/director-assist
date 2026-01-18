@@ -10,6 +10,7 @@
 	import { ArrowLeft, Save, Sparkles, Loader2, ExternalLink, ImagePlus, X as XIcon, Upload, Search, ChevronDown } from 'lucide-svelte';
 	import FieldGenerateButton from '$lib/components/entity/FieldGenerateButton.svelte';
 	import LoadingButton from '$lib/components/ui/LoadingButton.svelte';
+	import { MarkdownEditor } from '$lib/components/markdown';
 
 	const entityType = $derived($page.params.type ?? '');
 	const typeDefinition = $derived(
@@ -382,7 +383,17 @@
 							oninput={(e) => updateField(field.key, e.currentTarget.value)}
 							placeholder={field.placeholder}
 						/>
-					{:else if field.type === 'textarea' || field.type === 'richtext'}
+					{:else if field.type === 'richtext'}
+						<MarkdownEditor
+							value={(fields[field.key] as string) ?? ''}
+							placeholder={field.placeholder}
+							error={errors[field.key]}
+							onchange={(value) => updateField(field.key, value)}
+							mode="split"
+							minHeight="200px"
+							maxHeight="600px"
+						/>
+					{:else if field.type === 'textarea'}
 						<textarea
 							id={field.key}
 							class="input min-h-[80px] {errors[field.key] ? 'input-error' : ''}"

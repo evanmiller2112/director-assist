@@ -83,7 +83,10 @@ Director Assist uses Claude AI to help you create detailed, context-aware campai
 2. Add it in Settings (gear icon in header)
 3. The AI uses your campaign setting and system to generate appropriate content
 
-**Generate Individual Fields:**
+**Generatable Field Types:**
+- Single-line text fields
+- Multi-line textarea fields
+- Rich text fields (markdown editor with formatting toolbar)
 
 When creating or editing any entity, look for the sparkle (✨) button next to text fields:
 

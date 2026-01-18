@@ -22,6 +22,7 @@
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/svelte": "^5.3.1",
     "@testing-library/user-event": "^14.6.1",
+    "@types/dompurify": "^3.0.5",
     "@types/node": "^22.10.0",
     "@vitest/ui": "^4.0.17",
     "autoprefixer": "^10.4.20",
@@ -41,8 +42,11 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.32.0",
+    "carta-md": "^4.11.1",
     "dexie": "^4.0.10",
+    "isomorphic-dompurify": "^2.35.0",
     "lucide-svelte": "^0.469.0",
+    "marked": "^17.0.1",
     "nanoid": "^5.0.9",
     "vis-data": "^8.0.3",
     "vis-network": "^10.0.2"

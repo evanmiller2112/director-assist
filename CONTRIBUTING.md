@@ -60,6 +60,9 @@ director-assist/
 │   │   ├── db/              # Database layer
 │   │   │   ├── index.ts     # Dexie setup
 │   │   │   └── repositories/  # Data access layer
+│   │   ├── services/        # Business logic services
+│   │   │   ├── fieldGenerationService.ts  # AI field generation
+│   │   │   └── modelService.ts            # AI model selection
 │   │   ├── stores/          # Svelte stores (reactive state)
 │   │   └── types/           # TypeScript type definitions
 │   │       ├── entities.ts  # Entity types
@@ -324,15 +327,29 @@ const entities = entityRepository.getAll(); // Returns Observable
 
 ## AI Integration Development
 
-The AI assistant is scaffolded but not yet implemented. If you want to work on this:
+Director Assist includes field-level AI generation powered by Claude. If you want to extend AI features:
 
-1. Implement chat interface in a new route
-2. Add API key management in settings
-3. Create prompt templates for different generation types
-4. Implement entity generation from AI responses
-5. Add context building from existing entities
+**Current Implementation:**
+- Field-level content generation (see `/src/lib/services/fieldGenerationService.ts`)
+- Model selection and management (see `/src/lib/services/modelService.ts`)
+- Privacy-aware context building (hidden fields excluded)
+- Campaign context integration
 
-See `src/lib/types/ai.ts` for the planned interface.
+**Future Enhancements:**
+1. Full-entity generation (create entire entities at once)
+2. Chat interface for campaign planning and plot suggestions
+3. AI-suggested relationships between entities
+4. Streaming responses for real-time generation
+5. Custom prompt templates
+
+**Working with AI Services:**
+- Use `fieldGenerationService.ts` for field generation logic
+- Use `modelService.ts` for model selection and API interaction
+- Add new generation types by extending `FieldGenerationContext` in `/src/lib/types/ai.ts`
+- Test with real API key to ensure prompts produce good results
+- Always exclude hidden fields from AI context for privacy
+
+See `/docs/ARCHITECTURE.md` AI Integration section for detailed implementation details.
 
 ## Design Principles
 

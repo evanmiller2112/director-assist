@@ -56,6 +56,8 @@ src/
 │   │   │   ├── RelationshipMatrix.svelte     # Matrix grid visualization
 │   │   │   ├── MatrixControls.svelte         # Matrix filtering/sorting controls
 │   │   │   └── MatrixCell.svelte             # Individual matrix cell
+│   │   ├── navigation/      # Navigation components
+│   │   │   └── RelationshipBreadcrumbs.svelte
 │   │   ├── ui/              # UI components
 │   │   │   ├── LoadingSpinner.svelte
 │   │   │   ├── LoadingSkeleton.svelte
@@ -69,8 +71,9 @@ src/
 │   │   ├── commands.ts      # Command palette definitions
 │   │   └── entityTypes.ts   # Entity type definitions
 │   ├── utils/               # Utility functions
-│   │   ├── commandUtils.ts  # Command parsing and filtering
-│   │   └── matrixUtils.ts   # Matrix data processing and sorting
+│   │   ├── commandUtils.ts       # Command parsing and filtering
+│   │   ├── matrixUtils.ts        # Matrix data processing and sorting
+│   │   └── breadcrumbUtils.ts    # Breadcrumb path parsing and serialization
 │   ├── db/                  # Database layer
 │   │   ├── index.ts         # Dexie database setup
 │   │   └── repositories/    # Data access layer
@@ -853,6 +856,177 @@ The modal calls the entity repository's `updateLink()` method, which handles:
 - Intuitive bidirectional toggle with automatic reverse link management
 - Immediate validation prevents invalid configurations
 - Success notifications confirm changes were saved
+
+#### Relationship Navigation Breadcrumbs
+
+**Location:** `/src/lib/components/navigation/RelationshipBreadcrumbs.svelte`
+**Utility Functions:** `/src/lib/utils/breadcrumbUtils.ts`
+
+**Purpose:** Track and display the navigation path when users explore entity relationships, allowing them to see where they've been and navigate back through the chain.
+
+**Implementation (Issue #79):**
+
+The breadcrumb system uses URL parameters to persist the navigation trail across page loads and browser history operations.
+
+**URL Format:**
+
+```
+/entities/{type}/{id}?navPath=entityId:relationship:name:type,entityId:relationship:name:type,...
+```
+
+**Example:**
+
+```
+/entities/npc/abc123?navPath=xyz456:patron_of:Lord%20Vance:npc,def789:knows:Elena:npc
+```
+
+This shows the user navigated from Lord Vance → Elena → current entity.
+
+**Breadcrumb Utilities:**
+
+```typescript
+// Parse URL parameter into breadcrumb segments
+parseBreadcrumbPath(pathParam: string | null): BreadcrumbSegment[]
+
+// Serialize segments back to URL parameter
+serializeBreadcrumbPath(segments: BreadcrumbSegment[]): string
+
+// Truncate path to maximum length (keeps most recent)
+truncatePath(segments: BreadcrumbSegment[], maxLength: number): BreadcrumbSegment[]
+
+// Build navigation URL with updated breadcrumb path
+buildNavigationUrl(
+  targetType: string,
+  targetId: string,
+  currentSegments: BreadcrumbSegment[],
+  relationship: string,
+  currentEntity: { id: string; name: string; type: string }
+): string
+```
+
+**BreadcrumbSegment Interface:**
+
+```typescript
+interface BreadcrumbSegment {
+  entityId: string;        // Entity ID for navigation
+  relationship: string;    // Relationship type used to reach this entity
+  entityName: string;      // Display name
+  entityType: string;      // Entity type (for routing)
+}
+```
+
+**Component Features:**
+
+**Visual Display:**
+- Shows clickable entity names in navigation chain
+- Chevron separators (→) between segments
+- Current entity shown in bold (non-clickable)
+- Ellipsis (...) when path exceeds display limit
+- Clear button (X) to reset trail
+
+**Navigation:**
+- Click any breadcrumb segment to jump back to that entity
+- Preserves original navigation path in URL
+- Browser back/forward works with breadcrumb state
+- Clear button removes navPath parameter entirely
+
+**Display Limits:**
+- Component prop `maxVisible` (default: 5) controls displayed segments
+- Storage limit of 6 segments enforced by `buildNavigationUrl()`
+- Older segments auto-truncated when limit exceeded
+- Most recent segments always visible
+
+**Props:**
+
+```typescript
+interface Props {
+  segments: BreadcrumbSegment[];           // Current breadcrumb path
+  currentEntity: {                         // Entity being viewed
+    id: string;
+    name: string;
+    type: string;
+  };
+  maxVisible?: number;                     // Max segments to display (default: 5)
+  onNavigate?: (index: number) => void;    // Callback when clicking segment
+  onClear?: () => void;                    // Callback when clearing trail
+}
+```
+
+**Integration with Entity Detail Pages:**
+
+Entity detail pages (`/src/routes/entities/[type]/[id]/+page.svelte`) integrate breadcrumbs:
+
+1. Read `navPath` query parameter from URL
+2. Parse into `BreadcrumbSegment[]` using `parseBreadcrumbPath()`
+3. Display `RelationshipBreadcrumbs` component at top of page
+4. When user clicks relationship link, call `buildNavigationUrl()` to append current entity
+5. Navigate using SvelteKit's `goto()` with new URL
+
+**State Persistence:**
+
+- Breadcrumb state stored entirely in URL query parameters
+- No client-side storage needed
+- Shareable URLs preserve navigation context
+- Browser history automatically maintains breadcrumb state
+
+**URL Encoding:**
+
+Field values are URL-encoded to handle special characters:
+- Spaces encoded as `%20`
+- Apostrophes, parentheses encoded for safety
+- Colons and commas reserved as delimiters
+- Custom `encodeField()` function for consistent encoding
+
+**Accessibility:**
+
+- `<nav>` element with `aria-label="Breadcrumb navigation"`
+- `<ol>` list with `role="list"`
+- Current entity marked with `aria-current="page"`
+- Clear button has `aria-label="Clear breadcrumb trail"`
+- Keyboard navigable (all buttons focusable)
+
+**Breadcrumb Lifecycle:**
+
+**Created:**
+- User clicks relationship link in Relationships section
+- `buildNavigationUrl()` appends current entity to path
+- Navigation occurs with updated `navPath` parameter
+
+**Persisted:**
+- URL parameter survives page refreshes
+- Browser back/forward maintains breadcrumb state
+- Works across browser sessions (shareable links)
+
+**Cleared:**
+- User clicks X button (removes `navPath` parameter)
+- User navigates via search (new URL without `navPath`)
+- User clicks sidebar entity link (direct navigation)
+- User enters URL directly
+
+**Edge Cases Handled:**
+
+- Empty or malformed `navPath` parameter (returns empty array)
+- URL decoding failures (skips invalid segments)
+- Missing fields in segments (skips incomplete data)
+- Path exceeding storage limit (auto-truncates to 6)
+- Path exceeding display limit (shows ellipsis)
+- Navigation to entity already in path (no cycle detection, path grows)
+
+**Performance Characteristics:**
+
+- O(n) parsing where n = number of segments
+- O(n) serialization where n = number of segments
+- Lightweight URL operations (no database queries)
+- Negligible impact on page load performance
+- URL length limits not a concern (max 6 segments × ~200 chars = ~1200 chars)
+
+**User Benefits:**
+
+- Track complex relationship exploration paths
+- Understand how entities connect indirectly
+- Quick backtracking through relationship network
+- Visual context for current entity's relationship to visited entities
+- Reduced cognitive load when exploring deep networks
 
 ### Loading State Components
 

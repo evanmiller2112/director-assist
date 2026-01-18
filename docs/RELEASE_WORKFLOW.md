@@ -82,13 +82,21 @@ The release workflow consists of 5 stages:
 
 **Responsibilities:**
 - Determine appropriate version number (major/minor/patch)
+- **Update version in `package.json`** (required - this displays in `npm run dev`)
 - Create annotated Git tag
 - Push tag to remote
-- Update version in package.json if applicable
+- Commit version bump before tagging
 
 **When to Use:**
 - After changelog is updated
 - To create the official version tag
+
+**Version Locations to Update:**
+| File | Field | Example |
+|------|-------|---------|
+| `package.json` | `"version"` | `"0.2.0"` |
+
+> **Note:** `package-lock.json` updates automatically when you run `npm install` after changing `package.json`.
 
 ---
 
@@ -133,9 +141,10 @@ Use this workflow when releasing a new version after completing features or fixe
    - Prepare release notes
    ↓
 4. Tag Creation (git-manager)
+   - Update `package.json` version to match new version
+   - Commit version bump
    - Create annotated tag (e.g., v1.2.0)
-   - Push tag to remote
-   - Update package.json version if needed
+   - Push commit and tag to remote
    ↓
 5. GitHub Release (github-project-manager)
    - Create release from tag
@@ -213,10 +222,12 @@ Use this workflow for urgent bug fixes that need immediate release.
 "Create tag v1.2.0 and push"
 
 # git-manager response:
-# "Tag created:
+# "Version bump and tag created:
+#  ✓ Updated package.json version to 0.2.0
+#  ✓ Committed version bump
 #  ✓ Created annotated tag v1.2.0
 #  ✓ Tag message includes release summary
-#  ✓ Pushed to origin
+#  ✓ Pushed commit and tag to origin
 #
 #  Handing off to github-project-manager for release."
 
@@ -364,3 +375,15 @@ git push origin v1.2.1
 ### Problem: Release Notes Need Updates After Publishing
 
 **Solution:** Edit the release directly on GitHub - release notes can be updated without changing the tag.
+
+### Problem: Forgot to Bump package.json Version
+
+**Solution:** Update the version now and commit directly to main:
+```bash
+# Update package.json version field to match tag
+npm version X.Y.Z --no-git-tag-version
+git add package.json package-lock.json
+git commit -m "chore: bump version to X.Y.Z"
+git push
+```
+This ensures `npm run dev` displays the correct version.

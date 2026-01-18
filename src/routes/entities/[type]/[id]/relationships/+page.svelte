@@ -298,12 +298,12 @@
 	}) {
 		if (!entity || !editingLink) return;
 
+		// Note: bidirectional cannot be updated after creation - it's set during link creation
 		await entitiesStore.updateLink(entity.id, editingLink.id, {
 			relationship: changes.relationship,
 			notes: changes.notes,
 			strength: changes.strength,
-			metadata: changes.metadata,
-			bidirectional: changes.bidirectional
+			metadata: changes.metadata
 		});
 
 		notificationStore.success('Relationship updated');

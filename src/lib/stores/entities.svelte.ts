@@ -148,10 +148,12 @@ function createEntitiesStore() {
 				}
 			});
 
-			// Add reverse links (only if they're not already in forward links as bidirectional)
+			// Add reverse links from other entities pointing to this one
+			// Include both unidirectional and bidirectional links
 			entities.forEach((e) => {
+				if (e.id === entityId) return; // Skip self
 				const linkToThisEntity = e.links.find((l) => l.targetId === entityId);
-				if (linkToThisEntity && !linkToThisEntity.bidirectional) {
+				if (linkToThisEntity) {
 					result.push({
 						entity: e,
 						link: linkToThisEntity,
@@ -200,6 +202,11 @@ function createEntitiesStore() {
 
 		async removeLink(sourceId: string, targetId: string): Promise<void> {
 			await entityRepository.removeLink(sourceId, targetId);
+		},
+
+		// Testing utility - allows tests to set entities directly
+		_setEntities(newEntities: BaseEntity[]): void {
+			entities = newEntities;
 		}
 	};
 }

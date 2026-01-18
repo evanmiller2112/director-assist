@@ -2057,9 +2057,225 @@ Manages UI state:
 
 ## Search & Filtering
 
+### Relationship-Based Filtering
+
+Director Assist provides comprehensive relationship-based filtering capabilities across entity lists and global search.
+
+#### Entity Store Relationship Filters
+
+**Location:** `/src/lib/stores/entities.svelte.ts`
+
+The entity store maintains relationship filter state using Svelte 5 runes:
+
+```typescript
+let relationshipFilter = $state<{
+  relatedToEntityId: string | undefined;
+  relationshipType: string | undefined;
+  hasRelationships: boolean | undefined;
+}>({
+  relatedToEntityId: undefined,
+  relationshipType: undefined,
+  hasRelationships: undefined
+});
+```
+
+**Available Relationship Types:**
+
+Dynamically computed from all entity links in the database:
+
+```typescript
+const availableRelationshipTypes = $derived.by(() => {
+  const types = new Set<string>();
+  for (const entity of entities) {
+    for (const link of entity.links) {
+      types.add(link.relationship);
+    }
+  }
+  return Array.from(types).sort();
+});
+```
+
+**Filter Methods:**
+
+- `setRelationshipFilter(filter)` - Set multiple filters at once
+- `clearRelationshipFilter()` - Reset all relationship filters
+- `filterByRelatedTo(entityId)` - Filter by related entity
+- `filterByRelationshipType(type)` - Filter by relationship type
+- `filterByHasRelationships(hasRels)` - Filter by relationship existence
+
+**Filtered Entities Derivation:**
+
+The `filteredEntities` derived value applies relationship filters before text search:
+
+```typescript
+const filteredEntities = $derived.by(() => {
+  let result = entities;
+
+  // 1. Filter by "has relationships"
+  if (hasRelationships === true) {
+    result = result.filter((e) => e.links.length > 0);
+  }
+
+  // 2. Filter by relationship type
+  if (relationshipType) {
+    result = result.filter((e) =>
+      e.links.some((link) => link.relationship.toLowerCase() === typeLower)
+    );
+  }
+
+  // 3. Filter by related entity (bidirectional)
+  if (relatedToEntityId) {
+    // Get forward links (entities this one links to)
+    const forwardLinkedIds = relatedEntity.links.map((l) => l.targetId);
+
+    // Get reverse links (entities that link to this one)
+    const reverseLinkedIds = entities
+      .filter((e) => e.links.some((l) => l.targetId === relatedToEntityId))
+      .map((e) => e.id);
+
+    // Combine both directions
+    const allRelatedIds = new Set([...forwardLinkedIds, ...reverseLinkedIds]);
+    result = result.filter((e) => allRelatedIds.has(e.id));
+  }
+
+  // 4. Apply text search
+  if (searchQuery) {
+    result = result.filter(/* name, description, tags search */);
+  }
+
+  return result;
+});
+```
+
+#### RelationshipFilter Component
+
+**Location:** `/src/lib/components/filters/RelationshipFilter.svelte`
+
+**Purpose:** Provides UI controls for filtering entities by relationships on entity list pages.
+
+**Props:**
+
+```typescript
+interface RelationshipFilterProps {
+  relatedToEntityId: string | undefined;
+  relationshipType: string | undefined;
+  hasRelationships: boolean | undefined;
+  availableEntities: BaseEntity[];
+  availableRelationshipTypes: string[];
+  onFilterChange: (filters: {
+    relatedToEntityId: string | undefined;
+    relationshipType: string | undefined;
+    hasRelationships: boolean | undefined;
+  }) => void;
+}
+```
+
+**Features:**
+
+- **Related To Dropdown**: Entities grouped by type with searchable names
+- **Relationship Type Dropdown**: Dynamically populated from campaign relationships
+- **Has Relationships Checkbox**: Toggle to show only entities with links
+- **Clear Filters Button**: Reset all filters to default state
+- **Controlled Inputs**: Syncs local state with parent via `$effect`
+- **Visual Feedback**: Active filters highlighted, clear button shows when filters applied
+
+**State Management:**
+
+```typescript
+// Local controlled state
+let selectedEntityId = $state('');
+let selectedRelType = $state('');
+let hasRelsChecked = $state(false);
+
+// Sync with props
+$effect(() => {
+  selectedEntityId = relatedToEntityId ?? '';
+  selectedRelType = relationshipType ?? '';
+  hasRelsChecked = hasRelationships ?? false;
+});
+
+// Derived active filter indicator
+const hasActiveFilters = $derived(
+  !!selectedEntityId || !!selectedRelType || hasRelsChecked
+);
+```
+
+**Integration:**
+
+Used on entity list pages (`/src/routes/entities/[type]/+page.svelte`):
+
+```svelte
+<RelationshipFilter
+  relatedToEntityId={entitiesStore.relationshipFilter.relatedToEntityId}
+  relationshipType={entitiesStore.relationshipFilter.relationshipType}
+  hasRelationships={entitiesStore.relationshipFilter.hasRelationships}
+  availableEntities={entitiesStore.entities}
+  availableRelationshipTypes={entitiesStore.availableRelationshipTypes}
+  onFilterChange={handleRelationshipFilterChange}
+/>
+```
+
+#### URL Persistence
+
+Relationship filters are persisted in URL query parameters for bookmarking and sharing:
+
+**Query Parameters:**
+- `relatedTo` - Entity ID to filter relationships by
+- `relType` - Relationship type to filter by
+- `hasRels` - "true" or "false" for has relationships filter
+- `page` - Current pagination page (reset to 1 when filters change)
+- `perPage` - Items per page
+
+**URL Sync on Entity List Pages:**
+
+```typescript
+// Read from URL
+const urlRelatedTo = $derived($page.url.searchParams.get('relatedTo') || undefined);
+const urlRelType = $derived($page.url.searchParams.get('relType') || undefined);
+const urlHasRels = $derived.by(() => {
+  const param = $page.url.searchParams.get('hasRels');
+  return param === 'true' ? true : param === 'false' ? false : undefined;
+});
+
+// Initialize store from URL
+$effect(() => {
+  if (urlRelatedTo || urlRelType || urlHasRels !== undefined) {
+    entitiesStore.setRelationshipFilter({
+      relatedToEntityId: urlRelatedTo,
+      relationshipType: urlRelType,
+      hasRelationships: urlHasRels
+    });
+  }
+});
+
+// Update URL when filters change
+function handleRelationshipFilterChange(filters) {
+  entitiesStore.setRelationshipFilter(filters);
+
+  const url = new URL($page.url);
+  url.searchParams.set('page', '1'); // Reset pagination
+
+  if (filters.relatedToEntityId) {
+    url.searchParams.set('relatedTo', filters.relatedToEntityId);
+  } else {
+    url.searchParams.delete('relatedTo');
+  }
+
+  // ... handle other params
+
+  goto(url.toString());
+}
+```
+
+**Benefits:**
+- Shareable filtered views via URL
+- Browser back/forward navigation works with filters
+- Filters persist across page refreshes
+- Bookmarkable filtered queries
+
 ### Global Search
 
-The HeaderSearch component provides instant access to all campaign entities:
+The HeaderSearch component provides instant access to all campaign entities with advanced relationship syntax:
 
 **Features:**
 - Debounced input (150ms) to optimize performance
@@ -2069,10 +2285,86 @@ The HeaderSearch component provides instant access to all campaign entities:
 - Global keyboard shortcut (Cmd+K or Ctrl+K)
 - Click outside to close dropdown
 - ARIA attributes for accessibility
+- Advanced relationship filter syntax
+
+**Relationship Search Syntax:**
+
+The HeaderSearch component supports special syntax for filtering by relationships:
+
+```typescript
+// Syntax patterns
+related:entity-name       // Filter by entity name
+related:"entity name"     // Filter by name with spaces
+related:entity-id         // Filter by exact entity ID
+relationship:type         // Filter by relationship type
+```
+
+**Syntax Parsing:**
+
+```typescript
+function parseRelationshipSyntax(input: string): {
+  relatedTo: string | undefined;
+  relationshipType: string | undefined;
+  remainingText: string;
+} {
+  let relatedTo: string | undefined;
+  let relationshipType: string | undefined;
+  let text = input;
+
+  // Parse related: syntax (supports quotes for names with spaces)
+  const relatedMatches = [...text.matchAll(/related:(?:"([^"]+)"|(\S+))/gi)];
+  if (relatedMatches.length > 0) {
+    const lastMatch = relatedMatches[relatedMatches.length - 1];
+    relatedTo = lastMatch[1] || lastMatch[2];
+
+    // Resolve entity name to ID
+    const entity = entities.find(
+      (e) => e.name.toLowerCase() === relatedTo?.toLowerCase() || e.id === relatedTo
+    );
+    if (entity) {
+      relatedTo = entity.id;
+    }
+
+    // Remove from text
+    text = text.replace(match[0], '').trim();
+  }
+
+  // Parse relationship: syntax
+  const relationshipMatches = [...text.matchAll(/relationship:(?:"([^"]+)"|(\S+))/gi)];
+  if (relationshipMatches.length > 0) {
+    const lastMatch = relationshipMatches[relationshipMatches.length - 1];
+    relationshipType = (lastMatch[1] || lastMatch[2]).toLowerCase();
+
+    // Remove from text
+    text = text.replace(match[0], '').trim();
+  }
+
+  return { relatedTo, relationshipType, remainingText: text };
+}
+```
+
+**How It Works:**
+
+1. User types in search bar: `related:"Lord Vance" wizard`
+2. Parser extracts: `relatedTo = "lord-vance-id"`, `remainingText = "wizard"`
+3. Store filters applied:
+   - `filterByRelatedTo("lord-vance-id")`
+   - `setSearchQuery("wizard")`
+4. Results show entities related to Lord Vance with "wizard" in their content
+
+**Examples:**
+
+```
+related:Grimwald                           → Entities related to Grimwald
+relationship:enemy_of                      → Entities with enemy relationships
+related:"The Silver Circle"                → Entities related to The Silver Circle
+related:npc-123 relationship:knows wizard  → NPCs that know npc-123 with "wizard" in content
+```
 
 **Implementation:**
-- Search query updates the entities store via `setSearchQuery()`
-- Store filters entities reactively based on query
+- Search query updates the entities store via multiple methods
+- Relationship syntax parsed and removed from text search
+- Store filters entities reactively based on combined filters
 - Results displayed in dropdown with type headers and icons
 - Selected result highlighted for keyboard navigation
 

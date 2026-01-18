@@ -7,6 +7,7 @@
 	import RelateCommand from '$lib/components/entity/RelateCommand.svelte';
 	import Pagination from '$lib/components/ui/Pagination.svelte';
 	import LoadingSkeleton from '$lib/components/ui/LoadingSkeleton.svelte';
+	import { RelationshipFilter } from '$lib/components/filters';
 	import type { BaseEntity } from '$lib/types';
 
 	const entityType = $derived($page?.params?.type ?? '');
@@ -39,10 +40,35 @@
 		return isNaN(parsed) || parsed < 1 ? 20 : parsed;
 	});
 
+	// Read relationship filter parameters from URL
+	const urlRelatedTo = $derived($page.url.searchParams.get('relatedTo') || undefined);
+	const urlRelType = $derived($page.url.searchParams.get('relType') || undefined);
+	const urlHasRels = $derived.by(() => {
+		const param = $page.url.searchParams.get('hasRels');
+		return param === 'true' ? true : param === 'false' ? false : undefined;
+	});
+
+	// Initialize filters from URL on load
+	$effect(() => {
+		if (urlRelatedTo || urlRelType || urlHasRels !== undefined) {
+			entitiesStore.setRelationshipFilter({
+				relatedToEntityId: urlRelatedTo,
+				relationshipType: urlRelType,
+				hasRelationships: urlHasRels
+			});
+		}
+	});
+
+	// Use the store's filtered entities (which includes relationship filters)
+	const storeFilteredEntities = $derived(
+		entityType ? entitiesStore.filteredEntities.filter((e) => e.type === entityType) : []
+	);
+
+	// Apply local search query on top of store filters
 	const filteredEntities: BaseEntity[] = $derived.by(() => {
-		if (!searchQuery) return entities;
+		if (!searchQuery) return storeFilteredEntities;
 		const query = searchQuery.toLowerCase();
-		return entities.filter(
+		return storeFilteredEntities.filter(
 			(e) =>
 				e.name.toLowerCase().includes(query) ||
 				e.description.toLowerCase().includes(query) ||
@@ -88,6 +114,39 @@
 		goto(url.toString());
 	}
 
+	function handleRelationshipFilterChange(filters: {
+		relatedToEntityId: string | undefined;
+		relationshipType: string | undefined;
+		hasRelationships: boolean | undefined;
+	}) {
+		// Update store
+		entitiesStore.setRelationshipFilter(filters);
+
+		// Update URL params
+		const url = new URL($page.url);
+		url.searchParams.set('page', '1'); // Reset to page 1
+
+		if (filters.relatedToEntityId) {
+			url.searchParams.set('relatedTo', filters.relatedToEntityId);
+		} else {
+			url.searchParams.delete('relatedTo');
+		}
+
+		if (filters.relationshipType) {
+			url.searchParams.set('relType', filters.relationshipType);
+		} else {
+			url.searchParams.delete('relType');
+		}
+
+		if (filters.hasRelationships !== undefined) {
+			url.searchParams.set('hasRels', filters.hasRelationships.toString());
+		} else {
+			url.searchParams.delete('hasRels');
+		}
+
+		goto(url.toString());
+	}
+
 	// Reset to page 1 when search changes (but not on initial load)
 	$effect(() => {
 		if (searchQuery && !isInitialLoad) {
@@ -125,6 +184,16 @@
 		</button>
 	</div>
 
+	<!-- Relationship Filter -->
+	<RelationshipFilter
+		relatedToEntityId={entitiesStore.relationshipFilter.relatedToEntityId}
+		relationshipType={entitiesStore.relationshipFilter.relationshipType}
+		hasRelationships={entitiesStore.relationshipFilter.hasRelationships}
+		availableEntities={entitiesStore.entities}
+		availableRelationshipTypes={entitiesStore.availableRelationshipTypes}
+		onFilterChange={handleRelationshipFilterChange}
+	/>
+
 	<!-- Search -->
 	<div class="relative mb-6">
 		<Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -156,12 +225,13 @@
 			{/if}
 		</div>
 	{:else}
-		<div class="grid gap-3">
+		<div class="grid gap-3" data-testid="entity-list">
 			{#each paginatedEntities as entity}
 				<a
 					href="/entities/{entityType}/{entity.id}"
 					class="entity-card group flex items-start gap-4"
 					data-type={entityType}
+					data-testid="entity-card"
 				>
 					<div class="flex-1 min-w-0">
 						<div class="font-medium text-slate-900 dark:text-white truncate">

@@ -7,6 +7,7 @@ import type { BaseEntity } from '$lib/types';
 export function createMockEntitiesStore(entities: BaseEntity[] = []) {
 	let searchQuery = '';
 	let _entities = entities;
+	let _availableRelationshipTypes: string[] = [];
 
 	const filteredEntities = () => {
 		if (!searchQuery) return _entities;
@@ -19,6 +20,12 @@ export function createMockEntitiesStore(entities: BaseEntity[] = []) {
 		);
 	};
 
+	let _relationshipFilter: {
+		relatedToEntityId?: string;
+		relationshipType?: string;
+		hasRelationships?: boolean;
+	} = {};
+
 	return {
 		get entities() {
 			return _entities;
@@ -28,6 +35,15 @@ export function createMockEntitiesStore(entities: BaseEntity[] = []) {
 		},
 		get searchQuery() {
 			return searchQuery;
+		},
+		get availableRelationshipTypes() {
+			return _availableRelationshipTypes;
+		},
+		get relationshipFilter() {
+			return _relationshipFilter;
+		},
+		set availableRelationshipTypes(types: string[]) {
+			_availableRelationshipTypes = types;
 		},
 		setSearchQuery: vi.fn((query: string) => {
 			searchQuery = query;
@@ -41,6 +57,22 @@ export function createMockEntitiesStore(entities: BaseEntity[] = []) {
 		addLink: vi.fn(),
 		removeLink: vi.fn(),
 		getLinkedWithRelationships: vi.fn(() => []),
+		// Relationship filter methods (Issue #78)
+		filterByRelatedTo: vi.fn((entityId: string) => {
+			_relationshipFilter = { ..._relationshipFilter, relatedToEntityId: entityId };
+		}),
+		filterByRelationshipType: vi.fn((type: string) => {
+			_relationshipFilter = { ..._relationshipFilter, relationshipType: type };
+		}),
+		filterByHasRelationships: vi.fn((has: boolean) => {
+			_relationshipFilter = { ..._relationshipFilter, hasRelationships: has };
+		}),
+		setRelationshipFilter: vi.fn((filter: typeof _relationshipFilter) => {
+			_relationshipFilter = filter;
+		}),
+		clearRelationshipFilter: vi.fn(() => {
+			_relationshipFilter = {};
+		}),
 		// Update method for tests
 		_setEntities: (newEntities: BaseEntity[]) => {
 			_entities = newEntities;

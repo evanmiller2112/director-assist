@@ -518,3 +518,552 @@ describe('EntitiesStore - getLinkedWithRelationships (Issue #72)', () => {
 		});
 	});
 });
+
+/**
+ * Tests for entities store - Relationship-based filtering
+ *
+ * Issue #78: Relationship-based entity filtering
+ *
+ * These tests verify that the entities store can filter entities based on:
+ * - Related to a specific entity
+ * - Relationship type
+ * - Has any relationships
+ *
+ * These tests are written in the RED phase of TDD - they will FAIL until
+ * the functionality is implemented.
+ */
+
+describe('EntitiesStore - Relationship Filters (Issue #78)', () => {
+	let entitiesStore: any;
+	let mockEntities: BaseEntity[];
+
+	beforeEach(async () => {
+		// Clear all mocks
+		vi.clearAllMocks();
+
+		// Dynamically import the store to get a fresh instance
+		const module = await import('./entities.svelte');
+		entitiesStore = module.entitiesStore;
+
+		// Create mock entities with various relationships
+		mockEntities = [
+			createMockEntity({
+				id: 'aragorn',
+				name: 'Aragorn',
+				type: 'character',
+				links: [
+					{
+						id: 'link-1',
+						targetId: 'gandalf',
+						targetType: 'character',
+						relationship: 'friend_of',
+						bidirectional: true,
+						createdAt: new Date(),
+						updatedAt: new Date()
+					},
+					{
+						id: 'link-2',
+						targetId: 'rangers',
+						targetType: 'faction',
+						relationship: 'member_of',
+						bidirectional: false,
+						createdAt: new Date(),
+						updatedAt: new Date()
+					}
+				]
+			}),
+			createMockEntity({
+				id: 'gandalf',
+				name: 'Gandalf',
+				type: 'character',
+				links: [
+					{
+						id: 'link-3',
+						targetId: 'council',
+						targetType: 'faction',
+						relationship: 'member_of',
+						bidirectional: false,
+						createdAt: new Date(),
+						updatedAt: new Date()
+					}
+				]
+			}),
+			createMockEntity({
+				id: 'frodo',
+				name: 'Frodo',
+				type: 'character',
+				links: [
+					{
+						id: 'link-4',
+						targetId: 'gandalf',
+						targetType: 'character',
+						relationship: 'knows',
+						bidirectional: false,
+						createdAt: new Date(),
+						updatedAt: new Date()
+					}
+				]
+			}),
+			createMockEntity({
+				id: 'rangers',
+				name: 'Rangers of the North',
+				type: 'faction',
+				links: []
+			}),
+			createMockEntity({
+				id: 'rivendell',
+				name: 'Rivendell',
+				type: 'location',
+				links: []
+			})
+		];
+
+		// Set the mock entities in the store
+		entitiesStore._setEntities(mockEntities);
+	});
+
+	describe('Relationship Filter State', () => {
+		it('should have relationshipFilter state property', () => {
+			expect(entitiesStore).toHaveProperty('relationshipFilter');
+		});
+
+		it('should initialize relationshipFilter with empty values', () => {
+			const filter = entitiesStore.relationshipFilter;
+			expect(filter).toBeDefined();
+			expect(filter.relatedToEntityId).toBeUndefined();
+			expect(filter.relationshipType).toBeUndefined();
+			expect(filter.hasRelationships).toBeUndefined();
+		});
+	});
+
+	describe('setRelationshipFilter Method', () => {
+		it('should have setRelationshipFilter method', () => {
+			expect(entitiesStore.setRelationshipFilter).toBeDefined();
+			expect(typeof entitiesStore.setRelationshipFilter).toBe('function');
+		});
+
+		it('should update relationshipFilter when called', () => {
+			entitiesStore.setRelationshipFilter({
+				relatedToEntityId: 'gandalf',
+				relationshipType: 'friend_of',
+				hasRelationships: true
+			});
+
+			const filter = entitiesStore.relationshipFilter;
+			expect(filter.relatedToEntityId).toBe('gandalf');
+			expect(filter.relationshipType).toBe('friend_of');
+			expect(filter.hasRelationships).toBe(true);
+		});
+
+		it('should allow partial filter updates', () => {
+			// Set initial filter
+			entitiesStore.setRelationshipFilter({
+				relatedToEntityId: 'gandalf',
+				relationshipType: 'friend_of'
+			});
+
+			// Update only one property
+			entitiesStore.setRelationshipFilter({
+				relationshipType: 'member_of'
+			});
+
+			const filter = entitiesStore.relationshipFilter;
+			expect(filter.relatedToEntityId).toBe('gandalf');
+			expect(filter.relationshipType).toBe('member_of');
+		});
+	});
+
+	describe('clearRelationshipFilter Method', () => {
+		it('should have clearRelationshipFilter method', () => {
+			expect(entitiesStore.clearRelationshipFilter).toBeDefined();
+			expect(typeof entitiesStore.clearRelationshipFilter).toBe('function');
+		});
+
+		it('should reset all relationship filters', () => {
+			// Set filters
+			entitiesStore.setRelationshipFilter({
+				relatedToEntityId: 'gandalf',
+				relationshipType: 'friend_of',
+				hasRelationships: true
+			});
+
+			// Clear filters
+			entitiesStore.clearRelationshipFilter();
+
+			const filter = entitiesStore.relationshipFilter;
+			expect(filter.relatedToEntityId).toBeUndefined();
+			expect(filter.relationshipType).toBeUndefined();
+			expect(filter.hasRelationships).toBeUndefined();
+		});
+	});
+
+	describe('filterByRelatedTo Method', () => {
+		it('should have filterByRelatedTo method', () => {
+			expect(entitiesStore.filterByRelatedTo).toBeDefined();
+			expect(typeof entitiesStore.filterByRelatedTo).toBe('function');
+		});
+
+		it('should filter entities that have relationships to specified entity', () => {
+			entitiesStore.filterByRelatedTo('gandalf');
+
+			const filtered = entitiesStore.filteredEntities;
+
+			// Should include Aragorn (friend_of Gandalf) and Frodo (knows Gandalf)
+			expect(filtered.some((e: BaseEntity) => e.id === 'aragorn')).toBe(true);
+			expect(filtered.some((e: BaseEntity) => e.id === 'frodo')).toBe(true);
+
+			// Should NOT include Rangers or Rivendell
+			expect(filtered.some((e: BaseEntity) => e.id === 'rangers')).toBe(false);
+			expect(filtered.some((e: BaseEntity) => e.id === 'rivendell')).toBe(false);
+		});
+
+		it('should include entities with bidirectional relationships', () => {
+			entitiesStore.filterByRelatedTo('gandalf');
+
+			const filtered = entitiesStore.filteredEntities;
+
+			// Aragorn has bidirectional relationship with Gandalf
+			expect(filtered.some((e: BaseEntity) => e.id === 'aragorn')).toBe(true);
+		});
+
+		it('should include entities that are targeted by the specified entity', () => {
+			entitiesStore.filterByRelatedTo('aragorn');
+
+			const filtered = entitiesStore.filteredEntities;
+
+			// Gandalf is targeted by Aragorn (Aragorn -> Gandalf: friend_of)
+			expect(filtered.some((e: BaseEntity) => e.id === 'gandalf')).toBe(true);
+
+			// Rangers is targeted by Aragorn (Aragorn -> Rangers: member_of)
+			expect(filtered.some((e: BaseEntity) => e.id === 'rangers')).toBe(true);
+		});
+
+		it('should return empty array if entity has no relationships', () => {
+			entitiesStore.filterByRelatedTo('rivendell');
+
+			const filtered = entitiesStore.filteredEntities;
+
+			// Rivendell has no relationships
+			expect(filtered.length).toBe(0);
+		});
+
+		it('should return empty array for non-existent entity', () => {
+			entitiesStore.filterByRelatedTo('non-existent-id');
+
+			const filtered = entitiesStore.filteredEntities;
+			expect(filtered.length).toBe(0);
+		});
+	});
+
+	describe('filterByRelationshipType Method', () => {
+		it('should have filterByRelationshipType method', () => {
+			expect(entitiesStore.filterByRelationshipType).toBeDefined();
+			expect(typeof entitiesStore.filterByRelationshipType).toBe('function');
+		});
+
+		it('should filter entities that have relationships of specified type', () => {
+			entitiesStore.filterByRelationshipType('member_of');
+
+			const filtered = entitiesStore.filteredEntities;
+
+			// Should include Aragorn and Gandalf (both have member_of relationships)
+			expect(filtered.some((e: BaseEntity) => e.id === 'aragorn')).toBe(true);
+			expect(filtered.some((e: BaseEntity) => e.id === 'gandalf')).toBe(true);
+
+			// Should NOT include Rangers, Rivendell, or Frodo
+			expect(filtered.some((e: BaseEntity) => e.id === 'rangers')).toBe(false);
+			expect(filtered.some((e: BaseEntity) => e.id === 'rivendell')).toBe(false);
+			expect(filtered.some((e: BaseEntity) => e.id === 'frodo')).toBe(false);
+		});
+
+		it('should filter by friend_of relationship type', () => {
+			entitiesStore.filterByRelationshipType('friend_of');
+
+			const filtered = entitiesStore.filteredEntities;
+
+			// Only Aragorn has friend_of relationship
+			expect(filtered.some((e: BaseEntity) => e.id === 'aragorn')).toBe(true);
+			expect(filtered.length).toBe(1);
+		});
+
+		it('should return empty array if no entities have the relationship type', () => {
+			entitiesStore.filterByRelationshipType('enemy_of');
+
+			const filtered = entitiesStore.filteredEntities;
+			expect(filtered.length).toBe(0);
+		});
+
+		it('should be case-insensitive', () => {
+			entitiesStore.filterByRelationshipType('MEMBER_OF');
+
+			const filtered = entitiesStore.filteredEntities;
+			expect(filtered.length).toBeGreaterThan(0);
+		});
+	});
+
+	describe('filterByHasRelationships Method', () => {
+		it('should have filterByHasRelationships method', () => {
+			expect(entitiesStore.filterByHasRelationships).toBeDefined();
+			expect(typeof entitiesStore.filterByHasRelationships).toBe('function');
+		});
+
+		it('should filter entities that have any relationships', () => {
+			entitiesStore.filterByHasRelationships(true);
+
+			const filtered = entitiesStore.filteredEntities;
+
+			// Should include Aragorn, Gandalf, Frodo (all have relationships)
+			expect(filtered.some((e: BaseEntity) => e.id === 'aragorn')).toBe(true);
+			expect(filtered.some((e: BaseEntity) => e.id === 'gandalf')).toBe(true);
+			expect(filtered.some((e: BaseEntity) => e.id === 'frodo')).toBe(true);
+
+			// Should NOT include Rangers, Rivendell (no relationships)
+			expect(filtered.some((e: BaseEntity) => e.id === 'rangers')).toBe(false);
+			expect(filtered.some((e: BaseEntity) => e.id === 'rivendell')).toBe(false);
+		});
+
+		it('should filter entities that have no relationships', () => {
+			entitiesStore.filterByHasRelationships(false);
+
+			const filtered = entitiesStore.filteredEntities;
+
+			// Should include Rangers, Rivendell (no relationships)
+			expect(filtered.some((e: BaseEntity) => e.id === 'rangers')).toBe(true);
+			expect(filtered.some((e: BaseEntity) => e.id === 'rivendell')).toBe(true);
+
+			// Should NOT include Aragorn, Gandalf, Frodo
+			expect(filtered.some((e: BaseEntity) => e.id === 'aragorn')).toBe(false);
+			expect(filtered.some((e: BaseEntity) => e.id === 'gandalf')).toBe(false);
+			expect(filtered.some((e: BaseEntity) => e.id === 'frodo')).toBe(false);
+		});
+
+		it('should return all entities when hasRelationships is undefined', () => {
+			entitiesStore.filterByHasRelationships(undefined);
+
+			const filtered = entitiesStore.filteredEntities;
+			expect(filtered.length).toBe(mockEntities.length);
+		});
+	});
+
+	describe('availableRelationshipTypes Derived Value', () => {
+		it('should have availableRelationshipTypes property', () => {
+			expect(entitiesStore).toHaveProperty('availableRelationshipTypes');
+		});
+
+		it('should return all unique relationship types from entities', () => {
+			const types = entitiesStore.availableRelationshipTypes;
+
+			expect(types).toContain('friend_of');
+			expect(types).toContain('member_of');
+			expect(types).toContain('knows');
+		});
+
+		it('should not include duplicates', () => {
+			const types = entitiesStore.availableRelationshipTypes;
+
+			// member_of appears twice but should only be listed once
+			const memberOfCount = types.filter((t: string) => t === 'member_of').length;
+			expect(memberOfCount).toBe(1);
+		});
+
+		it('should return empty array when no entities have relationships', () => {
+			// Create entities with no links
+			const emptyEntities = [
+				createMockEntity({ id: 'e1', links: [] }),
+				createMockEntity({ id: 'e2', links: [] })
+			];
+			entitiesStore._setEntities(emptyEntities);
+
+			const types = entitiesStore.availableRelationshipTypes;
+			expect(types).toEqual([]);
+		});
+
+		it('should be sorted alphabetically', () => {
+			const types = entitiesStore.availableRelationshipTypes;
+
+			// Should be in alphabetical order
+			const sorted = [...types].sort();
+			expect(types).toEqual(sorted);
+		});
+	});
+
+	describe('Combined Relationship Filters', () => {
+		it('should apply both relatedTo and relationshipType filters', () => {
+			entitiesStore.setRelationshipFilter({
+				relatedToEntityId: 'gandalf',
+				relationshipType: 'friend_of'
+			});
+
+			const filtered = entitiesStore.filteredEntities;
+
+			// Only Aragorn has friend_of relationship with Gandalf
+			expect(filtered.some((e: BaseEntity) => e.id === 'aragorn')).toBe(true);
+			expect(filtered.length).toBe(1);
+		});
+
+		it('should apply relatedTo and hasRelationships filters', () => {
+			entitiesStore.setRelationshipFilter({
+				relatedToEntityId: 'gandalf',
+				hasRelationships: true
+			});
+
+			const filtered = entitiesStore.filteredEntities;
+
+			// Aragorn and Frodo are related to Gandalf and have relationships
+			expect(filtered.some((e: BaseEntity) => e.id === 'aragorn')).toBe(true);
+			expect(filtered.some((e: BaseEntity) => e.id === 'frodo')).toBe(true);
+		});
+
+		it('should apply relationshipType and hasRelationships filters', () => {
+			entitiesStore.setRelationshipFilter({
+				relationshipType: 'member_of',
+				hasRelationships: true
+			});
+
+			const filtered = entitiesStore.filteredEntities;
+
+			// Aragorn and Gandalf have member_of relationships
+			expect(filtered.some((e: BaseEntity) => e.id === 'aragorn')).toBe(true);
+			expect(filtered.some((e: BaseEntity) => e.id === 'gandalf')).toBe(true);
+		});
+
+		it('should apply all three filters together', () => {
+			entitiesStore.setRelationshipFilter({
+				relatedToEntityId: 'rangers',
+				relationshipType: 'member_of',
+				hasRelationships: true
+			});
+
+			const filtered = entitiesStore.filteredEntities;
+
+			// Only Aragorn satisfies all conditions
+			expect(filtered.some((e: BaseEntity) => e.id === 'aragorn')).toBe(true);
+			expect(filtered.length).toBe(1);
+		});
+	});
+
+	describe('Relationship Filters with Search Query', () => {
+		it('should combine relationship filters with search query', () => {
+			// Set relationship filter
+			entitiesStore.setRelationshipFilter({
+				relationshipType: 'member_of'
+			});
+
+			// Set search query
+			entitiesStore.setSearchQuery('Aragorn');
+
+			const filtered = entitiesStore.filteredEntities;
+
+			// Should include only Aragorn (has member_of and matches search)
+			expect(filtered.some((e: BaseEntity) => e.id === 'aragorn')).toBe(true);
+			expect(filtered.some((e: BaseEntity) => e.id === 'gandalf')).toBe(false);
+		});
+
+		it('should return empty when filters conflict', () => {
+			// Set relationship filter for member_of
+			entitiesStore.setRelationshipFilter({
+				relationshipType: 'member_of'
+			});
+
+			// Search for entity that doesn't have member_of
+			entitiesStore.setSearchQuery('Frodo');
+
+			const filtered = entitiesStore.filteredEntities;
+
+			// Frodo doesn't have member_of relationship
+			expect(filtered.length).toBe(0);
+		});
+
+		it('should clear search when clearing relationship filters', () => {
+			entitiesStore.setRelationshipFilter({
+				relationshipType: 'member_of'
+			});
+			entitiesStore.setSearchQuery('Aragorn');
+
+			entitiesStore.clearRelationshipFilter();
+
+			// Search should still be active
+			const filtered = entitiesStore.filteredEntities;
+			expect(filtered.some((e: BaseEntity) => e.id === 'aragorn')).toBe(true);
+		});
+	});
+
+	describe('Edge Cases', () => {
+		it('should handle entities with empty links array', () => {
+			entitiesStore.setRelationshipFilter({
+				hasRelationships: false
+			});
+
+			const filtered = entitiesStore.filteredEntities;
+
+			// Rangers and Rivendell have no relationships
+			expect(filtered.some((e: BaseEntity) => e.id === 'rangers')).toBe(true);
+			expect(filtered.some((e: BaseEntity) => e.id === 'rivendell')).toBe(true);
+		});
+
+		it('should handle circular relationships', () => {
+			// Create circular relationship
+			const circular = [
+				createMockEntity({
+					id: 'a',
+					links: [
+						{
+							id: 'link-a',
+							targetId: 'b',
+							targetType: 'character',
+							relationship: 'friend_of',
+							bidirectional: true,
+							createdAt: new Date(),
+							updatedAt: new Date()
+						}
+					]
+				}),
+				createMockEntity({
+					id: 'b',
+					links: [
+						{
+							id: 'link-b',
+							targetId: 'a',
+							targetType: 'character',
+							relationship: 'friend_of',
+							bidirectional: true,
+							createdAt: new Date(),
+							updatedAt: new Date()
+						}
+					]
+				})
+			];
+			entitiesStore._setEntities(circular);
+
+			entitiesStore.filterByRelatedTo('a');
+
+			const filtered = entitiesStore.filteredEntities;
+			expect(filtered.some((e: BaseEntity) => e.id === 'b')).toBe(true);
+		});
+
+		it('should handle case-sensitive relationship types correctly', () => {
+			const entities = [
+				createMockEntity({
+					id: 'e1',
+					links: [
+						{
+							id: 'link-1',
+							targetId: 'e2',
+							targetType: 'character',
+							relationship: 'Friend_Of',
+							bidirectional: false,
+							createdAt: new Date(),
+							updatedAt: new Date()
+						}
+					]
+				})
+			];
+			entitiesStore._setEntities(entities);
+
+			entitiesStore.filterByRelationshipType('friend_of');
+
+			const filtered = entitiesStore.filteredEntities;
+			expect(filtered.length).toBeGreaterThan(0);
+		});
+	});
+});

@@ -27,6 +27,9 @@
 		getAllEntityTypes(campaignStore.customEntityTypes, campaignStore.entityTypeOverrides)
 	);
 
+	// Get all entities for relationship syntax parsing
+	const entities = $derived(entitiesStore.entities);
+
 	// Command filtering
 	const filteredCommands = $derived.by(() => {
 		if (!isCommandMode) return [];
@@ -78,6 +81,54 @@
 		isCommandMode ? filteredCommands.length : entitiesStore.filteredEntities.length
 	);
 
+	function parseRelationshipSyntax(input: string): {
+		relatedTo: string | undefined;
+		relationshipType: string | undefined;
+		remainingText: string;
+	} {
+		let relatedTo: string | undefined;
+		let relationshipType: string | undefined;
+		let text = input;
+
+		// Parse all related: syntax occurrences (use last one)
+		const relatedMatches = [...text.matchAll(/related:(?:"([^"]+)"|(\S+))/gi)];
+		if (relatedMatches.length > 0) {
+			const lastMatch = relatedMatches[relatedMatches.length - 1];
+			relatedTo = lastMatch[1] || lastMatch[2];
+
+			// Remove all occurrences from text
+			for (const match of relatedMatches) {
+				text = text.replace(match[0], '').trim();
+			}
+
+			// Try to resolve entity name to ID
+			const entity = entities.find(
+				(e) => e.name.toLowerCase() === relatedTo?.toLowerCase() || e.id === relatedTo
+			);
+			if (entity) {
+				relatedTo = entity.id;
+			}
+		}
+
+		// Parse all relationship: syntax occurrences (use last one)
+		const relationshipMatches = [...text.matchAll(/relationship:(?:"([^"]+)"|(\S+))/gi)];
+		if (relationshipMatches.length > 0) {
+			const lastMatch = relationshipMatches[relationshipMatches.length - 1];
+			relationshipType = (lastMatch[1] || lastMatch[2]).toLowerCase();
+
+			// Remove all occurrences from text
+			for (const match of relationshipMatches) {
+				text = text.replace(match[0], '').trim();
+			}
+		}
+
+		return {
+			relatedTo,
+			relationshipType,
+			remainingText: text
+		};
+	}
+
 	function handleInput(e: Event) {
 		const value = (e.target as HTMLInputElement).value;
 		searchInput = value;
@@ -85,6 +136,9 @@
 		// In command mode, don't debounce and don't update entity search
 		if (value.startsWith('/')) {
 			// Command mode - show results immediately
+			// Clear relationship filters when entering command mode
+			entitiesStore.clearRelationshipFilter();
+
 			if (value.trim()) {
 				isOpen = true;
 				selectedIndex = 0;
@@ -92,10 +146,32 @@
 				isOpen = false;
 			}
 		} else {
-			// Search mode - debounce the store update
+			// Search mode - check for relationship syntax first
+			const { relatedTo, relationshipType, remainingText } = parseRelationshipSyntax(value);
+
+			// Debounce the store update
 			if (debounceTimer) clearTimeout(debounceTimer);
 			debounceTimer = setTimeout(() => {
-				entitiesStore.setSearchQuery(value);
+				// Apply relationship filters using individual methods
+				if (relatedTo) {
+					entitiesStore.filterByRelatedTo(relatedTo);
+				} else {
+					entitiesStore.filterByRelatedTo(undefined);
+				}
+
+				if (relationshipType) {
+					entitiesStore.filterByRelationshipType(relationshipType);
+				} else {
+					entitiesStore.filterByRelationshipType(undefined);
+				}
+
+				// If no filters, ensure they're cleared
+				if (!relatedTo && !relationshipType) {
+					entitiesStore.clearRelationshipFilter();
+				}
+
+				// Apply text search with remaining text
+				entitiesStore.setSearchQuery(remainingText);
 			}, 150);
 
 			if (value.trim()) {
@@ -170,7 +246,8 @@
 
 	function closeDropdown() {
 		isOpen = false;
-		searchInput = '';
+		// Don't clear searchInput - allow user to keep their search and reopen dropdown
+		// Only clear the store's search query to reset entity filtering
 		entitiesStore.setSearchQuery('');
 	}
 

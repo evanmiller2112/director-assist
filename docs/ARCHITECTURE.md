@@ -57,10 +57,15 @@ src/
 │   │   │   ├── RelationshipsTable.svelte
 │   │   │   ├── RelationshipRow.svelte
 │   │   │   ├── BulkActionsBar.svelte
+│   │   │   ├── RelationshipMatrix.svelte     # Matrix grid visualization
+│   │   │   ├── MatrixControls.svelte         # Matrix filtering/sorting controls
+│   │   │   ├── MatrixCell.svelte             # Individual matrix cell
 │   │   │   ├── NetworkDiagram.svelte        # vis.js network visualization
 │   │   │   ├── NetworkFilterPanel.svelte    # Network filter controls
 │   │   │   ├── NetworkNodeDetails.svelte    # Node detail panel
 │   │   │   └── NetworkEdgeDetails.svelte    # Edge detail panel
+│   │   ├── navigation/      # Navigation components
+│   │   │   └── RelationshipBreadcrumbs.svelte
 │   │   ├── ui/              # UI components
 │   │   │   ├── LoadingSpinner.svelte
 │   │   │   ├── LoadingSkeleton.svelte
@@ -74,8 +79,10 @@ src/
 │   │   ├── commands.ts      # Command palette definitions
 │   │   └── entityTypes.ts   # Entity type definitions
 │   ├── utils/               # Utility functions
-│   │   ├── commandUtils.ts  # Command parsing and filtering
-│   │   └── networkGraph.ts  # Network graph visualization utilities
+│   │   ├── commandUtils.ts       # Command parsing and filtering
+│   │   ├── matrixUtils.ts        # Matrix data processing and sorting
+│   │   ├── breadcrumbUtils.ts    # Breadcrumb path parsing and serialization
+│   │   └── networkGraph.ts       # Network graph visualization utilities
 │   ├── db/                  # Database layer
 │   │   ├── index.ts         # Dexie database setup
 │   │   └── repositories/    # Data access layer
@@ -94,6 +101,7 @@ src/
 │       ├── campaign.ts      # Campaign types
 │       ├── ai.ts            # AI integration types
 │       ├── relationships.ts # Relationship filtering and sorting types
+│       ├── matrix.ts        # Matrix view types
 │       ├── network.ts       # Network visualization types
 │       └── index.ts         # Type exports
 ├── routes/                  # SvelteKit routes (pages)
@@ -111,6 +119,8 @@ src/
 │   │           └── relationships/
 │   │               └── +page.svelte # Manage relationships (/entities/npc/abc123/relationships)
 │   ├── relationships/       # Relationship routes
+│   │   ├── matrix/
+│   │   │   └── +page.svelte # Relationship matrix view (/relationships/matrix)
 │   │   └── network/
 │   │       └── +page.svelte     # Network diagram (/relationships/network)
 │   └── settings/
@@ -771,6 +781,199 @@ getEdgeDashes(strength?: 'strong' | 'moderate' | 'weak'): boolean | number[]
 - Time-based filtering (show relationships as of a date)
 - Mini-map for navigation in large graphs
 
+#### Relationship Matrix View
+
+**Location:** `/src/routes/relationships/matrix/+page.svelte`
+
+**Purpose:** Provide a 2D grid visualization of relationships between entity types, enabling Directors to see patterns, identify connection gaps, and manage relationships across different entity type combinations at a glance.
+
+**Route:** `/relationships/matrix`
+
+**Overview:**
+
+The Matrix View displays entities as rows and columns in a grid where cells represent relationships between specific entity pairs. Cell color intensity indicates relationship density, making it easy to spot well-connected entities and relationship patterns.
+
+**Key Features:**
+
+1. **Flexible Entity Type Selection**
+   - Choose any entity type for rows (characters, NPCs, locations, factions, etc.)
+   - Choose any entity type for columns (can be same or different type)
+   - Support for all 11 built-in entity types
+   - Dynamic updates when entity types change
+
+2. **Visual Cell Indicators**
+   - Gray cells: No relationships
+   - Blue gradient: Relationship count (darker = more relationships)
+   - Hover shows exact relationship count
+   - Click to view/edit relationships or create new ones
+
+3. **Advanced Filtering**
+   - Filter by specific relationship type (knows, allied_with, located_at, etc.)
+   - Toggle "Hide rows with no relationships"
+   - Toggle "Hide columns with no relationships"
+   - Filters focus the matrix on connected entities
+
+4. **Flexible Sorting**
+   - Sort rows by name (alphabetical) or connection count
+   - Sort columns by name (alphabetical) or connection count
+   - Ascending or descending direction for each axis
+   - Quickly identify hub entities with most connections
+
+5. **Interactive Cells**
+   - Click empty cell → Create new relationship dialog
+   - Click populated cell → View all relationships between those entities
+   - Edit button for individual relationships (in-place editing)
+   - Integrates with EditRelationshipModal component
+
+**Component Architecture:**
+
+```
++page.svelte (Container)
+├── MatrixControls.svelte (Filter and sort panel)
+│   ├── Entity type selectors (rows/columns)
+│   ├── Relationship type filter dropdown
+│   ├── Hide empty toggles
+│   └── Sort controls (name/count, asc/desc)
+└── RelationshipMatrix.svelte (Grid visualization)
+    └── MatrixCell.svelte (Individual cells)
+        ├── Color-coded background
+        ├── Relationship count badge
+        └── Click handlers (view/create)
+```
+
+**State Management:**
+
+Matrix view uses Svelte 5 runes for reactive state:
+
+```typescript
+// Filter options
+let filterOptions = $state<MatrixFilterOptions>({
+  rowEntityType: 'character',
+  columnEntityType: 'character',
+  relationshipType?: string,
+  hideEmptyRows: false,
+  hideEmptyColumns: false
+});
+
+// Sort options
+let sortOptions = $state<MatrixSortOptions>({
+  rowSort: 'alphabetical',
+  columnSort: 'alphabetical',
+  rowDirection: 'asc',
+  columnDirection: 'asc'
+});
+
+// Derived matrix data
+const matrixData = $derived.by(() => {
+  const map = buildMatrixData(relationshipMap, filterOptions);
+  return sortMatrixData(map, sortOptions);
+});
+```
+
+**Data Processing Pipeline:**
+
+1. **Load Relationship Map**: Fetch complete graph from `entityRepository.getRelationshipMap()`
+2. **Filter Entities**: Apply entity type filters to get relevant rows/columns
+3. **Build Cell Map**: Create cells for each row/column intersection
+4. **Filter Relationships**: If relationship type filter active, show only matching relationships
+5. **Hide Empty**: Remove rows/columns with zero relationships if toggled
+6. **Sort**: Apply sorting to rows and columns independently
+7. **Render**: Display matrix grid with color-coded cells
+
+**Type Definitions:**
+
+```typescript
+// /src/lib/types/matrix.ts
+interface MatrixFilterOptions {
+  rowEntityType: EntityType;
+  columnEntityType: EntityType;
+  relationshipType?: string;
+  hideEmptyRows?: boolean;
+  hideEmptyColumns?: boolean;
+}
+
+interface MatrixSortOptions {
+  rowSort: 'alphabetical' | 'connectionCount';
+  columnSort: 'alphabetical' | 'connectionCount';
+  rowDirection: 'asc' | 'desc';
+  columnDirection: 'asc' | 'desc';
+}
+
+interface MatrixCellData {
+  rowEntityId: string;
+  columnEntityId: string;
+  relationships: RelationshipMapEdge[];
+  count: number;
+}
+
+interface MatrixData {
+  rowEntities: RelationshipMapNode[];
+  columnEntities: RelationshipMapNode[];
+  cells: Map<string, MatrixCellData>;
+  relationshipTypes: string[];
+}
+```
+
+**Utility Functions:**
+
+`/src/lib/utils/matrixUtils.ts` provides data processing functions:
+
+- `buildMatrixData()`: Constructs matrix data structure from relationship map and filters
+- `sortMatrixData()`: Sorts rows and columns based on sort options
+- Cell key generation: `{rowEntityId}-{columnEntityId}`
+
+**Color Coding Algorithm:**
+
+```typescript
+// Cell background color intensity based on relationship count
+const maxCount = Math.max(...allCellCounts);
+const intensity = Math.min((count / maxCount) * 100, 100);
+const bgColor = `hsl(217, 91%, ${90 - intensity * 0.4}%)`;
+// Result: Gray (no relationships) → Light blue → Dark blue (many relationships)
+```
+
+**Practical Use Cases:**
+
+- **Faction Networks**: Set rows and columns to "faction" to see alliance patterns
+- **NPC Locations**: Rows = NPCs, Columns = Locations to track where everyone is
+- **Item Ownership**: Rows = Characters, Columns = Items to see who owns what
+- **Character Connections**: Identify PCs with most NPC relationships
+- **Gap Analysis**: Spot isolated entities with no connections
+- **Hub Identification**: Sort by connection count to find central entities
+
+**Performance Characteristics:**
+
+- Single fetch of complete relationship map on page load
+- Client-side filtering and sorting for instant updates
+- Efficient cell lookup using Map with string keys
+- Renders only visible cells (no virtualization needed for typical campaign sizes)
+- Handles hundreds of entities without performance degradation
+
+**Integration Points:**
+
+- Uses `entityRepository.getRelationshipMap()` for data source
+- Integrates with `RelateCommand` for creating relationships
+- Integrates with `EditRelationshipModal` for editing relationships
+- Shares relationship data with entity detail pages (changes sync automatically)
+- Can be extended to export matrix data or save filter presets
+
+**Accessibility:**
+
+- Semantic table structure with proper headers
+- ARIA labels for filter controls
+- Keyboard navigation for cells (tab/enter)
+- Color-blind friendly (uses both color and count badge)
+- Screen reader support for cell relationship counts
+
+**Future Enhancements:**
+
+- Save filter/sort presets for common views
+- Export matrix to CSV or image
+- Highlight specific relationship paths
+- Animated transitions when changing filters
+- Side panel showing cell details without modal
+- Heatmap overlay modes (by strength, tension, tags)
+
 #### RelationshipCard Component
 
 The RelationshipCard component provides a rich visual display for entity relationships on the entity detail page.
@@ -945,6 +1148,177 @@ The modal calls the entity repository's `updateLink()` method, which handles:
 - Intuitive bidirectional toggle with automatic reverse link management
 - Immediate validation prevents invalid configurations
 - Success notifications confirm changes were saved
+
+#### Relationship Navigation Breadcrumbs
+
+**Location:** `/src/lib/components/navigation/RelationshipBreadcrumbs.svelte`
+**Utility Functions:** `/src/lib/utils/breadcrumbUtils.ts`
+
+**Purpose:** Track and display the navigation path when users explore entity relationships, allowing them to see where they've been and navigate back through the chain.
+
+**Implementation (Issue #79):**
+
+The breadcrumb system uses URL parameters to persist the navigation trail across page loads and browser history operations.
+
+**URL Format:**
+
+```
+/entities/{type}/{id}?navPath=entityId:relationship:name:type,entityId:relationship:name:type,...
+```
+
+**Example:**
+
+```
+/entities/npc/abc123?navPath=xyz456:patron_of:Lord%20Vance:npc,def789:knows:Elena:npc
+```
+
+This shows the user navigated from Lord Vance → Elena → current entity.
+
+**Breadcrumb Utilities:**
+
+```typescript
+// Parse URL parameter into breadcrumb segments
+parseBreadcrumbPath(pathParam: string | null): BreadcrumbSegment[]
+
+// Serialize segments back to URL parameter
+serializeBreadcrumbPath(segments: BreadcrumbSegment[]): string
+
+// Truncate path to maximum length (keeps most recent)
+truncatePath(segments: BreadcrumbSegment[], maxLength: number): BreadcrumbSegment[]
+
+// Build navigation URL with updated breadcrumb path
+buildNavigationUrl(
+  targetType: string,
+  targetId: string,
+  currentSegments: BreadcrumbSegment[],
+  relationship: string,
+  currentEntity: { id: string; name: string; type: string }
+): string
+```
+
+**BreadcrumbSegment Interface:**
+
+```typescript
+interface BreadcrumbSegment {
+  entityId: string;        // Entity ID for navigation
+  relationship: string;    // Relationship type used to reach this entity
+  entityName: string;      // Display name
+  entityType: string;      // Entity type (for routing)
+}
+```
+
+**Component Features:**
+
+**Visual Display:**
+- Shows clickable entity names in navigation chain
+- Chevron separators (→) between segments
+- Current entity shown in bold (non-clickable)
+- Ellipsis (...) when path exceeds display limit
+- Clear button (X) to reset trail
+
+**Navigation:**
+- Click any breadcrumb segment to jump back to that entity
+- Preserves original navigation path in URL
+- Browser back/forward works with breadcrumb state
+- Clear button removes navPath parameter entirely
+
+**Display Limits:**
+- Component prop `maxVisible` (default: 5) controls displayed segments
+- Storage limit of 6 segments enforced by `buildNavigationUrl()`
+- Older segments auto-truncated when limit exceeded
+- Most recent segments always visible
+
+**Props:**
+
+```typescript
+interface Props {
+  segments: BreadcrumbSegment[];           // Current breadcrumb path
+  currentEntity: {                         // Entity being viewed
+    id: string;
+    name: string;
+    type: string;
+  };
+  maxVisible?: number;                     // Max segments to display (default: 5)
+  onNavigate?: (index: number) => void;    // Callback when clicking segment
+  onClear?: () => void;                    // Callback when clearing trail
+}
+```
+
+**Integration with Entity Detail Pages:**
+
+Entity detail pages (`/src/routes/entities/[type]/[id]/+page.svelte`) integrate breadcrumbs:
+
+1. Read `navPath` query parameter from URL
+2. Parse into `BreadcrumbSegment[]` using `parseBreadcrumbPath()`
+3. Display `RelationshipBreadcrumbs` component at top of page
+4. When user clicks relationship link, call `buildNavigationUrl()` to append current entity
+5. Navigate using SvelteKit's `goto()` with new URL
+
+**State Persistence:**
+
+- Breadcrumb state stored entirely in URL query parameters
+- No client-side storage needed
+- Shareable URLs preserve navigation context
+- Browser history automatically maintains breadcrumb state
+
+**URL Encoding:**
+
+Field values are URL-encoded to handle special characters:
+- Spaces encoded as `%20`
+- Apostrophes, parentheses encoded for safety
+- Colons and commas reserved as delimiters
+- Custom `encodeField()` function for consistent encoding
+
+**Accessibility:**
+
+- `<nav>` element with `aria-label="Breadcrumb navigation"`
+- `<ol>` list with `role="list"`
+- Current entity marked with `aria-current="page"`
+- Clear button has `aria-label="Clear breadcrumb trail"`
+- Keyboard navigable (all buttons focusable)
+
+**Breadcrumb Lifecycle:**
+
+**Created:**
+- User clicks relationship link in Relationships section
+- `buildNavigationUrl()` appends current entity to path
+- Navigation occurs with updated `navPath` parameter
+
+**Persisted:**
+- URL parameter survives page refreshes
+- Browser back/forward maintains breadcrumb state
+- Works across browser sessions (shareable links)
+
+**Cleared:**
+- User clicks X button (removes `navPath` parameter)
+- User navigates via search (new URL without `navPath`)
+- User clicks sidebar entity link (direct navigation)
+- User enters URL directly
+
+**Edge Cases Handled:**
+
+- Empty or malformed `navPath` parameter (returns empty array)
+- URL decoding failures (skips invalid segments)
+- Missing fields in segments (skips incomplete data)
+- Path exceeding storage limit (auto-truncates to 6)
+- Path exceeding display limit (shows ellipsis)
+- Navigation to entity already in path (no cycle detection, path grows)
+
+**Performance Characteristics:**
+
+- O(n) parsing where n = number of segments
+- O(n) serialization where n = number of segments
+- Lightweight URL operations (no database queries)
+- Negligible impact on page load performance
+- URL length limits not a concern (max 6 segments × ~200 chars = ~1200 chars)
+
+**User Benefits:**
+
+- Track complex relationship exploration paths
+- Understand how entities connect indirectly
+- Quick backtracking through relationship network
+- Visual context for current entity's relationship to visited entities
+- Reduced cognitive load when exploring deep networks
 
 ### Loading State Components
 

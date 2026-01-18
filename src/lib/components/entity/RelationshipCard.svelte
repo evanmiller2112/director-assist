@@ -11,9 +11,18 @@
 		typeDefinition?: EntityTypeDefinition;
 		onRemove?: (linkId: string) => void;
 		onEdit?: (linkId: string) => void;
+		onNavigate?: (targetEntity: BaseEntity, relationship: string) => void;
 	}
 
-	let { linkedEntity, link, isReverse, typeDefinition, onRemove, onEdit }: Props = $props();
+	let { linkedEntity, link, isReverse, typeDefinition, onRemove, onEdit, onNavigate }: Props = $props();
+
+	function handleNavigate(event: MouseEvent) {
+		if (onNavigate && linkedEntity) {
+			event.preventDefault();
+			const relationship = isReverse && link.reverseRelationship ? link.reverseRelationship : link.relationship;
+			onNavigate(linkedEntity, relationship);
+		}
+	}
 
 	const linkedTypeDefinition = $derived(
 		linkedEntity
@@ -80,6 +89,7 @@
 		<div class="flex-1 min-w-0">
 			<a
 				href="/entities/{linkedEntity.type}/{linkedEntity.id}"
+				onclick={onNavigate ? handleNavigate : undefined}
 				class="text-lg font-semibold text-slate-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
 			>
 				{linkedEntity.name}

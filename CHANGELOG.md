@@ -8,6 +8,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Relationship Matrix View at `/relationships/matrix` (Issue #73)
+  - 2D grid visualization showing relationships between entity types
+  - Select different entity types for rows and columns (e.g., NPCs vs Locations)
+  - Cells display relationship count with color-coding (gradient from gray to blue)
+  - Click cells to view existing relationships or create new ones
+  - Filter by relationship type to show only specific relationship kinds
+  - Toggle visibility of entities with no relationships
+  - Sort rows and columns by name or connection count (ascending or descending)
+  - Integrates with EditRelationshipModal for in-place editing
+  - Built with RelationshipMatrix, MatrixControls, and MatrixCell components
+  - Utility functions in matrixUtils.ts for data processing and sorting
 - Dedicated relationships management page at `/entities/[type]/[id]/relationships` (Issue #76)
   - Filter panel: filter by relationship type, target entity type, strength, or search by name
   - Sortable table with columns for target, type, relationship, strength, and actions

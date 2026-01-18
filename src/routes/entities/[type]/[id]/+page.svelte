@@ -5,6 +5,9 @@
 	import { getEntityTypeDefinition } from '$lib/config/entityTypes';
 	import { ArrowLeft, ArrowRight, Edit, Trash2, Link, Plus, X, ExternalLink, Check, X as XIcon } from 'lucide-svelte';
 	import { EntitySummary, RelateCommand, RelationshipCard, EditRelationshipModal } from '$lib/components/entity';
+	import { RelationshipBreadcrumbs } from '$lib/components/navigation';
+	import { parseBreadcrumbPath, serializeBreadcrumbPath, type BreadcrumbSegment } from '$lib/utils/breadcrumbUtils';
+	import type { BaseEntity } from '$lib/types';
 
 	const entityId = $derived($page.params.id ?? '');
 	const entityType = $derived($page.params.type ?? '');
@@ -21,6 +24,51 @@
 	const linkedEntitiesWithRelationships = $derived(
 		entity ? entitiesStore.getLinkedWithRelationships(entity.id) : []
 	);
+
+	// Breadcrumb navigation state
+	const navPathParam = $derived($page.url.searchParams.get('navPath'));
+	const breadcrumbSegments = $derived(parseBreadcrumbPath(navPathParam));
+
+	function handleRelationshipNavigate(targetEntity: BaseEntity, relationship: string) {
+		if (!entity) return;
+
+		// Build new segments array with current entity added
+		const newSegments: BreadcrumbSegment[] = [
+			...breadcrumbSegments,
+			{
+				entityId: entity.id,
+				entityName: entity.name,
+				entityType: entity.type,
+				relationship
+			}
+		];
+
+		// Truncate to max of 6 segments
+		const truncatedSegments = newSegments.length > 6 ? newSegments.slice(-6) : newSegments;
+
+		// Navigate to target with updated path
+		const navPath = serializeBreadcrumbPath(truncatedSegments);
+		goto(`/entities/${targetEntity.type}/${targetEntity.id}?navPath=${navPath}`);
+	}
+
+	function handleBreadcrumbNavigate(index: number) {
+		const segment = breadcrumbSegments[index];
+		if (!segment) return;
+
+		// Navigate to that segment with path truncated to that point
+		const newSegments = breadcrumbSegments.slice(0, index);
+		if (newSegments.length > 0) {
+			const navPath = serializeBreadcrumbPath(newSegments);
+			goto(`/entities/${segment.entityType}/${segment.entityId}?navPath=${navPath}`);
+		} else {
+			goto(`/entities/${segment.entityType}/${segment.entityId}`);
+		}
+	}
+
+	function handleClearBreadcrumbs() {
+		if (!entity) return;
+		goto(`/entities/${entity.type}/${entity.id}`);
+	}
 
 	// Helper to get entity by ID for template rendering
 	function getEntityById(id: string) {
@@ -95,6 +143,16 @@
 			<ArrowLeft class="w-4 h-4" />
 			Back to {typeDefinition?.labelPlural ?? 'Entities'}
 		</a>
+
+		<!-- Breadcrumb navigation (only shown when navigating via relationships) -->
+		{#if breadcrumbSegments.length > 0}
+			<RelationshipBreadcrumbs
+				segments={breadcrumbSegments}
+				currentEntity={{ id: entity.id, name: entity.name, type: entity.type }}
+				onNavigate={handleBreadcrumbNavigate}
+				onClear={handleClearBreadcrumbs}
+			/>
+		{/if}
 
 		<!-- Header -->
 		<div class="flex items-start justify-between mb-6">
@@ -295,6 +353,7 @@
 							{typeDefinition}
 							onRemove={handleRemoveLink}
 							onEdit={handleEditLink}
+							onNavigate={handleRelationshipNavigate}
 						/>
 					{/each}
 				</div>

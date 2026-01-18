@@ -43,6 +43,8 @@
     "@anthropic-ai/sdk": "^0.32.0",
     "dexie": "^4.0.10",
     "lucide-svelte": "^0.469.0",
-    "nanoid": "^5.0.9"
+    "nanoid": "^5.0.9",
+    "vis-data": "^8.0.3",
+    "vis-network": "^10.0.2"
   }
 }

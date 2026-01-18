@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Network diagram visualization at `/relationships/network` (Issue #74)
+  - Interactive graph showing all entities as nodes and relationships as edges using vis.js
+  - Visual styling: unique colors and shapes for each entity type (circles, squares, hexagons, diamonds, stars, triangles, boxes, ellipses)
+  - Relationship styling: edge thickness and style based on relationship strength (strong/moderate/weak), directional arrows
+  - Interactive controls: pan, zoom, drag nodes to reposition, click to select nodes or edges
+  - Filter panel: filter by entity type and relationship type to focus on specific parts of the network
+  - Detail panels: click nodes to see entity details and navigate to entity page, click edges to see relationship metadata
+  - Dark mode support: automatically adapts to system theme with appropriate colors
+  - Stats footer: shows count of filtered/total entities and relationships
+  - Dependencies: vis-network and vis-data for graph rendering
 - Dedicated relationships management page at `/entities/[type]/[id]/relationships` (Issue #76)
   - Filter panel: filter by relationship type, target entity type, strength, or search by name
   - Sortable table with columns for target, type, relationship, strength, and actions

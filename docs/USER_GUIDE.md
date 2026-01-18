@@ -282,6 +282,92 @@ On any entity's detail page, the Relationships section shows:
 - Relationship strength, tags, and tension if set
 - Quick links to view the connected entities
 
+### Visualizing Your Relationship Network
+
+Director Assist provides an interactive network diagram that shows how all entities in your campaign connect to each other. This visualization helps you see patterns, identify key figures, and understand the web of relationships at a glance.
+
+**How to Access:**
+
+Navigate to `/relationships/network` or use the navigation menu to access the network diagram.
+
+**What You'll See:**
+
+The network diagram displays your campaign as an interactive graph:
+- **Nodes (entities)** are shown as shapes positioned by force-directed physics
+- **Edges (relationships)** are lines connecting the nodes
+- **Colors and shapes** identify entity types at a glance
+
+**Entity Type Visual Styling:**
+
+Each entity type has a unique color and shape to help you distinguish them:
+
+| Entity Type | Shape | Color |
+|-------------|-------|-------|
+| Characters/NPCs/Player Profiles | Circle | Blue/Purple/Cyan |
+| Locations | Square | Green |
+| Factions | Hexagon | Orange |
+| Items | Diamond | Yellow |
+| Encounters/Sessions | Star | Red/Pink |
+| Deities | Triangle | Purple |
+| Timeline Events | Box | Teal |
+| World Rules/Campaigns | Ellipse | Gray |
+
+**Relationship Styling:**
+
+Relationships are shown with visual indicators:
+- **Arrow direction** shows the relationship direction (or no arrow for bidirectional)
+- **Line thickness** indicates relationship strength:
+  - Thick line = strong relationship
+  - Medium line = moderate relationship
+  - Thin line = weak relationship
+- **Line style** varies based on relationship metadata
+
+**Interactive Controls:**
+
+- **Pan**: Click and drag on empty space to move the view
+- **Zoom**: Use mouse wheel or pinch gestures to zoom in/out
+- **Drag nodes**: Click and drag nodes to reposition them
+- **Select nodes**: Click a node to see details in the right panel
+- **Select relationships**: Click an edge (line) to see relationship details
+
+**Filtering the Network:**
+
+Use the left sidebar to filter what's displayed:
+
+1. **Entity Type Filter**: Show only specific entity types (e.g., only NPCs and Locations)
+2. **Relationship Type Filter**: Show only specific relationship types (e.g., only "allied_with" relationships)
+3. **Combine filters**: Use both filters together for highly focused views
+
+The network automatically updates to show only matching entities and relationships. The stats footer shows how many items are currently displayed.
+
+**Detail Panels:**
+
+Click on any node or edge to see details in the right sidebar:
+
+**Node Details:**
+- Entity name and type
+- Number of relationships
+- Navigate button to view full entity page
+
+**Edge Details:**
+- Source and target entities
+- Relationship type
+- Bidirectional status
+- Relationship strength (if set)
+- Navigate buttons to view either connected entity
+
+**Dark Mode:**
+
+The network diagram automatically adapts to your system theme, providing appropriate colors for both light and dark modes.
+
+**Tips for Using the Network:**
+
+- Use entity type filtering to focus on social networks (characters/NPCs/factions)
+- Filter by relationship type to trace specific kinds of connections (e.g., "member_of" to see org charts)
+- Drag nodes to organize the layout manually for better clarity
+- Look for highly connected nodes to identify important campaign figures
+- Use the network to find indirect connections you might have missed
+
 ### Managing Relationships (Advanced)
 
 For comprehensive relationship management, use the dedicated relationships page. This page provides powerful tools for viewing, filtering, and managing all relationships for an entity in one place.

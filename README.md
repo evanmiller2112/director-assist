@@ -45,7 +45,7 @@ The app builds to a static site in the `build` directory. Deploy to any static h
 ### First Steps
 
 1. Create a campaign with a name, system (Draw Steel, D&D 5e, or System Agnostic), and setting description
-2. Add your Anthropic API key in Settings to enable AI features (optional)
+2. Add an AI provider API key in Settings to enable AI features (optional)
 3. Start adding entities using the sidebar or dashboard
 4. Link entities together to build relationships
 5. Use the search bar to find anything quickly
@@ -76,7 +76,7 @@ Commands adapt to your current page. Entity-specific commands like `/relate` and
 
 ### AI-Powered Content Generation
 
-Director Assist can generate content for individual fields using Claude AI:
+Director Assist can generate content for individual fields using AI from multiple providers:
 
 1. Fill in some basic information about your entity (name, description, tags)
 2. Click the sparkle button next to any text field
@@ -88,7 +88,14 @@ Director Assist can generate content for individual fields using Claude AI:
 - Multi-line textarea fields
 - Rich text (markdown) fields
 
-**Requires:** Anthropic API key (add in Settings)
+**Supported AI Providers:**
+- Anthropic (Claude models)
+- OpenAI (GPT models)
+- Google (Gemini models)
+- Mistral (Mistral models)
+- Ollama (local models)
+
+**Requires:** API key for your chosen provider (add in Settings)
 
 ### Entity Types
 
@@ -116,7 +123,7 @@ Built with modern web technologies for a fast, offline-first experience:
 - **TypeScript** - Type-safe development
 - **Tailwind CSS** - Utility-first styling
 - **Dexie.js** - IndexedDB wrapper for local storage
-- **Anthropic SDK** - Claude AI integration (scaffolded)
+- **Vercel AI SDK** - Multi-provider AI integration (Anthropic, OpenAI, Google, Mistral, Ollama)
 
 See [ARCHITECTURE.md](./docs/ARCHITECTURE.md) for detailed technical documentation.
 

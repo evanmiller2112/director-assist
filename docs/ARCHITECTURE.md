@@ -2773,7 +2773,235 @@ When set to "system":
 
 ## AI Integration
 
-Director Assist uses Claude AI (via the Anthropic SDK) to generate content for entity fields.
+Director Assist provides flexible AI integration through a multi-provider abstraction layer that supports Anthropic (Claude), OpenAI (GPT), Google (Gemini), Mistral, and Ollama (local models).
+
+### Multi-Provider Architecture
+
+**Location:** `/src/lib/ai/`
+
+The AI module provides a unified interface for text generation across multiple AI providers. Applications use the same API regardless of which provider is active.
+
+**Key Design Principles:**
+- Provider-agnostic client API
+- Centralized configuration and settings storage
+- Consistent error handling across providers
+- Support for both streaming and non-streaming generation
+
+#### Module Structure
+
+```
+src/lib/ai/
+├── index.ts              # Public API exports
+├── client.ts             # Unified generate() and generateStream() functions
+├── providers/            # Provider implementations
+│   ├── index.ts          # Provider registry
+│   ├── types.ts          # Core TypeScript interfaces
+│   ├── anthropic.ts      # Anthropic (Claude) provider
+│   ├── openai.ts         # OpenAI (GPT) provider
+│   ├── google.ts         # Google (Gemini) provider
+│   ├── mistral.ts        # Mistral provider
+│   └── ollama.ts         # Ollama (local models) provider
+└── config/
+    ├── index.ts          # Configuration utilities
+    └── storage.ts        # Settings persistence (localStorage + IndexedDB)
+```
+
+#### Core API
+
+**Client Functions:**
+
+```typescript
+// Generate text with the active provider and model
+async function generate(
+  prompt: string,
+  options?: GenerationOptions
+): Promise<GenerationResult>
+
+// Generate text with streaming
+async function generateStream(
+  prompt: string,
+  options?: GenerationOptions
+): Promise<GenerationResult>
+```
+
+**Generation Options:**
+
+```typescript
+interface GenerationOptions {
+  maxTokens?: number;           // Maximum tokens to generate
+  temperature?: number;         // 0-1, controls randomness
+  systemPrompt?: string;        // System instructions
+  onStream?: StreamCallback;    // Callback for streaming chunks
+}
+```
+
+**Generation Result:**
+
+```typescript
+interface GenerationResult {
+  success: boolean;             // Whether generation succeeded
+  content?: string;             // Generated text (if successful)
+  error?: string;              // Error message (if failed)
+  usage?: {                    // Token usage (if available)
+    promptTokens: number;
+    completionTokens: number;
+  };
+}
+```
+
+#### Provider Registry
+
+**Location:** `/src/lib/ai/providers/index.ts`
+
+The provider registry manages all available AI providers and their models.
+
+**Key Functions:**
+
+```typescript
+// Get provider adapter by name
+getProvider(provider: AIProvider): ProviderAdapter
+
+// Get available models for a provider
+getProviderModels(provider: AIProvider): AIModelInfo[]
+
+// Create a model instance
+getProviderModel(
+  provider: AIProvider,
+  modelId: string,
+  config: ProviderConfig
+): LanguageModel
+
+// Check if provider is configured
+isProviderConfigured(provider: AIProvider): boolean
+```
+
+**Supported Providers:**
+
+| Provider | Type | Model Count | Notes |
+|----------|------|-------------|-------|
+| Anthropic | Cloud API | 6 | Claude models (Opus, Sonnet, Haiku) |
+| OpenAI | Cloud API | 9 | GPT models (4.5, 4, 3.5) |
+| Google | Cloud API | 5 | Gemini models (Pro, Flash) |
+| Mistral | Cloud API | 6 | Mistral models (Large, Small, Nemo) |
+| Ollama | Local | 1 | Self-hosted local models |
+
+**Total Models:** 26+ models across 5 providers
+
+#### Configuration and Storage
+
+**Location:** `/src/lib/ai/config/storage.ts`
+
+Settings are stored in two locations based on sensitivity:
+
+**localStorage (API Keys):**
+- Keys: `ai-provider-{provider}-apikey`
+- Values: Encrypted API keys
+- Not included in backup/restore
+- Browser-only storage
+
+**IndexedDB (Provider Settings):**
+- Stored in `aiSettings` table
+- Includes: active provider, active model, provider configurations
+- Included in backup/restore (without API keys)
+- Synchronized across application
+
+**Key Functions:**
+
+```typescript
+// API key management (localStorage)
+getApiKey(provider: AIProvider): string | null
+setApiKey(provider: AIProvider, key: string): void
+deleteApiKey(provider: AIProvider): void
+
+// Provider settings (IndexedDB)
+getProviderSettings(): Promise<AIProviderSettings>
+setProviderSettings(settings: AIProviderSettings): Promise<void>
+getAISettings(): Promise<AIProviderSettings>
+```
+
+**Settings Structure:**
+
+```typescript
+interface AIProviderSettings {
+  activeProvider: AIProvider;              // Currently selected provider
+  activeModel: string;                     // Currently selected model ID
+  providers: Record<AIProvider, {          // Per-provider configuration
+    provider: AIProvider;
+    apiKey?: string;                       // API key (not in IndexedDB)
+    baseUrl?: string;                      // Base URL (Ollama only)
+    enabled: boolean;                      // Whether provider is enabled
+  }>;
+}
+```
+
+#### Model Information
+
+Each model includes metadata for UI display and capability detection:
+
+```typescript
+interface AIModelInfo {
+  id: string;                    // Model identifier (e.g., 'claude-3-5-sonnet-20241022')
+  displayName: string;           // Human-readable name
+  provider: AIProvider;          // Provider this model belongs to
+  tier: ModelTier;              // 'fast', 'balanced', or 'powerful'
+  capabilities: {
+    streaming: boolean;          // Supports streaming responses
+    maxTokens: number;           // Maximum output tokens
+    supportsTools: boolean;      // Supports function/tool calling
+  };
+}
+```
+
+**Model Tiers:**
+- **fast**: Quick responses, lower cost (e.g., Claude Haiku, GPT-3.5)
+- **balanced**: Good mix of speed and capability (e.g., Claude Sonnet, GPT-4)
+- **powerful**: Best quality, slower/more expensive (e.g., Claude Opus, GPT-4.5)
+
+#### Error Handling
+
+The client provides consistent error handling across all providers:
+
+| Error Type | Status Code | User Message |
+|------------|-------------|--------------|
+| Authentication | 401 | "Invalid API key or authentication failed" |
+| Rate Limit | 429 | "Rate limit exceeded - please try again later" |
+| Server Error | 500 | "Server error - please try again later" |
+| Not Configured | - | "Provider {name} is not configured (API key missing)" |
+| Not Enabled | - | "Provider {name} is not enabled" |
+
+**Error Propagation:**
+
+Errors are returned as `GenerationResult` objects with `success: false` rather than throwing exceptions:
+
+```typescript
+// Error result
+{
+  success: false,
+  error: "Invalid API key or authentication failed"
+}
+
+// Success result
+{
+  success: true,
+  content: "Generated text...",
+  usage: { promptTokens: 100, completionTokens: 50 }
+}
+```
+
+#### Dependencies
+
+The AI module uses the Vercel AI SDK for unified provider access:
+
+```json
+{
+  "ai": "^4.2.1",
+  "@ai-sdk/anthropic": "^1.0.10",
+  "@ai-sdk/openai": "^1.0.10",
+  "@ai-sdk/google": "^1.0.10",
+  "@ai-sdk/mistral": "^1.0.6",
+  "ollama-ai-provider": "^1.0.6"
+}
+```
 
 ### Implemented Features
 
@@ -2814,12 +3042,10 @@ User creates NPC, fills in:
 User clicks generate on "Personality" field:
   1. Service collects: name, description, role, campaign context
   2. Builds prompt: "Generate personality for NPC named Grimwald..."
-  3. Calls Claude API with context
+  3. Calls active AI provider (e.g., Claude, GPT, or Gemini)
   4. Returns: "Quirky and forgetful, but fiercely intelligent..."
   5. Inserts generated text into Personality field
 ```
-
-### Architecture
 
 #### Field Generation Service
 
@@ -2885,92 +3111,10 @@ Hidden fields (with `section: 'hidden'`) are automatically excluded from AI cont
 - `/src/routes/entities/[type]/[id]/edit/+page.svelte`
 
 **Configuration:**
-- API key stored in localStorage (key: 'dm-assist-api-key')
-- Model selection via `modelService.ts`
+- API keys stored in localStorage (key: `ai-provider-{provider}-apikey`)
+- Provider settings stored in IndexedDB (`aiSettings` table)
+- Active provider and model selected by user in Settings UI (planned)
 - Max tokens: 1024 (configurable per field type)
-
-#### Model Service
-
-**Location:** `/src/lib/services/modelService.ts`
-
-**Purpose:** Manages AI model selection with automatic fallback to the latest Claude Haiku model.
-
-**Key Functions:**
-
-```typescript
-// Fetch available models from Anthropic API (with 1-hour cache)
-fetchModels(apiKey: string): Promise<ModelInfo[]>
-
-// Get the currently selected model ID
-getSelectedModel(): string
-
-// Save user's model selection
-setSelectedModel(modelId: string): void
-
-// Extract date from model ID for comparison
-extractDateFromModelId(id: string): number | null
-
-// Find latest Haiku model from a list
-findLatestHaikuModel(models: ModelInfo[]): ModelInfo | null
-
-// Clear cached models
-clearModelsCache(): void
-
-// Get fallback models when API unavailable
-getFallbackModels(): ModelInfo[]
-```
-
-**Model Selection Priority:**
-
-The service uses a three-tier priority system for selecting the default model:
-
-1. **User Selection** (highest priority): If the user explicitly selected a model, always use that choice
-2. **Auto-selected Latest Haiku**: Find the newest Haiku model from cached API data by comparing dates in model IDs
-3. **Hardcoded Fallback** (lowest priority): Use `claude-haiku-4-5-20250514` if API unavailable
-
-**Auto-Selection Logic:**
-
-When no user selection exists, the service automatically finds the latest Haiku model by:
-
-1. Filtering models to only Haiku variants (case-insensitive: "haiku", "HAIKU", "Haiku")
-2. Sorting by multiple criteria (highest priority first):
-   - Date extracted from model ID (descending)
-   - `created_at` timestamp if no ID date available
-   - Reverse alphabetical by ID as final tiebreaker
-3. Returning the top result
-
-**Date Extraction:**
-
-Model IDs contain 8-digit dates (YYYYMMDD format). The service uses regex to extract these dates:
-- Pattern: `/(?<!\d)(\d{8})(?!\d)/`
-- Example: `claude-haiku-4-5-20250514` → `20250514`
-- Used to determine which model is newer
-
-**Caching Strategy:**
-
-- Models are cached in localStorage for 1 hour to reduce API calls
-- Cache key: `dm-assist-models-cache`
-- Cache cleared automatically when API key changes
-- Cache format: `{ models: ModelInfo[], timestamp: number }`
-
-**Benefits:**
-
-- Users always get the latest Haiku model without app updates
-- Manual selections always respected (never overridden)
-- Graceful degradation when API unavailable
-- Reduces API calls through intelligent caching
-
-### Error Handling
-
-The service provides user-friendly error messages for common scenarios:
-
-| Error | User Message |
-|-------|--------------|
-| No API key | "API key not configured. Please add your Anthropic API key in Settings." |
-| Invalid API key (401) | "Invalid API key. Please check your API key in Settings." |
-| Rate limit (429) | "Rate limit exceeded. Please wait a moment and try again." |
-| Network/API error | "Failed to generate field: [error message]" |
-| Empty response | "AI returned empty content" |
 
 ### Prompt Engineering
 
@@ -3001,12 +3145,12 @@ The service provides user-friendly error messages for common scenarios:
 
 **Planned Enhancements:**
 
-1. **Full-Entity Generation**: Create entire entities at once
-2. **Chat Interface**: Conversational AI for campaign planning
-3. **Context Builder**: Select specific entities for AI context
-4. **Suggestion System**: AI-generated plot hooks and campaign ideas
-5. **Consistency Checker**: Identify conflicts in campaign data
-6. **Streaming Responses**: Real-time text generation
+1. **Settings UI**: Provider selection and model configuration interface
+2. **Full-Entity Generation**: Create entire entities at once
+3. **Chat Interface**: Conversational AI for campaign planning
+4. **Context Builder**: Select specific entities for AI context
+5. **Suggestion System**: AI-generated plot hooks and campaign ideas
+6. **Consistency Checker**: Identify conflicts in campaign data
 7. **Custom Prompts**: User-defined prompt templates
 8. **Entity Relationships**: AI suggests logical connections between entities
 

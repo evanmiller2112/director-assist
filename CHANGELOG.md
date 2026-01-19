@@ -171,6 +171,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `getCacheStatus()` checks if cached summary is valid or stale
   - `getStats()` provides cache usage statistics and monitoring
   - Database version 3 schema includes cache table with composite key index
+- "Include relationship context" checkbox on entity edit forms (Issue #59)
+  - Optional checkbox appears when entity has relationships and AI is enabled
+  - Shows relationship count and estimated token cost when enabled
+  - Includes information about related entities in AI generation context
+  - Default state controlled by "Include Related Entities" setting
+  - Privacy protected: hidden fields from related entities are excluded
+  - Provides richer, more contextually aware AI-generated content
 
 ### Fixed
 - Resolved Svelte 5 state_unsafe_mutation error in entity pages (Issue #98)

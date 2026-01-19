@@ -747,10 +747,10 @@ When generating content with AI, Director Assist can include information about r
 **Available Settings:**
 
 **Include Related Entities**
-- Checkbox to enable or disable relationship context in AI generation
+- Checkbox to enable or disable relationship context in AI generation by default
 - Default: On
-- When enabled, AI sees information about entities connected to the one you're generating content for
-- When disabled, AI only sees the current entity's data
+- When enabled, the "Include relationship context" checkbox on entity edit forms is checked by default
+- When disabled, the checkbox is unchecked by default (you can still enable it manually per entity)
 
 **Maximum Related Entities**
 - Controls how many related entities to include in generation context
@@ -793,15 +793,18 @@ When generating content with AI, Director Assist can include information about r
 - Lower maximum related entities to 5-10
 - Decrease context budget to 20-30%
 - Keep auto-generate summaries disabled
+- Disable "Include Related Entities" to turn off relationship context by default
 
 **Balance quality and cost:**
-- Use default settings (20 entities, 50% budget, summaries off)
+- Use default settings (20 entities, 50% budget, summaries off, relationship context enabled)
 - Adjust based on your specific needs
 
 **Technical Notes:**
 
 - Settings are stored in browser localStorage
 - Changes take effect immediately for new generation requests
+- The "Include Related Entities" setting controls the default state of the checkbox on entity forms
+- You can override the default on a per-entity basis when editing
 - Settings persist across browser sessions
 - Not included in backups (local preference only)
 
@@ -934,9 +937,48 @@ When generating content, the AI looks at:
 - Other fields you've already filled in
 - Your campaign setting and system
 - Field hints and placeholders
+- Related entities (if enabled)
 
 **Example**:
 If you create an NPC named "Grimwald the Wise" with the description "elderly wizard" and role "apothecary owner", then click generate on the Personality field, the AI will create a personality that fits an elderly wizard who runs an apothecary.
+
+### Including Relationship Context in Generation
+
+When editing an entity that has relationships, you can choose to include information about related entities in AI generation. This produces more contextually aware content that fits naturally with the rest of your campaign.
+
+**How to Use:**
+
+When editing an entity with relationships, a checkbox appears below the tags field:
+
+- **Include relationship context** - When enabled, the AI receives information about entities connected to the one you're editing
+- The checkbox shows how many relationships exist
+- When enabled, displays an estimated token cost
+- Only appears when the entity has relationships and AI features are enabled
+
+**What Gets Included:**
+
+When relationship context is enabled:
+- Names and descriptions of related entities
+- Relationship types (how entities are connected)
+- Non-hidden fields from related entities
+- Up to the maximum number of entities configured in Settings (default: 20)
+
+**What's Protected:**
+
+Hidden fields (secrets) from related entities are never included, protecting your campaign secrets.
+
+**Example:**
+
+Generating personality for an NPC who is:
+- Allied with "The Silver Circle" faction
+- Enemy of "Lord Vance"
+- Located at "The Crooked Wand" tavern
+
+With relationship context enabled, the AI generates a personality that reflects these connections, such as loyalty to the faction, hostility toward Lord Vance, and familiarity with the tavern setting.
+
+**Default Behavior:**
+
+The default setting for this checkbox is configured in Settings under "Relationship Context". You can set whether relationship context is included by default for all entities.
 
 ### Privacy and AI
 
@@ -1242,6 +1284,12 @@ Don't like what the AI created? Just click generate again for a new version.
 
 **Provide Good Context**:
 The more information you provide in name, description, and tags, the better the AI's output.
+
+**Use Relationship Context Strategically**:
+- Enable relationship context for entities deeply connected to your campaign (faction leaders, main NPCs, important locations)
+- Consider disabling it for isolated entities or quick one-offs to save tokens
+- Create relationships before generating to take full advantage of contextual awareness
+- Review the estimated token cost to manage API usage
 
 ### Performance Tips
 

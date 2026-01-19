@@ -38,6 +38,8 @@ export interface FieldGenerationContext {
 	};
 	/** Campaign information for additional context */
 	campaignContext?: { name: string; setting: string; system: string };
+	/** Relationship context for this entity (Issue #59) */
+	relationshipContext?: string;
 }
 
 /**
@@ -109,7 +111,7 @@ export function isGeneratableField(fieldTypeOrDefinition: FieldType | FieldDefin
  * @private
  */
 function buildFieldPrompt(context: FieldGenerationContext): string {
-	const { entityType, typeDefinition, targetField, currentValues, campaignContext } = context;
+	const { entityType, typeDefinition, targetField, currentValues, campaignContext, relationshipContext } = context;
 
 	// Build context from existing values (EXCLUDING hidden fields)
 	let existingContext = '';
@@ -153,6 +155,12 @@ function buildFieldPrompt(context: FieldGenerationContext): string {
 `;
 	}
 
+	// Build relationship context (Issue #59)
+	let relationshipInfo = '';
+	if (relationshipContext && relationshipContext.trim()) {
+		relationshipInfo = `\nRelationships:\n${relationshipContext}\n`;
+	}
+
 	// Build field-specific hints
 	let fieldHints = '';
 	if (targetField.placeholder) {
@@ -167,7 +175,7 @@ function buildFieldPrompt(context: FieldGenerationContext): string {
 
 	return `You are a TTRPG campaign assistant. Generate content for a single field of a ${entityLabel}.
 ${campaignInfo}
-${existingContext ? `\nExisting Context:\n${existingContext}` : ''}
+${existingContext ? `\nExisting Context:\n${existingContext}` : ''}${relationshipInfo}
 FIELD TO GENERATE: ${fieldLabel} (${targetField.key})
 Field Type: ${targetField.type}${fieldHints}
 
@@ -321,6 +329,8 @@ export interface CoreFieldGenerationContext {
 	};
 	/** Campaign information for additional context */
 	campaignContext?: { name: string; setting: string; system: string };
+	/** Relationship context for this entity (Issue #59) */
+	relationshipContext?: string;
 }
 
 /**
@@ -334,7 +344,7 @@ export interface CoreFieldGenerationContext {
  * @private
  */
 function buildSummaryPrompt(context: CoreFieldGenerationContext): string {
-	const { entityType, typeDefinition, currentValues, campaignContext } = context;
+	const { entityType, typeDefinition, currentValues, campaignContext, relationshipContext } = context;
 
 	// Build context from existing values (EXCLUDING hidden fields)
 	let existingContext = '';
@@ -378,11 +388,17 @@ function buildSummaryPrompt(context: CoreFieldGenerationContext): string {
 `;
 	}
 
+	// Build relationship context (Issue #59)
+	let relationshipInfo = '';
+	if (relationshipContext && relationshipContext.trim()) {
+		relationshipInfo = `\nRelationships:\n${relationshipContext}\n`;
+	}
+
 	const entityLabel = typeDefinition.label;
 
 	return `You are a TTRPG campaign assistant. Generate a brief summary for a ${entityLabel}.
 ${campaignInfo}
-${existingContext ? `\nExisting Context:\n${existingContext}` : ''}
+${existingContext ? `\nExisting Context:\n${existingContext}` : ''}${relationshipInfo}
 TASK: Generate a concise summary (1-2 sentences) that captures the essence of this ${entityLabel}.
 
 IMPORTANT RULES:
@@ -406,7 +422,7 @@ Respond with ONLY the summary text (no JSON, no markdown formatting, no explanat
  * @private
  */
 function buildDescriptionPrompt(context: CoreFieldGenerationContext): string {
-	const { entityType, typeDefinition, currentValues, campaignContext } = context;
+	const { entityType, typeDefinition, currentValues, campaignContext, relationshipContext } = context;
 
 	// Build context from existing values (EXCLUDING hidden fields)
 	let existingContext = '';
@@ -450,11 +466,17 @@ function buildDescriptionPrompt(context: CoreFieldGenerationContext): string {
 `;
 	}
 
+	// Build relationship context (Issue #59)
+	let relationshipInfo = '';
+	if (relationshipContext && relationshipContext.trim()) {
+		relationshipInfo = `\nRelationships:\n${relationshipContext}\n`;
+	}
+
 	const entityLabel = typeDefinition.label;
 
 	return `You are a TTRPG campaign assistant. Generate a detailed description for a ${entityLabel}.
 ${campaignInfo}
-${existingContext ? `\nExisting Context:\n${existingContext}` : ''}
+${existingContext ? `\nExisting Context:\n${existingContext}` : ''}${relationshipInfo}
 TASK: Generate a rich, evocative description (1-3 paragraphs) for this ${entityLabel}.
 
 IMPORTANT RULES:

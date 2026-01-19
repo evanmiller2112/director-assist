@@ -7,6 +7,8 @@ export interface GenerationContext {
 	description?: string;
 	tags?: string[];
 	fields: Record<string, FieldValue>;
+	/** Relationship context for this entity (Issue #59) */
+	relationshipContext?: string;
 }
 
 export interface GeneratedEntity {
@@ -78,9 +80,15 @@ function buildGenerationPrompt(
 `;
 	}
 
+	// Build relationship context (Issue #59)
+	let relationshipInfo = '';
+	if (context.relationshipContext && context.relationshipContext.trim()) {
+		relationshipInfo = `\nRelationships:\n${context.relationshipContext}\n`;
+	}
+
 	return `You are a TTRPG campaign assistant generating a ${typeName} for a tabletop roleplaying campaign.
 ${campaignInfo}
-${existingContext ? `\nThe user has provided some initial context:\n${existingContext}` : '\nGenerate a complete, original entity from scratch.'}
+${existingContext ? `\nThe user has provided some initial context:\n${existingContext}` : '\nGenerate a complete, original entity from scratch.'}${relationshipInfo}
 
 Generate a complete ${typeName} with creative, evocative content. Fill in ALL fields appropriately.
 

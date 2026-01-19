@@ -157,4 +157,20 @@
 	.command-item.selected {
 		@apply bg-slate-100 dark:bg-slate-700;
 	}
+
+	/* Drag and drop styles */
+	.drag-handle {
+		@apply cursor-grab active:cursor-grabbing min-w-[44px] min-h-[44px] flex items-center justify-center;
+		touch-action: none;
+	}
+
+	/* Apply to dragging items via svelte-dnd-action */
+	:global([aria-grabbed='true']) {
+		@apply opacity-50 shadow-lg;
+	}
+
+	/* Drop zone indicator */
+	:global(.dnd-dragging) {
+		@apply transition-transform duration-200;
+	}
 }

@@ -300,3 +300,386 @@ export async function generateField(context: FieldGenerationContext): Promise<Fi
 		};
 	}
 }
+
+/**
+ * Core field generation context (subset of FieldGenerationContext).
+ * Used for summary and description generation where we don't need a target field.
+ */
+export interface CoreFieldGenerationContext {
+	/** The type of entity being created/edited */
+	entityType: EntityType;
+	/** The complete type definition including all field definitions */
+	typeDefinition: EntityTypeDefinition;
+	/** Current values from the form (used as context) */
+	currentValues: {
+		name?: string;
+		description?: string;
+		summary?: string;
+		tags?: string[];
+		notes?: string;
+		fields: Record<string, FieldValue>;
+	};
+	/** Campaign information for additional context */
+	campaignContext?: { name: string; setting: string; system: string };
+}
+
+/**
+ * Build a prompt for generating summary content.
+ *
+ * The summary is meant to be brief (1-2 sentences) and provide a quick
+ * overview of the entity. It excludes hidden fields from context.
+ *
+ * @param context - The core field generation context
+ * @returns A formatted prompt string for the AI
+ * @private
+ */
+function buildSummaryPrompt(context: CoreFieldGenerationContext): string {
+	const { entityType, typeDefinition, currentValues, campaignContext } = context;
+
+	// Build context from existing values (EXCLUDING hidden fields)
+	let existingContext = '';
+
+	if (currentValues.name) {
+		existingContext += `Name: ${currentValues.name}\n`;
+	}
+
+	if (currentValues.description) {
+		existingContext += `Description: ${currentValues.description}\n`;
+	}
+
+	if (currentValues.tags && currentValues.tags.length > 0) {
+		existingContext += `Tags: ${currentValues.tags.join(', ')}\n`;
+	}
+
+	// Add other filled fields (excluding hidden fields)
+	for (const [key, value] of Object.entries(currentValues.fields)) {
+		if (value !== null && value !== undefined && value !== '') {
+			// Find the field definition to check if it's hidden
+			const fieldDef = typeDefinition.fieldDefinitions.find((f) => f.key === key);
+
+			// Skip hidden fields
+			if (fieldDef?.section === 'hidden') {
+				continue;
+			}
+
+			const label = fieldDef?.label ?? key;
+			const displayValue = Array.isArray(value) ? value.join(', ') : String(value);
+			existingContext += `${label}: ${displayValue}\n`;
+		}
+	}
+
+	// Build campaign context
+	let campaignInfo = '';
+	if (campaignContext) {
+		campaignInfo = `\nCampaign Context:
+- Campaign: ${campaignContext.name}
+- Setting: ${campaignContext.setting}
+- System: ${campaignContext.system}
+`;
+	}
+
+	const entityLabel = typeDefinition.label;
+
+	return `You are a TTRPG campaign assistant. Generate a brief summary for a ${entityLabel}.
+${campaignInfo}
+${existingContext ? `\nExisting Context:\n${existingContext}` : ''}
+TASK: Generate a concise summary (1-2 sentences) that captures the essence of this ${entityLabel}.
+
+IMPORTANT RULES:
+1. Keep it BRIEF - maximum 1-2 sentences
+2. Focus on the most distinctive or important aspects
+3. Make it memorable and game-ready
+4. Use the existing context to inform the summary
+5. Do NOT include labels or explanations, just the raw summary text
+
+Respond with ONLY the summary text (no JSON, no markdown formatting, no explanation). Just the plain text summary.`;
+}
+
+/**
+ * Build a prompt for generating description content.
+ *
+ * The description is meant to be detailed (multiple paragraphs) and provide
+ * rich, evocative content. It excludes hidden fields from context.
+ *
+ * @param context - The core field generation context
+ * @returns A formatted prompt string for the AI
+ * @private
+ */
+function buildDescriptionPrompt(context: CoreFieldGenerationContext): string {
+	const { entityType, typeDefinition, currentValues, campaignContext } = context;
+
+	// Build context from existing values (EXCLUDING hidden fields)
+	let existingContext = '';
+
+	if (currentValues.name) {
+		existingContext += `Name: ${currentValues.name}\n`;
+	}
+
+	if (currentValues.summary) {
+		existingContext += `Summary: ${currentValues.summary}\n`;
+	}
+
+	if (currentValues.tags && currentValues.tags.length > 0) {
+		existingContext += `Tags: ${currentValues.tags.join(', ')}\n`;
+	}
+
+	// Add other filled fields (excluding hidden fields)
+	for (const [key, value] of Object.entries(currentValues.fields)) {
+		if (value !== null && value !== undefined && value !== '') {
+			// Find the field definition to check if it's hidden
+			const fieldDef = typeDefinition.fieldDefinitions.find((f) => f.key === key);
+
+			// Skip hidden fields
+			if (fieldDef?.section === 'hidden') {
+				continue;
+			}
+
+			const label = fieldDef?.label ?? key;
+			const displayValue = Array.isArray(value) ? value.join(', ') : String(value);
+			existingContext += `${label}: ${displayValue}\n`;
+		}
+	}
+
+	// Build campaign context
+	let campaignInfo = '';
+	if (campaignContext) {
+		campaignInfo = `\nCampaign Context:
+- Campaign: ${campaignContext.name}
+- Setting: ${campaignContext.setting}
+- System: ${campaignContext.system}
+`;
+	}
+
+	const entityLabel = typeDefinition.label;
+
+	return `You are a TTRPG campaign assistant. Generate a detailed description for a ${entityLabel}.
+${campaignInfo}
+${existingContext ? `\nExisting Context:\n${existingContext}` : ''}
+TASK: Generate a rich, evocative description (1-3 paragraphs) for this ${entityLabel}.
+
+IMPORTANT RULES:
+1. Write 1-3 paragraphs of atmospheric, game-ready content
+2. Make it vivid and engaging for a Game Master to use at the table
+3. Expand on the existing context (especially the summary if provided)
+4. Include sensory details and distinctive characteristics
+5. Make it memorable and interesting for players
+6. Do NOT include labels or explanations, just the raw description text
+
+Respond with ONLY the description text (no JSON, no markdown formatting, no explanation). Just the plain text description.`;
+}
+
+/**
+ * Generate summary content for an entity using AI.
+ *
+ * Creates a brief (1-2 sentence) summary that captures the essence of the entity.
+ * This is a convenience function specifically for the summary field.
+ *
+ * @param context - The core field generation context (without target field)
+ * @returns A promise resolving to the generation result (success with value or error)
+ *
+ * @example
+ * ```typescript
+ * const result = await generateSummaryContent({
+ *   entityType: 'npc',
+ *   typeDefinition: npcTypeDefinition,
+ *   currentValues: {
+ *     name: 'Grimwald the Wise',
+ *     description: 'An elderly wizard',
+ *     fields: { role: 'Sage and Advisor' }
+ *   },
+ *   campaignContext: {
+ *     name: 'Rise of Dragons',
+ *     setting: 'High Fantasy',
+ *     system: 'Draw Steel'
+ *   }
+ * });
+ *
+ * if (result.success) {
+ *   console.log(result.value); // Brief summary text
+ * }
+ * ```
+ */
+export async function generateSummaryContent(
+	context: CoreFieldGenerationContext
+): Promise<FieldGenerationResult> {
+	// Check for API key
+	const apiKey = typeof window !== 'undefined' ? localStorage.getItem('dm-assist-api-key') : null;
+
+	if (!apiKey) {
+		return {
+			success: false,
+			error: 'API key not configured. Please add your Anthropic API key in Settings.'
+		};
+	}
+
+	// Build the prompt
+	const prompt = buildSummaryPrompt(context);
+
+	try {
+		// Call Anthropic API
+		const client = new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
+
+		const response = await client.messages.create({
+			model: getSelectedModel(),
+			max_tokens: 512,
+			messages: [
+				{
+					role: 'user',
+					content: prompt
+				}
+			]
+		});
+
+		// Extract text content from response
+		const textContent = response.content.find((c) => c.type === 'text');
+		if (!textContent || textContent.type !== 'text') {
+			return {
+				success: false,
+				error: 'Unexpected response format from AI'
+			};
+		}
+
+		// Return the generated value
+		const value = textContent.text.trim();
+
+		if (!value) {
+			return {
+				success: false,
+				error: 'AI returned empty content'
+			};
+		}
+
+		return {
+			success: true,
+			value
+		};
+	} catch (error) {
+		// Handle API errors gracefully
+		if (error && typeof error === 'object' && 'status' in error) {
+			const status = (error as { status: number }).status;
+			if (status === 401) {
+				return {
+					success: false,
+					error: 'Invalid API key. Please check your API key in Settings.'
+				};
+			} else if (status === 429) {
+				return {
+					success: false,
+					error: 'Rate limit exceeded. Please wait a moment and try again.'
+				};
+			}
+		}
+
+		const message = error instanceof Error ? error.message : 'Unknown error';
+		return {
+			success: false,
+			error: `Failed to generate summary: ${message}`
+		};
+	}
+}
+
+/**
+ * Generate description content for an entity using AI.
+ *
+ * Creates a detailed (multiple paragraph) description with evocative,
+ * game-ready content. This is a convenience function specifically for
+ * the description field.
+ *
+ * @param context - The core field generation context (without target field)
+ * @returns A promise resolving to the generation result (success with value or error)
+ *
+ * @example
+ * ```typescript
+ * const result = await generateDescriptionContent({
+ *   entityType: 'location',
+ *   typeDefinition: locationTypeDefinition,
+ *   currentValues: {
+ *     name: 'Dragon\'s Peak',
+ *     summary: 'A towering mountain where dragons nest',
+ *     fields: {}
+ *   }
+ * });
+ *
+ * if (result.success) {
+ *   console.log(result.value); // Detailed description text
+ * }
+ * ```
+ */
+export async function generateDescriptionContent(
+	context: CoreFieldGenerationContext
+): Promise<FieldGenerationResult> {
+	// Check for API key
+	const apiKey = typeof window !== 'undefined' ? localStorage.getItem('dm-assist-api-key') : null;
+
+	if (!apiKey) {
+		return {
+			success: false,
+			error: 'API key not configured. Please add your Anthropic API key in Settings.'
+		};
+	}
+
+	// Build the prompt
+	const prompt = buildDescriptionPrompt(context);
+
+	try {
+		// Call Anthropic API
+		const client = new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
+
+		const response = await client.messages.create({
+			model: getSelectedModel(),
+			max_tokens: 1024,
+			messages: [
+				{
+					role: 'user',
+					content: prompt
+				}
+			]
+		});
+
+		// Extract text content from response
+		const textContent = response.content.find((c) => c.type === 'text');
+		if (!textContent || textContent.type !== 'text') {
+			return {
+				success: false,
+				error: 'Unexpected response format from AI'
+			};
+		}
+
+		// Return the generated value
+		const value = textContent.text.trim();
+
+		if (!value) {
+			return {
+				success: false,
+				error: 'AI returned empty content'
+			};
+		}
+
+		return {
+			success: true,
+			value
+		};
+	} catch (error) {
+		// Handle API errors gracefully
+		if (error && typeof error === 'object' && 'status' in error) {
+			const status = (error as { status: number }).status;
+			if (status === 401) {
+				return {
+					success: false,
+					error: 'Invalid API key. Please check your API key in Settings.'
+				};
+			} else if (status === 429) {
+				return {
+					success: false,
+					error: 'Rate limit exceeded. Please wait a moment and try again.'
+				};
+			}
+		}
+
+		const message = error instanceof Error ? error.message : 'Unknown error';
+		return {
+			success: false,
+			error: `Failed to generate description: ${message}`
+		};
+	}
+}

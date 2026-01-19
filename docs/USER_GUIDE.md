@@ -849,19 +849,28 @@ Director Assist supports multiple AI providers to help generate content for your
 
 ### Generating Field Content
 
-You can generate content for individual fields while creating or editing an entity.
+You can generate content for individual fields while creating or editing an entity. AI generation is available for core entity fields (Summary and Description) as well as custom fields.
 
 **How to Use**:
 
 1. Start creating or editing an entity
 2. Fill in basic information (name, description, tags)
-3. Look for the sparkle (✨) button next to text fields
-4. Click the sparkle button for the field you want to generate
+3. Look for the Generate button (sparkle icon) next to text fields
+4. Click the Generate button for the field you want to generate
 5. AI generates context-aware content based on what you've already filled in
 6. The generated text appears in the field
 7. Edit the generated content as needed
 
+**Core Field Generation**:
+
+Summary and Description fields have dedicated Generate buttons that appear next to the field label when you have an API key configured.
+
+- **Summary Generation**: Creates a brief 1-2 sentence summary based on the entity's name, description, tags, and other filled fields. Ideal for providing context to AI features.
+- **Description Generation**: Creates a detailed multi-paragraph description based on the entity's name, summary, tags, and other filled fields.
+- **Confirmation Dialog**: If the field already has content, you'll be asked to confirm before replacing it with AI-generated content. This prevents accidentally overwriting your work.
+
 **Which Fields Support Generation**:
+- Core entity fields: Summary and Description (with dedicated Generate buttons)
 - Text fields (single-line)
 - Text areas (multi-line)
 - Rich text fields (markdown)

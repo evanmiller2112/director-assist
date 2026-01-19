@@ -4,13 +4,14 @@
 	import { entitiesStore, notificationStore, campaignStore } from '$lib/stores';
 	import { getEntityTypeDefinition } from '$lib/config/entityTypes';
 	import { hasGenerationApiKey } from '$lib/services';
-	import { generateField, isGeneratableField } from '$lib/services/fieldGenerationService';
+	import { generateField, generateSummaryContent, generateDescriptionContent, isGeneratableField } from '$lib/services/fieldGenerationService';
 	import type { FieldValue, FieldDefinition } from '$lib/types';
 	import { validateEntity, formatContextSummary } from '$lib/utils';
 	import { ArrowLeft, Save, ExternalLink, ImagePlus, X as XIcon, Upload, Search, ChevronDown } from 'lucide-svelte';
 	import FieldGenerateButton from '$lib/components/entity/FieldGenerateButton.svelte';
 	import LoadingButton from '$lib/components/ui/LoadingButton.svelte';
 	import { MarkdownEditor } from '$lib/components/markdown';
+	import { ConfirmDialog } from '$lib/components/ui';
 
 	const entityId = $derived($page.params.id ?? '');
 	const entityType = $derived($page.params.type ?? '');
@@ -40,6 +41,12 @@
 	let imageLoading = $state<Record<string, boolean>>({});
 	let entityRefSearchQuery = $state<Record<string, string>>({});
 	let entityRefDropdownOpen = $state<Record<string, boolean>>({});
+
+	// Summary and Description generation state
+	let generatingSummary = $state(false);
+	let generatingDescription = $state(false);
+	let showSummaryConfirm = $state(false);
+	let showDescriptionConfirm = $state(false);
 
 	// Validation
 	function validate(): boolean {
@@ -288,6 +295,128 @@
 			targetFieldKey
 		});
 	}
+
+	// Summary generation
+	function handleGenerateSummaryClick() {
+		// If summary already has content, show confirmation dialog
+		if (summary.trim()) {
+			showSummaryConfirm = true;
+		} else {
+			// If empty, generate directly
+			performSummaryGeneration();
+		}
+	}
+
+	async function performSummaryGeneration() {
+		if (!typeDefinition || generatingSummary) return;
+
+		generatingSummary = true;
+		showSummaryConfirm = false;
+
+		try {
+			// Build context from current form values
+			const currentValues = {
+				name: name.trim() || undefined,
+				description: description.trim() || undefined,
+				tags: tags
+					.split(',')
+					.map((t) => t.trim())
+					.filter(Boolean),
+				notes: notes.trim() || undefined,
+				fields: $state.snapshot(fields)
+			};
+
+			// Get campaign context if available
+			const campaign = campaignStore.campaign;
+			const campaignContext = campaign
+				? {
+						name: campaign.name,
+						setting: (campaign.fields?.setting as string) ?? '',
+						system: (campaign.fields?.system as string) ?? ''
+					}
+				: undefined;
+
+			const result = await generateSummaryContent({
+				entityType,
+				typeDefinition,
+				currentValues,
+				campaignContext
+			});
+
+			if (result.success && result.value !== undefined) {
+				summary = result.value as string;
+				notificationStore.success('Generated summary!');
+			} else {
+				notificationStore.error(result.error ?? 'Failed to generate summary');
+			}
+		} catch (error) {
+			console.error('Failed to generate summary:', error);
+			notificationStore.error('An unexpected error occurred');
+		} finally {
+			generatingSummary = false;
+		}
+	}
+
+	// Description generation
+	function handleGenerateDescriptionClick() {
+		// If description already has content, show confirmation dialog
+		if (description.trim()) {
+			showDescriptionConfirm = true;
+		} else {
+			// If empty, generate directly
+			performDescriptionGeneration();
+		}
+	}
+
+	async function performDescriptionGeneration() {
+		if (!typeDefinition || generatingDescription) return;
+
+		generatingDescription = true;
+		showDescriptionConfirm = false;
+
+		try {
+			// Build context from current form values
+			const currentValues = {
+				name: name.trim() || undefined,
+				summary: summary.trim() || undefined,
+				tags: tags
+					.split(',')
+					.map((t) => t.trim())
+					.filter(Boolean),
+				notes: notes.trim() || undefined,
+				fields: $state.snapshot(fields)
+			};
+
+			// Get campaign context if available
+			const campaign = campaignStore.campaign;
+			const campaignContext = campaign
+				? {
+						name: campaign.name,
+						setting: (campaign.fields?.setting as string) ?? '',
+						system: (campaign.fields?.system as string) ?? ''
+					}
+				: undefined;
+
+			const result = await generateDescriptionContent({
+				entityType,
+				typeDefinition,
+				currentValues,
+				campaignContext
+			});
+
+			if (result.success && result.value !== undefined) {
+				description = result.value as string;
+				notificationStore.success('Generated description!');
+			} else {
+				notificationStore.error(result.error ?? 'Failed to generate description');
+			}
+		} catch (error) {
+			console.error('Failed to generate description:', error);
+			notificationStore.error('An unexpected error occurred');
+		} finally {
+			generatingDescription = false;
+		}
+	}
 </script>
 
 <svelte:head>
@@ -328,7 +457,16 @@
 
 			<!-- Description -->
 			<div>
-				<label for="description" class="label">Description</label>
+				<div class="flex items-center justify-between mb-1">
+					<label for="description" class="label mb-0">Description</label>
+					{#if canGenerate}
+						<FieldGenerateButton
+							disabled={isSaving}
+							loading={generatingDescription}
+							onGenerate={handleGenerateDescriptionClick}
+						/>
+					{/if}
+				</div>
 				<textarea
 					id="description"
 					class="input min-h-[100px]"
@@ -339,7 +477,16 @@
 
 			<!-- Summary -->
 			<div>
-				<label for="summary" class="label">Summary</label>
+				<div class="flex items-center justify-between mb-1">
+					<label for="summary" class="label mb-0">Summary</label>
+					{#if canGenerate}
+						<FieldGenerateButton
+							disabled={isSaving}
+							loading={generatingSummary}
+							onGenerate={handleGenerateSummaryClick}
+						/>
+					{/if}
+				</div>
 				<p class="text-sm text-slate-500 mb-1">
 					This summary will be submitted as context when calling an AI agent. Can be auto-generated on the view page.
 				</p>
@@ -793,6 +940,31 @@
 				<a href="/entities/{entityType}/{entityId}" class="btn btn-secondary"> Cancel </a>
 			</div>
 		</form>
+
+		<!-- Confirmation Dialogs -->
+		<ConfirmDialog
+			open={showSummaryConfirm}
+			title="Replace Existing Summary?"
+			message="This will replace your current summary with AI-generated content. This action cannot be undone."
+			variant="warning"
+			confirmText="Generate"
+			cancelText="Cancel"
+			loading={generatingSummary}
+			onConfirm={performSummaryGeneration}
+			onCancel={() => showSummaryConfirm = false}
+		/>
+
+		<ConfirmDialog
+			open={showDescriptionConfirm}
+			title="Replace Existing Description?"
+			message="This will replace your current description with AI-generated content. This action cannot be undone."
+			variant="warning"
+			confirmText="Generate"
+			cancelText="Cancel"
+			loading={generatingDescription}
+			onConfirm={performDescriptionGeneration}
+			onCancel={() => showDescriptionConfirm = false}
+		/>
 	</div>
 {:else if !entity}
 	<div class="text-center py-12">

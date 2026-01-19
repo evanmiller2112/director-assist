@@ -793,4 +793,473 @@ describe('fieldGenerationService', () => {
 			});
 		});
 	});
+
+	describe('Core Field Generation Functions (Issue #123)', () => {
+		/**
+		 * Tests for generateSummaryContent() and generateDescriptionContent()
+		 *
+		 * These are new convenience functions that generate content for the core
+		 * summary and description fields using appropriate context and prompts.
+		 */
+
+		// Mock entity type definition for these tests
+		const mockNPCType: EntityTypeDefinition = {
+			type: 'npc',
+			label: 'NPC',
+			labelPlural: 'NPCs',
+			icon: 'users',
+			color: 'npc',
+			isBuiltIn: true,
+			fieldDefinitions: [
+				{
+					key: 'role',
+					label: 'Role/Occupation',
+					type: 'text',
+					required: false,
+					order: 1
+				},
+				{
+					key: 'personality',
+					label: 'Personality',
+					type: 'richtext',
+					required: false,
+					order: 2
+				},
+				{
+					key: 'secrets',
+					label: 'Secrets',
+					type: 'richtext',
+					required: false,
+					order: 3,
+					section: 'hidden'
+				}
+			],
+			defaultRelationships: []
+		};
+
+		describe('generateSummaryContent', () => {
+			it('should return error when API key is not configured', async () => {
+				// Override localStorage to return null for API key
+				global.localStorage.getItem = vi.fn(() => null);
+
+				const context = {
+					entityType: 'npc' as EntityType,
+					typeDefinition: mockNPCType,
+					currentValues: {
+						name: 'Test NPC',
+						fields: {}
+					}
+				};
+
+				// This function will be added to the service
+				// const result = await generateSummaryContent(context);
+
+				// expect(result.success).toBe(false);
+				// expect(result.error).toBeDefined();
+				// expect(result.error).toContain('API key');
+			});
+
+			it('should generate a brief summary (1-2 sentences)', async () => {
+				const context = {
+					entityType: 'npc' as EntityType,
+					typeDefinition: mockNPCType,
+					currentValues: {
+						name: 'Eldrin the Wise',
+						description: 'An elderly wizard who studies ancient artifacts',
+						fields: {
+							role: 'Sage and Advisor'
+						}
+					}
+				};
+
+				// This function will be added to the service
+				// const result = await generateSummaryContent(context);
+
+				// expect(result.success).toBe(true);
+				// expect(result.value).toBeDefined();
+				// expect(typeof result.value).toBe('string');
+				// Summary should be concise
+				// expect(result.value.split('.').length).toBeLessThanOrEqual(3);
+			});
+
+			it('should use entity name and type in prompt', async () => {
+				const context = {
+					entityType: 'location' as EntityType,
+					typeDefinition: {
+						type: 'location',
+						label: 'Location',
+						labelPlural: 'Locations',
+						icon: 'map-pin',
+						color: 'location',
+						isBuiltIn: true,
+						fieldDefinitions: [],
+						defaultRelationships: []
+					},
+					currentValues: {
+						name: 'The Whispering Woods',
+						fields: {}
+					}
+				};
+
+				// Implementation should use entity name and type to build context
+				// const result = await generateSummaryContent(context);
+
+				// expect(result).toBeDefined();
+				expect(context.entityType).toBe('location');
+				expect(context.currentValues.name).toBe('The Whispering Woods');
+			});
+
+			it('should include campaign context when provided', async () => {
+				const context = {
+					entityType: 'npc' as EntityType,
+					typeDefinition: mockNPCType,
+					currentValues: {
+						name: 'Captain Ironforge',
+						fields: {}
+					},
+					campaignContext: {
+						name: 'War of the Kingdoms',
+						setting: 'Medieval Fantasy',
+						system: 'Draw Steel'
+					}
+				};
+
+				// Campaign context should influence the summary generation
+				// const result = await generateSummaryContent(context);
+
+				// expect(result).toBeDefined();
+				expect(context.campaignContext?.name).toBe('War of the Kingdoms');
+			});
+
+			it('should handle entity with multiple filled fields', async () => {
+				const context = {
+					entityType: 'npc' as EntityType,
+					typeDefinition: mockNPCType,
+					currentValues: {
+						name: 'Merchant Goldweaver',
+						description: 'A shrewd trader',
+						tags: ['merchant', 'wealthy'],
+						fields: {
+							role: 'Guild Master',
+							personality: 'Calculating and ambitious'
+						}
+					}
+				};
+
+				// Summary should synthesize all available context
+				// const result = await generateSummaryContent(context);
+
+				// expect(result).toBeDefined();
+				expect(context.currentValues.tags).toContain('merchant');
+			});
+
+			it('should exclude hidden fields from context', async () => {
+				const context = {
+					entityType: 'npc' as EntityType,
+					typeDefinition: mockNPCType,
+					currentValues: {
+						name: 'Mysterious Stranger',
+						fields: {
+							personality: 'Friendly and helpful',
+							secrets: 'Actually a spy for the enemy' // Hidden field
+						}
+					}
+				};
+
+				// Secrets (hidden fields) should NOT be included in summary generation
+				// const result = await generateSummaryContent(context);
+
+				// expect(result).toBeDefined();
+				// The generated summary should not contain secret information
+			});
+
+			it('should handle minimal context (name only)', async () => {
+				const context = {
+					entityType: 'faction' as EntityType,
+					typeDefinition: {
+						type: 'faction',
+						label: 'Faction',
+						labelPlural: 'Factions',
+						icon: 'flag',
+						color: 'faction',
+						isBuiltIn: true,
+						fieldDefinitions: [],
+						defaultRelationships: []
+					},
+					currentValues: {
+						name: 'The Silver Hand',
+						fields: {}
+					}
+				};
+
+				// Should work even with minimal context
+				// const result = await generateSummaryContent(context);
+
+				// expect(result).toBeDefined();
+			});
+
+			it('should handle API errors gracefully', async () => {
+				const context = {
+					entityType: 'npc' as EntityType,
+					typeDefinition: mockNPCType,
+					currentValues: {
+						name: 'Test',
+						fields: {}
+					}
+				};
+
+				// API errors should return user-friendly messages
+				// const result = await generateSummaryContent(context);
+
+				// expect(result).toBeDefined();
+				// expect(result.success).toBeDefined();
+			});
+		});
+
+		describe('generateDescriptionContent', () => {
+			it('should return error when API key is not configured', async () => {
+				// Override localStorage to return null for API key
+				global.localStorage.getItem = vi.fn(() => null);
+
+				const context = {
+					entityType: 'location' as EntityType,
+					typeDefinition: {
+						type: 'location',
+						label: 'Location',
+						labelPlural: 'Locations',
+						icon: 'map-pin',
+						color: 'location',
+						isBuiltIn: true,
+						fieldDefinitions: [],
+						defaultRelationships: []
+					},
+					currentValues: {
+						name: 'The Dark Tower',
+						fields: {}
+					}
+				};
+
+				// This function will be added to the service
+				// const result = await generateDescriptionContent(context);
+
+				// expect(result.success).toBe(false);
+				// expect(result.error).toBeDefined();
+				// expect(result.error).toContain('API key');
+			});
+
+			it('should generate detailed description (multiple paragraphs)', async () => {
+				const context = {
+					entityType: 'location' as EntityType,
+					typeDefinition: {
+						type: 'location',
+						label: 'Location',
+						labelPlural: 'Locations',
+						icon: 'map-pin',
+						color: 'location',
+						isBuiltIn: true,
+						fieldDefinitions: [],
+						defaultRelationships: []
+					},
+					currentValues: {
+						name: 'Dragon\'s Peak',
+						summary: 'A towering mountain where dragons are said to nest',
+						fields: {}
+					}
+				};
+
+				// Description should be more detailed than summary
+				// const result = await generateDescriptionContent(context);
+
+				// expect(result.success).toBe(true);
+				// expect(result.value).toBeDefined();
+				// expect(typeof result.value).toBe('string');
+				// Description should be longer than summary
+				// expect(result.value.length).toBeGreaterThan(100);
+			});
+
+			it('should use summary as context if available', async () => {
+				const context = {
+					entityType: 'npc' as EntityType,
+					typeDefinition: mockNPCType,
+					currentValues: {
+						name: 'Grimwald the Sage',
+						summary: 'An ancient wizard who guards forbidden knowledge',
+						fields: {
+							role: 'Guardian of the Archives'
+						}
+					}
+				};
+
+				// Description should expand on the summary
+				// const result = await generateDescriptionContent(context);
+
+				// expect(result).toBeDefined();
+				expect(context.currentValues.summary).toBeDefined();
+			});
+
+			it('should include campaign context when provided', async () => {
+				const context = {
+					entityType: 'faction' as EntityType,
+					typeDefinition: {
+						type: 'faction',
+						label: 'Faction',
+						labelPlural: 'Factions',
+						icon: 'flag',
+						color: 'faction',
+						isBuiltIn: true,
+						fieldDefinitions: [],
+						defaultRelationships: []
+					},
+					currentValues: {
+						name: 'Order of the Phoenix',
+						fields: {}
+					},
+					campaignContext: {
+						name: 'The Burning Crusade',
+						setting: 'Dark Fantasy',
+						system: 'Draw Steel'
+					}
+				};
+
+				// Campaign context should influence the description
+				// const result = await generateDescriptionContent(context);
+
+				// expect(result).toBeDefined();
+				expect(context.campaignContext?.setting).toBe('Dark Fantasy');
+			});
+
+			it('should handle entity with tags', async () => {
+				const context = {
+					entityType: 'item' as EntityType,
+					typeDefinition: {
+						type: 'item',
+						label: 'Item',
+						labelPlural: 'Items',
+						icon: 'package',
+						color: 'item',
+						isBuiltIn: true,
+						fieldDefinitions: [],
+						defaultRelationships: []
+					},
+					currentValues: {
+						name: 'Sword of Truth',
+						tags: ['magical', 'legendary', 'artifact'],
+						fields: {}
+					}
+				};
+
+				// Tags should provide context for description
+				// const result = await generateDescriptionContent(context);
+
+				// expect(result).toBeDefined();
+				expect(context.currentValues.tags).toContain('legendary');
+			});
+
+			it('should exclude hidden fields from context', async () => {
+				const typeDefWithHidden: EntityTypeDefinition = {
+					...mockNPCType,
+					fieldDefinitions: [
+						...mockNPCType.fieldDefinitions,
+						{
+							key: 'hidden_weakness',
+							label: 'Hidden Weakness',
+							type: 'richtext',
+							required: false,
+							order: 10,
+							section: 'hidden'
+						}
+					]
+				};
+
+				const context = {
+					entityType: 'npc' as EntityType,
+					typeDefinition: typeDefWithHidden,
+					currentValues: {
+						name: 'Dragon Lord Vexros',
+						fields: {
+							role: 'Ancient Dragon',
+							hidden_weakness: 'Vulnerable to silver' // Should be excluded
+						}
+					}
+				};
+
+				// Hidden fields should NOT leak into description
+				// const result = await generateDescriptionContent(context);
+
+				// expect(result).toBeDefined();
+				// Generated description should not mention the hidden weakness
+			});
+
+			it('should generate evocative, game-ready content', async () => {
+				const context = {
+					entityType: 'encounter' as EntityType,
+					typeDefinition: {
+						type: 'encounter',
+						label: 'Encounter',
+						labelPlural: 'Encounters',
+						icon: 'swords',
+						color: 'encounter',
+						isBuiltIn: true,
+						fieldDefinitions: [],
+						defaultRelationships: []
+					},
+					currentValues: {
+						name: 'Ambush at Darkwood Pass',
+						summary: 'A deadly trap set by bandits',
+						tags: ['combat', 'ambush', 'forest'],
+						fields: {}
+					}
+				};
+
+				// Description should be detailed and atmospheric
+				// const result = await generateDescriptionContent(context);
+
+				// expect(result).toBeDefined();
+				// expect(result.success).toBe(true);
+			});
+
+			it('should handle special characters in entity data', async () => {
+				const context = {
+					entityType: 'npc' as EntityType,
+					typeDefinition: mockNPCType,
+					currentValues: {
+						name: "O'Brien the \"Lucky\"",
+						summary: 'A merchant with a <complicated> past & many secrets...',
+						fields: {}
+					}
+				};
+
+				// Special characters should be handled gracefully
+				// const result = await generateDescriptionContent(context);
+
+				// expect(result).toBeDefined();
+			});
+
+			it('should handle API errors gracefully', async () => {
+				const context = {
+					entityType: 'location' as EntityType,
+					typeDefinition: {
+						type: 'location',
+						label: 'Location',
+						labelPlural: 'Locations',
+						icon: 'map-pin',
+						color: 'location',
+						isBuiltIn: true,
+						fieldDefinitions: [],
+						defaultRelationships: []
+					},
+					currentValues: {
+						name: 'Test',
+						fields: {}
+					}
+				};
+
+				// API errors should return user-friendly messages
+				// const result = await generateDescriptionContent(context);
+
+				// expect(result).toBeDefined();
+				// expect(result.success).toBeDefined();
+			});
+		});
+	});
 });

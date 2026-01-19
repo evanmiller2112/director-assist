@@ -200,6 +200,15 @@ function createEntitiesStore() {
 			return entity;
 		},
 
+		async createWithRelationships(
+			newEntity: NewEntity,
+			pendingLinks: import('$lib/types').PendingRelationship[]
+		): Promise<BaseEntity> {
+			const entity = await entityRepository.createWithLinks(newEntity, pendingLinks);
+			// The live query will automatically update the entities array
+			return entity;
+		},
+
 		async update(id: string, changes: Partial<BaseEntity>): Promise<void> {
 			await entityRepository.update(id, changes);
 		},

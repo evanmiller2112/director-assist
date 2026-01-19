@@ -207,7 +207,22 @@ One of Director Assist's most powerful features is the ability to create relatio
 
 ### Creating a Relationship
 
-**Method 1: From the Entity Detail Page**
+**Method 1: During Entity Creation**
+
+You can now add relationships while creating a new entity, before the first save:
+
+1. Fill in the entity creation form (name, description, etc.)
+2. Scroll to the "Relationships" section
+3. Click "Add Relationship"
+4. Select the target entity from the dropdown
+5. Choose a relationship type (knows, allied_with, located_at, etc.)
+6. Optionally make it bidirectional (both entities show the link)
+7. Add relationship strength (strong, moderate, weak)
+8. Add tags or tension level if relevant
+9. Click "Create Link"
+10. The relationship will be saved when you create the entity
+
+**Method 2: From the Entity Detail Page**
 
 1. View any entity's details
 2. Scroll to the "Relationships" section
@@ -219,13 +234,13 @@ One of Director Assist's most powerful features is the ability to create relatio
 8. Add tags or tension level if relevant
 9. Click "Create Link"
 
-**Method 2: Using the Command Palette**
+**Method 3: Using the Command Palette**
 
 1. View any entity's details
 2. Press Cmd+K (Mac) or Ctrl+K (Windows)
 3. Type "/relate"
 4. Press Enter
-5. Follow the same steps as Method 1
+5. Follow the same steps as Method 2
 
 ### Relationship Types
 

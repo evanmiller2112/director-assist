@@ -76,3 +76,11 @@ export {
 	DEFAULT_RELATIONSHIP_CONTEXT_SETTINGS
 } from './relationshipContextSettingsService';
 export type { RelationshipContextSettings } from './relationshipContextSettingsService';
+
+// Field relationship context service
+export { buildFieldRelationshipContext } from './fieldRelationshipContextService';
+export type {
+	FieldRelationshipContextOptions,
+	FieldRelationshipContextResult,
+	FieldRelationshipContextReason
+} from './fieldRelationshipContextService';

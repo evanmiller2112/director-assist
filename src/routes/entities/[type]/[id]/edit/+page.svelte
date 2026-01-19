@@ -3,7 +3,7 @@
 	import { goto } from '$app/navigation';
 	import { aiSettings, entitiesStore, notificationStore, campaignStore } from '$lib/stores';
 	import { getEntityTypeDefinition } from '$lib/config/entityTypes';
-	import { hasGenerationApiKey } from '$lib/services';
+	import { hasGenerationApiKey, buildFieldRelationshipContext } from '$lib/services';
 	import { generateField, generateSummaryContent, generateDescriptionContent, isGeneratableField } from '$lib/services/fieldGenerationService';
 	import { buildRelationshipContext, formatRelationshipContextForPrompt, getRelationshipContextStats } from '$lib/services/relationshipContextBuilder';
 	import { getRelationshipContextSettings } from '$lib/services/relationshipContextSettingsService';
@@ -154,19 +154,17 @@
 					}
 				: undefined;
 
-			// Build relationship context if enabled (Issue #59)
+// Build relationship context for this field (Issues #59/#60)
+			// Uses smart per-field context detection from #60, respecting the manual checkbox from #59
 			let relationshipContextStr: string | undefined = undefined;
 			if (includeRelationshipContext && entityId && relationshipCount > 0) {
-				try {
-					const settings = getRelationshipContextSettings();
-					const relContext = await buildRelationshipContext(entityId, {
-						maxRelatedEntities: settings.maxRelatedEntities,
-						maxCharacters: settings.maxCharacters
-					});
-					relationshipContextStr = formatRelationshipContextForPrompt(relContext);
-				} catch (error) {
-					console.error('Failed to build relationship context:', error);
-					// Continue without relationship context if it fails
+				const relationshipContextResult = await buildFieldRelationshipContext({
+					entityId: entityId,
+					entityType: entityType,
+					targetField: targetField.key
+				});
+				if (relationshipContextResult.included) {
+					relationshipContextStr = relationshipContextResult.formattedContext;
 				}
 			}
 

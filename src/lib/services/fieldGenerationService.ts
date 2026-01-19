@@ -38,7 +38,7 @@ export interface FieldGenerationContext {
 	};
 	/** Campaign information for additional context */
 	campaignContext?: { name: string; setting: string; system: string };
-	/** Relationship context for this entity (Issue #59) */
+/** Formatted relationship context to include in prompt (optional, Issues #59/#60) */
 	relationshipContext?: string;
 }
 
@@ -100,6 +100,7 @@ export function isGeneratableField(fieldTypeOrDefinition: FieldType | FieldDefin
  * Constructs a prompt that includes:
  * - Campaign context (name, setting, system)
  * - Existing entity context (name, description, tags, other fields)
+ * - Relationship context (if provided)
  * - Field-specific hints (placeholder, helpText)
  * - Generation rules (format, length, consistency)
  *
@@ -155,10 +156,10 @@ function buildFieldPrompt(context: FieldGenerationContext): string {
 `;
 	}
 
-	// Build relationship context (Issue #59)
+// Build relationship context section (Issues #59/#60)
 	let relationshipInfo = '';
 	if (relationshipContext && relationshipContext.trim()) {
-		relationshipInfo = `\nRelationships:\n${relationshipContext}\n`;
+		relationshipInfo = `\n${relationshipContext}\n`;
 	}
 
 	// Build field-specific hints

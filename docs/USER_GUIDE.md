@@ -25,7 +25,7 @@ Director Assist is a campaign management tool designed specifically for Director
 - All your data stays private on your device
 - Fast global search to find anything instantly
 - Create relationships between NPCs, locations, factions, and more
-- Optional AI-powered content generation using Claude
+- Optional AI-powered content generation with multiple provider options
 - Works offline after the first load
 
 **Who is it for?**
@@ -55,11 +55,12 @@ If you want to use AI features to generate content:
 
 1. Click the gear icon in the header to open Settings
 2. Find the "AI Configuration" section
-3. Paste your Anthropic API key
-4. Select your preferred AI model (or leave the default)
-5. Click "Save Settings"
+3. Select your preferred AI provider (Anthropic, OpenAI, Google, Mistral, or Ollama)
+4. Paste your API key for that provider (or configure base URL for Ollama)
+5. Select your preferred model (or leave the default)
+6. Click "Save Settings"
 
-Don't have an API key? You can still use Director Assist! The AI features are completely optional. Visit [console.anthropic.com](https://console.anthropic.com) to get an API key if you want them later.
+Don't have an API key? You can still use Director Assist! The AI features are completely optional. Each provider offers their own API access - choose the one that works best for you.
 
 **Step 3: Start Adding Entities**
 
@@ -731,17 +732,45 @@ Opens the settings page.
 
 ## AI Features
 
-If you've configured an Anthropic API key, Director Assist can help generate content using Claude AI.
+Director Assist supports multiple AI providers to help generate content for your campaign. Choose the provider that works best for you.
+
+### Supported AI Providers
+
+**Anthropic (Claude)**
+- Models: Claude Opus, Sonnet, and Haiku
+- Known for: High-quality, nuanced responses
+- Get API key: [console.anthropic.com](https://console.anthropic.com)
+
+**OpenAI (GPT)**
+- Models: GPT-4.5, GPT-4, GPT-3.5
+- Known for: Versatile and widely-used
+- Get API key: [platform.openai.com](https://platform.openai.com)
+
+**Google (Gemini)**
+- Models: Gemini Pro and Flash
+- Known for: Fast responses and competitive pricing
+- Get API key: [aistudio.google.com](https://aistudio.google.com)
+
+**Mistral**
+- Models: Mistral Large, Small, Nemo
+- Known for: European provider with strong performance
+- Get API key: [console.mistral.ai](https://console.mistral.ai)
+
+**Ollama (Local)**
+- Models: Run models locally on your computer
+- Known for: Privacy and no API costs
+- Setup: [ollama.ai](https://ollama.ai)
 
 ### Setting Up AI
 
-1. Get an API key from [console.anthropic.com](https://console.anthropic.com)
-2. Open Settings (gear icon or `/settings` command)
-3. Paste your API key in the "Anthropic API Key" field
-4. Select your preferred model (Claude Haiku is recommended for speed and cost)
-5. Click "Save Settings"
+1. Open Settings (gear icon or `/settings` command)
+2. Find the "AI Configuration" section
+3. Select your preferred provider
+4. Enter your API key (or base URL for Ollama)
+5. Choose a model (recommended models are marked)
+6. Click "Save Settings"
 
-**Important**: Your API key is stored only in your browser. It's never included in backups and never sent anywhere except directly to Anthropic's API.
+**Important**: Your API key is stored only in your browser. It's never included in backups and never sent anywhere except to your chosen provider's API.
 
 ### Generating Field Content
 
@@ -792,14 +821,24 @@ If you create an NPC named "Grimwald the Wise" with the description "elderly wiz
 
 ### AI Model Selection
 
-Director Assist automatically selects the latest Claude Haiku model for the best balance of speed, quality, and cost. You can change models in Settings if you prefer a different model.
+Each provider offers multiple models with different capabilities and pricing. Director Assist categorizes models into tiers:
 
-**Model Options**:
-- Claude Haiku: Fast and cost-effective (recommended)
-- Claude Sonnet: More capable, slower, more expensive
-- Claude Opus: Most capable, slowest, most expensive
+**Fast Tier**
+- Quick responses, lower cost
+- Examples: Claude Haiku, GPT-3.5 Turbo, Gemini Flash
+- Best for: Simple field generation, quick content
 
-For generating short field content, Haiku works great. Save Sonnet or Opus for when you need higher quality or more complex reasoning.
+**Balanced Tier**
+- Good mix of speed and capability
+- Examples: Claude Sonnet, GPT-4, Gemini Pro
+- Best for: Most content generation tasks
+
+**Powerful Tier**
+- Highest quality, slower, more expensive
+- Examples: Claude Opus, GPT-4.5
+- Best for: Complex reasoning, nuanced content
+
+For generating short field content, Fast tier models work great. Save Powerful tier models for when you need the highest quality or most complex reasoning.
 
 ### Generation Tips
 
@@ -812,9 +851,10 @@ For generating short field content, Haiku works great. Save Sonnet or Opus for w
 
 **Cost Considerations**:
 - Each field generation uses a small amount of API credits
-- Haiku is very affordable (pennies per request)
-- You're charged directly by Anthropic, not Director Assist
-- Monitor your usage in the Anthropic console
+- Fast tier models are very affordable (pennies per request)
+- You're charged directly by your provider, not Director Assist
+- Monitor your usage in your provider's console
+- Ollama is free (runs locally on your computer)
 
 ## Backup & Restore
 
@@ -836,7 +876,7 @@ Your campaign data is stored in your browser's local storage. It's important to 
 - All relationships between entities
 - Campaign information (name, setting, system)
 - Chat history (if you've used AI chat)
-- Your selected Claude model preference (e.g., Haiku, Sonnet, Opus)
+- Your selected AI provider and model preferences
 
 ### What's NOT Included in Backups
 
@@ -857,7 +897,7 @@ This means you can safely share backups with other Directors or store them in cl
 5. Confirm the import
 6. Your campaign data is restored
 
-After importing, you'll need to re-enter your API key in Settings if you want to use AI features. Your Claude model preference (Haiku, Sonnet, or Opus) will be restored automatically from the backup.
+After importing, you'll need to re-enter your API key in Settings if you want to use AI features. Your AI provider and model preferences will be restored automatically from the backup.
 
 ### Backup Best Practices
 

@@ -45,7 +45,7 @@ The app builds to a static site in the `build` directory. Deploy to any static h
 ### First Steps
 
 1. Create a campaign with a name, system (Draw Steel, D&D 5e, or System Agnostic), and setting description
-2. Add your Anthropic API key in Settings to enable AI features (optional)
+2. Add an AI provider API key in Settings to enable AI features (optional)
 3. Start adding entities using the sidebar or dashboard
 4. Link entities together to build relationships
 5. Use the search bar to find anything quickly
@@ -76,10 +76,17 @@ Commands adapt to your current page. Entity-specific commands like `/relate` and
 
 ### AI-Powered Content Generation
 
-Director Assist uses Claude AI to help you create detailed, context-aware campaign content.
+Director Assist can generate content for individual fields using AI from multiple providers.
+
+**Supported AI Providers:**
+- Anthropic (Claude models)
+- OpenAI (GPT models)
+- Google (Gemini models)
+- Mistral (Mistral models)
+- Ollama (local models)
 
 **Setup:**
-1. Get an API key from [console.anthropic.com](https://console.anthropic.com)
+1. Get an API key from your chosen provider (e.g., [console.anthropic.com](https://console.anthropic.com) for Claude)
 2. Add it in Settings (gear icon in header)
 3. The AI uses your campaign setting and system to generate appropriate content
 
@@ -88,7 +95,7 @@ Director Assist uses Claude AI to help you create detailed, context-aware campai
 - Multi-line textarea fields
 - Rich text fields (markdown editor with formatting toolbar)
 
-When creating or editing any entity, look for the sparkle (✨) button next to text fields:
+When creating or editing any entity, look for the sparkle button next to text fields:
 
 1. Fill in basic information first (name, description, tags)
 2. Click the generate button next to any field you want AI to complete
@@ -105,7 +112,7 @@ When creating or editing any entity, look for the sparkle (✨) button next to t
 - Your API key is stored only in your browser
 - No data is sent to Director Assist servers (there aren't any)
 
-**Requires:** Anthropic API key configured in Settings
+**Requires:** API key for your chosen provider (add in Settings)
 
 ### Entity Types
 
@@ -133,7 +140,7 @@ Built with modern web technologies for a fast, offline-first experience:
 - **TypeScript** - Type-safe development
 - **Tailwind CSS** - Utility-first styling
 - **Dexie.js** - IndexedDB wrapper for local storage
-- **Anthropic SDK** - Claude AI integration (scaffolded)
+- **Vercel AI SDK** - Multi-provider AI integration (Anthropic, OpenAI, Google, Mistral, Ollama)
 
 See [ARCHITECTURE.md](./docs/ARCHITECTURE.md) for detailed technical documentation.
 

@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Multi-AI provider support (Issue #26)
+  - New AI abstraction layer in `src/lib/ai/` supporting multiple providers
+  - Supported providers: Anthropic (Claude), OpenAI (GPT), Google (Gemini), Mistral, Ollama (local)
+  - Unified `generate()` and `generateStream()` API across all providers
+  - Provider registry with 26+ models from 5 providers
+  - Settings storage: API keys in localStorage, provider preferences in IndexedDB
+  - Model tiers: fast, balanced, powerful for easy selection
+  - Consistent error handling across providers
+  - Provider-specific configurations (baseUrl for Ollama, API keys for cloud providers)
+  - Dependencies: ai, @ai-sdk/anthropic, @ai-sdk/openai, @ai-sdk/google, @ai-sdk/mistral, ollama-ai-provider
 - Markdown editor for rich text fields (Issue #13)
   - New MarkdownEditor component with formatting toolbar (bold, italic, heading, code, link, list)
   - Three editing modes: edit-only, preview-only, and split view

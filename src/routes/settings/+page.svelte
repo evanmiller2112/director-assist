@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { aiSettings, campaignStore, notificationStore, uiStore } from '$lib/stores';
 	import { db } from '$lib/db';
-	import { entityRepository, campaignRepository, chatRepository, appConfigRepository } from '$lib/db/repositories';
+	import { entityRepository, chatRepository, appConfigRepository } from '$lib/db/repositories';
 	import { convertOldCampaignToEntity } from '$lib/db/migrations/migrateCampaignToEntity';
 	import type { CampaignBackup, ModelInfo } from '$lib/types';
 	import {

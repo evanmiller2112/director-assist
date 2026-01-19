@@ -105,8 +105,8 @@ src/
 │   ├── db/                  # Database layer
 │   │   ├── index.ts         # Dexie database setup
 │   │   └── repositories/    # Data access layer
-│   │       ├── entityRepository.ts
-│   │       ├── campaignRepository.ts
+│   │       ├── entityRepository.ts      # Handles all entities including campaigns
+│   │       ├── appConfigRepository.ts   # App configuration (active campaign ID, etc.)
 │   │       ├── chatRepository.ts
 │   │       └── relationshipSummaryCacheRepository.ts
 │   ├── services/            # Business logic services
@@ -163,20 +163,28 @@ src/
 ### Core Entities
 
 #### Campaign
-The top-level container for all campaign data.
+Campaign is a first-class entity type stored in the entities table alongside all other entity types. This unified storage model allows campaigns to leverage the same infrastructure as other entities while maintaining specialized behavior.
 
+**Storage:**
+- Stored as a BaseEntity with `type: 'campaign'` in the entities table
+- Multiple campaigns can coexist in the database
+- One campaign is marked as "active" at any time (tracked in app config)
+
+**Structure:**
 ```typescript
-interface Campaign {
+// Campaign is a BaseEntity with specialized metadata
+interface BaseEntity {
   id: EntityId;
-  name: string;
-  description: string;
-  system: string;              // Display name: "Draw Steel", "D&D 5e", etc.
-  setting: string;             // Campaign setting name
-  createdAt: Date;
-  updatedAt: Date;
-  customEntityTypes: EntityTypeDefinition[];
-  settings: CampaignSettings;
-  metadata: CampaignMetadata;  // Includes systemId and other metadata
+  type: 'campaign';           // Entity type identifier
+  name: string;               // Campaign name
+  description: string;        // Campaign description
+  fields: {
+    system: string;           // "Draw Steel", "D&D 5e", etc.
+    setting: string;          // Campaign setting name
+    status: 'active' | 'archived';
+  };
+  metadata: CampaignMetadata; // Campaign-specific metadata
+  // ... other BaseEntity fields
 }
 
 interface CampaignMetadata {
@@ -193,9 +201,28 @@ interface CampaignSettings {
 }
 ```
 
-**Relationships:**
-- One campaign per database
-- Contains all entities and chat history
+**Campaign Management:**
+- `campaignStore` manages campaigns via `entityRepository` (not a separate repository)
+- Campaign deletion is protected: cannot delete the last remaining campaign
+- Active campaign is tracked via `appConfigRepository.setActiveCampaignId()`
+- Campaign switching supported through the UI
+
+**Deletion Guard:**
+The entity repository includes a guard that prevents deleting the last campaign:
+```typescript
+if (entityToDelete && entityToDelete.type === 'campaign') {
+  const campaignCount = await db.entities.where('type').equals('campaign').count();
+  if (campaignCount <= 1) {
+    throw new Error('Cannot delete the last campaign');
+  }
+}
+```
+
+**Benefits of First-Class Entity:**
+- Campaigns can have relationships with other entities
+- Campaigns appear in entity lists and search results
+- Campaigns leverage existing entity infrastructure (CRUD, links, tags, etc.)
+- Simplified codebase with fewer specialized repository methods
 
 **System Awareness:**
 - Campaigns track their selected game system via `systemId` in metadata
@@ -2535,21 +2562,29 @@ User Action → Store → Repository → Database
 ### Tables
 
 #### `entities`
-Stores all campaign entities (characters, NPCs, locations, etc.).
+Stores all entities including campaigns, characters, NPCs, locations, factions, items, and more.
 
 **Indexes:**
 - `id` (primary key)
-- `type` (for filtering by entity type)
+- `type` (for filtering by entity type, including 'campaign')
 - `name` (for name-based queries)
 - `tags` (multi-entry index for tag searches)
 - `createdAt` (for sorting)
 - `updatedAt` (for recent items)
 
-#### `campaign`
-Stores the single campaign object.
+**Special Entity Types:**
+- Campaigns (`type: 'campaign'`) are stored in this table alongside other entities
+- Campaign-specific metadata (custom entity types, settings) stored in the `metadata` field
+- Multiple campaigns can exist; active campaign ID tracked in `appConfig` table
+
+#### `appConfig`
+Stores application-level configuration as key-value pairs.
 
 **Indexes:**
-- `id` (primary key)
+- `key` (primary key)
+
+**Keys Used:**
+- `activeCampaignId`: ID of the currently active campaign entity
 
 #### `chatMessages`
 Stores AI chat conversation history.
@@ -2607,7 +2642,14 @@ this.version(1).stores({
   suggestions: 'id, type, dismissed, createdAt'
 });
 
-// Version 2: (reserved for future use)
+// Version 2: Add appConfig table
+this.version(2).stores({
+  entities: 'id, type, name, *tags, createdAt, updatedAt',
+  campaign: 'id',
+  chatMessages: 'id, timestamp',
+  suggestions: 'id, type, dismissed, createdAt',
+  appConfig: 'key'
+});
 
 // Version 3: Add relationship summary cache
 this.version(3).stores({
@@ -2615,21 +2657,39 @@ this.version(3).stores({
   campaign: 'id',
   chatMessages: 'id, timestamp',
   suggestions: 'id, type, dismissed, createdAt',
-  relationshipSummaryCache: 'id, [sourceId+targetId+relationship]'
+  appConfig: 'key',
+  relationshipSummaryCache: 'id, sourceId, targetId, relationship, generatedAt'
 });
 ```
 
 **Current Version:** 3
 
 **Migration Notes:**
-- Version 3 adds `relationshipSummaryCache` table for caching AI-generated summaries
-- Existing data is preserved during version upgrades
-- No data migration required for version 3 (new table only)
+
+**Version 2:**
+- Added `appConfig` table for app-level configuration (active campaign ID, etc.)
+
+**Version 3:**
+- Added `relationshipSummaryCache` table for caching AI-generated summaries
+- Campaign migration: Automatically migrates campaign data from old `campaign` table to `entities` table with `type: 'campaign'`
+- Migration is idempotent (safe to run multiple times)
+- Old `campaign` table preserved for backward compatibility during transition
+- Migration runs automatically on database initialization
+
+**Campaign Migration Details:**
+The `migrateCampaignToEntity()` migration:
+1. Checks if campaign entities already exist (skips if found)
+2. Reads old campaign from singleton `campaign` table
+3. Converts to BaseEntity with `type: 'campaign'` and campaign-specific metadata
+4. Saves to `entities` table
+5. Sets as active campaign in `appConfig`
+6. Preserves old table data for safety
 
 **To add a new version:**
 1. Increment the version number
 2. Define the new schema (include all tables, not just new ones)
-3. Add an `.upgrade()` function for migrations if needed
+3. Add an `.upgrade()` function for data migrations if needed
+4. Document migration behavior
 
 ## Reactive Queries
 
@@ -2715,13 +2775,37 @@ Director Assist uses Svelte 5 runes for state management instead of traditional 
 
 #### Campaign Store (`campaign.svelte.ts`)
 
-Manages the current campaign:
-- `campaign`: Current campaign object
+Manages campaigns as first-class entities via the entity repository:
+- `campaign`: Current active campaign object (BaseEntity with type 'campaign')
+- `allCampaigns`: Array of all campaign entities
+- `activeCampaignId`: ID of the currently active campaign
 - `isLoading`: Loading state
 - `error`: Error message
-- `load()`: Load campaign from database
-- `update()`: Update campaign
-- `updateSettings()`: Update campaign settings
+- `customEntityTypes`: Derived from campaign metadata
+- `entityTypeOverrides`: Derived from campaign metadata
+- `settings`: Derived from campaign metadata (CampaignSettings)
+
+**Methods:**
+- `load()`: Load all campaigns from entities table, set active campaign
+- `create(name, options)`: Create new campaign entity
+- `setActiveCampaign(id)`: Switch to a different campaign
+- `update(changes)`: Update campaign's basic fields (name, description, system, setting)
+- `updateSettings(settings)`: Update campaign settings in metadata
+- `addCustomEntityType(entityType)`: Add custom entity type to campaign
+- `updateCustomEntityType(type, updates)`: Update existing custom entity type
+- `deleteCustomEntityType(type)`: Remove custom entity type from campaign
+- `setEntityTypeOverride(override)`: Set entity type override
+- `removeEntityTypeOverride(type)`: Remove entity type override
+- `deleteCampaign(id)`: Delete campaign (protected: cannot delete last campaign)
+- `reload()`: Reload campaigns from database
+- `reset()`: Reset store to initial state (for testing)
+
+**Implementation Notes:**
+- Campaign data stored in `entities` table with `type: 'campaign'`
+- Uses `entityRepository` for all CRUD operations (no separate campaign repository)
+- Active campaign ID tracked via `appConfigRepository`
+- Deletion guard prevents deleting the last remaining campaign
+- Metadata deep-cloned to remove Svelte 5 proxy wrappers before saving
 
 #### Entities Store (`entities.svelte.ts`)
 

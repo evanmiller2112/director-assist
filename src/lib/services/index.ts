@@ -84,3 +84,11 @@ export type {
 	FieldRelationshipContextResult,
 	FieldRelationshipContextReason
 } from './fieldRelationshipContextService';
+
+// Sidebar order service
+export {
+	getSidebarEntityTypeOrder,
+	setSidebarEntityTypeOrder,
+	resetSidebarEntityTypeOrder,
+	getDefaultOrder
+} from './sidebarOrderService';

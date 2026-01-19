@@ -34,7 +34,7 @@ function createCampaignStore() {
 	let activeCampaignId = $state<string | null>(null);
 	let campaign = $state<BaseEntity | null>(null);
 	let allCampaigns = $state<BaseEntity[]>([]);
-	let isLoading = $state(true);
+	let isLoading = $state(true); // Start as true since campaigns haven't been loaded yet
 	let error = $state<string | null>(null);
 
 	return {
@@ -174,8 +174,11 @@ function createCampaignStore() {
 				// Set active campaign
 				activeCampaignId = activeId;
 				campaign = allCampaigns.find((c) => c.id === activeId) ?? null;
+
+				// Clear error on successful load
+				error = null;
 			} catch (e) {
-				error = e instanceof Error ? e.message : 'Failed to load campaigns';
+				error = e instanceof Error ? `Failed to load campaigns: ${e.message}` : 'Failed to load campaigns';
 				console.error('Failed to load campaigns:', e);
 			} finally {
 				isLoading = false;
@@ -213,8 +216,10 @@ function createCampaignStore() {
 			await db.entities.add(newCampaign);
 			allCampaigns = [...allCampaigns, newCampaign];
 
-			// Set as active if it's the first one
-			if (allCampaigns.length === 1) {
+			// Check if this is the first campaign by querying the database
+			// (not just in-memory state, which may be stale)
+			const campaignCount = await db.entities.where('type').equals('campaign').count();
+			if (campaignCount === 1) {
 				await this.setActiveCampaign(newCampaign.id);
 			}
 
@@ -553,15 +558,22 @@ function createCampaignStore() {
 		},
 
 		/**
-		 * Reset the store state (for testing purposes)
-		 * @internal
+		 * Reset store to initial state (mainly for testing)
 		 */
-		_resetForTesting() {
+		reset() {
 			activeCampaignId = null;
 			campaign = null;
 			allCampaigns = [];
-			isLoading = false;
+			isLoading = true;
 			error = null;
+		},
+
+		/**
+		 * Reset the store state for testing purposes (alias for reset)
+		 * @internal
+		 */
+		_resetForTesting() {
+			this.reset();
 		}
 	};
 }

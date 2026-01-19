@@ -54,6 +54,7 @@
     "marked": "^17.0.1",
     "nanoid": "^5.0.9",
     "ollama-ai-provider": "^1.2.0",
+    "svelte-dnd-action": "^0.9.69",
     "vis-data": "^8.0.3",
     "vis-network": "^10.0.2"
   }

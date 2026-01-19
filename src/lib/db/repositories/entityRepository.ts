@@ -173,6 +173,16 @@ export const entityRepository = {
 	async delete(id: string): Promise<void> {
 		await ensureDbReady();
 		await db.transaction('rw', db.entities, async () => {
+			// Check if this is a campaign entity
+			const entityToDelete = await db.entities.get(id);
+			if (entityToDelete && entityToDelete.type === 'campaign') {
+				// Count total campaigns
+				const campaignCount = await db.entities.where('type').equals('campaign').count();
+				if (campaignCount <= 1) {
+					throw new Error('Cannot delete the last campaign');
+				}
+			}
+
 			// Remove links from other entities pointing to this one
 			const allEntities = await db.entities.toArray();
 			const entitiesToUpdate = allEntities.filter((e) =>

@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-01-19
+
+### Fixed
+- Fixed `state_unsafe_mutation` error on dashboard when sorting entities (Issue #172, PR #173)
+  - Creating shallow copy of entities array before sorting to prevent Svelte 5 state mutation
+
+### Documentation
+- Added reminder to run `npm install` after pulling updates (Issue #171, PR #174)
+- Documented `svelte-dnd-action` dependency in v0.5.0 release notes
+
 ## [0.6.0] - 2026-01-19
 
 ### Added

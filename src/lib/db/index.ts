@@ -1,5 +1,11 @@
 import Dexie, { type Table } from 'dexie';
-import type { BaseEntity, Campaign, ChatMessage, AISuggestion } from '$lib/types';
+import type {
+	BaseEntity,
+	Campaign,
+	ChatMessage,
+	AISuggestion,
+	RelationshipSummaryCache
+} from '$lib/types';
 import { migrateCampaignToEntity } from './migrations/migrateCampaignToEntity';
 
 // App-level configuration stored in IndexedDB
@@ -14,6 +20,7 @@ class DMAssistantDB extends Dexie {
 	chatMessages!: Table<ChatMessage>;
 	suggestions!: Table<AISuggestion>;
 	appConfig!: Table<AppConfig>;
+	relationshipSummaryCache!: Table<RelationshipSummaryCache>;
 
 	constructor() {
 		super('dm-assistant');
@@ -36,6 +43,16 @@ class DMAssistantDB extends Dexie {
 			chatMessages: 'id, timestamp',
 			suggestions: 'id, type, dismissed, createdAt',
 			appConfig: 'key'
+		});
+
+		// Version 3: Add relationshipSummaryCache table for caching AI-generated summaries
+		this.version(3).stores({
+			entities: 'id, type, name, *tags, createdAt, updatedAt',
+			campaign: 'id',
+			chatMessages: 'id, timestamp',
+			suggestions: 'id, type, dismissed, createdAt',
+			appConfig: 'key',
+			relationshipSummaryCache: 'id, sourceId, targetId, relationship, generatedAt'
 		});
 	}
 }

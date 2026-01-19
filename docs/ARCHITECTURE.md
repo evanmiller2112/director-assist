@@ -99,13 +99,15 @@ src/
 │   │   └── repositories/    # Data access layer
 │   │       ├── entityRepository.ts
 │   │       ├── campaignRepository.ts
-│   │       └── chatRepository.ts
+│   │       ├── chatRepository.ts
+│   │       └── relationshipSummaryCacheRepository.ts
 │   ├── services/            # Business logic services
-│   │   ├── contextBuilder.ts              # Entity context building for AI
-│   │   ├── fieldGenerationService.ts      # AI field generation
-│   │   ├── modelService.ts                # AI model selection
-│   │   ├── relationshipContextBuilder.ts  # Relationship context building for AI
-│   │   └── relationshipSummaryService.ts  # AI relationship summary generation
+│   │   ├── contextBuilder.ts                    # Entity context building for AI
+│   │   ├── fieldGenerationService.ts            # AI field generation
+│   │   ├── modelService.ts                      # AI model selection
+│   │   ├── relationshipContextBuilder.ts        # Relationship context building for AI
+│   │   ├── relationshipSummaryService.ts        # AI relationship summary generation
+│   │   └── relationshipSummaryCacheService.ts   # Relationship summary caching
 │   ├── stores/              # Application state
 │   │   ├── campaign.svelte.ts
 │   │   ├── entities.svelte.ts
@@ -117,6 +119,7 @@ src/
 │       ├── relationships.ts # Relationship filtering and sorting types
 │       ├── matrix.ts        # Matrix view types
 │       ├── network.ts       # Network visualization types
+│       ├── cache.ts         # Cache types (RelationshipSummaryCache)
 │       └── index.ts         # Type exports
 ├── routes/                  # SvelteKit routes (pages)
 │   ├── +layout.svelte       # Root layout
@@ -2094,23 +2097,69 @@ Stores AI-generated suggestions.
 - `dismissed` (for filtering active suggestions)
 - `createdAt` (for sorting)
 
+#### `relationshipSummaryCache`
+Stores cached AI-generated relationship summaries (added in version 3).
+
+**Purpose:** Reduces API costs by caching relationship summaries and avoiding repeated generation for unchanged entities.
+
+**Indexes:**
+- `id` (primary key - composite format: `${sourceId}|||${targetId}|||${relationship}`)
+- `[sourceId+targetId+relationship]` (compound index for efficient cache lookups)
+
+**Fields:**
+- `id`: Composite cache key
+- `sourceId`: Source entity ID
+- `targetId`: Target entity ID
+- `relationship`: Relationship type string
+- `summary`: AI-generated summary text
+- `generatedAt`: Timestamp when summary was created
+- `sourceEntityUpdatedAt`: Source entity's updatedAt when cached
+- `targetEntityUpdatedAt`: Target entity's updatedAt when cached
+
+**Cache Invalidation:**
+
+Cache entries are automatically invalidated when:
+- Source entity is updated (detected by comparing timestamps)
+- Target entity is updated (detected by comparing timestamps)
+- Entity is deleted (orphaned cache entries)
+- Manual invalidation via cache service
+
 ### Database Versioning
 
 The database version is defined in `src/lib/db/index.ts`:
 
 ```typescript
+// Version 1: Initial schema
 this.version(1).stores({
   entities: 'id, type, name, *tags, createdAt, updatedAt',
   campaign: 'id',
   chatMessages: 'id, timestamp',
   suggestions: 'id, type, dismissed, createdAt'
 });
+
+// Version 2: (reserved for future use)
+
+// Version 3: Add relationship summary cache
+this.version(3).stores({
+  entities: 'id, type, name, *tags, createdAt, updatedAt',
+  campaign: 'id',
+  chatMessages: 'id, timestamp',
+  suggestions: 'id, type, dismissed, createdAt',
+  relationshipSummaryCache: 'id, [sourceId+targetId+relationship]'
+});
 ```
+
+**Current Version:** 3
+
+**Migration Notes:**
+- Version 3 adds `relationshipSummaryCache` table for caching AI-generated summaries
+- Existing data is preserved during version upgrades
+- No data migration required for version 3 (new table only)
 
 **To add a new version:**
 1. Increment the version number
-2. Define the new schema
-3. Add an `.upgrade()` function for migrations
+2. Define the new schema (include all tables, not just new ones)
+3. Add an `.upgrade()` function for migrations if needed
 
 ## Reactive Queries
 
@@ -3783,6 +3832,163 @@ dedicated to their cause of protecting the realm from darkness.
 - Max tokens: 300 per summary
 - Summaries typically 1-2 sentences
 - Optimized for concise, contextual descriptions
+
+#### Relationship Summary Cache Service
+
+**Location:** `/src/lib/services/relationshipSummaryCacheService.ts`
+
+**Purpose:** Manages caching of AI-generated relationship summaries to reduce API costs and improve performance by avoiding repeated generation for unchanged relationships.
+
+**Key Features:**
+
+1. **Automatic Cache Management**
+   - Checks cache before generating new summaries
+   - Validates cache freshness using entity `updatedAt` timestamps
+   - Returns cached summary if both entities are unchanged
+   - Regenerates if either entity has been modified
+
+2. **Smart Invalidation**
+   - Stale detection: Compares cached timestamps with current entity timestamps
+   - Automatic invalidation when entities are updated
+   - Manual invalidation methods for cache control
+   - Entity-level invalidation clears all summaries involving an entity
+
+3. **Force Regeneration**
+   - `forceRegenerate` parameter bypasses cache
+   - Useful for content refresh or testing
+   - Updates cache with new summary after regeneration
+
+**Main API Methods:**
+
+```typescript
+// Get cached summary or generate new one
+getOrGenerate(
+  sourceEntity: BaseEntity,
+  targetEntity: BaseEntity,
+  relationship: EntityLink,
+  context?: RelationshipSummaryContext,
+  forceRegenerate?: boolean
+): Promise<string>
+
+// Check cache status for a relationship
+getCacheStatus(
+  sourceId: EntityId,
+  targetId: EntityId,
+  relationship: string
+): Promise<CacheStatus>  // 'valid' | 'stale' | 'missing'
+
+// Invalidate specific cached summary
+invalidate(
+  sourceId: EntityId,
+  targetId: EntityId,
+  relationship: string
+): Promise<void>
+
+// Invalidate all summaries involving an entity
+invalidateByEntity(entityId: EntityId): Promise<void>
+
+// Clear entire cache
+clearAll(): Promise<void>
+
+// Get cache statistics
+getStats(): Promise<RelationshipSummaryCacheStats>
+```
+
+**Cache Key Format:**
+
+```typescript
+// Composite key ensures unique cache entry per relationship direction
+const cacheKey = `${sourceId}|||${targetId}|||${relationship}`;
+```
+
+**Cache Entry Structure:**
+
+```typescript
+interface RelationshipSummaryCache {
+  id: string;                      // Composite cache key
+  sourceId: EntityId;              // Source entity ID
+  targetId: EntityId;              // Target entity ID
+  relationship: string;            // Relationship type
+  summary: string;                 // AI-generated summary
+  generatedAt: Date;               // When summary was created
+  sourceEntityUpdatedAt: Date;     // Source entity timestamp when cached
+  targetEntityUpdatedAt: Date;     // Target entity timestamp when cached
+}
+```
+
+**Staleness Detection:**
+
+A cached summary is considered stale if:
+- Source entity's current `updatedAt` > cached `sourceEntityUpdatedAt`
+- Target entity's current `updatedAt` > cached `targetEntityUpdatedAt`
+- Either entity no longer exists
+
+**Cache Statistics:**
+
+```typescript
+interface RelationshipSummaryCacheStats {
+  totalCount: number;            // Total cached summaries
+  uniqueSourceCount: number;     // Unique source entities
+  uniqueTargetCount: number;     // Unique target entities
+  averageAgeMs: number;          // Average cache entry age
+  oldestEntry?: Date;            // Oldest cache timestamp
+  newestEntry?: Date;            // Newest cache timestamp
+}
+```
+
+**Usage Example:**
+
+```typescript
+// Automatic cache usage - checks cache first
+const summary = await relationshipSummaryCacheService.getOrGenerate(
+  npcEntity,
+  factionEntity,
+  link
+);
+
+// Force regeneration - bypasses cache
+const freshSummary = await relationshipSummaryCacheService.getOrGenerate(
+  npcEntity,
+  factionEntity,
+  link,
+  undefined,
+  true  // forceRegenerate
+);
+
+// Check cache status before generating
+const status = await relationshipSummaryCacheService.getCacheStatus(
+  'npc-123',
+  'faction-456',
+  'member_of'
+);
+
+if (status === 'valid') {
+  console.log('Using cached summary');
+} else if (status === 'stale') {
+  console.log('Cache exists but entities were updated');
+} else {
+  console.log('No cache entry exists');
+}
+
+// Invalidate after entity update
+await entitiesStore.update(entity);
+await relationshipSummaryCacheService.invalidateByEntity(entity.id);
+```
+
+**Performance Benefits:**
+
+- Eliminates redundant API calls for unchanged relationships
+- Reduces token usage and API costs
+- Faster summary retrieval (cache lookup vs API call)
+- Graceful degradation if cache unavailable
+
+**Data Storage:**
+
+Cached summaries are stored in IndexedDB table `relationshipSummaryCache` (database version 3).
+
+**Index:**
+- `id` (primary key - composite cache key)
+- `[sourceId+targetId+relationship]` (compound index for efficient lookups)
 
 ### Error Handling
 

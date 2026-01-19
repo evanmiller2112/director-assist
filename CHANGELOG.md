@@ -158,6 +158,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Settings stored in localStorage for persistence
   - New relationshipContextSettingsService with get/set/reset functions
   - Defaults: enabled=true, maxRelatedEntities=20, maxCharacters=4000, contextBudgetAllocation=50, autoGenerateSummaries=false
+- Relationship summary caching system (Issue #58)
+  - New IndexedDB table `relationshipSummaryCache` for storing AI-generated summaries
+  - Automatic cache invalidation when source or target entities are updated
+  - Cache key format: `${sourceId}|||${targetId}|||${relationship}`
+  - New type definitions in `src/lib/types/cache.ts` for cache entries and statistics
+  - RelationshipSummaryCacheRepository for cache data access (CRUD operations)
+  - RelationshipSummaryCacheService for high-level cache management
+  - `getOrGenerate()` method automatically checks cache before generating
+  - `forceRegenerate` parameter bypasses cache when needed
+  - Cache invalidation methods: `invalidate()`, `invalidateByEntity()`, `clearAll()`
+  - `getCacheStatus()` checks if cached summary is valid or stale
+  - `getStats()` provides cache usage statistics and monitoring
+  - Database version 3 schema includes cache table with composite key index
 
 ### Fixed
 - Resolved Svelte 5 state_unsafe_mutation error in entity pages (Issue #98)

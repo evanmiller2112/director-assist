@@ -40,6 +40,10 @@ export type {
 	RelationshipSummaryContext
 } from './relationshipSummaryService';
 
+// Relationship summary caching service
+export { relationshipSummaryCacheService } from './relationshipSummaryCacheService';
+export type { CachedRelationshipSummaryResult } from './relationshipSummaryCacheService';
+
 // Model management service
 export {
 	fetchModels,

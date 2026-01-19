@@ -2,3 +2,4 @@
 export * from './entities';
 export * from './campaign';
 export * from './ai';
+export * from './cache';

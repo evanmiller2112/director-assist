@@ -982,6 +982,7 @@ For generating short field content, Fast tier models work great. Save Powerful t
 - You're charged directly by your provider, not Director Assist
 - Monitor your usage in your provider's console
 - Ollama is free (runs locally on your computer)
+- Relationship summaries are automatically cached to avoid repeated API calls for unchanged entities
 
 ## Backup & Restore
 

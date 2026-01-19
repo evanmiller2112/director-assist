@@ -129,7 +129,7 @@
 			</div>
 		{:else}
 			<div class="grid gap-3">
-				{#each entitiesStore.entities
+				{#each [...entitiesStore.entities]
 					.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
 					.slice(0, 5) as entity}
 					{@const typeInfo = BUILT_IN_ENTITY_TYPES.find((t) => t.type === entity.type)}

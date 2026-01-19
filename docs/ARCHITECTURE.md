@@ -100,8 +100,10 @@ src/
 │   │       ├── campaignRepository.ts
 │   │       └── chatRepository.ts
 │   ├── services/            # Business logic services
-│   │   ├── fieldGenerationService.ts  # AI field generation
-│   │   └── modelService.ts            # AI model selection
+│   │   ├── contextBuilder.ts              # Entity context building for AI
+│   │   ├── fieldGenerationService.ts      # AI field generation
+│   │   ├── modelService.ts                # AI model selection
+│   │   └── relationshipContextBuilder.ts  # Relationship context building for AI
 │   ├── stores/              # Application state
 │   │   ├── campaign.svelte.ts
 │   │   ├── entities.svelte.ts
@@ -3071,6 +3073,136 @@ Hidden fields (with `section: 'hidden'`) are automatically excluded from AI cont
 - API key stored in localStorage (key: 'dm-assist-api-key')
 - Model selection via `modelService.ts`
 - Max tokens: 1024 (configurable per field type)
+
+#### Context Builder Service
+
+**Location:** `/src/lib/services/contextBuilder.ts`
+
+**Purpose:** Builds contextual summaries of entities for AI prompt injection, managing character and entity limits to stay within token budgets.
+
+**Key Functions:**
+
+```typescript
+// Build context from entity summaries with filtering and limits
+buildContext(options: ContextOptions): Promise<BuiltContext>
+
+// Format a single entity for display
+formatContextEntry(entry: EntityContext): string
+
+// Format complete context for AI prompt injection
+formatContextForPrompt(context: BuiltContext): string
+
+// Get statistics about context usage
+getContextStats(context: BuiltContext): { entityCount, characterCount, estimatedTokens, truncated }
+```
+
+**Options Interface:**
+
+```typescript
+interface ContextOptions {
+  maxEntities?: number;          // Default: 50
+  maxCharacters?: number;         // Default: 8000
+  includeLinked?: boolean;        // Default: true
+  entityIds?: EntityId[];         // Specific entities to include
+  entityTypes?: string[];         // Filter by entity types
+}
+```
+
+**Features:**
+
+- Automatic linked entity discovery when `includeLinked` is true
+- Privacy protection: only includes entities with summaries
+- Character budget enforcement to prevent exceeding token limits
+- Type filtering to include only relevant entity types
+- Truncation tracking to inform users when context is limited
+
+**Output Format:**
+
+```
+=== Campaign Context ===
+[NPC] Grimwald the Wise: An elderly wizard who serves as the party's mentor
+[Faction] Shadow Guild: A secretive organization operating in the city's underbelly
+[Location] Arcane Library: Ancient repository of magical knowledge
+(Additional entities available but not included due to context limits)
+```
+
+#### Relationship Context Builder Service
+
+**Location:** `/src/lib/services/relationshipContextBuilder.ts`
+
+**Purpose:** Builds contextual summaries of related entities from the perspective of a source entity for AI generation. Complements the general context builder by focusing on entity relationships.
+
+**Key Functions:**
+
+```typescript
+// Build relationship context for a source entity
+buildRelationshipContext(
+  sourceEntityId: EntityId,
+  options: RelationshipContextOptions
+): Promise<RelationshipContext>
+
+// Format a single related entity entry
+formatRelatedEntityEntry(entry: RelatedEntityContext): string
+
+// Format complete relationship context for AI prompts
+formatRelationshipContextForPrompt(context: RelationshipContext): string
+
+// Calculate statistics about relationship context
+getRelationshipContextStats(context: RelationshipContext): RelationshipContextStats
+
+// Build privacy-safe summary (excludes hidden/secret fields)
+buildPrivacySafeSummary(entity: BaseEntity): string
+```
+
+**Options Interface:**
+
+```typescript
+interface RelationshipContextOptions {
+  maxRelatedEntities?: number;    // Default: 20
+  maxCharacters?: number;          // Default: 4000
+  direction?: 'outgoing' | 'incoming' | 'both';  // Default: 'both'
+  relationshipTypes?: string[];    // Filter by relationship types
+  entityTypes?: EntityType[];      // Filter by entity types
+  maxDepth?: number;               // Default: 1 (traversal depth)
+  includeStrength?: boolean;       // Default: false
+  includeNotes?: boolean;          // Default: false
+}
+```
+
+**Features:**
+
+- **Relationship Traversal**: Supports depth-based traversal to include indirect relationships
+- **Bidirectional**: Can include outgoing links (from source), incoming links (to source), or both
+- **Privacy Protection**: Automatically excludes hidden fields and secrets via `buildPrivacySafeSummary()`
+- **Circular Reference Prevention**: Tracks visited entities to avoid infinite loops
+- **Smart Truncation**: Respects both entity count and character limits
+- **Relationship Metadata**: Optionally includes relationship strength and notes
+
+**Output Format:**
+
+```
+=== Relationships for Grimwald the Wise ===
+[Relationship: mentor_of] Aldric (Player Character): Young warrior seeking guidance...
+[Relationship: member_of] Wizard's Council (Faction): Governing body of mages... [Strength: strong]
+[Relationship: resides_in] Arcane Tower (Location): Tall structure in the city center...
+(Context truncated - additional relationships available but not included due to limits)
+```
+
+**Privacy Protection:**
+
+The `buildPrivacySafeSummary()` function ensures that AI context never includes sensitive information:
+- Excludes fields marked with `section: 'hidden'`
+- Excludes the `secrets` field
+- Excludes the `notes` field
+- Truncates descriptions to 200 characters
+- Limits total summary to 500 characters
+
+**Use Cases:**
+
+- Generating content that needs awareness of entity relationships
+- Building character backstories that reference existing connections
+- Creating plot hooks based on faction memberships
+- Generating location descriptions that mention inhabitants
 
 #### Model Service
 

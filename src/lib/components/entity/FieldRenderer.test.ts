@@ -1,952 +1,900 @@
 /**
- * Tests for Field Rendering - Boolean, URL, Multi-Select, and Image Field Types
+ * Tests for FieldRenderer Component - Phase 4: Entity Form Field Rendering (Issue #25)
  *
- * RED Phase (TDD): These tests define expected behavior before implementation.
- * Tests should FAIL until field rendering is properly implemented.
+ * RED Phase (TDD): These tests define expected behavior BEFORE implementation.
+ * All tests should FAIL until FieldRenderer component is implemented.
  *
- * Covers:
- * - Boolean field rendering (checkbox/toggle)
- * - Boolean field state updates
- * - Boolean field read-only display
- * - URL field rendering (input with type="url")
- * - URL field validation display
- * - URL field "open link" button
- * - URL field read-only display (clickable external link)
- * - Multi-select field rendering (checkbox groups)
- * - Multi-select field state updates
- * - Multi-select field read-only display
- * - Image field rendering (file input with preview)
- * - Image field upload and base64 conversion
- * - Image field read-only display
- * - Image field validation and error handling
+ * FieldRenderer is a read-only display component that formats and displays
+ * field values in a user-friendly way for viewing entity details.
+ *
+ * Covers all 14 field types:
+ * - text, short-text → plain text display
+ * - textarea, long-text → formatted text with line breaks
+ * - richtext → rendered markdown
+ * - number → formatted number
+ * - boolean → Yes/No with icon
+ * - date → formatted date
+ * - select → option label
+ * - multi-select, tags → chips/badges
+ * - entity-ref → linked entity name
+ * - entity-refs → multiple linked entity names
+ * - url → clickable external link
+ * - image → image display
+ * - computed → calculated value display
  */
-import { describe, it, expect, vi } from 'vitest';
-import { render, fireEvent, screen } from '@testing-library/svelte';
+
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/svelte';
 import type { FieldDefinition, FieldValue } from '$lib/types';
 
-describe.skip('Field Rendering - Boolean Type', () => {
-	// Note: These tests will need a FieldRenderer component to be created
-	// For now, we're defining the expected behavior
+// Mock FieldRenderer component (will be created during implementation)
+// For now, tests will fail with "Cannot find module" error
 
-	describe('Boolean field in edit mode', () => {
-		const booleanField: FieldDefinition = {
-			key: 'is_active',
-			label: 'Is Active',
-			type: 'boolean',
+describe('FieldRenderer Component - Text Field Types', () => {
+	describe('text field type', () => {
+		const textField: FieldDefinition = {
+			key: 'character_name',
+			label: 'Character Name',
+			type: 'text',
 			required: false,
 			order: 1
 		};
-
-		it('should render a checkbox input for boolean field', () => {
-			// Test will fail until FieldRenderer component is implemented
-			// Expected: Renders <input type="checkbox"> element
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should render checkbox as unchecked when value is false', () => {
-			// Test will fail until implementation
-			// Expected: checkbox.checked === false when value is false
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should render checkbox as checked when value is true', () => {
-			// Test will fail until implementation
-			// Expected: checkbox.checked === true when value is true
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should render checkbox as unchecked when value is null', () => {
-			// Test will fail until implementation
-			// Expected: checkbox.checked === false when value is null (default unchecked)
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should call onChange callback when checkbox is toggled', async () => {
-			// Test will fail until implementation
-			// Expected: onChange(true) called when checkbox is checked
-			// Expected: onChange(false) called when checkbox is unchecked
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should toggle from false to true when clicked', async () => {
-			// Test will fail until implementation
-			// Expected: Clicking unchecked checkbox sets value to true
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should toggle from true to false when clicked', async () => {
-			// Test will fail until implementation
-			// Expected: Clicking checked checkbox sets value to false
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should display field label next to checkbox', () => {
-			// Test will fail until implementation
-			// Expected: Label "Is Active" is displayed
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should support required boolean fields', () => {
-			// Test will fail until implementation
-			// Expected: Required indicator (*) shown for required boolean fields
-			const requiredField = { ...booleanField, required: true };
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should be keyboard accessible (space to toggle)', async () => {
-			// Test will fail until implementation
-			// Expected: Pressing space key toggles checkbox
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-	});
-
-	describe('Boolean field in read-only mode', () => {
-		const booleanField: FieldDefinition = {
-			key: 'is_published',
-			label: 'Published',
-			type: 'boolean',
-			required: false,
-			order: 1
-		};
-
-		it('should display "Yes" for true value in read-only view', () => {
-			// Test will fail until implementation
-			// Expected: Displays "Yes" when value is true
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should display "No" for false value in read-only view', () => {
-			// Test will fail until implementation
-			// Expected: Displays "No" when value is false
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should display checkmark icon for true value', () => {
-			// Test will fail until implementation
-			// Expected: Displays checkmark icon (✓ or Check icon) when true
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should display X icon or empty for false value', () => {
-			// Test will fail until implementation
-			// Expected: Displays X icon or empty indicator when false
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should not be interactive in read-only mode', () => {
-			// Test will fail until implementation
-			// Expected: No checkbox input rendered, just display text/icon
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should handle null/undefined as false in read-only view', () => {
-			// Test will fail until implementation
-			// Expected: null or undefined displays as "No" or empty
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-	});
-});
-
-describe.skip('Field Rendering - URL Type', () => {
-	describe('URL field in edit mode', () => {
-		const urlField: FieldDefinition = {
-			key: 'website',
-			label: 'Website',
-			type: 'url',
-			required: false,
-			order: 1,
-			placeholder: 'https://example.com'
-		};
-
-		it('should render input with type="url" for URL field', () => {
-			// Test will fail until implementation
-			// Expected: <input type="url"> element is rendered
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should display placeholder text', () => {
-			// Test will fail until implementation
-			// Expected: Placeholder "https://example.com" is shown
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should display current URL value in input', () => {
-			// Test will fail until implementation
-			// Expected: Input value matches the provided URL
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should call onChange when URL is typed', async () => {
-			// Test will fail until implementation
-			// Expected: onChange callback invoked with new URL value
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should show validation error for invalid URL', () => {
-			// Test will fail until implementation
-			// Expected: Error message "Website must be a valid URL" displayed
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should not show validation error for valid URL', () => {
-			// Test will fail until implementation
-			// Expected: No error message when URL is valid
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should show validation error when invalid URL is blurred', async () => {
-			// Test will fail until implementation
-			// Expected: Error appears on blur event with invalid URL
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should clear validation error when URL is corrected', async () => {
-			// Test will fail until implementation
-			// Expected: Error disappears when valid URL is entered
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should render "Open Link" button when valid URL is present', () => {
-			// Test will fail until implementation
-			// Expected: Button with "Open" or external link icon shown for valid URLs
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should not render "Open Link" button when URL is empty', () => {
-			// Test will fail until implementation
-			// Expected: No button when field is empty
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should not render "Open Link" button when URL is invalid', () => {
-			// Test will fail until implementation
-			// Expected: No button when URL is invalid (e.g., "not a url")
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should open URL in new tab when "Open Link" button is clicked', async () => {
-			// Test will fail until implementation
-			// Expected: window.open() called with URL and _blank target
-			const mockWindowOpen = vi.fn();
-			global.window.open = mockWindowOpen;
-
-			// Simulate clicking "Open Link" button
-			// await fireEvent.click(openLinkButton);
-
-			// expect(mockWindowOpen).toHaveBeenCalledWith('https://example.com', '_blank');
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should show required indicator for required URL field', () => {
-			// Test will fail until implementation
-			const requiredField = { ...urlField, required: true };
-			// Expected: Required indicator (*) shown
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should handle empty value gracefully', () => {
-			// Test will fail until implementation
-			// Expected: Empty string or null renders empty input
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should sanitize URL display to prevent XSS', () => {
-			// Test will fail until implementation
-			// Expected: javascript: URLs are blocked or sanitized
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-	});
-
-	describe('URL field in read-only mode', () => {
-		const urlField: FieldDefinition = {
-			key: 'portfolio_url',
-			label: 'Portfolio',
-			type: 'url',
-			required: false,
-			order: 1
-		};
-
-		it('should render URL as clickable external link', () => {
-			// Test will fail until implementation
-			// Expected: <a href="..." target="_blank" rel="noopener noreferrer">
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should display URL text as link content', () => {
-			// Test will fail until implementation
-			// Expected: Link text is the URL itself (or truncated version)
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should open link in new tab when clicked', () => {
-			// Test will fail until implementation
-			// Expected: target="_blank" attribute on anchor tag
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should include rel="noopener noreferrer" for security', () => {
-			// Test will fail until implementation
-			// Expected: Security attributes present on external link
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should show external link icon next to URL', () => {
-			// Test will fail until implementation
-			// Expected: ExternalLink icon or ↗ symbol displayed
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should handle empty URL in read-only mode', () => {
-			// Test will fail until implementation
-			// Expected: Empty state or "—" displayed when no URL
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should handle null URL in read-only mode', () => {
-			// Test will fail until implementation
-			// Expected: Empty state displayed when URL is null
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should truncate very long URLs in display', () => {
-			// Test will fail until implementation
-			// Expected: Long URLs are truncated with ellipsis but full URL in href
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should prevent XSS from javascript: URLs in read-only mode', () => {
-			// Test will fail until implementation
-			// Expected: javascript: URLs are not rendered as clickable links
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-	});
-
-	describe('URL field edge cases', () => {
-		it('should handle URLs with special characters', () => {
-			// Test will fail until implementation
-			// Expected: URLs with encoded characters work correctly
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should handle international domain names', () => {
-			// Test will fail until implementation
-			// Expected: IDN URLs render and validate correctly
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should handle localhost URLs in development', () => {
-			// Test will fail until implementation
-			// Expected: http://localhost:3000 is valid
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should handle IP address URLs', () => {
-			// Test will fail until implementation
-			// Expected: http://192.168.1.1 is valid
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-	});
-});
-
-describe.skip('Field Rendering - Multi-Select Type', () => {
-	describe('Multi-select field in edit mode', () => {
-		const multiSelectField: FieldDefinition = {
-			key: 'skills',
-			label: 'Skills',
-			type: 'multi-select',
-			required: false,
-			options: ['Stealth', 'Combat', 'Magic', 'Diplomacy', 'Crafting'],
-			order: 1
-		};
-
-		it('should render checkboxes for each option', () => {
-			// Test will fail until implementation
-			// Expected: 5 checkbox inputs for the 5 options
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should display option labels next to checkboxes', () => {
-			// Test will fail until implementation
-			// Expected: Labels "Stealth", "Combat", "Magic", "Diplomacy", "Crafting" visible
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should check checkboxes for selected values', () => {
-			// Test will fail until implementation
-			// Expected: If value is ['Stealth', 'Magic'], those checkboxes are checked
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should leave checkboxes unchecked for unselected values', () => {
-			// Test will fail until implementation
-			// Expected: Options not in value array are unchecked
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should handle empty selection (all unchecked)', () => {
-			// Test will fail until implementation
-			// Expected: When value is [], all checkboxes are unchecked
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should handle null value as empty selection', () => {
-			// Test will fail until implementation
-			// Expected: When value is null, all checkboxes are unchecked
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should call onChange when checkbox is checked', async () => {
-			// Test will fail until implementation
-			// Expected: onChange(['Stealth']) called when Stealth checkbox is checked
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should call onChange when checkbox is unchecked', async () => {
-			// Test will fail until implementation
-			// Expected: onChange([]) when last selected checkbox is unchecked
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should add option to selection array when checked', async () => {
-			// Test will fail until implementation
-			// Expected: Checking 'Combat' when ['Stealth'] selected calls onChange(['Stealth', 'Combat'])
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should remove option from selection array when unchecked', async () => {
-			// Test will fail until implementation
-			// Expected: Unchecking 'Stealth' when ['Stealth', 'Combat'] selected calls onChange(['Combat'])
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should allow selecting all options', async () => {
-			// Test will fail until implementation
-			// Expected: Can check all 5 checkboxes and get all values in array
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should allow selecting single option', async () => {
-			// Test will fail until implementation
-			// Expected: Selecting only one option works correctly
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should show required indicator for required field', () => {
-			// Test will fail until implementation
-			const requiredField = { ...multiSelectField, required: true };
-			// Expected: Required indicator (*) shown in label
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
 
 		it('should display field label', () => {
-			// Test will fail until implementation
-			// Expected: "Skills" label is displayed
-			expect(true).toBe(false); // Placeholder - replace with actual test
+			const value = 'Aragorn';
+			expect(true).toBe(false);
 		});
 
-		it('should handle field with no options defined', () => {
-			// Test will fail until implementation
-			const fieldWithoutOptions = { ...multiSelectField, options: undefined };
-			// Expected: Render empty state or message when options are missing
-			expect(true).toBe(false); // Placeholder - replace with actual test
+		it('should display text value', () => {
+			const value = 'Aragorn';
+			expect(true).toBe(false);
 		});
 
-		it('should handle field with empty options array', () => {
-			// Test will fail until implementation
-			const fieldWithEmptyOptions = { ...multiSelectField, options: [] };
-			// Expected: Render message or empty state for no available options
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should be keyboard accessible', async () => {
-			// Test will fail until implementation
-			// Expected: Can tab through checkboxes and toggle with space
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should preserve option order from field definition', () => {
-			// Test will fail until implementation
-			// Expected: Checkboxes render in same order as options array
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should display helpText if provided', () => {
-			// Test will fail until implementation
-			const fieldWithHelp = { ...multiSelectField, helpText: 'Select character skills' };
-			// Expected: Help text is displayed
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should format option labels (replace underscores with spaces)', () => {
-			// Test will fail until implementation
-			const fieldWithUnderscores: FieldDefinition = {
-				...multiSelectField,
-				options: ['option_one', 'option_two', 'option_three']
-			};
-			// Expected: Display "option one", "option two", "option three"
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should handle options with special characters', () => {
-			// Test will fail until implementation
-			const specialField: FieldDefinition = {
-				...multiSelectField,
-				options: ['Option-1', 'Option (2)', "Option's 3"]
-			};
-			// Expected: Render special characters correctly
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-	});
-
-	describe('Multi-select field in read-only mode', () => {
-		const multiSelectField: FieldDefinition = {
-			key: 'skills',
-			label: 'Skills',
-			type: 'multi-select',
-			required: false,
-			options: ['Stealth', 'Combat', 'Magic', 'Diplomacy', 'Crafting'],
-			order: 1
-		};
-
-		it('should display selected values as comma-separated list', () => {
-			// Test will fail until implementation
-			// Expected: Display "Stealth, Combat, Magic" when value is ['Stealth', 'Combat', 'Magic']
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should display selected values as chips/badges', () => {
-			// Test will fail until implementation
-			// Expected: Each selected value rendered in a badge/chip component
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should handle single selection display', () => {
-			// Test will fail until implementation
-			// Expected: Display "Stealth" when value is ['Stealth']
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should handle empty selection gracefully', () => {
-			// Test will fail until implementation
-			// Expected: Display "—" or "None" when value is []
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should handle null value as empty', () => {
-			// Test will fail until implementation
-			// Expected: Display empty state when value is null
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should handle undefined value as empty', () => {
-			// Test will fail until implementation
-			// Expected: Display empty state when value is undefined
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should not be interactive in read-only mode', () => {
-			// Test will fail until implementation
-			// Expected: No checkbox inputs, just display text
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should display all selected values', () => {
-			// Test will fail until implementation
-			// Expected: All 5 options visible when all are selected
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should preserve order of selections', () => {
-			// Test will fail until implementation
-			// Expected: Display values in the order they appear in the array
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should format displayed values (replace underscores)', () => {
-			// Test will fail until implementation
-			// Expected: Display "option one" instead of "option_one"
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should handle values with special characters', () => {
-			// Test will fail until implementation
-			// Expected: Display special characters correctly in read-only mode
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-	});
-
-	describe('Multi-select field edge cases', () => {
-		it('should handle selections not in options list (invalid data)', () => {
-			// Test will fail until implementation
-			// Expected: Display invalid values but potentially highlight them as errors
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should handle very long options list (10+ options)', () => {
-			// Test will fail until implementation
-			const manyOptionsField: FieldDefinition = {
-				key: 'many',
-				label: 'Many Options',
-				type: 'multi-select',
-				required: false,
-				options: Array.from({ length: 20 }, (_, i) => `Option ${i + 1}`),
-				order: 1
-			};
-			// Expected: Render all options, possibly with scrolling or grouping
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should handle empty string in options array', () => {
-			// Test will fail until implementation
-			const fieldWithEmptyOption: FieldDefinition = {
-				key: 'test',
-				label: 'Test',
-				type: 'multi-select',
-				required: false,
-				options: ['Option1', '', 'Option2'],
-				order: 1
-			};
-			// Expected: Handle empty string option gracefully
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should handle duplicate options in definition', () => {
-			// Test will fail until implementation
-			const fieldWithDuplicates: FieldDefinition = {
-				key: 'test',
-				label: 'Test',
-				type: 'multi-select',
-				required: false,
-				options: ['Option1', 'Option2', 'Option1'],
-				order: 1
-			};
-			// Expected: Handle duplicate options (deduplicate or show as-is)
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should update immediately when toggling multiple checkboxes rapidly', async () => {
-			// Test will fail until implementation
-			// Expected: Rapid checkbox clicks all register correctly
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-	});
-});
-
-describe.skip('Field Rendering - Image Type', () => {
-	describe('Image field in edit mode', () => {
-		const imageField: FieldDefinition = {
-			key: 'avatar',
-			label: 'Avatar',
-			type: 'image',
-			required: false,
-			order: 1,
-			placeholder: 'Upload an image'
-		};
-
-		it('should render a file input for image upload', () => {
-			// Test will fail until implementation
-			// Expected: <input type="file" accept="image/*"> element is rendered
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should show placeholder/prompt when no image selected', () => {
-			// Test will fail until implementation
-			// Expected: Displays "Upload an image" or similar prompt
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should display field label', () => {
-			// Test will fail until implementation
-			// Expected: "Avatar" label is displayed
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should show required indicator for required image field', () => {
-			// Test will fail until implementation
-			const requiredField = { ...imageField, required: true };
-			// Expected: Required indicator (*) shown
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should accept common image formats in file input', () => {
-			// Test will fail until implementation
-			// Expected: accept attribute includes .jpg, .jpeg, .png, .gif, .webp
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should show image preview when file is selected', async () => {
-			// Test will fail until implementation
-			// Expected: After file selection, <img> element displays the image
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should convert uploaded image to base64 data URL', async () => {
-			// Test will fail until implementation
-			// Expected: onChange callback receives data:image/png;base64,... string
-			const mockOnChange = vi.fn();
-			// Simulate file upload
-			// expect(mockOnChange).toHaveBeenCalledWith(expect.stringMatching(/^data:image\//));
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should show "Clear" button when image is present', () => {
-			// Test will fail until implementation
-			// Expected: Clear/Remove button visible when value is set
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should not show "Clear" button when no image selected', () => {
-			// Test will fail until implementation
-			// Expected: No clear button when field is empty
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should clear the image when clear button is clicked', async () => {
-			// Test will fail until implementation
-			// Expected: Clicking clear button calls onChange(null) and hides preview
-			const mockOnChange = vi.fn();
-			// await fireEvent.click(clearButton);
-			// expect(mockOnChange).toHaveBeenCalledWith(null);
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should show size warning for large images (> 1MB)', async () => {
-			// Test will fail until implementation
-			// Expected: Warning message displayed when file size > 1MB
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should allow large images despite warning', async () => {
-			// Test will fail until implementation
-			// Expected: Large images are still converted and uploaded, just with warning
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should display current image value as preview', () => {
-			// Test will fail until implementation
-			// Expected: When value is set, image is displayed in preview
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should handle base64 data URL values', () => {
-			// Test will fail until implementation
-			const base64Value =
-				'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
-			// Expected: Display base64 image in preview
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should handle external URL values', () => {
-			// Test will fail until implementation
-			// Expected: Display external URL image in preview
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should handle empty value gracefully', () => {
-			// Test will fail until implementation
-			// Expected: Empty string or null renders upload prompt
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should display helpText if provided', () => {
-			// Test will fail until implementation
-			const fieldWithHelp = { ...imageField, helpText: 'Upload a profile picture' };
-			// Expected: Help text is displayed
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should preserve image when form has errors on other fields', () => {
-			// Test will fail until implementation
-			// Expected: Image value is maintained even if other fields have validation errors
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should work with SVG images', async () => {
-			// Test will fail until implementation
-			// Expected: SVG files are accepted and converted to data URL
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should reject non-image file types', async () => {
-			// Test will fail until implementation
-			// Expected: Uploading .pdf or .txt shows error or is rejected
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should show loading state while processing image', async () => {
-			// Test will fail until implementation
-			// Expected: Loading indicator shown during base64 conversion
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should handle FileReader errors gracefully', async () => {
-			// Test will fail until implementation
-			// Expected: Error message shown if image cannot be read
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should update preview when new file is selected', async () => {
-			// Test will fail until implementation
-			// Expected: Selecting new file replaces existing preview
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should call onChange callback when image is uploaded', async () => {
-			// Test will fail until implementation
-			// Expected: onChange callback invoked with base64 data URL
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-	});
-
-	describe('Image field in read-only mode', () => {
-		const imageField: FieldDefinition = {
-			key: 'portrait',
-			label: 'Portrait',
-			type: 'image',
-			required: false,
-			order: 1
-		};
-
-		it('should display image preview when value exists', () => {
-			// Test will fail until implementation
-			// Expected: <img> element renders with src set to value
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should display image from base64 data URL', () => {
-			// Test will fail until implementation
-			const base64Value =
-				'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
-			// Expected: Image displays correctly from base64
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should display image from external URL', () => {
-			// Test will fail until implementation
-			// Expected: Image displays correctly from https://example.com/image.png
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should show fallback/placeholder for missing image', () => {
-			// Test will fail until implementation
-			// Expected: Empty state or placeholder image shown when value is null/empty
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should show fallback for broken image URL', () => {
-			// Test will fail until implementation
-			// Expected: Placeholder or error state shown when image fails to load
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should not show file input in read-only mode', () => {
-			// Test will fail until implementation
-			// Expected: No file input element rendered
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should not show clear button in read-only mode', () => {
-			// Test will fail until implementation
-			// Expected: No clear/remove button rendered
-			expect(true).toBe(false); // Placeholder - replace with actual test
+		it('should handle empty string gracefully', () => {
+			const value = '';
+			// Should show "—" or "Not set" or empty state
+			expect(true).toBe(false);
 		});
 
 		it('should handle null value gracefully', () => {
-			// Test will fail until implementation
-			// Expected: Empty state displayed when value is null
-			expect(true).toBe(false); // Placeholder - replace with actual test
+			const value = null;
+			expect(true).toBe(false);
 		});
 
 		it('should handle undefined value gracefully', () => {
-			// Test will fail until implementation
-			// Expected: Empty state displayed when value is undefined
-			expect(true).toBe(false); // Placeholder - replace with actual test
+			const value = undefined;
+			expect(true).toBe(false);
 		});
 
-		it('should handle empty string value', () => {
-			// Test will fail until implementation
-			// Expected: Empty state displayed when value is ''
-			expect(true).toBe(false); // Placeholder - replace with actual test
+		it('should not render any input elements', () => {
+			const value = 'Aragorn';
+			expect(true).toBe(false);
 		});
 
-		it('should apply alt text to image', () => {
-			// Test will fail until implementation
-			// Expected: <img> has meaningful alt attribute (field label or description)
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should handle SVG images in read-only mode', () => {
-			// Test will fail until implementation
-			// Expected: SVG data URLs display correctly
-			expect(true).toBe(false); // Placeholder - replace with actual test
-		});
-
-		it('should prevent XSS from malicious data URLs', () => {
-			// Test will fail until implementation
-			// Expected: javascript: or other malicious URLs are sanitized
-			expect(true).toBe(false); // Placeholder - replace with actual test
+		it('should display multi-line text if present', () => {
+			const value = 'Line 1\nLine 2\nLine 3';
+			expect(true).toBe(false);
 		});
 	});
 
-	describe('Image field edge cases', () => {
-		it('should handle very large images gracefully', async () => {
-			// Test will fail until implementation
-			// Expected: Large images (5MB+) show warning but are processed
-			expect(true).toBe(false); // Placeholder - replace with actual test
+	describe('short-text field type', () => {
+		const shortTextField: FieldDefinition = {
+			key: 'title',
+			label: 'Title',
+			type: 'short-text',
+			required: false,
+			order: 1
+		};
+
+		it('should render as plain text display', () => {
+			const value = 'Ranger of the North';
+			expect(true).toBe(false);
 		});
 
-		it('should handle tiny images (1x1 pixel)', async () => {
-			// Test will fail until implementation
-			// Expected: Small images are handled correctly
-			expect(true).toBe(false); // Placeholder - replace with actual test
+		it('should behave identically to text type', () => {
+			expect(true).toBe(false);
+		});
+	});
+
+	describe('textarea field type', () => {
+		const textareaField: FieldDefinition = {
+			key: 'backstory',
+			label: 'Backstory',
+			type: 'textarea',
+			required: false,
+			order: 1
+		};
+
+		it('should display field label', () => {
+			const value = 'A long backstory...';
+			expect(true).toBe(false);
 		});
 
-		it('should handle animated GIF images', async () => {
-			// Test will fail until implementation
-			// Expected: Animated GIFs are converted and display correctly
-			expect(true).toBe(false); // Placeholder - replace with actual test
+		it('should preserve line breaks in display', () => {
+			const value = 'Line 1\nLine 2\nLine 3';
+			expect(true).toBe(false);
 		});
 
-		it('should handle WEBP images', async () => {
-			// Test will fail until implementation
-			// Expected: WEBP format is supported
-			expect(true).toBe(false); // Placeholder - replace with actual test
+		it('should render multi-paragraph text correctly', () => {
+			const value = 'Paragraph 1\n\nParagraph 2\n\nParagraph 3';
+			expect(true).toBe(false);
 		});
 
-		it('should handle image with unusual aspect ratio', () => {
-			// Test will fail until implementation
-			// Expected: Very wide or very tall images display properly
-			expect(true).toBe(false); // Placeholder - replace with actual test
+		it('should handle empty value', () => {
+			const value = '';
+			expect(true).toBe(false);
+		});
+	});
+
+	describe('long-text field type', () => {
+		const longTextField: FieldDefinition = {
+			key: 'notes',
+			label: 'Notes',
+			type: 'long-text',
+			required: false,
+			order: 1
+		};
+
+		it('should render as formatted text', () => {
+			const value = 'Some long notes...';
+			expect(true).toBe(false);
 		});
 
-		it('should handle transparent PNG images', () => {
-			// Test will fail until implementation
-			// Expected: Transparency is preserved in preview
-			expect(true).toBe(false); // Placeholder - replace with actual test
+		it('should behave identically to textarea type', () => {
+			expect(true).toBe(false);
+		});
+	});
+
+	describe('richtext field type', () => {
+		const richtextField: FieldDefinition = {
+			key: 'description',
+			label: 'Description',
+			type: 'richtext',
+			required: false,
+			order: 1
+		};
+
+		it('should display field label', () => {
+			const value = '# Heading\n\nSome text';
+			expect(true).toBe(false);
 		});
 
-		it('should handle corrupt/invalid image data', async () => {
-			// Test will fail until implementation
-			// Expected: Error message shown for corrupt files
-			expect(true).toBe(false); // Placeholder - replace with actual test
+		it('should render markdown as HTML', () => {
+			const value = '# Heading\n\nSome **bold** text';
+			// Should render heading and bold text
+			expect(true).toBe(false);
 		});
 
-		it('should clear FileReader when component unmounts', () => {
-			// Test will fail until implementation
-			// Expected: No memory leaks from FileReader
-			expect(true).toBe(false); // Placeholder - replace with actual test
+		it('should render markdown lists', () => {
+			const value = '- Item 1\n- Item 2\n- Item 3';
+			expect(true).toBe(false);
 		});
 
-		it('should handle rapid file selection changes', async () => {
-			// Test will fail until implementation
-			// Expected: Selecting multiple files quickly doesn't cause race conditions
-			expect(true).toBe(false); // Placeholder - replace with actual test
+		it('should render markdown links', () => {
+			const value = '[Link text](https://example.com)';
+			expect(true).toBe(false);
 		});
 
-		it('should handle international characters in filename', async () => {
-			// Test will fail until implementation
-			// Expected: Files with unicode names are processed correctly
-			expect(true).toBe(false); // Placeholder - replace with actual test
+		it('should sanitize potentially dangerous HTML', () => {
+			const value = '<script>alert("xss")</script>';
+			expect(true).toBe(false);
 		});
+
+		it('should handle empty markdown', () => {
+			const value = '';
+			expect(true).toBe(false);
+		});
+
+		it('should apply markdown styling', () => {
+			const value = '**Bold** and *italic*';
+			expect(true).toBe(false);
+		});
+	});
+});
+
+describe('FieldRenderer Component - Number Field Type', () => {
+	const numberField: FieldDefinition = {
+		key: 'level',
+		label: 'Level',
+		type: 'number',
+		required: false,
+		order: 1
+	};
+
+	it('should display field label', () => {
+		const value = 15;
+		expect(true).toBe(false);
+	});
+
+	it('should display numeric value', () => {
+		const value = 15;
+		expect(true).toBe(false);
+	});
+
+	it('should format large numbers with commas', () => {
+		const value = 1000000;
+		// Should display as "1,000,000"
+		expect(true).toBe(false);
+	});
+
+	it('should display decimal numbers', () => {
+		const value = 3.14159;
+		expect(true).toBe(false);
+	});
+
+	it('should display negative numbers', () => {
+		const value = -42;
+		expect(true).toBe(false);
+	});
+
+	it('should display zero', () => {
+		const value = 0;
+		expect(true).toBe(false);
+	});
+
+	it('should handle null value', () => {
+		const value = null;
+		expect(true).toBe(false);
+	});
+
+	it('should handle undefined value', () => {
+		const value = undefined;
+		expect(true).toBe(false);
+	});
+});
+
+describe('FieldRenderer Component - Boolean Field Type', () => {
+	const booleanField: FieldDefinition = {
+		key: 'is_active',
+		label: 'Is Active',
+		type: 'boolean',
+		required: false,
+		order: 1
+	};
+
+	it('should display field label', () => {
+		const value = true;
+		expect(true).toBe(false);
+	});
+
+	it('should display "Yes" for true value', () => {
+		const value = true;
+		expect(true).toBe(false);
+	});
+
+	it('should display "No" for false value', () => {
+		const value = false;
+		expect(true).toBe(false);
+	});
+
+	it('should show checkmark icon for true value', () => {
+		const value = true;
+		expect(true).toBe(false);
+	});
+
+	it('should show X icon or empty for false value', () => {
+		const value = false;
+		expect(true).toBe(false);
+	});
+
+	it('should handle null value as false', () => {
+		const value = null;
+		expect(true).toBe(false);
+	});
+
+	it('should handle undefined value as false', () => {
+		const value = undefined;
+		expect(true).toBe(false);
+	});
+
+	it('should not be interactive', () => {
+		const value = true;
+		// Should not have checkbox input
+		expect(true).toBe(false);
+	});
+});
+
+describe('FieldRenderer Component - Date Field Type', () => {
+	const dateField: FieldDefinition = {
+		key: 'birth_date',
+		label: 'Birth Date',
+		type: 'date',
+		required: false,
+		order: 1
+	};
+
+	it('should display field label', () => {
+		const value = '2024-01-15';
+		expect(true).toBe(false);
+	});
+
+	it('should format date in readable format', () => {
+		const value = '2024-01-15';
+		// Should display as "January 15, 2024" or similar locale-appropriate format
+		expect(true).toBe(false);
+	});
+
+	it('should handle ISO date strings', () => {
+		const value = '2024-01-15T00:00:00.000Z';
+		expect(true).toBe(false);
+	});
+
+	it('should handle empty date', () => {
+		const value = '';
+		expect(true).toBe(false);
+	});
+
+	it('should handle null date', () => {
+		const value = null;
+		expect(true).toBe(false);
+	});
+
+	it('should handle invalid date gracefully', () => {
+		const value = 'invalid-date';
+		expect(true).toBe(false);
+	});
+});
+
+describe('FieldRenderer Component - Select Field Type', () => {
+	const selectField: FieldDefinition = {
+		key: 'character_class',
+		label: 'Character Class',
+		type: 'select',
+		required: false,
+		options: ['Warrior', 'Mage', 'Rogue', 'Cleric'],
+		order: 1
+	};
+
+	it('should display field label', () => {
+		const value = 'Warrior';
+		expect(true).toBe(false);
+	});
+
+	it('should display selected value', () => {
+		const value = 'Warrior';
+		expect(true).toBe(false);
+	});
+
+	it('should format value (replace underscores with spaces)', () => {
+		const value = 'option_value';
+		// Should display as "option value"
+		expect(true).toBe(false);
+	});
+
+	it('should handle empty value', () => {
+		const value = '';
+		expect(true).toBe(false);
+	});
+
+	it('should handle null value', () => {
+		const value = null;
+		expect(true).toBe(false);
+	});
+
+	it('should handle value not in options list', () => {
+		const value = 'Unknown Class';
+		// Should still display the value
+		expect(true).toBe(false);
+	});
+});
+
+describe('FieldRenderer Component - Multi-Select Field Type', () => {
+	const multiSelectField: FieldDefinition = {
+		key: 'skills',
+		label: 'Skills',
+		type: 'multi-select',
+		required: false,
+		options: ['Stealth', 'Combat', 'Magic', 'Diplomacy'],
+		order: 1
+	};
+
+	it('should display field label', () => {
+		const value = ['Stealth', 'Magic'];
+		expect(true).toBe(false);
+	});
+
+	it('should display all selected values as chips/badges', () => {
+		const value = ['Stealth', 'Magic', 'Diplomacy'];
+		expect(true).toBe(false);
+	});
+
+	it('should display single value as chip', () => {
+		const value = ['Stealth'];
+		expect(true).toBe(false);
+	});
+
+	it('should format values (replace underscores)', () => {
+		const value = ['option_one', 'option_two'];
+		expect(true).toBe(false);
+	});
+
+	it('should handle empty array', () => {
+		const value: string[] = [];
+		expect(true).toBe(false);
+	});
+
+	it('should handle null value', () => {
+		const value = null;
+		expect(true).toBe(false);
+	});
+
+	it('should display values in order', () => {
+		const value = ['Stealth', 'Combat', 'Magic'];
+		expect(true).toBe(false);
+	});
+
+	it('should handle values not in options list', () => {
+		const value = ['Custom Value', 'Magic'];
+		expect(true).toBe(false);
+	});
+});
+
+describe('FieldRenderer Component - Tags Field Type', () => {
+	const tagsField: FieldDefinition = {
+		key: 'tags',
+		label: 'Tags',
+		type: 'tags',
+		required: false,
+		order: 1
+	};
+
+	it('should display field label', () => {
+		const value = ['tag1', 'tag2', 'tag3'];
+		expect(true).toBe(false);
+	});
+
+	it('should display tags as chips/badges', () => {
+		const value = ['tag1', 'tag2', 'tag3'];
+		expect(true).toBe(false);
+	});
+
+	it('should behave like multi-select for display', () => {
+		const value = ['tag1', 'tag2'];
+		expect(true).toBe(false);
+	});
+
+	it('should handle empty tag array', () => {
+		const value: string[] = [];
+		expect(true).toBe(false);
+	});
+
+	it('should apply tag-specific styling', () => {
+		const value = ['important', 'quest'];
+		expect(true).toBe(false);
+	});
+});
+
+describe('FieldRenderer Component - Entity Reference Fields', () => {
+	describe('entity-ref field type (single reference)', () => {
+		const entityRefField: FieldDefinition = {
+			key: 'owner',
+			label: 'Owner',
+			type: 'entity-ref',
+			required: false,
+			entityTypes: ['character', 'npc'],
+			order: 1
+		};
+
+		it('should display field label', () => {
+			const value = 'entity-id-123';
+			expect(true).toBe(false);
+		});
+
+		it('should display entity name as clickable link', () => {
+			const value = 'entity-id-123';
+			// Should fetch entity and display name
+			expect(true).toBe(false);
+		});
+
+		it('should link to entity detail page', () => {
+			const value = 'entity-id-123';
+			// Link should navigate to /entities/character/entity-id-123
+			expect(true).toBe(false);
+		});
+
+		it('should show entity type icon/badge', () => {
+			const value = 'entity-id-123';
+			expect(true).toBe(false);
+		});
+
+		it('should handle entity not found', () => {
+			const value = 'non-existent-id';
+			expect(true).toBe(false);
+		});
+
+		it('should handle empty value', () => {
+			const value = '';
+			expect(true).toBe(false);
+		});
+
+		it('should handle null value', () => {
+			const value = null;
+			expect(true).toBe(false);
+		});
+
+		it('should open link in same tab', async () => {
+			const value = 'entity-id-123';
+			expect(true).toBe(false);
+		});
+	});
+
+	describe('entity-refs field type (multiple references)', () => {
+		const entityRefsField: FieldDefinition = {
+			key: 'allies',
+			label: 'Allies',
+			type: 'entity-refs',
+			required: false,
+			entityTypes: ['character', 'npc'],
+			order: 1
+		};
+
+		it('should display field label', () => {
+			const value = ['entity-id-1', 'entity-id-2'];
+			expect(true).toBe(false);
+		});
+
+		it('should display all referenced entities as links', () => {
+			const value = ['entity-id-1', 'entity-id-2', 'entity-id-3'];
+			expect(true).toBe(false);
+		});
+
+		it('should show entity type badges for each entity', () => {
+			const value = ['entity-id-1', 'entity-id-2'];
+			expect(true).toBe(false);
+		});
+
+		it('should handle mixed entity types', () => {
+			const value = ['character-id-1', 'npc-id-1'];
+			expect(true).toBe(false);
+		});
+
+		it('should handle empty array', () => {
+			const value: string[] = [];
+			expect(true).toBe(false);
+		});
+
+		it('should handle null value', () => {
+			const value = null;
+			expect(true).toBe(false);
+		});
+
+		it('should handle some entities not found', () => {
+			const value = ['entity-id-1', 'non-existent-id', 'entity-id-3'];
+			expect(true).toBe(false);
+		});
+
+		it('should display entities in order', () => {
+			const value = ['entity-id-1', 'entity-id-2', 'entity-id-3'];
+			expect(true).toBe(false);
+		});
+	});
+});
+
+describe('FieldRenderer Component - URL Field Type', () => {
+	const urlField: FieldDefinition = {
+		key: 'website',
+		label: 'Website',
+		type: 'url',
+		required: false,
+		order: 1
+	};
+
+	it('should display field label', () => {
+		const value = 'https://example.com';
+		expect(true).toBe(false);
+	});
+
+	it('should display URL as clickable external link', () => {
+		const value = 'https://example.com';
+		expect(true).toBe(false);
+	});
+
+	it('should open link in new tab', () => {
+		const value = 'https://example.com';
+		// Link should have target="_blank"
+		expect(true).toBe(false);
+	});
+
+	it('should include rel="noopener noreferrer" for security', () => {
+		const value = 'https://example.com';
+		expect(true).toBe(false);
+	});
+
+	it('should show external link icon', () => {
+		const value = 'https://example.com';
+		expect(true).toBe(false);
+	});
+
+	it('should display URL text', () => {
+		const value = 'https://example.com';
+		expect(true).toBe(false);
+	});
+
+	it('should truncate very long URLs', () => {
+		const value = 'https://example.com/very/long/path/with/many/segments/that/should/be/truncated';
+		expect(true).toBe(false);
+	});
+
+	it('should handle empty URL', () => {
+		const value = '';
+		expect(true).toBe(false);
+	});
+
+	it('should handle null URL', () => {
+		const value = null;
+		expect(true).toBe(false);
+	});
+
+	it('should prevent XSS from javascript: URLs', () => {
+		const value = 'javascript:alert("xss")';
+		expect(true).toBe(false);
+	});
+});
+
+describe('FieldRenderer Component - Image Field Type', () => {
+	const imageField: FieldDefinition = {
+		key: 'avatar',
+		label: 'Avatar',
+		type: 'image',
+		required: false,
+		order: 1
+	};
+
+	it('should display field label', () => {
+		const value = 'https://example.com/image.png';
+		expect(true).toBe(false);
+	});
+
+	it('should display image from URL', () => {
+		const value = 'https://example.com/image.png';
+		expect(true).toBe(false);
+	});
+
+	it('should display image from base64 data URL', () => {
+		const base64Value =
+			'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+		expect(true).toBe(false);
+	});
+
+	it('should apply alt text to image', () => {
+		const value = 'https://example.com/image.png';
+		// Alt should be field label or meaningful description
+		expect(true).toBe(false);
+	});
+
+	it('should handle missing image gracefully', () => {
+		const value = 'https://example.com/broken-image.png';
+		expect(true).toBe(false);
+	});
+
+	it('should handle empty value', () => {
+		const value = '';
+		expect(true).toBe(false);
+	});
+
+	it('should handle null value', () => {
+		const value = null;
+		expect(true).toBe(false);
+	});
+
+	it('should constrain image size for display', () => {
+		const value = 'https://example.com/large-image.png';
+		// Should have max-width/max-height
+		expect(true).toBe(false);
+	});
+
+	it('should support clicking to view full size', async () => {
+		const value = 'https://example.com/image.png';
+		expect(true).toBe(false);
+	});
+
+	it('should prevent XSS from malicious data URLs', () => {
+		const value = 'javascript:alert("xss")';
+		expect(true).toBe(false);
+	});
+});
+
+describe('FieldRenderer Component - Computed Field Type', () => {
+	const computedField: FieldDefinition = {
+		key: 'max_hp',
+		label: 'Max HP',
+		type: 'computed',
+		required: false,
+		order: 1,
+		computedConfig: {
+			formula: '{constitution} * 10',
+			dependencies: ['constitution'],
+			outputType: 'number'
+		}
+	};
+
+	it('should display field label', () => {
+		const allFields = { constitution: 15 };
+		expect(true).toBe(false);
+	});
+
+	it('should display computed value', () => {
+		const allFields = { constitution: 15 };
+		// Should display 150
+		expect(true).toBe(false);
+	});
+
+	it('should calculate value based on formula', () => {
+		const allFields = { constitution: 15 };
+		expect(true).toBe(false);
+	});
+
+	it('should format number output', () => {
+		const allFields = { constitution: 15 };
+		expect(true).toBe(false);
+	});
+
+	it('should format text output', () => {
+		const textComputedField: FieldDefinition = {
+			...computedField,
+			computedConfig: {
+				formula: '{first_name} {last_name}',
+				dependencies: ['first_name', 'last_name'],
+				outputType: 'text'
+			}
+		};
+		const allFields = { first_name: 'John', last_name: 'Doe' };
+		expect(true).toBe(false);
+	});
+
+	it('should format boolean output', () => {
+		const boolComputedField: FieldDefinition = {
+			...computedField,
+			computedConfig: {
+				formula: '{level} >= 10',
+				dependencies: ['level'],
+				outputType: 'boolean'
+			}
+		};
+		const allFields = { level: 15 };
+		expect(true).toBe(false);
+	});
+
+	it('should handle missing dependencies', () => {
+		const allFields = {}; // constitution not provided
+		expect(true).toBe(false);
+	});
+
+	it('should handle formula errors gracefully', () => {
+		const badField: FieldDefinition = {
+			...computedField,
+			computedConfig: {
+				formula: '{invalid syntax ++',
+				dependencies: [],
+				outputType: 'number'
+			}
+		};
+		expect(true).toBe(false);
+	});
+
+	it('should show formula in tooltip or help text', () => {
+		const allFields = { constitution: 15 };
+		expect(true).toBe(false);
+	});
+
+	it('should indicate field is computed (not editable)', () => {
+		const allFields = { constitution: 15 };
+		expect(true).toBe(false);
+	});
+
+	it('should update when dependencies change', () => {
+		// This might require re-rendering with different allFields
+		expect(true).toBe(false);
+	});
+});
+
+describe('FieldRenderer Component - Common Functionality', () => {
+	const sampleField: FieldDefinition = {
+		key: 'test_field',
+		label: 'Test Field',
+		type: 'text',
+		required: false,
+		order: 1
+	};
+
+	it('should display empty state for all field types when value is empty', () => {
+		const value = null;
+		expect(true).toBe(false);
+	});
+
+	it('should never render input elements', () => {
+		const value = 'test value';
+		expect(true).toBe(false);
+	});
+
+	it('should be completely read-only', () => {
+		const value = 'test value';
+		expect(true).toBe(false);
+	});
+
+	it('should handle unknown field types gracefully', () => {
+		const unknownField: FieldDefinition = {
+			key: 'unknown',
+			label: 'Unknown',
+			type: 'unknown-type' as any,
+			required: false,
+			order: 1
+		};
+		const value = 'test value';
+		expect(true).toBe(false);
+	});
+
+	it('should apply consistent styling across field types', () => {
+		expect(true).toBe(false);
+	});
+
+	it('should support compact display mode', () => {
+		// For displaying in lists or cards
+		expect(true).toBe(false);
+	});
+
+	it('should support full display mode', () => {
+		// For displaying in detail views
+		expect(true).toBe(false);
+	});
+
+	it('should be accessible with proper ARIA attributes', () => {
+		const value = 'test value';
+		expect(true).toBe(false);
+	});
+
+	it('should handle very long text values with truncation', () => {
+		const longValue = 'x'.repeat(1000);
+		expect(true).toBe(false);
+	});
+
+	it('should provide expand/collapse for long content', () => {
+		const longValue = 'x'.repeat(500);
+		expect(true).toBe(false);
+	});
+});
+
+describe('FieldRenderer Component - Integration Tests', () => {
+	it('should render multiple fields with different types', () => {
+		const fields: FieldDefinition[] = [
+			{ key: 'name', label: 'Name', type: 'text', required: false, order: 1 },
+			{ key: 'level', label: 'Level', type: 'number', required: false, order: 2 },
+			{ key: 'active', label: 'Active', type: 'boolean', required: false, order: 3 }
+		];
+		const values = {
+			name: 'Aragorn',
+			level: 15,
+			active: true
+		};
+		expect(true).toBe(false);
+	});
+
+	it('should maintain visual consistency across field types', () => {
+		expect(true).toBe(false);
+	});
+
+	it('should support grouping fields by section', () => {
+		const fieldWithSection: FieldDefinition = {
+			key: 'secret',
+			label: 'Secret',
+			type: 'text',
+			required: false,
+			section: 'hidden',
+			order: 1
+		};
+		expect(true).toBe(false);
+	});
+
+	it('should handle playerVisible field attribute', () => {
+		// Field might have metadata about player visibility
+		expect(true).toBe(false);
+	});
+
+	it('should work with custom entity types', () => {
+		expect(true).toBe(false);
+	});
+
+	it('should integrate with entity store for entity references', () => {
+		expect(true).toBe(false);
 	});
 });

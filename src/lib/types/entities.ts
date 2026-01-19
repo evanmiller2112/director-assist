@@ -79,7 +79,15 @@ export type FieldType =
 	| 'entity-refs' // Multiple entity references
 	| 'date'
 	| 'url'
-	| 'image';
+	| 'image'
+	| 'computed'; // Computed field based on formula
+
+// Configuration for computed fields
+export interface ComputedFieldConfig {
+	formula: string; // Formula with {fieldName} placeholders
+	dependencies: string[]; // Field keys this formula depends on
+	outputType: 'text' | 'number' | 'boolean'; // Type of the computed result
+}
 
 // Field definition for entity schemas
 export interface FieldDefinition {
@@ -95,6 +103,7 @@ export interface FieldDefinition {
 	section?: string; // For grouping fields in UI (e.g., "hidden" for secrets)
 	order: number;
 	aiGenerate?: boolean; // Explicitly enable/disable AI generation for this field (default: enabled for text-based fields)
+	computedConfig?: ComputedFieldConfig; // Configuration for computed fields
 }
 
 // Entity type definition (defines what fields an entity type has)
@@ -102,6 +111,7 @@ export interface EntityTypeDefinition {
 	type: EntityType;
 	label: string;
 	labelPlural: string;
+	description?: string;
 	icon: string;
 	color: string;
 	isBuiltIn: boolean;

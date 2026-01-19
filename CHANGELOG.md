@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Entity parser service for AI chat responses (Issue #40, Phase A1)
+  - New `entityParserService.ts` extracts structured entity data from AI-generated text
+  - Detects entity types (NPC, Location, Faction, Item, etc.) with confidence scoring
+  - Extracts entity names, descriptions, and type-specific fields
+  - Splits multi-entity responses into individual sections
+  - Generates summaries and extracts tags from text
+  - Foundation for future AI chat entity creation features
+
 ## [0.6.1] - 2026-01-19
 
 ### Fixed

@@ -6,10 +6,11 @@
 	import { generateEntity, hasGenerationApiKey } from '$lib/services';
 	import { generateField, isGeneratableField } from '$lib/services/fieldGenerationService';
 	import { createEntity, type FieldValue, type FieldDefinition } from '$lib/types';
-	import { validateEntity } from '$lib/utils';
+	import { validateEntity, formatContextSummary } from '$lib/utils';
 	import { ArrowLeft, Save, Sparkles, Loader2, ExternalLink, ImagePlus, X as XIcon, Upload, Search, ChevronDown } from 'lucide-svelte';
 	import FieldGenerateButton from '$lib/components/entity/FieldGenerateButton.svelte';
 	import LoadingButton from '$lib/components/ui/LoadingButton.svelte';
+	import { MarkdownEditor } from '$lib/components/markdown';
 
 	const entityType = $derived($page.params.type ?? '');
 	const typeDefinition = $derived(
@@ -303,6 +304,36 @@
 			[fieldKey]: !entityRefDropdownOpen[fieldKey]
 		};
 	}
+
+	function getContextSummaryForField(targetFieldKey: string): string {
+		if (!typeDefinition) return '';
+
+		const campaign = campaignStore.campaign;
+		const campaignContext = campaign
+			? {
+					name: campaign.name,
+					setting: (campaign.fields?.setting as string) ?? '',
+					system: (campaign.fields?.system as string) ?? ''
+				}
+			: undefined;
+
+		return formatContextSummary({
+			entityType,
+			typeDefinition,
+			currentValues: {
+				name: name.trim() || undefined,
+				description: description.trim() || undefined,
+				tags: tags
+					.split(',')
+					.map((t) => t.trim())
+					.filter(Boolean),
+				notes: notes.trim() || undefined,
+				fields: $state.snapshot(fields)
+			},
+			campaignContext,
+			targetFieldKey
+		});
+	}
 </script>
 
 <svelte:head>
@@ -365,6 +396,7 @@
 								disabled={isGenerating || isSaving}
 								loading={generatingFieldKey === field.key}
 								onGenerate={() => handleGenerateField(field)}
+								contextSummary={getContextSummaryForField(field.key)}
 							/>
 						{/if}
 					</div>
@@ -382,7 +414,17 @@
 							oninput={(e) => updateField(field.key, e.currentTarget.value)}
 							placeholder={field.placeholder}
 						/>
-					{:else if field.type === 'textarea' || field.type === 'richtext'}
+					{:else if field.type === 'richtext'}
+						<MarkdownEditor
+							value={(fields[field.key] as string) ?? ''}
+							placeholder={field.placeholder}
+							error={errors[field.key]}
+							onchange={(value) => updateField(field.key, value)}
+							mode="split"
+							minHeight="200px"
+							maxHeight="600px"
+						/>
+					{:else if field.type === 'textarea'}
 						<textarea
 							id={field.key}
 							class="input min-h-[80px] {errors[field.key] ? 'input-error' : ''}"
@@ -726,6 +768,7 @@
 										disabled={isGenerating || isSaving}
 										loading={generatingFieldKey === field.key}
 										onGenerate={() => handleGenerateField(field)}
+										contextSummary={getContextSummaryForField(field.key)}
 									/>
 								{/if}
 							</div>

@@ -11,7 +11,7 @@ An AI-powered campaign management tool for Directors running Draw Steel TTRPG ca
 - **Command Palette**: Quick actions by typing "/" in the search bar—create entities, navigate pages, relate entities, and more
 - **Never Lose Your Notes**: All data stored locally in your browser with backup/restore
 - **Work Your Way**: Light and dark themes, customizable entity types
-- **AI-Powered Field Generation**: Generate content for individual fields using Claude AI, with context from other fields
+- **AI-Powered Content Generation**: Generate content using Claude AI with campaign context awareness
 - **Responsive Loading States**: Polished loading feedback with skeleton screens, spinners, and loading buttons
 
 ## Quick Start
@@ -76,17 +76,7 @@ Commands adapt to your current page. Entity-specific commands like `/relate` and
 
 ### AI-Powered Content Generation
 
-Director Assist can generate content for individual fields using AI from multiple providers:
-
-1. Fill in some basic information about your entity (name, description, tags)
-2. Click the sparkle button next to any text field
-3. AI generates context-aware content based on what you've already filled in
-4. DM-only fields (like secrets) are kept private and not shared with AI
-
-**Generatable Field Types:**
-- Single-line text fields
-- Multi-line textarea fields
-- Rich text (markdown) fields
+Director Assist can generate content for individual fields using AI from multiple providers.
 
 **Supported AI Providers:**
 - Anthropic (Claude models)
@@ -94,6 +84,33 @@ Director Assist can generate content for individual fields using AI from multipl
 - Google (Gemini models)
 - Mistral (Mistral models)
 - Ollama (local models)
+
+**Setup:**
+1. Get an API key from your chosen provider (e.g., [console.anthropic.com](https://console.anthropic.com) for Claude)
+2. Add it in Settings (gear icon in header)
+3. The AI uses your campaign setting and system to generate appropriate content
+
+**Generatable Field Types:**
+- Single-line text fields
+- Multi-line textarea fields
+- Rich text fields (markdown editor with formatting toolbar)
+
+When creating or editing any entity, look for the sparkle button next to text fields:
+
+1. Fill in basic information first (name, description, tags)
+2. Click the generate button next to any field you want AI to complete
+3. The AI considers your campaign context and other filled fields
+4. Review and edit the generated content as needed
+
+**What Can Be Generated:**
+- Text fields (role, title, occupation, etc.)
+- Multi-line fields (personality, appearance, motivation, etc.)
+- Rich text fields (background, history, detailed descriptions)
+
+**Privacy Protection:**
+- DM-only fields (secrets, hidden agendas) are never sent to the AI
+- Your API key is stored only in your browser
+- No data is sent to Director Assist servers (there aren't any)
 
 **Requires:** API key for your chosen provider (add in Settings)
 
@@ -156,9 +173,9 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for:
 
 ## Roadmap
 
-- Full-entity AI generation (create entire NPCs, locations, etc. at once)
+- Full-entity AI generation (create complete entities with all fields at once)
 - AI chat assistant for campaign planning and plot suggestions
-- Relationship graph visualization
+- AI-suggested relationships between entities
 - Session prep checklists
 - Dice roller integration
 - Print-friendly entity sheets

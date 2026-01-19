@@ -169,7 +169,7 @@ Single-line inputs for short information like role, occupation, or title.
 Multi-line inputs for longer content like personality descriptions or notes.
 
 **Rich Text Fields**
-Full markdown editor for formatted text. Supports headings, lists, bold, italic, and more. Great for backgrounds, histories, or detailed descriptions.
+Full markdown editor with a formatting toolbar for creating rich formatted text. The editor offers three modes: edit-only, preview-only, or split view showing both side-by-side. Use the toolbar buttons to add bold, italic, headings, code blocks, links, and lists. Keyboard shortcuts available: Ctrl+B for bold, Ctrl+I for italic. Great for backgrounds, histories, or detailed descriptions that need formatting.
 
 **Select Fields**
 Dropdown menus for predefined choices like status (active, inactive, deceased) or importance (critical, major, minor).
@@ -1071,11 +1071,16 @@ Create a Session entity after each game session with:
 
 **Images**: Use images sparingly - they increase backup file size and can slow things down.
 
-**Rich Text**: Use markdown for formatted descriptions:
+**Rich Text**: Use the markdown editor toolbar for easy formatting:
+- Click the toolbar buttons or use keyboard shortcuts (Ctrl+B for bold, Ctrl+I for italic)
+- Switch between edit, preview, and split modes using the mode buttons
+- Preview your formatted text in real-time
 - Headings: `## Heading`
-- Bold: `**bold text**`
-- Italic: `*italic text*`
+- Bold: `**bold text**` or Ctrl+B
+- Italic: `*italic text*` or Ctrl+I
 - Lists: Start lines with `-` or `1.`
+- Code: Wrap text in backticks or use the code button
+- Links: Use the link button or `[text](url)` syntax
 
 ### Search Tips
 

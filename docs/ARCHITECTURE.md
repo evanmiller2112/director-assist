@@ -28,6 +28,12 @@ Director Assist is a client-side web application built with SvelteKit 2 and Svel
 - **CSS Custom Properties**: Theme variables for dark/light mode
 - **Loading Components**: Reusable loading states for async operations
 
+### Rich Text Editing
+- **marked**: Markdown parsing library for converting markdown to HTML
+- **DOMPurify**: HTML sanitization library for XSS protection
+- **MarkdownEditor**: Rich text editor component with toolbar and live preview
+- **MarkdownViewer**: Markdown rendering component for display-only views
+
 ### Visualization
 - **vis-network**: Interactive network graph visualization library
 - **vis-data**: Data structures for vis.js (DataSet, DataView)
@@ -66,6 +72,9 @@ src/
 │   │   │   └── NetworkEdgeDetails.svelte    # Edge detail panel
 │   │   ├── navigation/      # Navigation components
 │   │   │   └── RelationshipBreadcrumbs.svelte
+│   │   ├── markdown/        # Markdown editing and rendering
+│   │   │   ├── MarkdownEditor.svelte
+│   │   │   └── MarkdownViewer.svelte
 │   │   ├── ui/              # UI components
 │   │   │   ├── LoadingSpinner.svelte
 │   │   │   ├── LoadingSkeleton.svelte
@@ -82,7 +91,8 @@ src/
 │   │   ├── commandUtils.ts       # Command parsing and filtering
 │   │   ├── matrixUtils.ts        # Matrix data processing and sorting
 │   │   ├── breadcrumbUtils.ts    # Breadcrumb path parsing and serialization
-│   │   └── networkGraph.ts       # Network graph visualization utilities
+│   │   ├── networkGraph.ts       # Network graph visualization utilities
+│   │   └── markdownUtils.ts      # HTML sanitization for markdown rendering
 │   ├── db/                  # Database layer
 │   │   ├── index.ts         # Dexie database setup
 │   │   └── repositories/    # Data access layer
@@ -90,8 +100,10 @@ src/
 │   │       ├── campaignRepository.ts
 │   │       └── chatRepository.ts
 │   ├── services/            # Business logic services
-│   │   ├── fieldGenerationService.ts  # AI field generation
-│   │   └── modelService.ts            # AI model selection
+│   │   ├── contextBuilder.ts              # Entity context building for AI
+│   │   ├── fieldGenerationService.ts      # AI field generation
+│   │   ├── modelService.ts                # AI model selection
+│   │   └── relationshipContextBuilder.ts  # Relationship context building for AI
 │   ├── stores/              # Application state
 │   │   ├── campaign.svelte.ts
 │   │   ├── entities.svelte.ts
@@ -1548,6 +1560,173 @@ interface LoadingButtonProps {
 - Proper focus management
 - Keyboard navigation support
 
+#### MarkdownEditor Component
+
+**Location:** `/src/lib/components/markdown/MarkdownEditor.svelte`
+
+**Purpose:** Rich text editor with markdown support, toolbar formatting options, and live preview for editing richtext fields.
+
+**Props:**
+
+```typescript
+interface MarkdownEditorProps {
+  value: string;                        // Current markdown content (bindable)
+  placeholder?: string;                 // Placeholder text for empty editor
+  disabled?: boolean;                   // Disable editing
+  readonly?: boolean;                   // Read-only mode
+  mode?: 'edit' | 'preview' | 'split';  // Editor display mode (default: 'split')
+  minHeight?: string;                   // Minimum height (default: '150px')
+  maxHeight?: string;                   // Maximum height (default: '400px')
+  class?: string;                       // Additional CSS classes
+  showToolbar?: boolean;                // Show formatting toolbar (default: true)
+  error?: string;                       // Error message to display
+  onchange?: (value: string) => void;   // Change callback
+}
+```
+
+**Features:**
+
+- Formatting toolbar with buttons for bold, italic, heading, code, link, and list
+- Three editing modes:
+  - **Edit**: Show only markdown editor
+  - **Preview**: Show only rendered preview
+  - **Split**: Show editor and preview side-by-side
+- Keyboard shortcuts: Ctrl+B (bold), Ctrl+I (italic)
+- Real-time preview with HTML sanitization
+- Automatic textarea resizing within min/max bounds
+- Selection-aware formatting (wraps selected text)
+- Dark mode support
+
+**Usage Examples:**
+
+```svelte
+<script>
+  let content = $state('# Welcome\n\nEdit your markdown here...');
+</script>
+
+<!-- Basic markdown editor -->
+<MarkdownEditor bind:value={content} />
+
+<!-- Edit-only mode with custom height -->
+<MarkdownEditor
+  bind:value={content}
+  mode="edit"
+  minHeight="200px"
+  maxHeight="600px"
+/>
+
+<!-- Read-only preview mode -->
+<MarkdownEditor
+  value={content}
+  mode="preview"
+  readonly
+  showToolbar={false}
+/>
+
+<!-- With change handler -->
+<MarkdownEditor
+  bind:value={content}
+  onchange={(newValue) => console.log('Changed:', newValue)}
+/>
+```
+
+**Toolbar Buttons:**
+
+- **Bold (B)**: Wraps selection with `**`
+- **Italic (I)**: Wraps selection with `*`
+- **Heading (H)**: Adds `## ` at line start
+- **Code (`<>`)**: Wraps selection with backticks
+- **Link (🔗)**: Inserts `[text](url)` template
+- **List (≡)**: Adds `- ` at line start
+
+**Accessibility:**
+
+- ARIA labels on toolbar buttons
+- Keyboard navigation support
+- Screen reader friendly mode indicators
+- Proper focus management
+
+#### MarkdownViewer Component
+
+**Location:** `/src/lib/components/markdown/MarkdownViewer.svelte`
+
+**Purpose:** Display markdown content as rendered HTML with sanitization for security.
+
+**Props:**
+
+```typescript
+interface MarkdownViewerProps {
+  content: string;        // Markdown content to render
+  class?: string;         // Additional CSS classes
+  sanitize?: boolean;     // Enable HTML sanitization (default: true)
+}
+```
+
+**Features:**
+
+- Markdown parsing using the `marked` library
+- HTML sanitization using DOMPurify to prevent XSS attacks
+- GitHub Flavored Markdown (GFM) support
+- Converts newlines to `<br>` tags
+- External links open in new tabs with `rel="noopener noreferrer"`
+- Tailwind Typography (`prose`) styling
+- Dark mode support with `prose-invert`
+
+**Usage Examples:**
+
+```svelte
+<script>
+  const markdown = `
+    ## Features
+
+    - **Bold** text
+    - *Italic* text
+    - [External link](https://example.com)
+
+    \`\`\`javascript
+    console.log('Code blocks too!');
+    \`\`\`
+  `;
+</script>
+
+<!-- Basic viewer -->
+<MarkdownViewer content={markdown} />
+
+<!-- Without sanitization (trusted content only) -->
+<MarkdownViewer content={markdown} sanitize={false} />
+
+<!-- Custom styling -->
+<MarkdownViewer content={markdown} class="p-4 bg-white rounded" />
+```
+
+**Supported Markdown:**
+
+- Headings (h1-h6)
+- Bold and italic text
+- Lists (ordered and unordered)
+- Code blocks and inline code
+- Links (automatically open in new tabs)
+- Blockquotes
+- Tables
+- Horizontal rules
+- Images
+
+**Security:**
+
+- HTML sanitization enabled by default
+- Removes potentially dangerous tags and attributes
+- Allows safe formatting tags only
+- External links include `rel="noopener noreferrer"`
+
+**Styling:**
+
+All markdown elements are styled consistently with the application theme:
+- Code blocks: Slate background with syntax highlighting
+- Blockquotes: Left border with italic text
+- Tables: Full-width with cell borders
+- Links: Blue with hover underline
+- Headings: Bold with appropriate sizing
+
 #### Integration Points
 
 **Entity List Pages** (`/src/routes/entities/[type]/+page.svelte`)
@@ -1555,10 +1734,16 @@ interface LoadingButtonProps {
 - Show 5 entityCard skeletons during initial load
 - Smooth transition to actual content
 
-**Entity Create/Edit Forms**
+**Entity Create/Edit Forms** (`/src/routes/entities/[type]/new/+page.svelte`, `/src/routes/entities/[type]/[id]/edit/+page.svelte`)
 - Use LoadingButton for save/create actions
+- Use MarkdownEditor for all richtext field types
 - Prevent double-submission during async operations
 - Clear visual feedback for form submission
+
+**Entity Detail Pages** (`/src/routes/entities/[type]/[id]/+page.svelte`)
+- Use MarkdownViewer to render richtext field content
+- Automatically sanitizes HTML to prevent XSS attacks
+- Displays formatted markdown in read-only mode
 
 **Settings Page** (`/src/routes/settings/+page.svelte`)
 - Use LoadingButton for export/import operations
@@ -3115,6 +3300,219 @@ Hidden fields (with `section: 'hidden'`) are automatically excluded from AI cont
 - Provider settings stored in IndexedDB (`aiSettings` table)
 - Active provider and model selected by user in Settings UI (planned)
 - Max tokens: 1024 (configurable per field type)
+
+#### Context Builder Service
+
+**Location:** `/src/lib/services/contextBuilder.ts`
+
+**Purpose:** Builds contextual summaries of entities for AI prompt injection, managing character and entity limits to stay within token budgets.
+
+**Key Functions:**
+
+```typescript
+// Build context from entity summaries with filtering and limits
+buildContext(options: ContextOptions): Promise<BuiltContext>
+
+// Format a single entity for display
+formatContextEntry(entry: EntityContext): string
+
+// Format complete context for AI prompt injection
+formatContextForPrompt(context: BuiltContext): string
+
+// Get statistics about context usage
+getContextStats(context: BuiltContext): { entityCount, characterCount, estimatedTokens, truncated }
+```
+
+**Options Interface:**
+
+```typescript
+interface ContextOptions {
+  maxEntities?: number;          // Default: 50
+  maxCharacters?: number;         // Default: 8000
+  includeLinked?: boolean;        // Default: true
+  entityIds?: EntityId[];         // Specific entities to include
+  entityTypes?: string[];         // Filter by entity types
+}
+```
+
+**Features:**
+
+- Automatic linked entity discovery when `includeLinked` is true
+- Privacy protection: only includes entities with summaries
+- Character budget enforcement to prevent exceeding token limits
+- Type filtering to include only relevant entity types
+- Truncation tracking to inform users when context is limited
+
+**Output Format:**
+
+```
+=== Campaign Context ===
+[NPC] Grimwald the Wise: An elderly wizard who serves as the party's mentor
+[Faction] Shadow Guild: A secretive organization operating in the city's underbelly
+[Location] Arcane Library: Ancient repository of magical knowledge
+(Additional entities available but not included due to context limits)
+```
+
+#### Relationship Context Builder Service
+
+**Location:** `/src/lib/services/relationshipContextBuilder.ts`
+
+**Purpose:** Builds contextual summaries of related entities from the perspective of a source entity for AI generation. Complements the general context builder by focusing on entity relationships.
+
+**Key Functions:**
+
+```typescript
+// Build relationship context for a source entity
+buildRelationshipContext(
+  sourceEntityId: EntityId,
+  options: RelationshipContextOptions
+): Promise<RelationshipContext>
+
+// Format a single related entity entry
+formatRelatedEntityEntry(entry: RelatedEntityContext): string
+
+// Format complete relationship context for AI prompts
+formatRelationshipContextForPrompt(context: RelationshipContext): string
+
+// Calculate statistics about relationship context
+getRelationshipContextStats(context: RelationshipContext): RelationshipContextStats
+
+// Build privacy-safe summary (excludes hidden/secret fields)
+buildPrivacySafeSummary(entity: BaseEntity): string
+```
+
+**Options Interface:**
+
+```typescript
+interface RelationshipContextOptions {
+  maxRelatedEntities?: number;    // Default: 20
+  maxCharacters?: number;          // Default: 4000
+  direction?: 'outgoing' | 'incoming' | 'both';  // Default: 'both'
+  relationshipTypes?: string[];    // Filter by relationship types
+  entityTypes?: EntityType[];      // Filter by entity types
+  maxDepth?: number;               // Default: 1 (traversal depth)
+  includeStrength?: boolean;       // Default: false
+  includeNotes?: boolean;          // Default: false
+}
+```
+
+**Features:**
+
+- **Relationship Traversal**: Supports depth-based traversal to include indirect relationships
+- **Bidirectional**: Can include outgoing links (from source), incoming links (to source), or both
+- **Privacy Protection**: Automatically excludes hidden fields and secrets via `buildPrivacySafeSummary()`
+- **Circular Reference Prevention**: Tracks visited entities to avoid infinite loops
+- **Smart Truncation**: Respects both entity count and character limits
+- **Relationship Metadata**: Optionally includes relationship strength and notes
+
+**Output Format:**
+
+```
+=== Relationships for Grimwald the Wise ===
+[Relationship: mentor_of] Aldric (Player Character): Young warrior seeking guidance...
+[Relationship: member_of] Wizard's Council (Faction): Governing body of mages... [Strength: strong]
+[Relationship: resides_in] Arcane Tower (Location): Tall structure in the city center...
+(Context truncated - additional relationships available but not included due to limits)
+```
+
+**Privacy Protection:**
+
+The `buildPrivacySafeSummary()` function ensures that AI context never includes sensitive information:
+- Excludes fields marked with `section: 'hidden'`
+- Excludes the `secrets` field
+- Excludes the `notes` field
+- Truncates descriptions to 200 characters
+- Limits total summary to 500 characters
+
+**Use Cases:**
+
+- Generating content that needs awareness of entity relationships
+- Building character backstories that reference existing connections
+- Creating plot hooks based on faction memberships
+- Generating location descriptions that mention inhabitants
+
+#### Model Service
+
+**Location:** `/src/lib/services/modelService.ts`
+
+**Purpose:** Manages AI model selection with automatic fallback to the latest Claude Haiku model.
+
+**Key Functions:**
+
+```typescript
+// Fetch available models from Anthropic API (with 1-hour cache)
+fetchModels(apiKey: string): Promise<ModelInfo[]>
+
+// Get the currently selected model ID
+getSelectedModel(): string
+
+// Save user's model selection
+setSelectedModel(modelId: string): void
+
+// Extract date from model ID for comparison
+extractDateFromModelId(id: string): number | null
+
+// Find latest Haiku model from a list
+findLatestHaikuModel(models: ModelInfo[]): ModelInfo | null
+
+// Clear cached models
+clearModelsCache(): void
+
+// Get fallback models when API unavailable
+getFallbackModels(): ModelInfo[]
+```
+
+**Model Selection Priority:**
+
+The service uses a three-tier priority system for selecting the default model:
+
+1. **User Selection** (highest priority): If the user explicitly selected a model, always use that choice
+2. **Auto-selected Latest Haiku**: Find the newest Haiku model from cached API data by comparing dates in model IDs
+3. **Hardcoded Fallback** (lowest priority): Use `claude-haiku-4-5-20250514` if API unavailable
+
+**Auto-Selection Logic:**
+
+When no user selection exists, the service automatically finds the latest Haiku model by:
+
+1. Filtering models to only Haiku variants (case-insensitive: "haiku", "HAIKU", "Haiku")
+2. Sorting by multiple criteria (highest priority first):
+   - Date extracted from model ID (descending)
+   - `created_at` timestamp if no ID date available
+   - Reverse alphabetical by ID as final tiebreaker
+3. Returning the top result
+
+**Date Extraction:**
+
+Model IDs contain 8-digit dates (YYYYMMDD format). The service uses regex to extract these dates:
+- Pattern: `/(?<!\d)(\d{8})(?!\d)/`
+- Example: `claude-haiku-4-5-20250514` → `20250514`
+- Used to determine which model is newer
+
+**Caching Strategy:**
+
+- Models are cached in localStorage for 1 hour to reduce API calls
+- Cache key: `dm-assist-models-cache`
+- Cache cleared automatically when API key changes
+- Cache format: `{ models: ModelInfo[], timestamp: number }`
+
+**Benefits:**
+
+- Users always get the latest Haiku model without app updates
+- Manual selections always respected (never overridden)
+- Graceful degradation when API unavailable
+- Reduces API calls through intelligent caching
+
+### Error Handling
+
+The service provides user-friendly error messages for common scenarios:
+
+| Error | User Message |
+|-------|--------------|
+| No API key | "API key not configured. Please add your Anthropic API key in Settings." |
+| Invalid API key (401) | "Invalid API key. Please check your API key in Settings." |
+| Rate limit (429) | "Rate limit exceeded. Please wait a moment and try again." |
+| Network/API error | "Failed to generate field: [error message]" |
+| Empty response | "AI returned empty content" |
 
 ### Prompt Engineering
 

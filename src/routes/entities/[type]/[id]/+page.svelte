@@ -8,6 +8,7 @@
 	import { RelationshipBreadcrumbs } from '$lib/components/navigation';
 	import { parseBreadcrumbPath, serializeBreadcrumbPath, type BreadcrumbSegment } from '$lib/utils/breadcrumbUtils';
 	import type { BaseEntity } from '$lib/types';
+	import { MarkdownViewer } from '$lib/components/markdown';
 
 	const entityId = $derived($page.params.id ?? '');
 	const entityType = $derived($page.params.type ?? '');
@@ -303,6 +304,8 @@
 										{:else}
 											<span class="text-slate-400 dark:text-slate-500">—</span>
 										{/if}
+									{:else if fieldDef?.type === 'richtext' && typeof value === 'string'}
+										<MarkdownViewer content={value} />
 									{:else}
 										{value}
 									{/if}

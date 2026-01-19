@@ -18,6 +18,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Consistent error handling across providers
   - Provider-specific configurations (baseUrl for Ollama, API keys for cloud providers)
   - Dependencies: ai, @ai-sdk/anthropic, @ai-sdk/openai, @ai-sdk/google, @ai-sdk/mistral, ollama-ai-provider
+- Markdown editor for rich text fields (Issue #13)
+  - New MarkdownEditor component with formatting toolbar (bold, italic, heading, code, link, list)
+  - Three editing modes: edit-only, preview-only, and split view
+  - Keyboard shortcuts: Ctrl+B for bold, Ctrl+I for italic
+  - Real-time markdown preview with HTML sanitization
+  - New MarkdownViewer component for rendering markdown as sanitized HTML
+  - Integrated into all entity forms (new and edit pages) for richtext fields
+  - Markdown rendering on entity view pages for richtext content
+  - Dependencies: marked for markdown parsing, DOMPurify for HTML sanitization
 - Relationship-based entity filtering system (Issue #78)
   - RelationshipFilter component on entity list pages
   - Filter by "related to" a specific entity (bidirectional)

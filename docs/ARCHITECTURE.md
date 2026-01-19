@@ -57,7 +57,9 @@ src/
 │   │   │   ├── FieldGenerateButton.svelte
 │   │   │   ├── RelationshipCard.svelte
 │   │   │   ├── RelateCommand.svelte
-│   │   │   └── EntitySummary.svelte
+│   │   │   ├── EntitySummary.svelte
+│   │   │   ├── RelationshipContextSelector.svelte  # Relationship context UI
+│   │   │   └── RelationshipContextItem.svelte      # Individual relationship item
 │   │   ├── relationships/   # Relationship management components
 │   │   │   ├── RelationshipsFilter.svelte
 │   │   │   ├── RelationshipsTable.svelte
@@ -94,7 +96,8 @@ src/
 │   │   ├── breadcrumbUtils.ts           # Breadcrumb path parsing and serialization
 │   │   ├── networkGraph.ts              # Network graph visualization utilities
 │   │   ├── markdownUtils.ts             # HTML sanitization for markdown rendering
-│   │   └── relationshipContextFields.ts # Smart field detection for relationship context
+│   │   ├── relationshipContextFields.ts # Smart field detection for relationship context
+│   │   └── timeFormat.ts                # Relative time formatting for cache timestamps
 │   ├── db/                  # Database layer
 │   │   ├── index.ts         # Dexie database setup
 │   │   └── repositories/    # Data access layer
@@ -1168,6 +1171,244 @@ The modal calls the entity repository's `updateLink()` method, which handles:
 - Intuitive bidirectional toggle with automatic reverse link management
 - Immediate validation prevents invalid configurations
 - Success notifications confirm changes were saved
+
+#### RelationshipContextSelector Component
+
+The RelationshipContextSelector component provides an expandable UI for selecting which relationships to include in AI generation context, with cache status visibility and granular control.
+
+**Location:** `/src/lib/components/entity/RelationshipContextSelector.svelte`
+
+**Purpose:** Allow users to preview relationship context before AI generation, select specific relationships to include, view cache status, and regenerate stale summaries on demand.
+
+**Props:**
+
+```typescript
+interface RelationshipContextSelectorProps {
+  sourceEntity: BaseEntity;                        // Entity being edited
+  relationshipContext: RelationshipContextData[];  // Array of relationship data
+  onContextChange?: (context: RelationshipContextData[]) => void;  // Selection change
+  onRegenerate?: (index: number) => void;          // Regenerate summary callback
+}
+
+interface RelationshipContextData {
+  relationship: EntityLink;     // The link object
+  targetEntity: BaseEntity;     // Related entity
+  cacheStatus: CacheStatus;     // 'valid' | 'stale' | 'missing'
+  summary?: string;             // Cached AI summary
+  generatedAt?: Date;           // When summary was cached
+  tokenCount?: number;          // Estimated tokens
+  included?: boolean;           // Selected for inclusion
+  regenerating?: boolean;       // Currently regenerating
+}
+```
+
+**Features:**
+
+- **Expandable Panel**: Click header to show/hide relationship list
+- **Relationship Count Badge**: Blue badge showing total relationships
+- **Cache Status Summary**: At-a-glance count of valid/stale/missing summaries
+- **Select All/None Controls**: Quick bulk selection buttons
+- **Total Token Count**: Running total of selected relationships' token cost
+- **Individual Items**: Uses RelationshipContextItem for each relationship
+- **Empty State**: Clear message when no relationships exist
+
+**Visual Indicators:**
+
+- Collapsed header shows relationship count and Network icon
+- Chevron icon rotates to indicate expand/collapse state
+- Cache status summary uses color-coded dots (green/yellow/gray)
+- Token count updates reactively as selections change
+
+**Derived State:**
+
+```typescript
+// Total tokens for included relationships
+const totalTokens = $derived(
+  relationshipContext
+    .filter(ctx => ctx.included)
+    .reduce((sum, ctx) => sum + (ctx.tokenCount || 0), 0)
+);
+
+// Cache status summary counts
+const cacheStatusSummary = $derived.by(() => {
+  const summary = { valid: 0, stale: 0, missing: 0 };
+  for (const ctx of relationshipContext) {
+    summary[ctx.cacheStatus]++;
+  }
+  return summary;
+});
+```
+
+**Integration:**
+
+Used on entity edit pages (`/src/routes/entities/[type]/[id]/edit/+page.svelte`) to provide relationship context controls for AI field generation. Appears below tags field when entity has relationships and AI features are enabled.
+
+**Example Usage:**
+
+```svelte
+<script>
+  let relationshipContext = $state<RelationshipContextData[]>([]);
+
+  async function loadRelationshipContext() {
+    const links = entitiesStore.getLinkedWithRelationships(entity.id);
+    relationshipContext = await Promise.all(
+      links.map(async ({ entity: target, link }) => ({
+        relationship: link,
+        targetEntity: target,
+        cacheStatus: await getCacheStatus(target),
+        summary: await getSummary(target),
+        generatedAt: getCachedDate(target),
+        tokenCount: estimateTokens(target),
+        included: true,
+        regenerating: false
+      }))
+    );
+  }
+
+  function handleContextChange(newContext: RelationshipContextData[]) {
+    relationshipContext = newContext;
+  }
+
+  async function handleRegenerate(index: number) {
+    relationshipContext[index].regenerating = true;
+    // ... regenerate summary ...
+    relationshipContext[index].regenerating = false;
+  }
+</script>
+
+<RelationshipContextSelector
+  {sourceEntity}
+  {relationshipContext}
+  onContextChange={handleContextChange}
+  onRegenerate={handleRegenerate}
+/>
+```
+
+**Accessibility:**
+
+- Expandable panel uses `aria-expanded` attribute
+- Region labeled with `aria-label="Relationship Context"`
+- Semantic button for expand/collapse
+- Clear visual and textual feedback for all states
+
+#### RelationshipContextItem Component
+
+The RelationshipContextItem component displays a single relationship within the RelationshipContextSelector, showing cache status, summary preview, and regenerate controls.
+
+**Location:** `/src/lib/components/entity/RelationshipContextItem.svelte`
+
+**Purpose:** Provide detailed view and controls for individual relationships in the context selector, including cache status indicators and on-demand regeneration.
+
+**Props:**
+
+```typescript
+interface RelationshipContextItemProps {
+  targetEntity: BaseEntity;       // The related entity
+  relationship: EntityLink;       // The link object
+  included: boolean;              // Selected for inclusion
+  cacheStatus: CacheStatus;       // 'valid' | 'stale' | 'missing'
+  summary?: string;               // Cached summary text
+  generatedAt?: Date;             // Cache timestamp
+  tokenCount?: number;            // Token estimate
+  regenerating?: boolean;         // Loading state
+  onToggle?: () => void;          // Selection toggle callback
+  onRegenerate?: () => void;      // Regenerate callback
+}
+```
+
+**Features:**
+
+- **Checkbox**: Toggle inclusion in context
+- **Entity Name and Type**: Target entity info with relationship type
+- **Cache Status Badge**: Color-coded badge with status label
+  - Valid (green): Summary is current
+  - Stale (yellow): Entity changed since caching
+  - No Cache (gray): No summary generated
+- **Cache Age**: Relative time display (e.g., "Cached 2 hours ago")
+- **Summary Preview**: Two-line truncated preview of cached summary
+- **Token Count**: Individual relationship token estimate
+- **Regenerate Button**: Refresh summary on demand
+- **Loading State**: Spinning icon during regeneration
+- **Visual States**: Different styling for selected/unselected items
+
+**Visual Styling:**
+
+```typescript
+// Cache status badge configuration
+const cacheStatusConfig = $derived.by(() => {
+  switch (cacheStatus) {
+    case 'valid':
+      return {
+        label: 'Valid',
+        classes: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
+      };
+    case 'stale':
+      return {
+        label: 'Stale',
+        classes: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300'
+      };
+    case 'missing':
+      return {
+        label: 'No Cache',
+        classes: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
+      };
+  }
+});
+```
+
+**Conditional Styling:**
+
+- Selected items: white background, full opacity, optional yellow border for stale status
+- Unselected items: gray background, reduced opacity
+- Stale items: yellow border when selected
+- Regenerating items: disabled button with spinning icon
+
+**Time Formatting:**
+
+Uses `formatRelativeTime()` utility from `/src/lib/utils/timeFormat.ts` to display cache age:
+
+- Less than 60 seconds: "just now"
+- Less than 60 minutes: "X minute(s) ago"
+- Less than 24 hours: "X hour(s) ago"
+- Less than 7 days: "X day(s) ago"
+- 7+ days: "Jan 13" or "Jan 13, 2023" format
+
+**Integration:**
+
+Used exclusively within RelationshipContextSelector to render individual relationship cards. Receives data and callbacks from parent component.
+
+**Example Usage:**
+
+```svelte
+<RelationshipContextItem
+  targetEntity={ctx.targetEntity}
+  relationship={ctx.relationship}
+  included={ctx.included ?? false}
+  cacheStatus={ctx.cacheStatus}
+  summary={ctx.summary}
+  generatedAt={ctx.generatedAt}
+  tokenCount={ctx.tokenCount}
+  regenerating={ctx.regenerating}
+  onToggle={() => handleToggleItem(index)}
+  onRegenerate={ctx.regenerating ? undefined : () => onRegenerate?.(index)}
+/>
+```
+
+**Accessibility:**
+
+- Checkbox with descriptive `aria-label`
+- Regenerate button with `aria-label` and `aria-busy` during loading
+- Semantic HTML structure for screen readers
+- Clear visual states for all interactive elements
+- Role status for loading spinner
+
+**User Experience:**
+
+- Visual feedback for cache status at a glance
+- Summary preview helps users decide what to include
+- On-demand regeneration without leaving the page
+- Token count transparency for API cost awareness
+- Disabled regenerate button during loading prevents duplicate requests
 
 #### Relationship Navigation Breadcrumbs
 
@@ -3926,6 +4167,94 @@ const shouldInclude2 = shouldIncludeRelationshipContext('personality', 'item');
 const budget = getFieldRelationshipContextBudget('personality', 4000);
 // Returns: 3000 (75% of base budget)
 ```
+
+#### Time Format Utility
+
+**Location:** `/src/lib/utils/timeFormat.ts`
+
+**Purpose:** Converts timestamps to human-readable relative time strings for displaying cache ages and other temporal information in the UI.
+
+**Key Function:**
+
+```typescript
+// Format timestamp as relative time string
+formatRelativeTime(timestamp: Date | number | string): string
+```
+
+**Input Formats:**
+
+Accepts multiple timestamp formats:
+- `Date` object
+- Unix timestamp (number)
+- ISO 8601 date string
+
+**Output Formats:**
+
+Returns human-readable relative time:
+- Less than 60 seconds: `"just now"`
+- 1-59 minutes: `"X minute(s) ago"`
+- 1-23 hours: `"X hour(s) ago"`
+- 1-6 days: `"X day(s) ago"`
+- 7+ days (same year): `"Jan 13"` (short month + day)
+- 7+ days (different year): `"Jan 13, 2023"` (includes year)
+
+**Usage in Relationship Context UI:**
+
+The utility is used by RelationshipContextItem to display cache age:
+
+```typescript
+import { formatRelativeTime } from '$lib/utils/timeFormat';
+
+// Display cache timestamp
+{#if generatedAt}
+  <span class="text-xs text-slate-500">
+    Cached {formatRelativeTime(generatedAt)}
+  </span>
+{/if}
+```
+
+**Example Outputs:**
+
+```typescript
+// Current time: 2024-01-15 14:30:00
+
+formatRelativeTime(new Date('2024-01-15T14:29:45'))
+// Returns: "just now"
+
+formatRelativeTime(new Date('2024-01-15T14:15:00'))
+// Returns: "15 minutes ago"
+
+formatRelativeTime(new Date('2024-01-15T12:30:00'))
+// Returns: "2 hours ago"
+
+formatRelativeTime(new Date('2024-01-14T14:30:00'))
+// Returns: "1 day ago"
+
+formatRelativeTime(new Date('2024-01-08T14:30:00'))
+// Returns: "Jan 8"
+
+formatRelativeTime(new Date('2023-12-25T14:30:00'))
+// Returns: "Dec 25, 2023"
+```
+
+**Internationalization:**
+
+Currently uses English with US date formatting (`en-US` locale). The function could be extended to support other locales by parameterizing the locale string:
+
+```typescript
+date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+```
+
+**Performance:**
+
+Lightweight utility with no external dependencies. Calculations use simple arithmetic on millisecond timestamps. Safe to call repeatedly in reactive contexts.
+
+**Use Cases:**
+
+- Relationship summary cache age display
+- Last modified timestamps
+- Activity feeds and logs
+- Any UI element showing "time ago" information
 
 #### Model Service
 

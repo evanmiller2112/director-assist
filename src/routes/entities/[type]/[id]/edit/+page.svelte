@@ -7,13 +7,15 @@
 	import { generateField, generateSummaryContent, generateDescriptionContent, isGeneratableField } from '$lib/services/fieldGenerationService';
 	import { buildRelationshipContext, formatRelationshipContextForPrompt, getRelationshipContextStats } from '$lib/services/relationshipContextBuilder';
 	import { getRelationshipContextSettings } from '$lib/services/relationshipContextSettingsService';
-	import type { FieldValue, FieldDefinition } from '$lib/types';
+	import { relationshipSummaryCacheService } from '$lib/services';
+	import type { FieldValue, FieldDefinition, BaseEntity } from '$lib/types';
 	import { validateEntity, formatContextSummary } from '$lib/utils';
 	import { ArrowLeft, Save, ExternalLink, ImagePlus, X as XIcon, Upload, Search, ChevronDown, Eye, EyeOff } from 'lucide-svelte';
 	import FieldGenerateButton from '$lib/components/entity/FieldGenerateButton.svelte';
 	import LoadingButton from '$lib/components/ui/LoadingButton.svelte';
 	import { MarkdownEditor } from '$lib/components/markdown';
 	import { ConfirmDialog } from '$lib/components/ui';
+	import RelationshipContextSelector, { type RelationshipContextData } from '$lib/components/entity/RelationshipContextSelector.svelte';
 
 	const entityId = $derived($page.params.id ?? '');
 	const entityType = $derived($page.params.type ?? '');
@@ -51,9 +53,10 @@
 	let showSummaryConfirm = $state(false);
 	let showDescriptionConfirm = $state(false);
 
-	// Relationship context state (Issue #59)
-	let includeRelationshipContext = $state(false);
+	// Relationship context state (Issues #62 & #134)
+	let relationshipContextData = $state<RelationshipContextData[]>([]);
 	let relationshipCount = $derived(entity?.links?.length ?? 0);
+	let loadingRelationshipContext = $state(false);
 
 	// Validation
 	function validate(): boolean {
@@ -85,13 +88,88 @@
 			playerVisible = entity.playerVisible;
 			fields = { ...entity.fields };
 
-			// Initialize relationship context checkbox from settings (Issue #59)
-			const settings = getRelationshipContextSettings();
-			includeRelationshipContext = settings.enabled && relationshipCount > 0;
-
 			isInitialized = true;
 		}
 	});
+
+	// Load relationship context data when entity loads (Issues #62 & #134)
+	$effect(() => {
+		if (entity && relationshipCount > 0 && isInitialized) {
+			loadRelationshipContextData();
+		}
+	});
+
+	async function loadRelationshipContextData() {
+		if (!entity) return;
+
+		loadingRelationshipContext = true;
+
+		try {
+			const settings = getRelationshipContextSettings();
+			const contextDataPromises = entity.links.map(async (link) => {
+				const targetEntity = entitiesStore.getById(link.targetId);
+
+				if (!targetEntity) {
+					return null;
+				}
+
+				// Get cache status
+				const cacheStatus = await relationshipSummaryCacheService.getCacheStatus(
+					entity.id,
+					targetEntity.id,
+					link.relationship,
+					entity.updatedAt,
+					targetEntity.updatedAt
+				);
+
+				// Try to get cached summary if available
+				let summary: string | undefined;
+				let generatedAt: Date | undefined;
+				let tokenCount: number | undefined;
+
+				try {
+					const cachedResult = await relationshipSummaryCacheService.getOrGenerate(
+						entity,
+						targetEntity,
+						link,
+						undefined, // no campaign context for now
+						false // don't force regenerate
+					);
+
+					if (cachedResult.success) {
+						summary = cachedResult.summary;
+						generatedAt = cachedResult.generatedAt;
+						// Rough token estimate: ~4 chars per token
+						tokenCount = summary ? Math.ceil(summary.length / 4) : undefined;
+					}
+				} catch (error) {
+					console.warn('Failed to get cached summary:', error);
+				}
+
+				return {
+					relationship: link,
+					targetEntity,
+					cacheStatus,
+					summary,
+					generatedAt,
+					tokenCount,
+					included: settings.enabled, // Default to enabled based on settings
+					regenerating: false
+				} as RelationshipContextData;
+			});
+
+			const contextData = (await Promise.all(contextDataPromises)).filter(
+				(data): data is RelationshipContextData => data !== null
+			);
+
+			relationshipContextData = contextData;
+		} catch (error) {
+			console.error('Failed to load relationship context data:', error);
+			notificationStore.error('Failed to load relationship context');
+		} finally {
+			loadingRelationshipContext = false;
+		}
+	}
 
 	async function handleSubmit(e: Event) {
 		e.preventDefault();
@@ -157,10 +235,11 @@
 					}
 				: undefined;
 
-// Build relationship context for this field (Issues #59/#60)
-			// Uses smart per-field context detection from #60, respecting the manual checkbox from #59
+// Build relationship context for this field (Issues #59/#60/#62/#134)
+			// Uses selected relationships from RelationshipContextSelector
 			let relationshipContextStr: string | undefined = undefined;
-			if (includeRelationshipContext && entityId && relationshipCount > 0) {
+			const selectedRelationships = relationshipContextData.filter((ctx) => ctx.included);
+			if (selectedRelationships.length > 0 && entityId) {
 				const relationshipContextResult = await buildFieldRelationshipContext({
 					entityId: entityId,
 					entityType: entityType,
@@ -295,6 +374,65 @@
 		};
 	}
 
+	function handleRelationshipContextChange(updatedContext: RelationshipContextData[]) {
+		relationshipContextData = updatedContext;
+	}
+
+	async function handleRegenerateRelationship(index: number) {
+		if (!entity) return;
+
+		const contextItem = relationshipContextData[index];
+		if (!contextItem) return;
+
+		// Mark as regenerating
+		relationshipContextData = relationshipContextData.map((item, i) =>
+			i === index ? { ...item, regenerating: true } : item
+		);
+
+		try {
+			const result = await relationshipSummaryCacheService.getOrGenerate(
+				entity,
+				contextItem.targetEntity,
+				contextItem.relationship,
+				undefined,
+				true // force regenerate
+			);
+
+			if (result.success) {
+				// Update the context item with new summary
+				const tokenCount = result.summary ? Math.ceil(result.summary.length / 4) : undefined;
+
+				relationshipContextData = relationshipContextData.map((item, i) =>
+					i === index
+						? {
+								...item,
+								summary: result.summary,
+								generatedAt: result.generatedAt,
+								tokenCount,
+								cacheStatus: 'valid' as const,
+								regenerating: false
+							}
+						: item
+				);
+
+				notificationStore.success('Relationship summary regenerated!');
+			} else {
+				notificationStore.error('Failed to regenerate summary');
+				// Reset regenerating state
+				relationshipContextData = relationshipContextData.map((item, i) =>
+					i === index ? { ...item, regenerating: false } : item
+				);
+			}
+		} catch (error) {
+			console.error('Failed to regenerate relationship summary:', error);
+			notificationStore.error('Failed to regenerate summary');
+			// Reset regenerating state
+			relationshipContextData = relationshipContextData.map((item, i) =>
+				i === index ? { ...item, regenerating: false } : item
+			);
+		}
+	}
+
 	function getContextSummaryForField(targetFieldKey: string): string {
 		if (!typeDefinition) return '';
 
@@ -365,16 +503,22 @@
 					}
 				: undefined;
 
-			// Build relationship context if enabled (Issue #59)
+			// Build relationship context from selected relationships (Issues #59/#62/#134)
 			let relationshipContextStr: string | undefined = undefined;
-			if (includeRelationshipContext && entityId && relationshipCount > 0) {
+			const selectedRelationships = relationshipContextData.filter((ctx) => ctx.included);
+			if (selectedRelationships.length > 0 && entityId) {
 				try {
-					const settings = getRelationshipContextSettings();
-					const relContext = await buildRelationshipContext(entityId, {
-						maxRelatedEntities: settings.maxRelatedEntities,
-						maxCharacters: settings.maxCharacters
-					});
-					relationshipContextStr = formatRelationshipContextForPrompt(relContext);
+					// Build context using only selected relationships' summaries
+					const contextParts = selectedRelationships
+						.filter((ctx) => ctx.summary)
+						.map((ctx) => {
+							const relationshipLabel = ctx.relationship.relationship.replace(/_/g, ' ');
+							return `- ${ctx.targetEntity.name} (${relationshipLabel}): ${ctx.summary}`;
+						});
+
+					if (contextParts.length > 0) {
+						relationshipContextStr = `Related entities:\n${contextParts.join('\n')}`;
+					}
 				} catch (error) {
 					console.error('Failed to build relationship context:', error);
 					// Continue without relationship context if it fails
@@ -443,16 +587,22 @@
 					}
 				: undefined;
 
-			// Build relationship context if enabled (Issue #59)
+			// Build relationship context from selected relationships (Issues #59/#62/#134)
 			let relationshipContextStr: string | undefined = undefined;
-			if (includeRelationshipContext && entityId && relationshipCount > 0) {
+			const selectedRelationships = relationshipContextData.filter((ctx) => ctx.included);
+			if (selectedRelationships.length > 0 && entityId) {
 				try {
-					const settings = getRelationshipContextSettings();
-					const relContext = await buildRelationshipContext(entityId, {
-						maxRelatedEntities: settings.maxRelatedEntities,
-						maxCharacters: settings.maxCharacters
-					});
-					relationshipContextStr = formatRelationshipContextForPrompt(relContext);
+					// Build context using only selected relationships' summaries
+					const contextParts = selectedRelationships
+						.filter((ctx) => ctx.summary)
+						.map((ctx) => {
+							const relationshipLabel = ctx.relationship.relationship.replace(/_/g, ' ');
+							return `- ${ctx.targetEntity.name} (${relationshipLabel}): ${ctx.summary}`;
+						});
+
+					if (contextParts.length > 0) {
+						relationshipContextStr = `Related entities:\n${contextParts.join('\n')}`;
+					}
 				} catch (error) {
 					console.error('Failed to build relationship context:', error);
 					// Continue without relationship context if it fails
@@ -561,45 +711,15 @@
 				></textarea>
 			</div>
 
-			<!-- Relationship Context Checkbox (Issue #59) -->
-			{#if canGenerate && relationshipCount > 0}
-				{@const stats = includeRelationshipContext ? (async () => {
-					try {
-						const settings = getRelationshipContextSettings();
-						const relContext = await buildRelationshipContext(entityId, {
-							maxRelatedEntities: settings.maxRelatedEntities,
-							maxCharacters: settings.maxCharacters
-						});
-						return getRelationshipContextStats(relContext);
-					} catch {
-						return null;
-					}
-				})() : null}
-				<div class="border border-slate-200 dark:border-slate-700 rounded-lg p-4 bg-slate-50 dark:bg-slate-800/50">
-					<label class="flex items-start gap-3 cursor-pointer">
-						<input
-							type="checkbox"
-							bind:checked={includeRelationshipContext}
-							class="mt-0.5 w-4 h-4 rounded border-slate-300 text-slate-900 focus:ring-slate-500 dark:border-slate-600 dark:bg-slate-700 dark:checked:bg-slate-600"
-						/>
-						<div class="flex-1">
-							<div class="font-medium text-slate-900 dark:text-white">
-								Include relationship context
-							</div>
-							<p class="text-sm text-slate-600 dark:text-slate-400 mt-1">
-								Include information about related entities ({relationshipCount} relationship{relationshipCount === 1 ? '' : 's'}) when generating content with AI.
-								{#if includeRelationshipContext}
-									{#await stats then statsData}
-										{#if statsData}
-											<span class="text-slate-500 dark:text-slate-500">
-												~ {statsData.estimatedTokens} tokens
-											</span>
-										{/if}
-									{/await}
-								{/if}
-							</p>
-						</div>
-					</label>
+			<!-- Relationship Context Selector (Issues #62 & #134) -->
+			{#if canGenerate && relationshipCount > 0 && !loadingRelationshipContext}
+				<div class="border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800/50">
+					<RelationshipContextSelector
+						sourceEntity={entity}
+						relationshipContext={relationshipContextData}
+						onContextChange={handleRelationshipContextChange}
+						onRegenerate={handleRegenerateRelationship}
+					/>
 				</div>
 			{/if}
 

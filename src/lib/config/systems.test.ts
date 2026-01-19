@@ -111,7 +111,8 @@ describe('systems.ts - System Profile Configuration', () => {
 				expect(ancestryField?.type).toBe('select');
 				expect(ancestryField?.options).toContain('Human');
 				expect(ancestryField?.options).toContain('Dwarf');
-				expect(ancestryField?.options).toContain('Elf');
+				expect(ancestryField?.options).toContain('High Elf');
+				expect(ancestryField?.options).toContain('Wode Elf');
 				expect(ancestryField?.options).toContain('Orc');
 				expect(ancestryField?.options).toContain('Dragon Knight');
 				expect(ancestryField?.options).toContain('Revenant');
@@ -135,6 +136,7 @@ describe('systems.ts - System Profile Configuration', () => {
 				expect(classField?.options).toContain('Censor');
 				expect(classField?.options).toContain('Conduit');
 				expect(classField?.options).toContain('Null');
+				expect(classField?.options).toContain('Troubadour');
 			});
 
 			it('should have heroicResource field as richtext type', () => {
@@ -146,6 +148,378 @@ describe('systems.ts - System Profile Configuration', () => {
 
 				expect(heroicResourceField).toBeDefined();
 				expect(heroicResourceField?.type).toBe('richtext');
+			});
+
+			// RED Phase Tests for Issue #16: Customize Character Sheet Fields
+			// These tests define new character fields that will be added to Draw Steel profile
+
+			describe('Identity Fields (order 14-15)', () => {
+				it('should have heritage field as text type with correct properties', () => {
+					const profile = getSystemProfile('draw-steel');
+					const characterMods = profile?.entityTypeModifications?.character;
+					const heritageField = characterMods?.additionalFields?.find((f) => f.key === 'heritage');
+
+					expect(heritageField).toBeDefined();
+					expect(heritageField?.label).toBe('Heritage');
+					expect(heritageField?.type).toBe('text');
+					expect(heritageField?.order).toBe(14);
+					expect(heritageField?.required).toBe(false);
+				});
+
+				it('should have ancestryTrait field as richtext type with correct properties', () => {
+					const profile = getSystemProfile('draw-steel');
+					const characterMods = profile?.entityTypeModifications?.character;
+					const ancestryTraitField = characterMods?.additionalFields?.find(
+						(f) => f.key === 'ancestryTrait'
+					);
+
+					expect(ancestryTraitField).toBeDefined();
+					expect(ancestryTraitField?.label).toBe('Ancestry Trait');
+					expect(ancestryTraitField?.type).toBe('richtext');
+					expect(ancestryTraitField?.order).toBe(15);
+					expect(ancestryTraitField?.required).toBe(false);
+				});
+			});
+
+			describe('Ability Scores (order 20-24)', () => {
+				it('should have might field as number type with correct properties', () => {
+					const profile = getSystemProfile('draw-steel');
+					const characterMods = profile?.entityTypeModifications?.character;
+					const mightField = characterMods?.additionalFields?.find((f) => f.key === 'might');
+
+					expect(mightField).toBeDefined();
+					expect(mightField?.label).toBe('Might');
+					expect(mightField?.type).toBe('number');
+					expect(mightField?.order).toBe(20);
+					expect(mightField?.required).toBe(false);
+				});
+
+				it('should have agility field as number type with correct properties', () => {
+					const profile = getSystemProfile('draw-steel');
+					const characterMods = profile?.entityTypeModifications?.character;
+					const agilityField = characterMods?.additionalFields?.find((f) => f.key === 'agility');
+
+					expect(agilityField).toBeDefined();
+					expect(agilityField?.label).toBe('Agility');
+					expect(agilityField?.type).toBe('number');
+					expect(agilityField?.order).toBe(21);
+					expect(agilityField?.required).toBe(false);
+				});
+
+				it('should have reason field as number type with correct properties', () => {
+					const profile = getSystemProfile('draw-steel');
+					const characterMods = profile?.entityTypeModifications?.character;
+					const reasonField = characterMods?.additionalFields?.find((f) => f.key === 'reason');
+
+					expect(reasonField).toBeDefined();
+					expect(reasonField?.label).toBe('Reason');
+					expect(reasonField?.type).toBe('number');
+					expect(reasonField?.order).toBe(22);
+					expect(reasonField?.required).toBe(false);
+				});
+
+				it('should have intuition field as number type with correct properties', () => {
+					const profile = getSystemProfile('draw-steel');
+					const characterMods = profile?.entityTypeModifications?.character;
+					const intuitionField = characterMods?.additionalFields?.find((f) => f.key === 'intuition');
+
+					expect(intuitionField).toBeDefined();
+					expect(intuitionField?.label).toBe('Intuition');
+					expect(intuitionField?.type).toBe('number');
+					expect(intuitionField?.order).toBe(23);
+					expect(intuitionField?.required).toBe(false);
+				});
+
+				it('should have presence field as number type with correct properties', () => {
+					const profile = getSystemProfile('draw-steel');
+					const characterMods = profile?.entityTypeModifications?.character;
+					const presenceField = characterMods?.additionalFields?.find((f) => f.key === 'presence');
+
+					expect(presenceField).toBeDefined();
+					expect(presenceField?.label).toBe('Presence');
+					expect(presenceField?.type).toBe('number');
+					expect(presenceField?.order).toBe(24);
+					expect(presenceField?.required).toBe(false);
+				});
+
+				it('should have all five ability scores in sequential order', () => {
+					const profile = getSystemProfile('draw-steel');
+					const characterMods = profile?.entityTypeModifications?.character;
+					const fields = characterMods?.additionalFields ?? [];
+
+					const abilityScores = [
+						{ key: 'might', order: 20 },
+						{ key: 'agility', order: 21 },
+						{ key: 'reason', order: 22 },
+						{ key: 'intuition', order: 23 },
+						{ key: 'presence', order: 24 }
+					];
+
+					abilityScores.forEach(({ key, order }) => {
+						const field = fields.find((f) => f.key === key);
+						expect(field).toBeDefined();
+						expect(field?.order).toBe(order);
+						expect(field?.type).toBe('number');
+					});
+				});
+			});
+
+			describe('Skills & Abilities (order 30)', () => {
+				it('should have skills field as richtext type with correct properties', () => {
+					const profile = getSystemProfile('draw-steel');
+					const characterMods = profile?.entityTypeModifications?.character;
+					const skillsField = characterMods?.additionalFields?.find((f) => f.key === 'skills');
+
+					expect(skillsField).toBeDefined();
+					expect(skillsField?.label).toBe('Skills');
+					expect(skillsField?.type).toBe('richtext');
+					expect(skillsField?.order).toBe(30);
+					expect(skillsField?.required).toBe(false);
+				});
+			});
+
+			describe('Health & Vitality (order 40-43)', () => {
+				it('should have maxHP field as number type with correct properties', () => {
+					const profile = getSystemProfile('draw-steel');
+					const characterMods = profile?.entityTypeModifications?.character;
+					const maxHPField = characterMods?.additionalFields?.find((f) => f.key === 'maxHP');
+
+					expect(maxHPField).toBeDefined();
+					expect(maxHPField?.label).toBe('Max HP');
+					expect(maxHPField?.type).toBe('number');
+					expect(maxHPField?.order).toBe(40);
+					expect(maxHPField?.required).toBe(false);
+				});
+
+				it('should have currentHP field as number type with correct properties', () => {
+					const profile = getSystemProfile('draw-steel');
+					const characterMods = profile?.entityTypeModifications?.character;
+					const currentHPField = characterMods?.additionalFields?.find((f) => f.key === 'currentHP');
+
+					expect(currentHPField).toBeDefined();
+					expect(currentHPField?.label).toBe('Current HP');
+					expect(currentHPField?.type).toBe('number');
+					expect(currentHPField?.order).toBe(41);
+					expect(currentHPField?.required).toBe(false);
+				});
+
+				it('should have vitality field as number type with correct properties', () => {
+					const profile = getSystemProfile('draw-steel');
+					const characterMods = profile?.entityTypeModifications?.character;
+					const vitalityField = characterMods?.additionalFields?.find((f) => f.key === 'vitality');
+
+					expect(vitalityField).toBeDefined();
+					expect(vitalityField?.label).toBe('Vitality');
+					expect(vitalityField?.type).toBe('number');
+					expect(vitalityField?.order).toBe(42);
+					expect(vitalityField?.required).toBe(false);
+				});
+
+				it('should have conditions field as tags type with correct properties', () => {
+					const profile = getSystemProfile('draw-steel');
+					const characterMods = profile?.entityTypeModifications?.character;
+					const conditionsField = characterMods?.additionalFields?.find((f) => f.key === 'conditions');
+
+					expect(conditionsField).toBeDefined();
+					expect(conditionsField?.label).toBe('Conditions');
+					expect(conditionsField?.type).toBe('tags');
+					expect(conditionsField?.order).toBe(43);
+					expect(conditionsField?.required).toBe(false);
+				});
+
+				it('should have all health & vitality fields in sequential order', () => {
+					const profile = getSystemProfile('draw-steel');
+					const characterMods = profile?.entityTypeModifications?.character;
+					const fields = characterMods?.additionalFields ?? [];
+
+					const healthFields = [
+						{ key: 'maxHP', order: 40, type: 'number' },
+						{ key: 'currentHP', order: 41, type: 'number' },
+						{ key: 'vitality', order: 42, type: 'number' },
+						{ key: 'conditions', order: 43, type: 'tags' }
+					];
+
+					healthFields.forEach(({ key, order, type }) => {
+						const field = fields.find((f) => f.key === key);
+						expect(field).toBeDefined();
+						expect(field?.order).toBe(order);
+						expect(field?.type).toBe(type);
+					});
+				});
+			});
+
+			describe('Resources (order 50-53)', () => {
+				it('should have xp field as number type with correct properties', () => {
+					const profile = getSystemProfile('draw-steel');
+					const characterMods = profile?.entityTypeModifications?.character;
+					const xpField = characterMods?.additionalFields?.find((f) => f.key === 'xp');
+
+					expect(xpField).toBeDefined();
+					expect(xpField?.label).toBe('XP');
+					expect(xpField?.type).toBe('number');
+					expect(xpField?.order).toBe(50);
+					expect(xpField?.required).toBe(false);
+				});
+
+				it('should have gold field as number type with correct properties', () => {
+					const profile = getSystemProfile('draw-steel');
+					const characterMods = profile?.entityTypeModifications?.character;
+					const goldField = characterMods?.additionalFields?.find((f) => f.key === 'gold');
+
+					expect(goldField).toBeDefined();
+					expect(goldField?.label).toBe('Gold');
+					expect(goldField?.type).toBe('number');
+					expect(goldField?.order).toBe(51);
+					expect(goldField?.required).toBe(false);
+				});
+
+				it('should have weapons field as richtext type with correct properties', () => {
+					const profile = getSystemProfile('draw-steel');
+					const characterMods = profile?.entityTypeModifications?.character;
+					const weaponsField = characterMods?.additionalFields?.find((f) => f.key === 'weapons');
+
+					expect(weaponsField).toBeDefined();
+					expect(weaponsField?.label).toBe('Weapons');
+					expect(weaponsField?.type).toBe('richtext');
+					expect(weaponsField?.order).toBe(52);
+					expect(weaponsField?.required).toBe(false);
+				});
+
+				it('should have armor field as richtext type with correct properties', () => {
+					const profile = getSystemProfile('draw-steel');
+					const characterMods = profile?.entityTypeModifications?.character;
+					const armorField = characterMods?.additionalFields?.find((f) => f.key === 'armor');
+
+					expect(armorField).toBeDefined();
+					expect(armorField?.label).toBe('Armor');
+					expect(armorField?.type).toBe('richtext');
+					expect(armorField?.order).toBe(53);
+					expect(armorField?.required).toBe(false);
+				});
+
+				it('should have all resource fields in sequential order', () => {
+					const profile = getSystemProfile('draw-steel');
+					const characterMods = profile?.entityTypeModifications?.character;
+					const fields = characterMods?.additionalFields ?? [];
+
+					const resourceFields = [
+						{ key: 'xp', order: 50, type: 'number' },
+						{ key: 'gold', order: 51, type: 'number' },
+						{ key: 'weapons', order: 52, type: 'richtext' },
+						{ key: 'armor', order: 53, type: 'richtext' }
+					];
+
+					resourceFields.forEach(({ key, order, type }) => {
+						const field = fields.find((f) => f.key === key);
+						expect(field).toBeDefined();
+						expect(field?.order).toBe(order);
+						expect(field?.type).toBe(type);
+					});
+				});
+			});
+
+			describe('Class Features (order 60)', () => {
+				it('should have classFeatures field as richtext type with correct properties', () => {
+					const profile = getSystemProfile('draw-steel');
+					const characterMods = profile?.entityTypeModifications?.character;
+					const classFeaturesField = characterMods?.additionalFields?.find(
+						(f) => f.key === 'classFeatures'
+					);
+
+					expect(classFeaturesField).toBeDefined();
+					expect(classFeaturesField?.label).toBe('Class Features');
+					expect(classFeaturesField?.type).toBe('richtext');
+					expect(classFeaturesField?.order).toBe(60);
+					expect(classFeaturesField?.required).toBe(false);
+				});
+			});
+
+			describe('Field Organization and Ordering', () => {
+				it('should maintain logical order ranges for all new fields', () => {
+					const profile = getSystemProfile('draw-steel');
+					const characterMods = profile?.entityTypeModifications?.character;
+					const fields = characterMods?.additionalFields ?? [];
+
+					// Verify order ranges are respected
+					const identityFields = fields.filter((f) => f.order >= 14 && f.order <= 15);
+					const abilityFields = fields.filter((f) => f.order >= 20 && f.order <= 24);
+					const skillFields = fields.filter((f) => f.order === 30);
+					const healthFields = fields.filter((f) => f.order >= 40 && f.order <= 43);
+					const resourceFields = fields.filter((f) => f.order >= 50 && f.order <= 53);
+					const featureFields = fields.filter((f) => f.order === 60);
+
+					// Verify expected counts for new fields
+					expect(identityFields.length).toBeGreaterThanOrEqual(2);
+					expect(abilityFields.length).toBeGreaterThanOrEqual(5);
+					expect(skillFields.length).toBeGreaterThanOrEqual(1);
+					expect(healthFields.length).toBeGreaterThanOrEqual(4);
+					expect(resourceFields.length).toBeGreaterThanOrEqual(4);
+					expect(featureFields.length).toBeGreaterThanOrEqual(1);
+				});
+
+				it('should have all new fields with unique keys', () => {
+					const profile = getSystemProfile('draw-steel');
+					const characterMods = profile?.entityTypeModifications?.character;
+					const fields = characterMods?.additionalFields ?? [];
+
+					const newFieldKeys = [
+						'heritage',
+						'ancestryTrait',
+						'might',
+						'agility',
+						'reason',
+						'intuition',
+						'presence',
+						'skills',
+						'maxHP',
+						'currentHP',
+						'vitality',
+						'conditions',
+						'xp',
+						'gold',
+						'weapons',
+						'armor',
+						'classFeatures'
+					];
+
+					newFieldKeys.forEach((key) => {
+						const matchingFields = fields.filter((f) => f.key === key);
+						expect(matchingFields.length).toBeLessThanOrEqual(1);
+					});
+				});
+
+				it('should have all new fields as non-required', () => {
+					const profile = getSystemProfile('draw-steel');
+					const characterMods = profile?.entityTypeModifications?.character;
+					const fields = characterMods?.additionalFields ?? [];
+
+					const newFieldKeys = [
+						'heritage',
+						'ancestryTrait',
+						'might',
+						'agility',
+						'reason',
+						'intuition',
+						'presence',
+						'skills',
+						'maxHP',
+						'currentHP',
+						'vitality',
+						'conditions',
+						'xp',
+						'gold',
+						'weapons',
+						'armor',
+						'classFeatures'
+					];
+
+					newFieldKeys.forEach((key) => {
+						const field = fields.find((f) => f.key === key);
+						if (field) {
+							expect(field.required).toBe(false);
+						}
+					});
+				});
 			});
 
 			it('should have threatLevel field as select type with specific options', () => {

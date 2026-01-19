@@ -51,16 +51,59 @@ export interface GenerationRequest {
 	constraints?: Record<string, string>;
 }
 
+// Suggestion types that the AI can generate
+export type AISuggestionType =
+	| 'relationship'      // Suggests new relationships between entities
+	| 'plot_thread'       // Identifies potential plot threads
+	| 'inconsistency'     // Flags inconsistencies in campaign data
+	| 'enhancement'       // Suggests improvements to existing entities
+	| 'recommendation';   // General recommendations
+
+// Status of a suggestion
+export type AISuggestionStatus = 'pending' | 'accepted' | 'dismissed';
+
+// Action types that can be suggested
+export type SuggestionActionType =
+	| 'create-relationship'
+	| 'edit-entity'
+	| 'create-entity'
+	| 'flag-for-review';
+
+// Structured suggested action
+export interface SuggestedAction {
+	actionType: SuggestionActionType;
+	actionData: Record<string, unknown>;
+}
+
 // AI-generated suggestion
 export interface AISuggestion {
 	id: EntityId;
-	type: 'relationship' | 'plot_thread' | 'inconsistency' | 'enhancement';
+	type: AISuggestionType;
 	title: string;
 	description: string;
-	entityIds: EntityId[];
-	suggestedAction?: string;
-	dismissed: boolean;
+	relevanceScore: number; // 0-100, higher = more relevant
+	affectedEntityIds: EntityId[];
+	suggestedAction?: SuggestedAction;
+	status: AISuggestionStatus;
 	createdAt: Date;
+	expiresAt?: Date; // When this suggestion becomes stale
+}
+
+// Query filters for suggestions
+export interface SuggestionQueryFilters {
+	types?: AISuggestionType[];
+	statuses?: AISuggestionStatus[];
+	affectedEntityIds?: EntityId[];
+	minRelevanceScore?: number;
+	includeExpired?: boolean;
+}
+
+// Statistics about suggestions
+export interface SuggestionStats {
+	total: number;
+	byStatus: Record<AISuggestionStatus, number>;
+	byType: Record<AISuggestionType, number>;
+	expiredCount: number;
 }
 
 // Settings for AI integration

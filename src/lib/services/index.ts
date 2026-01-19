@@ -38,3 +38,16 @@ export {
 	extractDateFromModelId,
 	findLatestHaikuModel
 } from './modelService';
+
+// Field generation service
+export {
+	generateField,
+	generateSummaryContent,
+	generateDescriptionContent,
+	isGeneratableField
+} from './fieldGenerationService';
+export type {
+	FieldGenerationContext,
+	FieldGenerationResult,
+	CoreFieldGenerationContext
+} from './fieldGenerationService';

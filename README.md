@@ -103,6 +103,7 @@ When creating or editing any entity, look for the sparkle button next to text fi
 4. Review and edit the generated content as needed
 
 **What Can Be Generated:**
+- Core entity fields (Summary and Description with dedicated Generate buttons)
 - Text fields (role, title, occupation, etc.)
 - Multi-line fields (personality, appearance, motivation, etc.)
 - Rich text fields (background, history, detailed descriptions)

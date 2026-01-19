@@ -79,6 +79,7 @@ src/
 │   │   │   ├── LoadingSpinner.svelte
 │   │   │   ├── LoadingSkeleton.svelte
 │   │   │   ├── LoadingButton.svelte
+│   │   │   ├── ConfirmDialog.svelte
 │   │   │   └── Pagination.svelte
 │   │   └── layout/          # Layout components
 │   │       ├── Header.svelte
@@ -1559,6 +1560,99 @@ interface LoadingButtonProps {
 - Screen reader text for spinner
 - Proper focus management
 - Keyboard navigation support
+
+#### ConfirmDialog Component
+
+**Location:** `/src/lib/components/ui/ConfirmDialog.svelte`
+
+**Purpose:** Modal dialog for confirming potentially destructive actions like overwriting content or deleting data.
+
+**Props:**
+
+```typescript
+interface ConfirmDialogProps {
+  open?: boolean;                             // Controls dialog visibility
+  title?: string;                             // Dialog title (optional)
+  message: string;                            // Warning/confirmation message
+  confirmText?: string;                       // Text for confirm button (default: 'Confirm')
+  cancelText?: string;                        // Text for cancel button (default: 'Cancel')
+  variant?: 'default' | 'warning' | 'danger'; // Visual variant
+  loading?: boolean;                          // Loading state (disables buttons)
+  onConfirm?: () => void;                     // Callback when user confirms
+  onCancel?: () => void;                      // Callback when user cancels
+}
+```
+
+**Variants:**
+
+- **default**: Neutral confirmation with gray colors and info icon
+- **warning**: Caution-level action with amber colors and warning triangle icon
+- **danger**: Destructive action with red colors and warning triangle icon
+
+**Features:**
+
+- Modal backdrop with click-to-dismiss
+- Keyboard support: Escape to cancel, Enter/Space on buttons
+- Loading state with spinner during async operations
+- Auto-focus on confirm button when opened
+- Unique ARIA IDs for accessibility
+- Click outside to dismiss
+
+**Usage:**
+
+```svelte
+<script lang="ts">
+  import { ConfirmDialog } from '$lib/components/ui';
+
+  let showConfirm = $state(false);
+  let generating = $state(false);
+
+  async function handleGenerate() {
+    generating = true;
+    try {
+      await generateContent();
+      showConfirm = false;
+    } finally {
+      generating = false;
+    }
+  }
+</script>
+
+<!-- Warning variant for content replacement -->
+<ConfirmDialog
+  open={showConfirm}
+  title="Replace Existing Content?"
+  message="This will overwrite your current content with AI-generated text. This action cannot be undone."
+  variant="warning"
+  confirmText="Generate"
+  cancelText="Cancel"
+  loading={generating}
+  onConfirm={handleGenerate}
+  onCancel={() => showConfirm = false}
+/>
+
+<!-- Danger variant for deletion -->
+<ConfirmDialog
+  open={showDeleteConfirm}
+  title="Delete Entity?"
+  message="This will permanently delete this entity and all its relationships. This cannot be undone."
+  variant="danger"
+  confirmText="Delete"
+  cancelText="Cancel"
+  onConfirm={handleDelete}
+  onCancel={() => showDeleteConfirm = false}
+/>
+```
+
+**Accessibility:**
+
+- `role="dialog"` and `aria-modal="true"` for modal semantics
+- `aria-labelledby` references title element
+- `aria-describedby` references message element
+- `aria-busy={loading}` on confirm button during async operations
+- Auto-focus management for keyboard navigation
+- Escape key to close
+- Click backdrop to dismiss
 
 #### MarkdownEditor Component
 
@@ -3244,7 +3338,21 @@ isGeneratableField(fieldType: FieldType): boolean
 
 // Generate content for a specific field
 generateField(context: FieldGenerationContext): Promise<FieldGenerationResult>
+
+// Generate summary content (brief 1-2 sentence summary)
+generateSummaryContent(context: CoreFieldGenerationContext): Promise<FieldGenerationResult>
+
+// Generate description content (detailed multi-paragraph description)
+generateDescriptionContent(context: CoreFieldGenerationContext): Promise<FieldGenerationResult>
 ```
+
+**Core Field Generation:**
+
+The service provides specialized functions for generating Summary and Description fields:
+
+- **generateSummaryContent()**: Creates brief 1-2 sentence summaries based on entity name, description, tags, and other filled fields. Used for AI context and quick reference.
+- **generateDescriptionContent()**: Creates detailed multi-paragraph descriptions based on entity name, summary, tags, and other filled fields. Provides comprehensive entity information.
+- Both functions show confirmation dialogs when replacing existing content to prevent accidental overwrites.
 
 **Context Interface:**
 

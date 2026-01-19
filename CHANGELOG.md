@@ -138,6 +138,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Removing reverse link when toggling bidirectional OFF
   - Preserves timestamps and metadata during edits
   - Success notification after saving changes
+- Auto-generate buttons for Summary and Description fields on entity edit page (Issue #123)
+  - Generate buttons appear next to Summary and Description field labels
+  - Click to generate AI content based on other filled fields
+  - Confirmation dialog when replacing existing content
+  - Loading state during generation with disabled buttons
+  - New service functions: generateSummaryContent() for brief 1-2 sentence summaries
+  - New service function: generateDescriptionContent() for detailed multi-paragraph descriptions
+  - New ConfirmDialog component at src/lib/components/ui/ConfirmDialog.svelte for user confirmations
+  - Buttons respect AI features toggle (hidden when API key not configured)
+  - Error handling with user-friendly notifications
 
 ### Fixed
 - Resolved Svelte 5 state_unsafe_mutation error in entity pages (Issue #98)

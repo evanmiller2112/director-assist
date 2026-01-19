@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.5.0] - 2026-01-19
+## [0.6.0] - 2026-01-19
 
 ### Added
 - Generation Type Selector in Chat interface (Issue #41, PR #153)
@@ -20,6 +20,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Visual indicator shows currently active generation type
   - Accessible on both desktop and mobile interfaces
   - Configuration in `src/lib/config/generationTypes.ts` with prompt templates and structured output suggestions
+- Conversation Management System UI Components (Issue #42, PR #163)
+  - ConversationListItem component for displaying individual conversations
+  - ConversationSidebar component with conversation list and management
+  - "New Conversation" button to create conversations
+  - Click to switch between conversations (messages reload automatically)
+  - Visual highlight for active conversation (blue background and border)
+  - Inline rename: double-click conversation name to edit, Enter to save, Escape to cancel
+  - Delete conversations with confirmation dialog (trash icon on hover)
+  - Metadata display: conversation name, message count badge, relative last activity time
+  - Empty state when no conversations exist
+  - Auto-create default conversation on first use
+  - Integrated into ChatPanel with conversationStore
+  - 71 tests covering all conversation UI functionality
+  - Full accessibility support (ARIA labels, keyboard navigation)
+  - Dark mode styling consistent with app theme
+- Markdown editor for rich text fields (Issue #13)
+  - New MarkdownEditor component with formatting toolbar (bold, italic, heading, code, link, list)
+  - Three editing modes: edit-only, preview-only, and split view
+  - Keyboard shortcuts: Ctrl+B for bold, Ctrl+I for italic
+  - Real-time markdown preview with HTML sanitization
+  - New MarkdownViewer component for rendering markdown as sanitized HTML
+  - Integrated into all entity forms (new and edit pages) for richtext fields
+  - Markdown rendering on entity view pages for richtext content
+  - Dependencies: marked for markdown parsing, DOMPurify for HTML sanitization
+
+## [0.5.0] - 2026-01-19
+
+### Added
 - Custom entity types with full field customization (Issue #25, PR #169)
   - Create custom entity types with 14 field types: text, number, date, boolean, select, multiselect, currency, percentage, rating, richtext, file, image, entity-ref, entity-refs
   - Computed fields with dynamic formula evaluation and automatic type inference
@@ -75,21 +103,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added gloryAwarded field for Draw Steel's Glory progression system
   - Fields automatically appear when campaign uses Draw Steel system profile
   - Maintains backwards compatibility with existing System Agnostic campaigns
-- Conversation Management System UI Components (Issue #42)
-  - ConversationListItem component for displaying individual conversations
-  - ConversationSidebar component with conversation list and management
-  - "New Conversation" button to create conversations
-  - Click to switch between conversations (messages reload automatically)
-  - Visual highlight for active conversation (blue background and border)
-  - Inline rename: double-click conversation name to edit, Enter to save, Escape to cancel
-  - Delete conversations with confirmation dialog (trash icon on hover)
-  - Metadata display: conversation name, message count badge, relative last activity time
-  - Empty state when no conversations exist
-  - Auto-create default conversation on first use
-  - Integrated into ChatPanel with conversationStore
-  - 71 tests covering all conversation UI functionality
-  - Full accessibility support (ARIA labels, keyboard navigation)
-  - Dark mode styling consistent with app theme
 - Campaign as first-class entity type (Issue #46)
   - Campaigns now stored as entities with `type: 'campaign'` in the entities table
   - Multiple campaigns supported with active campaign tracking
@@ -137,15 +150,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Consistent error handling across providers
   - Provider-specific configurations (baseUrl for Ollama, API keys for cloud providers)
   - Dependencies: ai, @ai-sdk/anthropic, @ai-sdk/openai, @ai-sdk/google, @ai-sdk/mistral, ollama-ai-provider
-- Markdown editor for rich text fields (Issue #13)
-  - New MarkdownEditor component with formatting toolbar (bold, italic, heading, code, link, list)
-  - Three editing modes: edit-only, preview-only, and split view
-  - Keyboard shortcuts: Ctrl+B for bold, Ctrl+I for italic
-  - Real-time markdown preview with HTML sanitization
-  - New MarkdownViewer component for rendering markdown as sanitized HTML
-  - Integrated into all entity forms (new and edit pages) for richtext fields
-  - Markdown rendering on entity view pages for richtext content
-  - Dependencies: marked for markdown parsing, DOMPurify for HTML sanitization
 - Relationship-based entity filtering system (Issue #78)
   - RelationshipFilter component on entity list pages
   - Filter by "related to" a specific entity (bidirectional)

@@ -735,7 +735,12 @@ Opens the settings page.
 
 ### Relationship Context Settings
 
-When generating content with AI, Director Assist can include information about related entities to provide richer context. These settings let you control how relationship context is used during generation.
+When generating content with AI, Director Assist can include information about related entities to provide richer context. These settings control how relationship context is used during both per-field generation and full-entity generation.
+
+**Applies To:**
+- Per-field AI generation (when editing existing entities)
+- Full-entity AI generation (planned feature)
+- Chat assistant (when implemented)
 
 **How to Access:**
 
@@ -751,6 +756,7 @@ When generating content with AI, Director Assist can include information about r
 - Default: On
 - When enabled, the "Include relationship context" checkbox on entity edit forms is checked by default
 - When disabled, the checkbox is unchecked by default (you can still enable it manually per entity)
+- **Smart Field Detection**: When relationship context is enabled, the system automatically determines which fields benefit from it most, adjusting the character budget based on field priority (high priority fields like personality get more context than low priority fields like appearance)
 
 **Maximum Related Entities**
 - Controls how many related entities to include in generation context
@@ -937,12 +943,12 @@ When generating content, the AI looks at:
 - Other fields you've already filled in
 - Your campaign setting and system
 - Field hints and placeholders
-- Related entities (if enabled)
+- **Related entities** (for existing entities with relationships, when enabled)
 
 **Example**:
 If you create an NPC named "Grimwald the Wise" with the description "elderly wizard" and role "apothecary owner", then click generate on the Personality field, the AI will create a personality that fits an elderly wizard who runs an apothecary.
 
-### Including Relationship Context in Generation
+### Relationship Context in Field Generation
 
 When editing an entity that has relationships, you can choose to include information about related entities in AI generation. This produces more contextually aware content that fits naturally with the rest of your campaign.
 
@@ -955,6 +961,37 @@ When editing an entity with relationships, a checkbox appears below the tags fie
 - When enabled, displays an estimated token cost
 - Only appears when the entity has relationships and AI features are enabled
 
+**Smart Field Detection:**
+
+When relationship context is enabled, the system intelligently determines which fields benefit most:
+
+**High Priority Fields** (75% of context budget):
+- personality
+- motivation
+- goals
+- relationships, alliances, enemies
+
+**Medium Priority Fields** (50% of context budget):
+- background
+- description
+- history
+- role, occupation
+- atmosphere, values, resources
+
+**Low Priority Fields** (25% of context budget):
+- appearance, physical_description
+- tactics, combat_behavior
+
+**Other Fields**: No relationship context included
+
+**Entity Type Awareness:**
+
+Relationship context works best for:
+- **NPCs** - High and medium priority fields benefit from knowing allies, enemies, faction memberships
+- **Characters** - Background and motivations benefit from knowing relationships with other PCs and NPCs
+- **Factions** - History and goals benefit from alliances and rivalries
+- **Locations** - Descriptions benefit from knowing inhabitants and connected locations
+
 **What Gets Included:**
 
 When relationship context is enabled:
@@ -963,22 +1000,43 @@ When relationship context is enabled:
 - Non-hidden fields from related entities
 - Up to the maximum number of entities configured in Settings (default: 20)
 
-**What's Protected:**
+**Example:**
+
+```
+1. You have an NPC "Elena the Bard" with relationships:
+   - allied_with: "The Silver Circle" (Faction)
+   - knows: "Grimwald the Wise" (NPC)
+   - enemy_of: "Shadow Guild" (Faction)
+
+2. You click Generate on the "personality" field (high priority)
+
+3. The AI receives:
+   - Elena's existing fields (name, description, tags)
+   - Campaign context
+   - Relationship context showing her three connections
+   - Character budget: ~3000 characters for relationships
+
+4. Generated personality reflects her relationships:
+   "Elena is fiercely loyal to the Silver Circle and their cause,
+   drawing wisdom from her friendship with Grimwald while harboring
+   a deep-seated grudge against the Shadow Guild..."
+```
+
+**When Relationship Context is NOT Included:**
+
+- Creating new entities (they have no relationships yet)
+- Fields that don't benefit from relationship awareness (equipment, stats, etc.)
+- When relationship context is disabled in Settings or the checkbox is unchecked
+- When the entity has no relationships
+- For entity types that don't benefit from social context (items, encounters, etc.)
+
+**Privacy Protection:**
 
 Hidden fields (secrets) from related entities are never included, protecting your campaign secrets.
 
-**Example:**
-
-Generating personality for an NPC who is:
-- Allied with "The Silver Circle" faction
-- Enemy of "Lord Vance"
-- Located at "The Crooked Wand" tavern
-
-With relationship context enabled, the AI generates a personality that reflects these connections, such as loyalty to the faction, hostility toward Lord Vance, and familiarity with the tavern setting.
-
 **Default Behavior:**
 
-The default setting for this checkbox is configured in Settings under "Relationship Context". You can set whether relationship context is included by default for all entities.
+The default setting for this checkbox is configured in Settings under "Relationship Context". You can set whether relationship context is included by default for all entities
 
 ### Privacy and AI
 

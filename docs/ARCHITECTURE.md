@@ -89,11 +89,12 @@ src/
 │   │   ├── commands.ts      # Command palette definitions
 │   │   └── entityTypes.ts   # Entity type definitions
 │   ├── utils/               # Utility functions
-│   │   ├── commandUtils.ts       # Command parsing and filtering
-│   │   ├── matrixUtils.ts        # Matrix data processing and sorting
-│   │   ├── breadcrumbUtils.ts    # Breadcrumb path parsing and serialization
-│   │   ├── networkGraph.ts       # Network graph visualization utilities
-│   │   └── markdownUtils.ts      # HTML sanitization for markdown rendering
+│   │   ├── commandUtils.ts              # Command parsing and filtering
+│   │   ├── matrixUtils.ts               # Matrix data processing and sorting
+│   │   ├── breadcrumbUtils.ts           # Breadcrumb path parsing and serialization
+│   │   ├── networkGraph.ts              # Network graph visualization utilities
+│   │   ├── markdownUtils.ts             # HTML sanitization for markdown rendering
+│   │   └── relationshipContextFields.ts # Smart field detection for relationship context
 │   ├── db/                  # Database layer
 │   │   ├── index.ts         # Dexie database setup
 │   │   └── repositories/    # Data access layer
@@ -102,12 +103,14 @@ src/
 │   │       ├── chatRepository.ts
 │   │       └── relationshipSummaryCacheRepository.ts
 │   ├── services/            # Business logic services
-│   │   ├── contextBuilder.ts                    # Entity context building for AI
-│   │   ├── fieldGenerationService.ts            # AI field generation
-│   │   ├── modelService.ts                      # AI model selection
-│   │   ├── relationshipContextBuilder.ts        # Relationship context building for AI
-│   │   ├── relationshipSummaryService.ts        # AI relationship summary generation
-│   │   └── relationshipSummaryCacheService.ts   # Relationship summary caching
+│   │   ├── contextBuilder.ts                      # Entity context building for AI
+│   │   ├── fieldGenerationService.ts              # AI field generation
+│   │   ├── fieldRelationshipContextService.ts     # Per-field relationship context
+│   │   ├── modelService.ts                        # AI model selection
+│   │   ├── relationshipContextBuilder.ts          # Relationship context building for AI
+│   │   ├── relationshipContextSettingsService.ts  # Relationship context settings
+│   │   ├── relationshipSummaryService.ts          # AI relationship summary generation
+│   │   └── relationshipSummaryCacheService.ts     # Relationship summary caching
 │   ├── stores/              # Application state
 │   │   ├── campaign.svelte.ts
 │   │   ├── entities.svelte.ts
@@ -3694,6 +3697,235 @@ The `buildPrivacySafeSummary()` function ensures that AI context never includes 
 - Building character backstories that reference existing connections
 - Creating plot hooks based on faction memberships
 - Generating location descriptions that mention inhabitants
+
+#### Field Relationship Context Service
+
+**Location:** `/src/lib/services/fieldRelationshipContextService.ts`
+
+**Purpose:** Provides field-specific relationship context for per-field AI generation. Acts as a bridge between the smart field detection utility and the relationship context builder, applying field-specific budget and relevance rules.
+
+**Key Functions:**
+
+```typescript
+// Build relationship context for a specific field
+buildFieldRelationshipContext(
+  options: FieldRelationshipContextOptions
+): Promise<FieldRelationshipContextResult>
+```
+
+**Options Interface:**
+
+```typescript
+interface FieldRelationshipContextOptions {
+  entityId: EntityId;           // The entity being generated for
+  entityType: EntityType;       // Type of entity
+  targetField: string;          // Field being generated
+  forceInclude?: boolean;       // Override relevance check (default: false)
+}
+```
+
+**Result Interface:**
+
+```typescript
+interface FieldRelationshipContextResult {
+  included: boolean;                        // Whether context was included
+  formattedContext: string;                 // Formatted context (empty if not included)
+  characterCount: number;                   // Total characters in context
+  reason: FieldRelationshipContextReason;   // Reason for inclusion/exclusion
+}
+
+type FieldRelationshipContextReason =
+  | 'disabled'           // Relationship context disabled in settings
+  | 'no_entity'          // No entity ID provided
+  | 'field_not_relevant' // Field doesn't benefit from relationship context
+  | 'no_relationships'   // Entity has no relationships
+  | 'included';          // Context successfully included
+```
+
+**Decision Logic:**
+
+The service determines whether to include relationship context based on:
+
+1. **Settings Check**: Is relationship context enabled globally?
+2. **Entity Validation**: Is a valid entity ID provided?
+3. **Field Relevance**: Does this field benefit from relationship context?
+4. **Budget Calculation**: What character budget should this field receive?
+5. **Relationship Existence**: Does the entity have any relationships?
+
+**Field Priority and Budget Allocation:**
+
+Fields are assigned priority levels that determine their relationship context budget:
+
+- **High Priority** (75% of base budget): personality, motivation, goals, relationships, alliances, enemies
+- **Medium Priority** (50% of base budget): background, description, history, role, occupation, atmosphere, values, resources
+- **Low Priority** (25% of base budget): appearance, physical_description, tactics, combat_behavior
+- **No Priority** (0% budget): All other fields
+
+**Entity Type Relevance:**
+
+- **Social Entities** (NPC, Character, Faction): Include context for high and medium priority fields
+- **Contextual Entities** (Location): Include context for description-related fields
+- **Other Entities**: Conservative approach, only description-related fields
+
+**Example Flow:**
+
+```typescript
+// Generating personality field for an NPC
+const result = await buildFieldRelationshipContext({
+  entityId: 'npc-123',
+  entityType: 'npc',
+  targetField: 'personality'
+});
+
+// Result:
+// included: true (if entity has relationships)
+// characterCount: ~3000 (75% of 4000 base budget)
+// reason: 'included'
+// formattedContext: "=== Relationships for Grimwald the Wise ===\n..."
+```
+
+**Integration:**
+
+The field relationship context service integrates with the field generation service to automatically enhance AI generation with relationship awareness. It's called during the generation process for edit pages when generating fields on existing entities.
+
+#### Relationship Context Settings Service
+
+**Location:** `/src/lib/services/relationshipContextSettingsService.ts`
+
+**Purpose:** Manages user settings for relationship context inclusion in AI generation. Provides a centralized interface for reading and writing relationship context preferences.
+
+**Key Functions:**
+
+```typescript
+// Get current relationship context settings
+getRelationshipContextSettings(): RelationshipContextSettings
+
+// Update relationship context settings
+updateRelationshipContextSettings(updates: Partial<RelationshipContextSettings>): void
+
+// Reset settings to defaults
+resetRelationshipContextSettings(): void
+```
+
+**Settings Interface:**
+
+```typescript
+interface RelationshipContextSettings {
+  enabled: boolean;                // Enable/disable relationship context (default: true)
+  maxRelatedEntities: number;      // Max entities to include (default: 20)
+  maxCharacters: number;           // Max characters per entity (default: 4000)
+  contextBudget: number;           // Budget percentage for relationships (default: 50)
+  autoGenerateSummaries: boolean;  // Auto-generate entity summaries (default: false)
+}
+```
+
+**Default Values:**
+
+```typescript
+{
+  enabled: true,
+  maxRelatedEntities: 20,
+  maxCharacters: 4000,
+  contextBudget: 50,
+  autoGenerateSummaries: false
+}
+```
+
+**Storage:**
+
+Settings are persisted in browser localStorage under the key `relationship-context-settings`. The service handles JSON serialization/deserialization and provides fallback to defaults if settings are corrupted or missing.
+
+**Usage in Settings UI:**
+
+The settings service is used by `/src/routes/settings/+page.svelte` to display and update relationship context preferences. Changes are saved immediately and apply to all subsequent AI generation requests.
+
+#### Relationship Context Fields Utility
+
+**Location:** `/src/lib/utils/relationshipContextFields.ts`
+
+**Purpose:** Smart field detection utility that determines which fields should include relationship context in per-field AI generation. Uses field type analysis and entity type relevance to make intelligent decisions.
+
+**Key Functions:**
+
+```typescript
+// Get the priority level for a field
+getRelationshipContextPriority(fieldKey: string): ContextPriority
+
+// Determine if field should include relationship context
+shouldIncludeRelationshipContext(fieldKey: string, entityType: EntityType): boolean
+
+// Calculate character budget for relationship context
+getFieldRelationshipContextBudget(fieldKey: string, baseBudget: number): number
+```
+
+**Priority Levels:**
+
+```typescript
+type ContextPriority = 'high' | 'medium' | 'low' | 'none';
+```
+
+**Field Categories:**
+
+**High Priority Fields:**
+- personality, motivation, goals
+- relationships, alliances, enemies
+
+**Medium Priority Fields:**
+- background, description, history
+- role, occupation, atmosphere
+- values, resources
+
+**Low Priority Fields:**
+- appearance, physical_description
+- tactics, combat_behavior
+
+**Smart Matching:**
+
+The utility uses partial string matching to handle field name variations:
+- "character_motivation" matches "motivation" → high priority
+- "social_background" matches "background" → medium priority
+- "physical_description" matches "physical_description" → low priority (checked first to avoid conflict with "description")
+
+**Budget Calculation:**
+
+Given a base budget (e.g., 4000 characters), the utility allocates:
+- High priority: 75% (3000 characters)
+- Medium priority: 50% (2000 characters)
+- Low priority: 25% (1000 characters)
+- None priority: 0 characters
+
+**Entity Type Awareness:**
+
+Different entity types benefit from relationship context differently:
+
+```typescript
+// Social entity types (benefit most from relationships)
+const SOCIAL_ENTITY_TYPES = ['npc', 'character', 'faction'];
+
+// Contextual entity types (benefit for certain fields)
+const CONTEXTUAL_ENTITY_TYPES = ['location'];
+
+// Other/custom entity types (conservative approach)
+```
+
+**Example Usage:**
+
+```typescript
+// Check priority
+const priority = getRelationshipContextPriority('personality');
+// Returns: 'high'
+
+// Check if context should be included
+const shouldInclude = shouldIncludeRelationshipContext('personality', 'npc');
+// Returns: true (social entity + high priority field)
+
+const shouldInclude2 = shouldIncludeRelationshipContext('personality', 'item');
+// Returns: false (item entity doesn't benefit from personality relationships)
+
+// Calculate budget
+const budget = getFieldRelationshipContextBudget('personality', 4000);
+// Returns: 3000 (75% of base budget)
+```
 
 #### Model Service
 

@@ -112,6 +112,16 @@ When creating or editing any entity, look for the sparkle button next to text fi
 - Multi-line fields (personality, appearance, motivation, etc.)
 - Rich text fields (background, history, detailed descriptions)
 
+**Relationship Context in Generation:**
+
+When generating fields for existing entities, Director Assist automatically includes information about related entities to create more contextually aware content. This feature:
+
+- **Smart Field Detection**: Automatically identifies fields that benefit from relationship context (personality, motivation, goals, background)
+- **Budget Allocation**: High-priority fields get 75% of character budget, medium priority gets 50%, low priority gets 25%
+- **Entity Type Awareness**: Works best for NPCs, Characters, Factions, and Locations
+- **Privacy Preserved**: Only uses non-hidden relationship data
+- **Settings Control**: Adjust in Settings → Relationship Context to control how much context is included
+
 **Privacy Protection:**
 - DM-only fields (secrets, hidden agendas) are never sent to the AI
 - Your API key is stored only in your browser

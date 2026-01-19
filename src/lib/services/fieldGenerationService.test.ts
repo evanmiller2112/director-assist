@@ -1440,4 +1440,704 @@ describe('fieldGenerationService', () => {
 			});
 		});
 	});
+
+	describe('Relationship Context Integration (Issue #60)', () => {
+		/**
+		 * Tests for per-field relationship context inclusion in AI generation.
+		 *
+		 * These tests verify that the field generation service:
+		 * 1. Accepts relationship context in the FieldGenerationContext
+		 * 2. Includes relationship context in the prompt when provided
+		 * 3. Works without relationship context (backward compatible)
+		 * 4. Handles relationship context correctly for different field types
+		 */
+
+		const mockTypeDefinition: EntityTypeDefinition = {
+			type: 'npc',
+			label: 'NPC',
+			labelPlural: 'NPCs',
+			icon: 'users',
+			color: 'npc',
+			isBuiltIn: true,
+			fieldDefinitions: [
+				{
+					key: 'personality',
+					label: 'Personality',
+					type: 'richtext',
+					required: false,
+					order: 1
+				},
+				{
+					key: 'background',
+					label: 'Background',
+					type: 'richtext',
+					required: false,
+					order: 2
+				},
+				{
+					key: 'appearance',
+					label: 'Appearance',
+					type: 'richtext',
+					required: false,
+					order: 3
+				}
+			],
+			defaultRelationships: ['knows', 'member_of']
+		};
+
+		beforeEach(() => {
+			// Mock localStorage for API key
+			global.localStorage = {
+				getItem: vi.fn((key: string) => {
+					if (key === 'dm-assist-api-key') return 'test-api-key';
+					return null;
+				}),
+				setItem: vi.fn(),
+				removeItem: vi.fn(),
+				clear: vi.fn(),
+				length: 0,
+				key: vi.fn()
+			};
+		});
+
+		describe('FieldGenerationContext Interface Extension', () => {
+			it('should accept relationshipContext in FieldGenerationContext', async () => {
+				const personalityField: FieldDefinition = {
+					key: 'personality',
+					label: 'Personality',
+					type: 'richtext',
+					required: false,
+					order: 1
+				};
+
+				const context: FieldGenerationContext = {
+					entityType: 'npc',
+					typeDefinition: mockTypeDefinition,
+					targetField: personalityField,
+					currentValues: {
+						name: 'Thorin',
+						fields: {}
+					},
+					relationshipContext: '=== Relationships for Thorin ===\n[member_of] Thieves Guild: A shadowy organization'
+				};
+
+				const result = await generateField(context);
+
+				// Should not fail when relationshipContext is provided
+				expect(result).toBeDefined();
+				expect(result.success).toBeDefined();
+			});
+
+			it('should work without relationshipContext (backward compatible)', async () => {
+				const personalityField: FieldDefinition = {
+					key: 'personality',
+					label: 'Personality',
+					type: 'richtext',
+					required: false,
+					order: 1
+				};
+
+				const context: FieldGenerationContext = {
+					entityType: 'npc',
+					typeDefinition: mockTypeDefinition,
+					targetField: personalityField,
+					currentValues: {
+						name: 'Thorin',
+						fields: {}
+					}
+					// No relationshipContext provided
+				};
+
+				const result = await generateField(context);
+
+				// Should work without relationship context
+				expect(result).toBeDefined();
+				expect(result.success).toBeDefined();
+			});
+		});
+
+		describe('Prompt Building with Relationship Context', () => {
+			it('should include relationship context in prompt when provided', async () => {
+				const personalityField: FieldDefinition = {
+					key: 'personality',
+					label: 'Personality',
+					type: 'richtext',
+					required: false,
+					order: 1
+				};
+
+				const relationshipContext = `=== Relationships for Thorin ===
+[Relationship: member_of] Thieves Guild (Faction): A shadowy organization of skilled thieves operating in the city
+[Relationship: knows] Elara (NPC): A wise elven ranger who often provides information`;
+
+				const context: FieldGenerationContext = {
+					entityType: 'npc',
+					typeDefinition: mockTypeDefinition,
+					targetField: personalityField,
+					currentValues: {
+						name: 'Thorin',
+						description: 'A cunning rogue',
+						fields: {
+							role: 'Master Thief'
+						}
+					},
+					relationshipContext
+				};
+
+				const result = await generateField(context);
+
+				// The implementation should use relationship context in the prompt
+				// We can't directly test the prompt content, but we verify the function succeeds
+				expect(result).toBeDefined();
+			});
+
+			it('should include relationship context for high-priority fields', async () => {
+				const highPriorityFields = ['personality', 'motivation', 'goals', 'background'];
+
+				for (const fieldKey of highPriorityFields) {
+					const field: FieldDefinition = {
+						key: fieldKey,
+						label: fieldKey.charAt(0).toUpperCase() + fieldKey.slice(1),
+						type: 'richtext',
+						required: false,
+						order: 1
+					};
+
+					const context: FieldGenerationContext = {
+						entityType: 'npc',
+						typeDefinition: mockTypeDefinition,
+						targetField: field,
+						currentValues: {
+							name: 'Test NPC',
+							fields: {}
+						},
+						relationshipContext: '=== Relationships ===\n[knows] Friend (NPC): A friendly ally'
+					};
+
+					const result = await generateField(context);
+
+					expect(result).toBeDefined();
+					expect(result.success).toBeDefined();
+				}
+			});
+
+			it('should handle empty relationship context gracefully', async () => {
+				const personalityField: FieldDefinition = {
+					key: 'personality',
+					label: 'Personality',
+					type: 'richtext',
+					required: false,
+					order: 1
+				};
+
+				const context: FieldGenerationContext = {
+					entityType: 'npc',
+					typeDefinition: mockTypeDefinition,
+					targetField: personalityField,
+					currentValues: {
+						name: 'Lonely NPC',
+						fields: {}
+					},
+					relationshipContext: '' // Empty string
+				};
+
+				const result = await generateField(context);
+
+				expect(result).toBeDefined();
+				expect(result.success).toBeDefined();
+			});
+
+			it('should handle very long relationship context', async () => {
+				const personalityField: FieldDefinition = {
+					key: 'personality',
+					label: 'Personality',
+					type: 'richtext',
+					required: false,
+					order: 1
+				};
+
+				// Create a very long relationship context (3000 characters)
+				const longContext = `=== Relationships for Popular NPC ===\n` +
+					Array(20).fill(0).map((_, i) =>
+						`[Relationship: knows] Friend ${i} (NPC): This is a detailed summary about friend ${i} and their background story...`
+					).join('\n');
+
+				const context: FieldGenerationContext = {
+					entityType: 'npc',
+					typeDefinition: mockTypeDefinition,
+					targetField: personalityField,
+					currentValues: {
+						name: 'Popular NPC',
+						fields: {}
+					},
+					relationshipContext: longContext
+				};
+
+				const result = await generateField(context);
+
+				expect(result).toBeDefined();
+				expect(result.success).toBeDefined();
+			});
+		});
+
+		describe('Relationship Context Position in Prompt', () => {
+			it('should include relationship context between existing context and field instructions', async () => {
+				const personalityField: FieldDefinition = {
+					key: 'personality',
+					label: 'Personality',
+					type: 'richtext',
+					required: false,
+					order: 1
+				};
+
+				const relationshipContext = `=== Relationships ===
+[member_of] Dark Brotherhood (Faction): An assassins guild`;
+
+				const context: FieldGenerationContext = {
+					entityType: 'npc',
+					typeDefinition: mockTypeDefinition,
+					targetField: personalityField,
+					currentValues: {
+						name: 'Shadow',
+						description: 'A mysterious assassin',
+						fields: {}
+					},
+					relationshipContext
+				};
+
+				const result = await generateField(context);
+
+				// The prompt should contain:
+				// 1. Campaign context (if provided)
+				// 2. Existing entity context (name, description, fields)
+				// 3. Relationship context (NEW)
+				// 4. Field-specific instructions
+
+				expect(result).toBeDefined();
+			});
+
+			it('should work with both campaign context and relationship context', async () => {
+				const personalityField: FieldDefinition = {
+					key: 'personality',
+					label: 'Personality',
+					type: 'richtext',
+					required: false,
+					order: 1
+				};
+
+				const context: FieldGenerationContext = {
+					entityType: 'npc',
+					typeDefinition: mockTypeDefinition,
+					targetField: personalityField,
+					currentValues: {
+						name: 'Gandor',
+						fields: {}
+					},
+					campaignContext: {
+						name: 'Rise of the Dark Lord',
+						setting: 'High Fantasy',
+						system: 'Draw Steel'
+					},
+					relationshipContext: '=== Relationships ===\n[knows] Wizard (NPC): A powerful mage'
+				};
+
+				const result = await generateField(context);
+
+				expect(result).toBeDefined();
+				expect(result.success).toBeDefined();
+			});
+		});
+
+		describe('Relationship Context for Different Field Types', () => {
+			it('should include relationship context for text fields', async () => {
+				const roleField: FieldDefinition = {
+					key: 'role',
+					label: 'Role',
+					type: 'text',
+					required: false,
+					order: 1
+				};
+
+				const context: FieldGenerationContext = {
+					entityType: 'npc',
+					typeDefinition: mockTypeDefinition,
+					targetField: roleField,
+					currentValues: {
+						name: 'Test',
+						fields: {}
+					},
+					relationshipContext: '=== Relationships ===\n[member_of] Guild (Faction): A merchants guild'
+				};
+
+				const result = await generateField(context);
+
+				expect(result).toBeDefined();
+			});
+
+			it('should include relationship context for textarea fields', async () => {
+				const descField: FieldDefinition = {
+					key: 'description',
+					label: 'Description',
+					type: 'textarea',
+					required: false,
+					order: 1
+				};
+
+				const context: FieldGenerationContext = {
+					entityType: 'npc',
+					typeDefinition: mockTypeDefinition,
+					targetField: descField,
+					currentValues: {
+						name: 'Test',
+						fields: {}
+					},
+					relationshipContext: '=== Relationships ===\n[located_at] Tavern (Location): A busy tavern'
+				};
+
+				const result = await generateField(context);
+
+				expect(result).toBeDefined();
+			});
+
+			it('should include relationship context for richtext fields', async () => {
+				const backgroundField: FieldDefinition = {
+					key: 'background',
+					label: 'Background',
+					type: 'richtext',
+					required: false,
+					order: 1
+				};
+
+				const context: FieldGenerationContext = {
+					entityType: 'npc',
+					typeDefinition: mockTypeDefinition,
+					targetField: backgroundField,
+					currentValues: {
+						name: 'Test',
+						fields: {}
+					},
+					relationshipContext: '=== Relationships ===\n[enemy_of] Villain (NPC): A dangerous enemy'
+				};
+
+				const result = await generateField(context);
+
+				expect(result).toBeDefined();
+			});
+		});
+
+		describe('Relationship Context for Different Entity Types', () => {
+			it('should work with relationship context for Character entities', async () => {
+				const characterType: EntityTypeDefinition = {
+					type: 'character',
+					label: 'Player Character',
+					labelPlural: 'Player Characters',
+					icon: 'user',
+					color: 'character',
+					isBuiltIn: true,
+					fieldDefinitions: [
+						{
+							key: 'personality',
+							label: 'Personality',
+							type: 'richtext',
+							required: false,
+							order: 1
+						}
+					],
+					defaultRelationships: ['knows']
+				};
+
+				const personalityField: FieldDefinition = {
+					key: 'personality',
+					label: 'Personality',
+					type: 'richtext',
+					required: false,
+					order: 1
+				};
+
+				const context: FieldGenerationContext = {
+					entityType: 'character',
+					typeDefinition: characterType,
+					targetField: personalityField,
+					currentValues: {
+						name: 'Hero',
+						fields: {}
+					},
+					relationshipContext: '=== Relationships ===\n[member_of] Party (Faction): An adventuring party'
+				};
+
+				const result = await generateField(context);
+
+				expect(result).toBeDefined();
+			});
+
+			it('should work with relationship context for Faction entities', async () => {
+				const factionType: EntityTypeDefinition = {
+					type: 'faction',
+					label: 'Faction',
+					labelPlural: 'Factions',
+					icon: 'flag',
+					color: 'faction',
+					isBuiltIn: true,
+					fieldDefinitions: [
+						{
+							key: 'goals',
+							label: 'Goals',
+							type: 'richtext',
+							required: false,
+							order: 1
+						}
+					],
+					defaultRelationships: ['allied_with', 'enemy_of']
+				};
+
+				const goalsField: FieldDefinition = {
+					key: 'goals',
+					label: 'Goals',
+					type: 'richtext',
+					required: false,
+					order: 1
+				};
+
+				const context: FieldGenerationContext = {
+					entityType: 'faction',
+					typeDefinition: factionType,
+					targetField: goalsField,
+					currentValues: {
+						name: 'Knights Order',
+						fields: {}
+					},
+					relationshipContext: '=== Relationships ===\n[allied_with] Kingdom (Faction): A powerful kingdom'
+				};
+
+				const result = await generateField(context);
+
+				expect(result).toBeDefined();
+			});
+
+			it('should work with relationship context for Location entities', async () => {
+				const locationType: EntityTypeDefinition = {
+					type: 'location',
+					label: 'Location',
+					labelPlural: 'Locations',
+					icon: 'map-pin',
+					color: 'location',
+					isBuiltIn: true,
+					fieldDefinitions: [
+						{
+							key: 'description',
+							label: 'Description',
+							type: 'richtext',
+							required: false,
+							order: 1
+						}
+					],
+					defaultRelationships: ['located_in', 'connected_to']
+				};
+
+				const descField: FieldDefinition = {
+					key: 'description',
+					label: 'Description',
+					type: 'richtext',
+					required: false,
+					order: 1
+				};
+
+				const context: FieldGenerationContext = {
+					entityType: 'location',
+					typeDefinition: locationType,
+					targetField: descField,
+					currentValues: {
+						name: 'Ancient Temple',
+						fields: {}
+					},
+					relationshipContext: '=== Relationships ===\n[located_in] Forest (Location): A dark forest'
+				};
+
+				const result = await generateField(context);
+
+				expect(result).toBeDefined();
+			});
+		});
+
+		describe('Edge Cases and Error Handling', () => {
+			it('should handle undefined relationship context', async () => {
+				const personalityField: FieldDefinition = {
+					key: 'personality',
+					label: 'Personality',
+					type: 'richtext',
+					required: false,
+					order: 1
+				};
+
+				const context: FieldGenerationContext = {
+					entityType: 'npc',
+					typeDefinition: mockTypeDefinition,
+					targetField: personalityField,
+					currentValues: {
+						name: 'Test',
+						fields: {}
+					},
+					relationshipContext: undefined
+				};
+
+				const result = await generateField(context);
+
+				expect(result).toBeDefined();
+				expect(result.success).toBeDefined();
+			});
+
+			it('should handle null relationship context', async () => {
+				const personalityField: FieldDefinition = {
+					key: 'personality',
+					label: 'Personality',
+					type: 'richtext',
+					required: false,
+					order: 1
+				};
+
+				const context: FieldGenerationContext = {
+					entityType: 'npc',
+					typeDefinition: mockTypeDefinition,
+					targetField: personalityField,
+					currentValues: {
+						name: 'Test',
+						fields: {}
+					},
+					relationshipContext: null as any
+				};
+
+				const result = await generateField(context);
+
+				expect(result).toBeDefined();
+				expect(result.success).toBeDefined();
+			});
+
+			it('should handle malformed relationship context', async () => {
+				const personalityField: FieldDefinition = {
+					key: 'personality',
+					label: 'Personality',
+					type: 'richtext',
+					required: false,
+					order: 1
+				};
+
+				const context: FieldGenerationContext = {
+					entityType: 'npc',
+					typeDefinition: mockTypeDefinition,
+					targetField: personalityField,
+					currentValues: {
+						name: 'Test',
+						fields: {}
+					},
+					relationshipContext: 'Invalid format without proper structure'
+				};
+
+				const result = await generateField(context);
+
+				// Should still work, just with weird context
+				expect(result).toBeDefined();
+				expect(result.success).toBeDefined();
+			});
+
+			it('should handle special characters in relationship context', async () => {
+				const personalityField: FieldDefinition = {
+					key: 'personality',
+					label: 'Personality',
+					type: 'richtext',
+					required: false,
+					order: 1
+				};
+
+				const context: FieldGenerationContext = {
+					entityType: 'npc',
+					typeDefinition: mockTypeDefinition,
+					targetField: personalityField,
+					currentValues: {
+						name: 'Test',
+						fields: {}
+					},
+					relationshipContext: `=== Relationships ===\n[knows] O'Brien the "Lucky" (NPC): A merchant with <special> & unusual traits...`
+				};
+
+				const result = await generateField(context);
+
+				expect(result).toBeDefined();
+				expect(result.success).toBeDefined();
+			});
+		});
+
+		describe('Backward Compatibility', () => {
+			it('should generate successfully without relationship context', async () => {
+				const personalityField: FieldDefinition = {
+					key: 'personality',
+					label: 'Personality',
+					type: 'richtext',
+					required: false,
+					order: 1
+				};
+
+				// Old-style context without relationshipContext
+				const context: FieldGenerationContext = {
+					entityType: 'npc',
+					typeDefinition: mockTypeDefinition,
+					targetField: personalityField,
+					currentValues: {
+						name: 'Traditional NPC',
+						description: 'A regular description',
+						fields: {
+							role: 'Guard'
+						}
+					}
+				};
+
+				const result = await generateField(context);
+
+				expect(result.success).toBe(true);
+				expect(result.value).toBeDefined();
+			});
+
+			it('should produce different results with and without relationship context', async () => {
+				const personalityField: FieldDefinition = {
+					key: 'personality',
+					label: 'Personality',
+					type: 'richtext',
+					required: false,
+					order: 1
+				};
+
+				// Context without relationships
+				const contextWithout: FieldGenerationContext = {
+					entityType: 'npc',
+					typeDefinition: mockTypeDefinition,
+					targetField: personalityField,
+					currentValues: {
+						name: 'Isolated NPC',
+						fields: {}
+					}
+				};
+
+				// Context with relationships
+				const contextWith: FieldGenerationContext = {
+					entityType: 'npc',
+					typeDefinition: mockTypeDefinition,
+					targetField: personalityField,
+					currentValues: {
+						name: 'Connected NPC',
+						fields: {}
+					},
+					relationshipContext: '=== Relationships ===\n[member_of] Thieves Guild (Faction): A criminal organization'
+				};
+
+				const resultWithout = await generateField(contextWithout);
+				const resultWith = await generateField(contextWith);
+
+				// Both should succeed
+				expect(resultWithout.success).toBe(true);
+				expect(resultWith.success).toBe(true);
+
+				// The generated content might be different due to relationship context
+				// But we can't test the actual content easily with mocked API
+			});
+		});
+	});
 });

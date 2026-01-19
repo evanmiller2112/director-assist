@@ -484,7 +484,7 @@ describe('LoadingButton Component - Spinner Position', () => {
 		});
 
 		const normalButton = screen.getByRole('button');
-		const normalHeight = normalButton.offsetHeight;
+		const normalClasses = normalButton.className;
 
 		// Re-render with loading
 		const { container: loadingContainer } = render(LoadingButton, {
@@ -495,11 +495,12 @@ describe('LoadingButton Component - Spinner Position', () => {
 		});
 
 		const loadingButton = screen.getAllByRole('button')[1];
-		const loadingHeight = loadingButton.offsetHeight;
+		const loadingClasses = loadingButton.className;
 
-		// Height should remain consistent
-		// (This might need adjustment based on actual implementation)
-		expect(loadingHeight).toBeGreaterThan(0);
+		// Both states should have consistent padding/sizing classes
+		// In test environment, offsetHeight is not reliable, so we check classes instead
+		expect(loadingClasses).toMatch(/px-\d+/); // Has horizontal padding
+		expect(loadingClasses).toMatch(/py-\d+/); // Has vertical padding
 	});
 });
 
@@ -638,7 +639,8 @@ describe('LoadingButton Component - Real-world Use Cases', () => {
 
 		expect(screen.getByText('Delete Entity')).toBeInTheDocument();
 		const button = screen.getByRole('button');
-		expect(button).toHaveClass(/danger|destructive/);
+		// Danger variant uses red background color classes
+		expect(button).toHaveClass(/red/);
 	});
 
 	it('should handle form submit button scenario', () => {

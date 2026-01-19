@@ -150,12 +150,9 @@ describe('LoadingSpinner Component - Custom Label', () => {
 	it('should not display label section when no label provided', () => {
 		const { container } = render(LoadingSpinner);
 
-		// Should only have sr-only text, not a visible label
-		const labels = container.querySelectorAll('p, span, div');
-		const visibleLabel = Array.from(labels).find(
-			el => !el.className.includes('sr-only')
-		);
-		expect(visibleLabel).not.toBeInTheDocument();
+		// Should only have sr-only text, not a visible label (check for p tag which is used for labels)
+		const labelElement = container.querySelector('p');
+		expect(labelElement).not.toBeInTheDocument();
 	});
 
 	it('should style label appropriately', () => {

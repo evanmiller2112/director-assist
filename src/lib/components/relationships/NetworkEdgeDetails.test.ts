@@ -516,7 +516,7 @@ describe('NetworkEdgeDetails Component - Edge Updates', () => {
 			bidirectional: true
 		};
 
-		const { component } = render(NetworkEdgeDetails, {
+		const { rerender } = render(NetworkEdgeDetails, {
 			props: {
 				edge: edge1
 			}
@@ -525,7 +525,7 @@ describe('NetworkEdgeDetails Component - Edge Updates', () => {
 		expect(screen.getByText('First Source')).toBeInTheDocument();
 		expect(screen.getByText(/knows/i)).toBeInTheDocument();
 
-		await component.$set({ edge: edge2 });
+		await rerender({ edge: edge2 });
 
 		expect(screen.getByText('Second Source')).toBeInTheDocument();
 		expect(screen.getByText(/allied_with/i)).toBeInTheDocument();
@@ -543,7 +543,7 @@ describe('NetworkEdgeDetails Component - Edge Updates', () => {
 			bidirectional: true
 		};
 
-		const { component, container } = render(NetworkEdgeDetails, {
+		const { rerender, container } = render(NetworkEdgeDetails, {
 			props: {
 				edge
 			}
@@ -552,7 +552,7 @@ describe('NetworkEdgeDetails Component - Edge Updates', () => {
 		let panel = container.querySelector('[data-testid="edge-details"]');
 		expect(panel).toBeInTheDocument();
 
-		await component.$set({ edge: null });
+		await rerender({ edge: null });
 
 		panel = container.querySelector('[data-testid="edge-details"]');
 		expect(panel).not.toBeInTheDocument();

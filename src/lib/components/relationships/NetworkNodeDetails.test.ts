@@ -408,7 +408,7 @@ describe('NetworkNodeDetails Component - Node Updates', () => {
 			linkCount: 7
 		};
 
-		const { component } = render(NetworkNodeDetails, {
+		const { rerender } = render(NetworkNodeDetails, {
 			props: {
 				node: node1
 			}
@@ -416,7 +416,7 @@ describe('NetworkNodeDetails Component - Node Updates', () => {
 
 		expect(screen.getByText('First')).toBeInTheDocument();
 
-		await component.$set({ node: node2 });
+		await rerender({ node: node2 });
 
 		expect(screen.getByText('Second')).toBeInTheDocument();
 		expect(screen.queryByText('First')).not.toBeInTheDocument();
@@ -430,7 +430,7 @@ describe('NetworkNodeDetails Component - Node Updates', () => {
 			linkCount: 5
 		};
 
-		const { component, container } = render(NetworkNodeDetails, {
+		const { rerender, container } = render(NetworkNodeDetails, {
 			props: {
 				node
 			}
@@ -439,7 +439,7 @@ describe('NetworkNodeDetails Component - Node Updates', () => {
 		let panel = container.querySelector('[data-testid="node-details"]');
 		expect(panel).toBeInTheDocument();
 
-		await component.$set({ node: null });
+		await rerender({ node: null });
 
 		panel = container.querySelector('[data-testid="node-details"]');
 		expect(panel).not.toBeInTheDocument();

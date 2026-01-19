@@ -81,3 +81,20 @@ export interface ModelCache {
 	models: ModelInfo[];
 	timestamp: number;
 }
+
+// Relationship context settings
+export interface RelationshipContextSettings {
+	enabled: boolean;                    // default: true
+	maxRelatedEntities: number;          // default: 20, range: 1-50
+	maxCharacters: number;               // default: 4000, range: 1000-10000
+	contextBudgetAllocation: number;     // default: 50, range: 0-100
+	autoGenerateSummaries: boolean;      // default: false
+}
+
+export const DEFAULT_RELATIONSHIP_CONTEXT_SETTINGS: RelationshipContextSettings = {
+	enabled: true,
+	maxRelatedEntities: 20,
+	maxCharacters: 4000,
+	contextBudgetAllocation: 50,
+	autoGenerateSummaries: false
+};

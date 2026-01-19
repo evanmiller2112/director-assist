@@ -55,6 +55,8 @@ src/
 │   ├── components/          # Reusable Svelte components
 │   │   ├── entity/          # Entity-specific components
 │   │   │   ├── FieldGenerateButton.svelte
+│   │   │   ├── FieldInput.svelte                   # Dynamic field input component
+│   │   │   ├── FieldRenderer.svelte                # Read-only field display component
 │   │   │   ├── RelationshipCard.svelte
 │   │   │   ├── RelateCommand.svelte
 │   │   │   ├── EntitySummary.svelte
@@ -79,6 +81,9 @@ src/
 │   │   ├── markdown/        # Markdown editing and rendering
 │   │   │   ├── MarkdownEditor.svelte
 │   │   │   └── MarkdownViewer.svelte
+│   │   ├── chat/            # Chat interface components
+│   │   │   ├── ChatPanel.svelte
+│   │   │   └── GenerationTypeSelector.svelte  # Type selector for focused generation
 │   │   ├── ui/              # UI components
 │   │   │   ├── LoadingSpinner.svelte
 │   │   │   ├── LoadingSkeleton.svelte
@@ -90,9 +95,10 @@ src/
 │   │       ├── HeaderSearch.svelte
 │   │       └── Sidebar.svelte
 │   ├── config/              # Configuration and definitions
-│   │   ├── commands.ts      # Command palette definitions
-│   │   ├── entityTypes.ts   # Entity type definitions
-│   │   └── systems.ts       # Game system profiles (Draw Steel, System Agnostic)
+│   │   ├── commands.ts           # Command palette definitions
+│   │   ├── entityTypes.ts        # Entity type definitions
+│   │   ├── generationTypes.ts    # Chat generation type configs and prompt templates
+│   │   └── systems.ts            # Game system profiles (Draw Steel, System Agnostic)
 │   ├── utils/               # Utility functions
 │   │   ├── commandUtils.ts              # Command parsing and filtering
 │   │   ├── matrixUtils.ts               # Matrix data processing and sorting
@@ -101,7 +107,9 @@ src/
 │   │   ├── markdownUtils.ts             # HTML sanitization for markdown rendering
 │   │   ├── relationshipContextFields.ts # Smart field detection for relationship context
 │   │   ├── timeFormat.ts                # Relative time formatting for cache timestamps
-│   │   └── entityFormUtils.ts           # System-aware entity form utilities
+│   │   ├── entityFormUtils.ts           # System-aware entity form utilities
+│   │   ├── fieldTypes.ts                # Field type metadata and computed field evaluation
+│   │   └── entityTypeValidation.ts      # Entity type and field validation utilities
 │   ├── db/                  # Database layer
 │   │   ├── index.ts         # Dexie database setup
 │   │   └── repositories/    # Data access layer
@@ -380,6 +388,191 @@ interface BaseEntity {
 - **Dynamic Fields**: Each entity type defines its own fields via `EntityTypeDefinition`
 - **Flexible**: Same base structure for all 11 built-in types plus custom types
 - **Linked**: Entities reference each other through `EntityLink` objects
+
+#### Custom Entity Types (Issue #25)
+
+Director Assist supports user-defined custom entity types with full field customization. This feature allows users to create entity types tailored to their campaign needs, beyond the 11 built-in types.
+
+**Core Types:**
+
+```typescript
+interface EntityTypeDefinition {
+  type: EntityType;                     // Unique type identifier
+  label: string;                        // Singular display name
+  labelPlural: string;                  // Plural display name
+  description?: string;                 // Optional description
+  icon: string;                         // Lucide icon name
+  color: string;                        // UI color (hex)
+  isBuiltIn: boolean;                   // Whether this is a built-in type
+  fieldDefinitions: FieldDefinition[];  // Custom fields
+  defaultRelationships: string[];       // Common relationship types
+}
+
+interface FieldDefinition {
+  key: string;                          // Unique field identifier
+  label: string;                        // Display label
+  type: FieldType;                      // Field type (text, number, etc.)
+  required: boolean;                    // Whether field is required
+  defaultValue?: FieldValue;            // Default value
+  options?: string[];                   // Options for select/multi-select
+  entityTypes?: EntityType[];           // Allowed types for entity-ref
+  placeholder?: string;                 // Placeholder text
+  helpText?: string;                    // Help text
+  section?: string;                     // Section grouping (e.g., "hidden")
+  order: number;                        // Display order
+  aiGenerate?: boolean;                 // Enable AI generation
+  computedConfig?: ComputedFieldConfig; // Computed field configuration
+}
+
+interface ComputedFieldConfig {
+  formula: string;                      // Formula with {fieldName} placeholders
+  dependencies: string[];               // Field keys used in formula
+  outputType: 'text' | 'number' | 'boolean'; // Result type
+}
+```
+
+**Supported Field Types (14 total):**
+
+| Type | Description | Use Case |
+|------|-------------|----------|
+| text | Single-line text input | Names, titles, identifiers |
+| textarea | Multi-line text input | Notes, descriptions |
+| richtext | Markdown editor | Formatted content |
+| number | Numeric input | Stats, quantities |
+| boolean | Checkbox | Flags, toggles |
+| select | Dropdown menu | Single choice from options |
+| multi-select | Multiple selection | Multiple choices |
+| tags | Tag input | Keywords, categories |
+| entity-ref | Single entity reference | Links to one entity |
+| entity-refs | Multiple entity references | Links to multiple entities |
+| date | Date picker | Dates, timestamps |
+| url | URL input | External links |
+| image | Image upload | Photos, maps |
+| computed | Calculated field | Derived values |
+
+**Computed Fields:**
+
+Computed fields automatically calculate values based on formulas:
+
+```typescript
+// String concatenation
+{
+  key: 'fullName',
+  type: 'computed',
+  computedConfig: {
+    formula: '{firstName} {lastName}',
+    dependencies: ['firstName', 'lastName'],
+    outputType: 'text'
+  }
+}
+
+// Arithmetic
+{
+  key: 'totalCost',
+  type: 'computed',
+  computedConfig: {
+    formula: '{quantity} * {unitPrice}',
+    dependencies: ['quantity', 'unitPrice'],
+    outputType: 'number'
+  }
+}
+
+// Boolean condition
+{
+  key: 'isAlive',
+  type: 'computed',
+  computedConfig: {
+    formula: '{hp} > 0',
+    dependencies: ['hp'],
+    outputType: 'boolean'
+  }
+}
+```
+
+**Built-In Type Customization:**
+
+Users can customize built-in entity types without creating new types:
+
+```typescript
+interface EntityTypeOverride {
+  type: EntityType;              // Built-in type being customized
+  hiddenFromSidebar?: boolean;   // Hide from navigation
+  hiddenFields?: string[];       // Fields to hide from forms
+  fieldOrder?: string[];         // Custom field ordering
+  additionalFields?: FieldDefinition[]; // Custom fields to add
+}
+```
+
+**Utilities:**
+
+Two utility modules support custom entity types:
+
+**Field Types** (`/src/lib/utils/fieldTypes.ts`)
+- `FIELD_TYPE_METADATA`: Metadata for all 14 field types
+- `normalizeFieldType()`: Converts aliases (short-text → text)
+- `evaluateComputedField()`: Evaluates computed field formulas
+
+**Validation** (`/src/lib/utils/entityTypeValidation.ts`)
+- `validateEntityTypeDefinition()`: Validates full entity type
+- `validateFieldDefinition()`: Validates single field
+- `validateTypeKeyUniqueness()`: Checks for type key conflicts
+- `validateComputedFieldFormula()`: Validates formula syntax
+- `detectCircularDependencies()`: Detects circular computed field dependencies
+
+**Components:**
+
+**FieldInput** (`/src/lib/components/entity/FieldInput.svelte`)
+- Unified input component for all field types
+- Handles validation and state management
+- Integrates with AI generation
+- Auto-calculates computed fields
+
+**FieldRenderer** (`/src/lib/components/entity/FieldRenderer.svelte`)
+- Read-only field display
+- Type-specific formatting
+- Rich text rendering
+- Entity reference links
+
+**Storage:**
+
+Custom entity types are stored per-campaign:
+- `Campaign.customEntityTypes`: Array of custom type definitions
+- `Campaign.entityTypeOverrides`: Built-in type customizations
+- Managed through Settings interface
+- Included in backup/restore
+
+**Validation Rules:**
+
+**Type Keys:**
+- Must start with a letter
+- Lowercase only
+- Letters, numbers, hyphens, underscores
+- Cannot conflict with built-in types
+- Examples: `spell`, `quest`, `vehicle`, `magic-item`
+
+**Field Keys:**
+- Must start with a letter
+- Letters, numbers, underscores only
+- Case-sensitive
+- Must be unique within type
+- Examples: `firstName`, `damage_type`, `castingTime`
+
+**Computed Fields:**
+- All placeholders must reference existing fields
+- All dependencies must be used in formula
+- All fields in formula must be in dependencies
+- No circular dependencies
+- Balanced braces and parentheses
+
+**API Documentation:**
+
+See `/docs/api/` for detailed API documentation:
+- [Field Types API](../api/FIELD_TYPES.md) - Field type utilities
+- [Entity Type Validation API](../api/ENTITY_TYPE_VALIDATION.md) - Validation utilities
+
+**User Documentation:**
+
+See [USER_GUIDE.md - Custom Entity Types](../USER_GUIDE.md#custom-entity-types) for end-user documentation.
 
 #### EntityLink
 Represents a relationship between two entities.
@@ -4408,6 +4601,112 @@ Settings are persisted in browser localStorage under the key `relationship-conte
 **Usage in Settings UI:**
 
 The settings service is used by `/src/routes/settings/+page.svelte` to display and update relationship context preferences. Changes are saved immediately and apply to all subsequent AI generation requests.
+
+#### Generation Type Selector (Chat Interface)
+
+**Location:** `/src/lib/components/chat/GenerationTypeSelector.svelte`
+
+**Purpose:** UI component in the chat interface that allows users to select the specific type of content they want the AI to generate. Provides focused, structured generation by setting clear expectations and modifying system prompts based on the selected type.
+
+**Configuration Location:** `/src/lib/config/generationTypes.ts`
+
+**Available Generation Types:**
+
+1. **General (Default)** - General-purpose assistant for any campaign needs
+2. **NPC** - Generate non-player characters with personality and background
+3. **Location** - Create locations and settings with atmosphere
+4. **Plot Hook** - Generate story threads and adventure ideas
+5. **Encounter** - Design combat encounters and challenges
+6. **Item** - Create items, artifacts, and treasures
+7. **Faction** - Build organizations and groups
+8. **Session Prep** - Help plan and prepare game sessions
+
+**Generation Type Configuration:**
+
+```typescript
+interface GenerationTypeConfig {
+  id: GenerationType;           // Unique identifier
+  label: string;                // Display name
+  description: string;          // Help text for the type
+  icon: string;                 // Lucide icon name
+  promptTemplate: string;       // System prompt instructions
+  suggestedStructure?: string;  // Markdown template for structured output
+}
+```
+
+**How It Works:**
+
+1. **User Selection**: User selects a generation type from the dropdown in the chat interface
+2. **Prompt Modification**: The selected type's `promptTemplate` is injected into the system prompt
+3. **Structured Output**: AI follows the `suggestedStructure` to format responses consistently
+4. **State Persistence**: Selection persists within the conversation but can be changed anytime
+5. **Visual Feedback**: Active type is displayed with icon and label
+
+**Example Prompt Templates:**
+
+**NPC Generation:**
+```
+When generating an NPC, create a complete character with personality, motivations,
+and background that fits naturally into the campaign world. Format the response
+using the suggested structure below.
+
+## Name
+**Role/Title**
+## Personality
+- Key traits and mannerisms
+- Speaking style
+## Motivation
+- Primary goals and desires
+- Fears and conflicts
+(additional sections...)
+```
+
+**Session Prep:**
+```
+When helping with session prep, provide structured planning guidance including
+scenes, NPCs, pacing, and key moments. Focus on practical preparation that's
+ready to run.
+
+## Session Overview
+**Expected Duration** | **Key Themes**
+## Opening Scene
+- Hook to start the session
+- Recap points from last session
+(additional sections...)
+```
+
+**Component Props:**
+
+```typescript
+interface Props {
+  value?: GenerationType;              // Currently selected type
+  onchange?: (type: GenerationType) => void;  // Change callback
+  disabled?: boolean;                  // Disable interaction
+  compact?: boolean;                   // Compact display mode
+  class?: string;                      // Additional CSS classes
+}
+```
+
+**Features:**
+
+- Icon-based visualization for quick recognition
+- Tooltip descriptions explaining each generation type
+- Keyboard and mouse accessible
+- Responsive design (desktop and mobile)
+- Compact mode for space-constrained layouts
+- Bindable value for reactive state management
+
+**Integration:**
+
+Used in `/src/lib/components/chat/ChatPanel.svelte` to allow users to select generation types before sending messages. The selected type influences how the chat service constructs system prompts, ensuring focused and structured AI responses.
+
+**User Benefits:**
+
+- More predictable output structure
+- Easier to copy content into entity forms
+- Reduces need for follow-up prompts
+- Helps AI understand context and expectations
+- Provides consistent formatting across similar requests
 
 #### Relationship Context Fields Utility
 

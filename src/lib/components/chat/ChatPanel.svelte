@@ -6,6 +6,8 @@
 	import ChatMessage from './ChatMessage.svelte';
 	import ContextSelector from './ContextSelector.svelte';
 	import ConversationSidebar from './ConversationSidebar.svelte';
+	import GenerationTypeSelector from './GenerationTypeSelector.svelte';
+	import type { GenerationType } from '$lib/types';
 
 	let inputValue = $state('');
 	let messagesContainer: HTMLDivElement | undefined = $state();
@@ -98,6 +100,13 @@
 
 	<!-- Context selector -->
 	<ContextSelector />
+
+	<!-- Generation type selector -->
+	<GenerationTypeSelector
+		value={chatStore.generationType}
+		onchange={(type) => chatStore.setGenerationType(type)}
+		disabled={isLoading}
+	/>
 
 	{#if !hasApiKey}
 		<!-- No API key state -->

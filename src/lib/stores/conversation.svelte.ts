@@ -1,9 +1,9 @@
 import { conversationRepository, appConfigRepository } from '$lib/db/repositories';
-import type { Conversation } from '$lib/types';
+import type { ConversationWithMetadata } from '$lib/types';
 
 // Conversation store using Svelte 5 runes
 function createConversationStore() {
-	let conversations = $state<Conversation[]>([]);
+	let conversations = $state<ConversationWithMetadata[]>([]);
 	let activeConversationId = $state<string | null>(null);
 	let isLoading = $state(true);
 	let error = $state<string | null>(null);
@@ -36,8 +36,8 @@ function createConversationStore() {
 				const savedActiveId = await appConfigRepository.getActiveConversationId();
 				activeConversationId = savedActiveId;
 
-				// Subscribe to live query for conversations
-				const observable = conversationRepository.getAll();
+				// Subscribe to live query for conversations with metadata
+				const observable = conversationRepository.getAllWithMetadata();
 				observable.subscribe({
 					next: (data) => {
 						conversations = data;
@@ -122,7 +122,7 @@ function createConversationStore() {
 		},
 
 		// Testing helpers
-		_setConversations(convs: Conversation[]) {
+		_setConversations(convs: ConversationWithMetadata[]) {
 			conversations = convs;
 		},
 

@@ -19,6 +19,7 @@
 	let typeKey = $state(initialValue?.type ?? '');
 	let label = $state(initialValue?.label ?? '');
 	let labelPlural = $state(initialValue?.labelPlural ?? '');
+	let description = $state(initialValue?.description ?? '');
 	let icon = $state(initialValue?.icon ?? 'user');
 	let color = $state(initialValue?.color ?? 'character');
 	let fieldDefinitions = $state<FieldDefinition[]>(initialValue?.fieldDefinitions ?? []);
@@ -26,6 +27,10 @@
 
 	let isSaving = $state(false);
 	let errors = $state<Record<string, string>>({});
+	let submitError = $state<string | null>(null);
+
+	// Known entity types (built-in) for duplicate checking
+	const KNOWN_TYPES = ['character', 'npc', 'location', 'faction', 'item', 'encounter', 'session', 'deity', 'timeline_event', 'world_rule', 'player_profile'];
 
 	// Track if user has manually edited the plural
 	let userEditedPlural = $state(false);
@@ -49,17 +54,23 @@
 		errors = {};
 
 		if (!label.trim()) {
-			errors.label = 'Label is required';
+			errors.label = 'Display name is required';
 		}
 
 		if (!typeKey.trim()) {
 			errors.typeKey = 'Type key is required';
 		} else if (!/^[a-z][a-z0-9_]*$/.test(typeKey)) {
-			errors.typeKey = 'Type key must start with a letter and contain only lowercase letters, numbers, and underscores';
+			if (/^[0-9]/.test(typeKey)) {
+				errors.typeKey = 'Type key must start with a letter';
+			} else {
+				errors.typeKey = 'Type key must contain only lowercase letters, numbers, and underscores';
+			}
+		} else if (!isEditing && KNOWN_TYPES.includes(typeKey)) {
+			errors.typeKey = `Type key "${typeKey}" already exists`;
 		}
 
 		if (!labelPlural.trim()) {
-			errors.labelPlural = 'Plural label is required';
+			errors.labelPlural = 'Plural name is required';
 		}
 
 		return Object.keys(errors).length === 0;
@@ -69,11 +80,13 @@
 		if (!validate()) return;
 
 		isSaving = true;
+		submitError = null;
 		try {
 			const entityType: EntityTypeDefinition = {
 				type: typeKey,
 				label,
 				labelPlural,
+				description: description.trim() || undefined,
 				icon,
 				color,
 				isBuiltIn: false,
@@ -81,9 +94,17 @@
 				defaultRelationships: selectedRelationships
 			};
 			await onsubmit(entityType);
+		} catch (error) {
+			submitError = error instanceof Error ? error.message : 'Failed to save entity type';
 		} finally {
 			isSaving = false;
 		}
+	}
+
+	// Clear field error when user starts typing
+	function clearFieldError(field: string) {
+		const { [field]: _, ...rest } = errors;
+		errors = rest;
 	}
 
 	function toggleRelationship(rel: string) {
@@ -107,12 +128,29 @@
 					type="text"
 					class="input"
 					value={label}
-					oninput={(e) => updateFromLabel(e.currentTarget.value)}
+					oninput={(e) => {
+						clearFieldError('label');
+						updateFromLabel(e.currentTarget.value);
+					}}
 					placeholder="e.g., Quest, Vehicle, Spell"
 				/>
 				{#if errors.label}
-					<p class="text-sm text-red-500 mt-1">{errors.label}</p>
+					<div class="text-sm text-red-500 mt-1">{errors.label}</div>
 				{/if}
+			</div>
+
+			<div>
+				<label for="description" class="label">Description</label>
+				<textarea
+					id="description"
+					class="input min-h-[80px]"
+					value={description}
+					oninput={(e) => (description = e.currentTarget.value)}
+					placeholder="Brief description of this entity type (optional)"
+				></textarea>
+				<p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+					Describe this entity type to help users understand its purpose
+				</p>
 			</div>
 
 			<div class="grid grid-cols-2 gap-4">
@@ -123,12 +161,15 @@
 						type="text"
 						class="input"
 						value={typeKey}
-						oninput={(e) => (typeKey = e.currentTarget.value)}
+						oninput={(e) => {
+							clearFieldError('typeKey');
+							typeKey = e.currentTarget.value;
+						}}
 						disabled={isEditing}
 						placeholder="e.g., quest"
 					/>
 					{#if errors.typeKey}
-						<p class="text-sm text-red-500 mt-1">{errors.typeKey}</p>
+						<div class="text-sm text-red-500 mt-1">{errors.typeKey}</div>
 					{/if}
 					{#if isEditing}
 						<p class="text-xs text-slate-500 mt-1">Type key cannot be changed after creation</p>
@@ -142,13 +183,14 @@
 						class="input"
 						value={labelPlural}
 						oninput={(e) => {
+							clearFieldError('labelPlural');
 							labelPlural = e.currentTarget.value;
 							userEditedPlural = true;
 						}}
 						placeholder="e.g., Quests"
 					/>
 					{#if errors.labelPlural}
-						<p class="text-sm text-red-500 mt-1">{errors.labelPlural}</p>
+						<div class="text-sm text-red-500 mt-1">{errors.labelPlural}</div>
 					{/if}
 				</div>
 			</div>
@@ -190,6 +232,14 @@
 						? 'bg-blue-100 border-blue-300 text-blue-700 dark:bg-blue-900 dark:border-blue-700 dark:text-blue-300'
 						: 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-700'}"
 					onclick={() => toggleRelationship(rel)}
+					onkeydown={(e) => {
+						if (e.key === 'Enter' || e.key === ' ') {
+							e.preventDefault();
+							toggleRelationship(rel);
+						}
+					}}
+					aria-pressed={selectedRelationships.includes(rel)}
+					aria-label={`${selectedRelationships.includes(rel) ? 'Remove' : 'Add'} relationship: ${rel.replace(/_/g, ' ')}`}
 				>
 					{rel.replace(/_/g, ' ')}
 				</button>
@@ -197,15 +247,68 @@
 		</div>
 	</section>
 
+	<!-- Preview -->
+	<section>
+		<h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">Preview</h2>
+		<p class="text-sm text-slate-500 dark:text-slate-400 mb-4">
+			This is how the entity type will appear in the sidebar navigation.
+		</p>
+		<div class="p-4 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg">
+			<div class="flex items-center gap-3 p-2 rounded hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+				<div class="w-5 h-5 flex items-center justify-center text-slate-600 dark:text-slate-400">
+					<!-- Icon would render here -->
+					<span class="text-sm">📝</span>
+				</div>
+				<div class="flex-1">
+					<div class="text-sm font-medium text-slate-900 dark:text-white">
+						{labelPlural || 'Entity Types'}
+					</div>
+					{#if description}
+						<div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+							{description}
+						</div>
+					{/if}
+				</div>
+				<div class="text-xs text-slate-500 dark:text-slate-400">
+					0
+				</div>
+			</div>
+		</div>
+	</section>
+
 	<!-- Actions -->
-	<div class="flex items-center justify-between pt-6 border-t border-slate-200 dark:border-slate-700">
-		<button type="button" class="btn btn-secondary" onclick={oncancel}>
-			<ArrowLeft class="w-4 h-4" />
-			Cancel
-		</button>
-		<button type="submit" class="btn btn-primary" disabled={isSaving}>
-			<Save class="w-4 h-4" />
-			{isSaving ? 'Saving...' : isEditing ? 'Save Changes' : 'Create Entity Type'}
-		</button>
+	<div class="flex flex-col gap-2">
+		{#if submitError}
+			<div class="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded text-sm text-red-600 dark:text-red-400">
+				{submitError}
+			</div>
+		{/if}
+		<div class="flex items-center justify-between pt-6 border-t border-slate-200 dark:border-slate-700">
+			<button
+				type="button"
+				class="btn btn-secondary"
+				onclick={oncancel}
+				onkeydown={(e) => {
+					if (e.key === 'Enter' || e.key === ' ') {
+						e.preventDefault();
+						oncancel();
+					}
+				}}
+				disabled={isSaving}
+				aria-label="Cancel and return"
+			>
+				<ArrowLeft class="w-4 h-4" />
+				Cancel
+			</button>
+			<button
+				type="submit"
+				class="btn btn-primary"
+				disabled={isSaving}
+				aria-label={isSaving ? 'Saving...' : isEditing ? 'Save changes to entity type' : 'Create new entity type'}
+			>
+				<Save class="w-4 h-4" />
+				{isSaving ? 'Saving...' : isEditing ? 'Save Changes' : 'Create Entity Type'}
+			</button>
+		</div>
 	</div>
 </form>

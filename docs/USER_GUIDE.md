@@ -7,15 +7,16 @@ Welcome to Director Assist! This guide will help you get started managing your D
 1. [What is Director Assist?](#what-is-director-assist)
 2. [Getting Started](#getting-started)
 3. [Creating Entities](#creating-entities)
-4. [Connecting Entities](#connecting-entities)
-5. [Using Search](#using-search)
-6. [Using Commands](#using-commands)
-7. [Managing Campaigns](#managing-campaigns)
-8. [Settings](#settings)
-9. [AI Features](#ai-features)
-10. [Backup & Restore](#backup--restore)
-11. [Tips & Best Practices](#tips--best-practices)
-12. [Troubleshooting](#troubleshooting)
+4. [Custom Entity Types](#custom-entity-types)
+5. [Connecting Entities](#connecting-entities)
+6. [Using Search](#using-search)
+7. [Using Commands](#using-commands)
+8. [Managing Campaigns](#managing-campaigns)
+9. [Settings](#settings)
+10. [AI Features](#ai-features)
+11. [Backup & Restore](#backup--restore)
+12. [Tips & Best Practices](#tips--best-practices)
+13. [Troubleshooting](#troubleshooting)
 
 ## What is Director Assist?
 
@@ -88,7 +89,7 @@ Congratulations! You've created your first entity. You'll see it listed on the N
 
 ## Creating Entities
 
-Director Assist includes 11 entity types to help you organize your campaign.
+Director Assist includes 11 built-in entity types to help you organize your campaign. You can also create custom entity types with your own fields to track anything specific to your campaign.
 
 ### Entity Types
 
@@ -200,6 +201,397 @@ Examples of hidden fields:
 - NPC secrets
 - Location secrets
 - Faction hidden agendas
+
+## Custom Entity Types
+
+Beyond the 11 built-in entity types, you can create custom entity types tailored to your campaign's unique needs. Define your own fields, choose field types, and even create computed fields that calculate values automatically.
+
+### Why Use Custom Entity Types?
+
+**Campaign-Specific Tracking**
+Track anything unique to your world:
+- Spells with custom properties (components, casting time, effects)
+- Vehicles with stats (speed, cargo capacity, crew)
+- Organizations with member rosters and resources
+- Contracts with terms, parties, and deadlines
+- Prophecies with clues and fulfillment conditions
+
+**Specialized Workflows**
+Create types optimized for your GMing style:
+- Trap templates with trigger, effect, and disable methods
+- Rumor tables with truth levels and sources
+- Random encounter templates with difficulty scaling
+- Shop inventories with stock and pricing
+
+**System-Specific Content**
+Add support for game systems beyond Draw Steel:
+- Custom classes or ancestries
+- Homebrew monsters
+- Magic items with system-specific properties
+- Campaign-specific mechanics
+
+### Creating a Custom Entity Type
+
+**How to Create:**
+
+1. Open Settings (gear icon or `/settings` command)
+2. Scroll to "Custom Entity Types"
+3. Click "Create Custom Entity Type"
+4. Fill in the basic information:
+   - **Type Key**: Unique identifier (lowercase, letters/numbers/hyphens/underscores)
+   - **Label**: Singular display name (e.g., "Spell")
+   - **Label Plural**: Plural display name (e.g., "Spells")
+   - **Icon**: Lucide icon name (e.g., "wand-sparkles")
+   - **Color**: Hex color code for UI theming (e.g., "#9C27B0")
+   - **Description**: Brief explanation of this entity type
+5. Add field definitions (see below)
+6. Click "Save Custom Entity Type"
+
+**Type Key Rules:**
+- Must start with a letter
+- Lowercase only
+- Can contain letters, numbers, hyphens, and underscores
+- Cannot contain spaces
+- Cannot conflict with built-in types
+- Examples: `spell`, `magic-item`, `npc-template`, `custom_faction`
+
+### Adding Fields to Custom Types
+
+Custom entity types can have any combination of 14 field types. Click "Add Field" to create a new field definition.
+
+**Field Configuration:**
+
+- **Key**: Unique field identifier (letters, numbers, underscores only)
+- **Label**: Display name shown in forms
+- **Type**: Field type (see below)
+- **Required**: Whether the field must be filled
+- **Order**: Display order in forms (lower numbers appear first)
+- **Help Text**: Optional guidance shown below the field
+- **Placeholder**: Example text shown in empty fields
+
+**Available Field Types:**
+
+| Type | Use Case | Example |
+|------|----------|---------|
+| **Text** | Short single-line input | Name, title, identifier |
+| **Textarea** | Multi-line plain text | Notes, description, observations |
+| **Rich Text** | Markdown-formatted content | Detailed backstory, formatted rules |
+| **Number** | Numeric values | Level, damage, duration, cost |
+| **Boolean** | True/false checkboxes | Is legendary, requires attunement |
+| **Select** | Single choice from dropdown | Rarity (common/uncommon/rare) |
+| **Multi-Select** | Multiple choices | Damage types, creature types |
+| **Tags** | Freeform tag input | Keywords, categories, traits |
+| **Entity Reference** | Link to one entity | Creator, owner, location |
+| **Entity References** | Link to multiple entities | Party members, witnesses, allies |
+| **Date** | Date values | Date discovered, expiration |
+| **URL** | External links | Source, art reference, inspiration |
+| **Image** | Image upload | Portrait, map, diagram |
+| **Computed** | Calculated from formula | Total cost, derived stats |
+
+**Type-Specific Options:**
+
+**Select & Multi-Select**
+- Add options (one per line or comma-separated)
+- Options display with underscores replaced by spaces
+- Example: `common, uncommon, rare, very_rare, legendary`
+
+**Entity References**
+- Choose which entity types can be referenced
+- Example: For a "Creator" field, allow NPC and Character types
+
+**Computed Fields**
+- Define a formula using `{fieldKey}` placeholders
+- Declare dependencies (fields used in the formula)
+- Choose output type (text, number, or boolean)
+- See Computed Fields section below for details
+
+### Computed Fields
+
+Computed fields automatically calculate values based on other fields. Perfect for derived stats, concatenations, or conditional logic.
+
+**Formula Syntax:**
+
+**String Templates**
+Combine text and field values:
+```
+{firstName} {lastName}
+Level {level} {className}
+```
+
+**Arithmetic**
+Calculate numeric values:
+```
+{level} * 10
+({baseHP} + {constitution}) * {level}
+({strength} + {dexterity}) / 2
+```
+
+**Comparisons**
+Create boolean conditions:
+```
+{hp} > 0
+{level} >= 5
+{rarity} == "legendary"
+```
+
+**Formula Examples:**
+
+| Formula | Dependencies | Output | Result |
+|---------|--------------|--------|--------|
+| `{firstName} {lastName}` | firstName, lastName | text | "Elena Thornvale" |
+| `{quantity} * {unitPrice}` | quantity, unitPrice | number | 150 |
+| `{hp} > 0` | hp | boolean | true/false |
+| `Level {level} {class}` | level, class | text | "Level 5 Rogue" |
+
+**Creating a Computed Field:**
+
+1. Click "Add Field" when editing a custom entity type
+2. Set field type to "Computed"
+3. Enter a formula using `{fieldName}` placeholders
+4. Click "Add Dependency" for each field used in the formula
+5. Select output type (text, number, or boolean)
+6. Save the field
+
+**Important Notes:**
+- All fields used in the formula must be listed as dependencies
+- Dependencies must reference existing field keys in the entity type
+- Computed fields are read-only in entity forms
+- Values update automatically when dependencies change
+- Circular dependencies are not allowed (field A depends on B, B depends on A)
+
+### Customizing Built-In Entity Types
+
+You can customize built-in entity types (NPCs, Locations, etc.) without creating entirely new types.
+
+**Customization Options:**
+
+**Hide Fields**
+Remove fields you don't use from forms:
+- Hide "voice" field from NPCs if you don't track it
+- Hide "atmosphere" from locations if unnecessary
+- Simplifies forms and reduces clutter
+
+**Reorder Fields**
+Change the order fields appear in forms:
+- Put most important fields at the top
+- Group related fields together
+- Match your prep workflow
+
+**Add Custom Fields**
+Extend built-in types with additional fields:
+- Add "accent" field to NPCs
+- Add "ruling_faction" entity reference to locations
+- Add "threat_level" to encounters
+
+**How to Customize:**
+
+1. Open Settings
+2. Scroll to "Entity Type Customization"
+3. Select a built-in entity type
+4. Configure customizations:
+   - Toggle "Hidden Fields" for fields to hide
+   - Drag fields in "Field Order" to reorder
+   - Click "Add Custom Field" to add new fields
+5. Save changes
+
+All customizations are per-campaign, so different campaigns can have different configurations.
+
+### Custom Type Examples
+
+**Example 1: Spell Entity Type**
+
+```
+Type Key: spell
+Label: Spell
+Label Plural: Spells
+Icon: wand-sparkles
+Color: #9C27B0
+
+Fields:
+- name (text, required)
+- description (richtext)
+- level (number, required)
+- school (select: abjuration, conjuration, divination, etc.)
+- castingTime (text, e.g., "1 action", "1 minute")
+- range (text, e.g., "60 feet", "Self")
+- components (multi-select: verbal, somatic, material)
+- materialComponents (textarea)
+- duration (text, e.g., "Instantaneous", "1 hour")
+- ritual (boolean)
+- concentration (boolean)
+- classes (multi-select: wizard, cleric, druid, etc.)
+- damageType (select: fire, cold, lightning, etc.)
+- source (text, e.g., "Player's Handbook")
+- displayName (computed): "{name} (Level {level})" [dependencies: name, level, output: text]
+```
+
+**Example 2: Quest Entity Type**
+
+```
+Type Key: quest
+Label: Quest
+Label Plural: Quests
+Icon: scroll-text
+Color: #FF9800
+
+Fields:
+- title (text, required)
+- description (richtext)
+- questGiver (entity-ref: npc, character)
+- objectives (textarea)
+- status (select: not_started, in_progress, completed, failed, abandoned)
+- difficulty (select: trivial, easy, medium, hard, deadly)
+- rewards (richtext)
+- location (entity-ref: location)
+- relatedNPCs (entity-refs: npc, character)
+- prerequisites (textarea)
+- timeLimit (text)
+- sessionStarted (number)
+- sessionCompleted (number)
+- notes (textarea)
+- summary (computed): "{title} - {status}" [dependencies: title, status, output: text]
+```
+
+**Example 3: Vehicle Entity Type**
+
+```
+Type Key: vehicle
+Label: Vehicle
+Label Plural: Vehicles
+Icon: ship
+Color: #607D8B
+
+Fields:
+- name (text, required)
+- type (select: ship, wagon, airship, submersible)
+- size (select: small, medium, large, huge)
+- speed (number)
+- cargoCapacity (number)
+- crewMin (number)
+- crewMax (number)
+- passengers (number)
+- armor (number)
+- hitPoints (number)
+- currentHP (number)
+- damageThreshold (number)
+- description (richtext)
+- owner (entity-ref: npc, character, faction)
+- currentLocation (entity-ref: location)
+- features (textarea)
+- weapons (textarea)
+- cost (number)
+- condition (select: pristine, good, fair, poor, wrecked)
+- hpPercentage (computed): "({currentHP} / {hitPoints}) * 100" [dependencies: currentHP, hitPoints, output: number]
+```
+
+### Managing Custom Entity Types
+
+**Editing Custom Types**
+
+1. Open Settings
+2. Find the custom type in "Custom Entity Types"
+3. Click "Edit"
+4. Modify fields, add new fields, or change type properties
+5. Save changes
+
+Changes apply to the entity type definition, not existing entities. Existing entities keep their data even if you remove fields.
+
+**Deleting Custom Types**
+
+1. Open Settings
+2. Find the custom type
+3. Click "Delete"
+4. Confirm deletion
+
+Deleting a custom entity type does not delete entities of that type. Entities remain accessible but won't have a type definition for creating new ones.
+
+**Hiding Custom Types**
+
+If you want to temporarily disable a custom type without deleting it:
+
+1. Edit the custom type
+2. Toggle "Hidden from Sidebar"
+3. The type won't appear in navigation but existing entities remain accessible
+
+### Validation and Error Prevention
+
+Director Assist validates custom entity types to prevent errors:
+
+**Type Key Validation**
+- Must be unique (no duplicates or conflicts with built-in types)
+- Lowercase only
+- Starts with a letter
+- No spaces allowed
+
+**Field Validation**
+- Field keys must be unique within the type
+- Required fields cannot be empty
+- Select fields must have at least one option
+- Entity reference fields must specify allowed types
+- Computed fields must have valid formulas
+
+**Computed Field Validation**
+- All placeholders must reference existing fields
+- All dependencies must be used in the formula
+- All fields in formula must be in dependencies
+- No circular dependencies (A depends on B, B depends on A)
+- Balanced braces and parentheses
+
+Validation errors appear immediately in the form, preventing invalid configurations.
+
+### Best Practices
+
+**Keep It Simple**
+Start with a few essential fields. You can always add more later.
+
+**Use Descriptive Keys**
+Field keys should be readable: `castingTime` not `ct`, `hitPoints` not `hp`.
+
+**Leverage Computed Fields**
+Use computed fields for derived values to keep data consistent:
+- Display names: `{firstName} {lastName}`
+- Totals: `{quantity} * {price}`
+- Status indicators: `{hp} > 0`
+
+**Organize with Sections**
+Use the `section` property to group related fields in the UI.
+
+**Provide Help Text**
+Add helpful guidance for complex fields to remind yourself what they're for.
+
+**Consider AI Generation**
+Fields marked for AI generation can be populated automatically. Disable for fields like IDs or system-specific stats.
+
+**Test Your Types**
+Create a test entity to verify your custom type works as expected before using it extensively.
+
+**Document Custom Types**
+Add a description to help remember what the type is for, especially if you have many custom types.
+
+### Custom Types and AI Generation
+
+AI generation works with custom entity types just like built-in types:
+
+- Text, textarea, and richtext fields can be generated
+- The AI uses field labels, help text, and other field values as context
+- Computed fields are never generated (they calculate automatically)
+- You can disable AI generation per-field with `aiGenerate: false`
+
+When generating content for custom entities, provide clear field names and descriptions so the AI understands what to generate.
+
+### Limitations
+
+**Cannot Modify Core Entity Structure**
+Custom types use the same base entity structure (name, description, tags, etc.). You cannot remove these core fields.
+
+**No Custom Validation Rules**
+Field validation is limited to built-in rules (required, type checking). You cannot add custom validation logic.
+
+**Formula Evaluation is Client-Side**
+Computed field formulas evaluate in the browser using JavaScript eval(). Keep formulas simple to avoid errors.
+
+**No Scripting or Advanced Logic**
+Computed fields support basic arithmetic and string concatenation, not complex programming logic.
 
 ## Connecting Entities
 
@@ -1252,6 +1644,99 @@ Settings under "Relationship Context" control:
 
 You can override these defaults on a per-entity basis using the panel controls.
 
+### Using Generation Types in Chat
+
+The chat interface includes a Generation Type Selector that helps you get more focused and structured responses from the AI. Instead of generic responses, you can choose the specific type of content you want to generate.
+
+**How to Use the Selector:**
+
+1. Open the chat interface (navigate to `/chat` or use `/go chat` command)
+2. Look for the dropdown selector at the top of the chat
+3. Click to see all available generation types
+4. Select the type that matches what you want to create
+5. The AI will now provide responses structured for that content type
+
+**Available Generation Types:**
+
+**General (Default)**
+- General-purpose assistant for any campaign needs
+- Use for open-ended questions or when other types don't fit
+- No specific output structure
+
+**NPC**
+- Generate non-player characters with personality and background
+- Output includes: Name, Role, Personality traits, Motivations, Background, and Relationships
+- Perfect for quickly creating quest-givers, villains, or supporting characters
+
+**Location**
+- Create locations, places, and settings with atmosphere
+- Output includes: Description, Atmosphere, Inhabitants, Points of Interest, and Connections
+- Generates vivid places with sensory details
+
+**Plot Hook**
+- Generate plot hooks, story threads, and adventure ideas
+- Output includes: Premise, Complications, Stakes, Potential Resolutions, and Connections
+- Creates actionable story ideas with clear stakes
+
+**Encounter**
+- Design combat encounters and challenges
+- Output includes: Setup, Enemies/Challenges, Terrain, Objectives, Rewards, and Scaling suggestions
+- Provides tactical details and environmental factors
+
+**Item**
+- Create items, artifacts, and treasures
+- Output includes: Appearance, Properties, History, and Value
+- Balances mechanical effects with narrative significance
+
+**Faction**
+- Build factions, organizations, and groups
+- Output includes: Overview, Goals, Resources, Leadership, Relationships, and Secrets
+- Creates cohesive organizations with clear impact on the campaign world
+
+**Session Prep**
+- Help plan and prepare game sessions
+- Output includes: Session Overview, Key Scenes, NPCs to Prep, Pacing Notes, Key Moments, and Contingencies
+- Provides practical preparation ready to run at the table
+
+**How Generation Types Work:**
+
+When you select a generation type:
+1. The system prompt changes to guide the AI for that specific content type
+2. The AI follows a suggested structure for its responses
+3. Responses are formatted with consistent sections for easier reading
+4. The selection persists for the entire conversation (or until you change it)
+5. You can switch types at any time to generate different content
+
+**Tips for Best Results:**
+
+- **Start specific**: Choose the type that best matches what you need
+- **Provide context**: Mention your campaign setting, themes, or existing elements
+- **Iterate freely**: Switch between types as your conversation evolves
+- **Use the structure**: The suggested output format makes it easy to copy content into entity forms
+- **Combine with entities**: Generate content in chat, then create entities from the results
+- **Session prep workflow**: Use Session Prep type to plan, then switch to NPC or Encounter types for details
+
+**Example Workflow:**
+
+```
+1. Select "Session Prep" type
+2. Ask: "Help me plan next session. The party just discovered the secret cult."
+3. Review the structured session plan
+4. Switch to "NPC" type
+5. Ask: "Create the cult leader mentioned in scene 2"
+6. Get detailed NPC with personality and motivations
+7. Switch to "Encounter" type
+8. Ask: "Design the ritual chamber confrontation"
+9. Get tactical encounter with terrain and objectives
+```
+
+**Mobile and Desktop:**
+
+The selector works on all device sizes:
+- Desktop: Full dropdown with icons and descriptions
+- Mobile: Compact view with touch-friendly controls
+- Both maintain the same functionality
+
 ### Privacy and AI
 
 **Your secrets are safe**:
@@ -1388,6 +1873,53 @@ Messages within a conversation maintain context:
 
 Your campaign data is stored in your browser's local storage. It's important to export regular backups in case you clear your browser data or switch devices.
 
+### Smart Backup Reminders
+
+Director Assist includes a smart backup reminder system that helps you remember to export your campaign data regularly. The app tracks when you should backup and shows gentle, non-intrusive reminders at the right time.
+
+**When Reminders Appear:**
+
+Backup reminders appear as an amber-colored banner at the top of the app when one of these conditions is met:
+
+1. **First-time milestone**: You've created 5 or more entities and haven't exported a backup yet
+2. **Progress milestones**: You've reached significant entity counts (10, 25, 50, 100, and then every 50 after that)
+3. **Time-based**: It's been 7 or more days since your last backup export
+
+**Minimum threshold**: Reminders only appear when you have at least 5 entities. Small campaigns with fewer entities don't trigger reminders.
+
+**24-hour dismissal window**: When you click "Remind Me Later" on a reminder, it won't appear again for 24 hours. This prevents the same reminder from appearing repeatedly during a single session.
+
+**What the Banner Shows:**
+
+The backup reminder banner displays:
+- A contextual message based on why it's appearing (milestone, time elapsed, or first-time)
+- Your current entity count or days since last backup
+- "Backup Now" button that takes you directly to the backup export
+- "Remind Me Later" button to dismiss for 24 hours
+- Close button (X) to dismiss for 24 hours
+
+**Days Since Last Backup:**
+
+On the Settings page, you'll see a "Days since last backup" indicator in the Backup & Restore section. This helps you track when you last exported your data:
+- Shows number of days since your last export
+- If you've never exported, it shows "Never"
+- Updates automatically when you create a new backup
+
+**How It Works:**
+
+The backup reminder system tracks three pieces of information in your browser:
+- **Last export date**: When you last clicked "Export Backup"
+- **Last dismissal date**: When you last dismissed a reminder
+- **Last milestone reached**: The highest entity count milestone you've hit
+
+This data is stored locally and is never sent anywhere. The system uses this to intelligently determine when to show reminders without being annoying.
+
+**Tips:**
+- Reminders automatically disappear after you export a backup
+- The 24-hour dismissal ensures you won't see the same reminder repeatedly
+- Milestones are progressive—once you hit a milestone, it won't remind you about it again
+- Days since export resets to 0 when you create a new backup
+
 ### Exporting a Backup
 
 1. Open Settings (gear icon or `/settings` command)
@@ -1395,6 +1927,8 @@ Your campaign data is stored in your browser's local storage. It's important to 
 3. Click "Export Backup"
 4. Choose where to save the file
 5. The backup downloads as a JSON file
+
+When you export a backup, the app records the timestamp. This resets the backup reminder system and updates the "Days since last backup" indicator.
 
 **File Name Format**: `director-assist-backup-YYYY-MM-DD.json`
 
@@ -1585,7 +2119,7 @@ Create a Session entity after each game session with:
 3. Create new entities for anything introduced
 4. Add relationships that emerged in play
 5. Tag entities with session numbers (e.g., "session-5")
-6. Export a backup
+6. Export a backup (the app will remind you if it's been a while)
 
 ### Field Tips
 
@@ -1721,6 +2255,27 @@ Large campaigns or images can affect performance.
 - Try a different browser
 - Close other browser tabs using lots of memory
 - Clear browser cache (but export a backup first!)
+
+**Issue: I keep seeing backup reminders**
+
+The backup reminder system is designed to be helpful, not intrusive.
+
+**Solutions**:
+- Click "Backup Now" to export a backup and reset the reminder system
+- Click "Remind Me Later" to dismiss for 24 hours
+- If you've hit a milestone, export a backup to acknowledge the reminder
+- The reminder only appears when you've reached a new milestone or it's been 7+ days
+- Once dismissed, it won't appear again for 24 hours even if you refresh the page
+
+**Issue: I don't see backup reminders**
+
+You may not meet the conditions for a reminder yet.
+
+**Solutions**:
+- Create at least 5 entities before reminders appear
+- If you just dismissed a reminder, wait 24 hours before it can appear again
+- If you recently exported a backup, reminders won't show until the next milestone or 7+ days
+- Check the "Days since last backup" on the Settings page to see your export history
 
 **Issue: Export/import isn't working**
 

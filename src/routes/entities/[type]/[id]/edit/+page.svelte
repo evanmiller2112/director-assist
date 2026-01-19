@@ -5,6 +5,8 @@
 	import { getEntityTypeDefinition } from '$lib/config/entityTypes';
 	import { hasGenerationApiKey } from '$lib/services';
 	import { generateField, generateSummaryContent, generateDescriptionContent, isGeneratableField } from '$lib/services/fieldGenerationService';
+	import { buildRelationshipContext, formatRelationshipContextForPrompt, getRelationshipContextStats } from '$lib/services/relationshipContextBuilder';
+	import { getRelationshipContextSettings } from '$lib/services/relationshipContextSettingsService';
 	import type { FieldValue, FieldDefinition } from '$lib/types';
 	import { validateEntity, formatContextSummary } from '$lib/utils';
 	import { ArrowLeft, Save, ExternalLink, ImagePlus, X as XIcon, Upload, Search, ChevronDown } from 'lucide-svelte';
@@ -48,6 +50,10 @@
 	let showSummaryConfirm = $state(false);
 	let showDescriptionConfirm = $state(false);
 
+	// Relationship context state (Issue #59)
+	let includeRelationshipContext = $state(false);
+	let relationshipCount = $derived(entity?.links?.length ?? 0);
+
 	// Validation
 	function validate(): boolean {
 		const result = validateEntity(
@@ -76,6 +82,11 @@
 			tags = entity.tags.join(', ');
 			notes = entity.notes;
 			fields = { ...entity.fields };
+
+			// Initialize relationship context checkbox from settings (Issue #59)
+			const settings = getRelationshipContextSettings();
+			includeRelationshipContext = settings.enabled && relationshipCount > 0;
+
 			isInitialized = true;
 		}
 	});
@@ -143,12 +154,29 @@
 					}
 				: undefined;
 
+			// Build relationship context if enabled (Issue #59)
+			let relationshipContextStr: string | undefined = undefined;
+			if (includeRelationshipContext && entityId && relationshipCount > 0) {
+				try {
+					const settings = getRelationshipContextSettings();
+					const relContext = await buildRelationshipContext(entityId, {
+						maxRelatedEntities: settings.maxRelatedEntities,
+						maxCharacters: settings.maxCharacters
+					});
+					relationshipContextStr = formatRelationshipContextForPrompt(relContext);
+				} catch (error) {
+					console.error('Failed to build relationship context:', error);
+					// Continue without relationship context if it fails
+				}
+			}
+
 			const result = await generateField({
 				entityType,
 				typeDefinition,
 				targetField,
 				currentValues,
-				campaignContext
+				campaignContext,
+				relationshipContext: relationshipContextStr
 			});
 
 			if (result.success && result.value !== undefined) {
@@ -336,11 +364,28 @@
 					}
 				: undefined;
 
+			// Build relationship context if enabled (Issue #59)
+			let relationshipContextStr: string | undefined = undefined;
+			if (includeRelationshipContext && entityId && relationshipCount > 0) {
+				try {
+					const settings = getRelationshipContextSettings();
+					const relContext = await buildRelationshipContext(entityId, {
+						maxRelatedEntities: settings.maxRelatedEntities,
+						maxCharacters: settings.maxCharacters
+					});
+					relationshipContextStr = formatRelationshipContextForPrompt(relContext);
+				} catch (error) {
+					console.error('Failed to build relationship context:', error);
+					// Continue without relationship context if it fails
+				}
+			}
+
 			const result = await generateSummaryContent({
 				entityType,
 				typeDefinition,
 				currentValues,
-				campaignContext
+				campaignContext,
+				relationshipContext: relationshipContextStr
 			});
 
 			if (result.success && result.value !== undefined) {
@@ -397,11 +442,28 @@
 					}
 				: undefined;
 
+			// Build relationship context if enabled (Issue #59)
+			let relationshipContextStr: string | undefined = undefined;
+			if (includeRelationshipContext && entityId && relationshipCount > 0) {
+				try {
+					const settings = getRelationshipContextSettings();
+					const relContext = await buildRelationshipContext(entityId, {
+						maxRelatedEntities: settings.maxRelatedEntities,
+						maxCharacters: settings.maxCharacters
+					});
+					relationshipContextStr = formatRelationshipContextForPrompt(relContext);
+				} catch (error) {
+					console.error('Failed to build relationship context:', error);
+					// Continue without relationship context if it fails
+				}
+			}
+
 			const result = await generateDescriptionContent({
 				entityType,
 				typeDefinition,
 				currentValues,
-				campaignContext
+				campaignContext,
+				relationshipContext: relationshipContextStr
 			});
 
 			if (result.success && result.value !== undefined) {
@@ -497,6 +559,48 @@
 					placeholder="A brief summary of this entity for AI context..."
 				></textarea>
 			</div>
+
+			<!-- Relationship Context Checkbox (Issue #59) -->
+			{#if canGenerate && relationshipCount > 0}
+				{@const stats = includeRelationshipContext ? (async () => {
+					try {
+						const settings = getRelationshipContextSettings();
+						const relContext = await buildRelationshipContext(entityId, {
+							maxRelatedEntities: settings.maxRelatedEntities,
+							maxCharacters: settings.maxCharacters
+						});
+						return getRelationshipContextStats(relContext);
+					} catch {
+						return null;
+					}
+				})() : null}
+				<div class="border border-slate-200 dark:border-slate-700 rounded-lg p-4 bg-slate-50 dark:bg-slate-800/50">
+					<label class="flex items-start gap-3 cursor-pointer">
+						<input
+							type="checkbox"
+							bind:checked={includeRelationshipContext}
+							class="mt-0.5 w-4 h-4 rounded border-slate-300 text-slate-900 focus:ring-slate-500 dark:border-slate-600 dark:bg-slate-700 dark:checked:bg-slate-600"
+						/>
+						<div class="flex-1">
+							<div class="font-medium text-slate-900 dark:text-white">
+								Include relationship context
+							</div>
+							<p class="text-sm text-slate-600 dark:text-slate-400 mt-1">
+								Include information about related entities ({relationshipCount} relationship{relationshipCount === 1 ? '' : 's'}) when generating content with AI.
+								{#if includeRelationshipContext}
+									{#await stats then statsData}
+										{#if statsData}
+											<span class="text-slate-500 dark:text-slate-500">
+												~ {statsData.estimatedTokens} tokens
+											</span>
+										{/if}
+									{/await}
+								{/if}
+							</p>
+						</div>
+					</label>
+				</div>
+			{/if}
 
 			<!-- Type-specific fields -->
 			{#if typeDefinition}

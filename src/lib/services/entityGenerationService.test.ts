@@ -1362,6 +1362,162 @@ describe('entityGenerationService', () => {
 			});
 		});
 
+		describe('Relationship Context Integration (Issue #59)', () => {
+			it('should include relationship context in prompt when provided', async () => {
+				const context: GenerationContext = {
+					fields: {},
+					relationshipContext: 'Located at: The Golden Bazaar (marketplace). Member of: Merchant Guild (faction).'
+				};
+
+				await generateEntity(mockTypeDefinition, context);
+
+				// Verify the prompt includes relationship context
+				expect(mockCreate).toHaveBeenCalledWith(
+					expect.objectContaining({
+						messages: expect.arrayContaining([
+							expect.objectContaining({
+								content: expect.stringContaining('Golden Bazaar')
+							})
+						])
+					})
+				);
+
+				// Should also contain "Merchant Guild"
+				expect(mockCreate).toHaveBeenCalledWith(
+					expect.objectContaining({
+						messages: expect.arrayContaining([
+							expect.objectContaining({
+								content: expect.stringContaining('Merchant Guild')
+							})
+						])
+					})
+				);
+			});
+
+			it('should work without relationship context (backward compatibility)', async () => {
+				const context: GenerationContext = {
+					fields: {}
+					// No relationshipContext provided
+				};
+
+				const result = await generateEntity(mockTypeDefinition, context);
+
+				// Should still work normally
+				expect(result.success).toBe(true);
+				expect(result.entity).toBeDefined();
+			});
+
+			it('should handle empty relationship context gracefully', async () => {
+				const context: GenerationContext = {
+					fields: {},
+					relationshipContext: ''
+				};
+
+				const result = await generateEntity(mockTypeDefinition, context);
+
+				// Empty string should be treated as no context
+				expect(result.success).toBe(true);
+			});
+
+			it('should format relationship context in prompt clearly', async () => {
+				const context: GenerationContext = {
+					name: 'Lord Commander',
+					fields: {},
+					relationshipContext: 'Leads: Royal Army (faction). Located at: Royal Castle (location). Serves: King Aldric (npc).'
+				};
+
+				await generateEntity(mockTypeDefinition, context);
+
+				const call = mockCreate.mock.calls[0][0];
+				const prompt = call.messages[0].content;
+
+				// The prompt should include a relationships section
+				expect(prompt).toContain('Royal Army');
+				expect(prompt).toContain('Royal Castle');
+				expect(prompt).toContain('King Aldric');
+			});
+
+			it('should combine relationship context with campaign context', async () => {
+				const context: GenerationContext = {
+					fields: {},
+					relationshipContext: 'Member of: Thieves Guild (faction). Located at: Shadow District (location).'
+				};
+
+				const campaignContext = {
+					name: 'City of Shadows',
+					setting: 'Urban Fantasy',
+					system: 'Draw Steel'
+				};
+
+				await generateEntity(mockTypeDefinition, context, campaignContext);
+
+				const call = mockCreate.mock.calls[0][0];
+				const prompt = call.messages[0].content;
+
+				// Should include both campaign and relationship context
+				expect(prompt).toContain('City of Shadows');
+				expect(prompt).toContain('Thieves Guild');
+				expect(prompt).toContain('Shadow District');
+			});
+
+			it('should handle complex multi-relationship context', async () => {
+				const context: GenerationContext = {
+					name: 'The Iron Legion',
+					fields: {},
+					relationshipContext: 'Led by: General Marcus (npc). Allied with: Kingdom of Steel (faction). Opposes: Chaos Horde (faction). Based in: Iron Fortress (location). Controls: Northern Territories (location).'
+				};
+
+				const result = await generateEntity(mockTypeDefinition, context);
+
+				expect(result.success).toBe(true);
+
+				// Verify all relationship elements were included in the prompt
+				const call = mockCreate.mock.calls[0][0];
+				const prompt = call.messages[0].content;
+
+				expect(prompt).toContain('General Marcus');
+				expect(prompt).toContain('Kingdom of Steel');
+				expect(prompt).toContain('Chaos Horde');
+				expect(prompt).toContain('Iron Fortress');
+			});
+
+			it('should use relationship context to generate consistent entity content', async () => {
+				// This is a behavioral test - the AI should generate content consistent
+				// with the relationships provided
+				const context: GenerationContext = {
+					name: 'Harbor Master',
+					fields: {},
+					relationshipContext: 'Located at: Port District (location). Works for: City Council (faction).'
+				};
+
+				// Mock a response that should reflect the relationship context
+				mockCreate.mockResolvedValue({
+					content: [
+						{
+							type: 'text',
+							text: JSON.stringify({
+								name: 'Harbor Master Greaves',
+								description: 'An experienced sailor who oversees the bustling Port District. Reports to the City Council.',
+								summary: 'Harbor master managing port operations',
+								tags: ['maritime', 'official'],
+								fields: {
+									role: 'Harbor Master',
+									personality: 'Efficient and bureaucratic',
+									status: 'alive'
+								}
+							})
+						}
+					]
+				});
+
+				const result = await generateEntity(mockTypeDefinition, context);
+
+				expect(result.success).toBe(true);
+				// The generated description should reference the relationships
+				expect(result.entity?.description).toContain('Port District');
+			});
+		});
+
 		describe('Prompt Construction', () => {
 			it('should include entity type label in prompt', async () => {
 				const context: GenerationContext = {

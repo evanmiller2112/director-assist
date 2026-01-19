@@ -2,7 +2,7 @@
 	import { entitiesStore } from '$lib/stores';
 	import { getEntityTypeDefinition } from '$lib/config/entityTypes';
 	import { campaignStore } from '$lib/stores';
-	import { X, Search, Check } from 'lucide-svelte';
+	import { X, Search, Check, EyeOff } from 'lucide-svelte';
 	import type { BaseEntity } from '$lib/types';
 
 	interface Props {
@@ -23,6 +23,7 @@
 	let tension = $state(0);
 	let showAsymmetricOptions = $state(false);
 	let reverseRelationship = $state('');
+	let playerVisible = $state<boolean | undefined>(undefined);
 	let isSubmitting = $state(false);
 	let errorMessage = $state('');
 
@@ -80,6 +81,7 @@
 		tension = 0;
 		showAsymmetricOptions = false;
 		reverseRelationship = '';
+		playerVisible = undefined;
 		errorMessage = '';
 		open = false;
 		onClose?.();
@@ -131,7 +133,8 @@
 				notes.trim(),
 				finalStrength,
 				metadata,
-				finalReverseRelationship
+				finalReverseRelationship,
+				playerVisible
 			);
 			handleClose();
 		} catch (error) {
@@ -402,6 +405,23 @@
 								</div>
 							{/if}
 						{/if}
+
+						<!-- Player Visibility -->
+						<div class="flex items-center gap-2">
+							<input
+								id="player-visible"
+								type="checkbox"
+								checked={playerVisible === false}
+								onchange={(e) => {
+									playerVisible = e.currentTarget.checked ? false : undefined;
+								}}
+								class="w-4 h-4 text-blue-600 bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 rounded focus:ring-blue-500"
+							/>
+							<label for="player-visible" class="flex items-center gap-1 text-sm text-slate-700 dark:text-slate-300">
+								<EyeOff class="w-4 h-4 text-amber-500" />
+								Hide from players (DM only)
+							</label>
+						</div>
 
 						{#if errorMessage}
 							<div class="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-700 dark:text-red-300 text-sm">

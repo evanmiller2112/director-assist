@@ -286,7 +286,8 @@ function createEntitiesStore() {
 			notes?: string,
 			strength?: 'strong' | 'moderate' | 'weak',
 			metadata?: { tags?: string[]; tension?: number; [key: string]: unknown },
-			reverseRelationship?: string
+			reverseRelationship?: string,
+			playerVisible?: boolean
 		): Promise<void> {
 			await entityRepository.addLink(
 				sourceId,
@@ -296,7 +297,8 @@ function createEntitiesStore() {
 				notes,
 				strength,
 				metadata,
-				reverseRelationship
+				reverseRelationship,
+				playerVisible
 			);
 		},
 
@@ -308,6 +310,7 @@ function createEntitiesStore() {
 				relationship?: string;
 				strength?: 'strong' | 'moderate' | 'weak';
 				metadata?: { tags?: string[]; tension?: number; [key: string]: unknown };
+				playerVisible?: boolean;
 			}
 		): Promise<void> {
 			await entityRepository.updateLink(sourceId, linkId, changes);

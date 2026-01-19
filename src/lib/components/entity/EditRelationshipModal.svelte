@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { X } from 'lucide-svelte';
+	import { X, EyeOff } from 'lucide-svelte';
 	import type { BaseEntity, EntityLink } from '$lib/types';
 
 	interface Props {
@@ -14,6 +14,7 @@
 			strength?: 'strong' | 'moderate' | 'weak';
 			metadata?: { tags?: string[]; tension?: number };
 			bidirectional?: boolean;
+			playerVisible?: boolean;
 		}) => Promise<void>;
 	}
 
@@ -27,6 +28,7 @@
 	let tags = $state<string[]>(link.metadata?.tags ?? []);
 	let tagInput = $state('');
 	let bidirectional = $state(link.bidirectional);
+	let playerVisible = $state<boolean | undefined>(link.playerVisible);
 	let isSubmitting = $state(false);
 	let errorMessage = $state('');
 	let validationError = $state('');
@@ -40,6 +42,7 @@
 		tags = link.metadata?.tags ?? [];
 		tagInput = '';
 		bidirectional = link.bidirectional;
+		playerVisible = link.playerVisible;
 		errorMessage = '';
 		validationError = '';
 	});
@@ -53,6 +56,7 @@
 		tags = link.metadata?.tags ?? [];
 		tagInput = '';
 		bidirectional = link.bidirectional;
+		playerVisible = link.playerVisible;
 		errorMessage = '';
 		validationError = '';
 		open = false;
@@ -106,6 +110,7 @@
 				strength?: 'strong' | 'moderate' | 'weak';
 				metadata?: { tags?: string[]; tension?: number };
 				bidirectional?: boolean;
+				playerVisible?: boolean;
 			} = {
 				relationship: relationship.trim(),
 			};
@@ -133,6 +138,9 @@
 
 			// Add bidirectional status
 			changes.bidirectional = bidirectional;
+
+			// Add playerVisible
+			changes.playerVisible = playerVisible;
 
 			await onSave(changes);
 			handleClose();
@@ -291,6 +299,26 @@
 					</label>
 					<p class="text-xs text-slate-500 dark:text-slate-400 mt-1 ml-6">
 						Creates a reverse relationship on the target entity
+					</p>
+				</div>
+
+				<!-- Player Visibility -->
+				<div>
+					<label class="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer">
+						<input
+							id="player-visible"
+							type="checkbox"
+							checked={playerVisible === false}
+							onchange={(e) => {
+								playerVisible = e.currentTarget.checked ? false : undefined;
+							}}
+							class="w-4 h-4 border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-0"
+						/>
+						<EyeOff class="w-4 h-4 text-amber-500" />
+						<span>Hide from players (DM only)</span>
+					</label>
+					<p class="text-xs text-slate-500 dark:text-slate-400 mt-1 ml-6">
+						When checked, this relationship will be hidden from players
 					</p>
 				</div>
 

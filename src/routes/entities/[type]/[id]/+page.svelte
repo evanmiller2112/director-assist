@@ -3,7 +3,7 @@
 	import { goto } from '$app/navigation';
 	import { entitiesStore, campaignStore, notificationStore } from '$lib/stores';
 	import { getEntityTypeDefinition } from '$lib/config/entityTypes';
-	import { ArrowLeft, ArrowRight, Edit, Trash2, Link, Plus, X, ExternalLink, Check, X as XIcon } from 'lucide-svelte';
+	import { ArrowLeft, ArrowRight, Edit, Trash2, Link, Plus, X, ExternalLink, Check, X as XIcon, EyeOff } from 'lucide-svelte';
 	import { EntitySummary, RelateCommand, RelationshipCard, EditRelationshipModal } from '$lib/components/entity';
 	import { RelationshipBreadcrumbs } from '$lib/components/navigation';
 	import { parseBreadcrumbPath, serializeBreadcrumbPath, type BreadcrumbSegment } from '$lib/utils/breadcrumbUtils';
@@ -158,9 +158,17 @@
 		<!-- Header -->
 		<div class="flex items-start justify-between mb-6">
 			<div>
-				<h1 class="text-3xl font-bold text-slate-900 dark:text-white mb-1">
-					{entity.name}
-				</h1>
+				<div class="flex items-center gap-2 mb-1">
+					<h1 class="text-3xl font-bold text-slate-900 dark:text-white">
+						{entity.name}
+					</h1>
+					{#if entity.playerVisible === false}
+						<span class="inline-flex items-center gap-1 px-2 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 rounded-md text-sm font-medium">
+							<EyeOff class="w-3 h-3" />
+							DM Only
+						</span>
+					{/if}
+				</div>
 				<p class="text-slate-500 dark:text-slate-400">
 					{typeDefinition?.label ?? entity.type}
 				</p>

@@ -26,6 +26,7 @@ Everything the app does today:
 - Relationship mapping and visualization
 - Session planning tools
 - Local data storage in your browser
+- **OCF export/import** — Full data portability (coming soon)
 
 ### Future: Hosted Service (Paid)
 
@@ -41,10 +42,11 @@ A managed version for Directors who want convenience:
 
 ### Data Portability: Open Campaign Format (OCF)
 
-We're developing **OCF (Open Campaign Format)**—an open JSON schema for campaign data. This means:
+We're developing **OCF (Open Campaign Format)**—an open JSON schema for campaign data. **OCF is available in both self-hosted and hosted versions.** This means:
 
 - **Full export anytime** — Download your complete campaign as OCF JSON
 - **No lock-in** — Import into self-hosted Director Assist or any tool that supports OCF
+- **Migrate freely** — Move between self-hosted and hosted versions without data loss
 - **Community interop** — Other TTRPG tools can adopt OCF for data exchange
 
 See [docs/OCF_SPEC.md](docs/OCF_SPEC.md) for the technical specification.

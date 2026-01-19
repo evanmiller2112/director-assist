@@ -76,7 +76,7 @@ Commands adapt to your current page. Entity-specific commands like `/relate` and
 
 ### AI-Powered Content Generation
 
-Director Assist can generate content for individual fields using AI from multiple providers.
+Director Assist can generate content for individual fields using AI from multiple providers. All AI features can be disabled with a single toggle in Settings.
 
 **Supported AI Providers:**
 - Anthropic (Claude models)
@@ -89,6 +89,10 @@ Director Assist can generate content for individual fields using AI from multipl
 1. Get an API key from your chosen provider (e.g., [console.anthropic.com](https://console.anthropic.com) for Claude)
 2. Add it in Settings (gear icon in header)
 3. The AI uses your campaign setting and system to generate appropriate content
+4. Use the "Enable AI Features" toggle in Settings to turn all AI features on or off
+
+**Working Without AI:**
+AI features are completely optional. Toggle "Enable AI Features" off in Settings to use Director Assist as a pure campaign management tool with no AI elements visible. Your existing AI-generated content remains visible but the generation interface is hidden.
 
 **Generatable Field Types:**
 - Single-line text fields

@@ -1,3 +1,4 @@
+export { aiSettings } from './aiSettings.svelte';
 export { campaignStore } from './campaign.svelte';
 export { chatStore } from './chat.svelte';
 export { entitiesStore } from './entities.svelte';

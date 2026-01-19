@@ -4,7 +4,7 @@
 	import { Header, Sidebar } from '$lib/components/layout';
 	import { ChatPanel } from '$lib/components/chat';
 	import Toast from '$lib/components/ui/Toast.svelte';
-	import { campaignStore, entitiesStore, uiStore } from '$lib/stores';
+	import { aiSettings, campaignStore, entitiesStore, uiStore } from '$lib/stores';
 	import { initializeDatabase } from '$lib/db';
 
 	let { children } = $props();
@@ -17,6 +17,9 @@
 		// Load initial data
 		await campaignStore.load();
 		await entitiesStore.load();
+
+		// Load AI settings
+		await aiSettings.load();
 
 		// Load theme preference
 		uiStore.loadTheme();
@@ -42,7 +45,7 @@
 		</div>
 
 		<!-- Chat panel -->
-		{#if uiStore.chatPanelOpen}
+		{#if aiSettings.isEnabled && uiStore.chatPanelOpen}
 			<ChatPanel />
 		{/if}
 	</main>

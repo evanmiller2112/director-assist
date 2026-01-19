@@ -2335,6 +2335,70 @@ Manages UI state:
 - `toggleSidebar()`: Toggle sidebar
 - `setTheme()`: Change theme
 
+#### AI Settings Store (`aiSettings.svelte.ts`)
+
+Manages the global AI features toggle state using Svelte 5 runes.
+
+**State:**
+- `aiEnabled`: Boolean indicating if AI features are enabled
+
+**Properties:**
+- `isEnabled`: Getter for current enabled state
+- `aiEnabled`: Getter for current enabled state (alias)
+
+**Methods:**
+- `load()`: Load AI settings from localStorage
+- `setEnabled(enabled: boolean)`: Set AI enabled state and persist to localStorage
+- `toggle()`: Toggle AI enabled state
+
+**Default Behavior:**
+
+When the store loads for the first time:
+- If `dm-assist-ai-enabled` key exists in localStorage, use that value
+- Otherwise, default to enabled if any API key is configured (checks legacy and provider-specific keys)
+- Otherwise, default to disabled
+
+**Storage Key:**
+- `dm-assist-ai-enabled`: Boolean stored as string in localStorage
+
+**API Key Detection:**
+
+The store checks for API keys in the following locations:
+- Legacy: `dm-assist-api-key`
+- Provider-specific: `ai-provider-{provider}-apikey` (anthropic, openai, google, mistral)
+- Ollama: `ai-provider-ollama-baseurl`
+
+**Usage:**
+
+```typescript
+import { aiSettings } from '$lib/stores';
+
+// Check if AI is enabled
+if (aiSettings.isEnabled) {
+  // Show AI features
+}
+
+// Toggle AI features
+await aiSettings.toggle();
+
+// Set specific state
+await aiSettings.setEnabled(false);
+
+// Load from storage (called automatically on app init)
+await aiSettings.load();
+```
+
+**Integration Points:**
+
+The AI settings toggle affects visibility of:
+- Generate buttons (sparkle icons) next to text fields
+- Chat panel and chat button in header
+- AI configuration section in Settings
+- AI summary tooltips and features
+- All AI-related UI elements across the application
+
+Existing AI-generated content remains visible and editable when AI is disabled, but generation capabilities are hidden.
+
 ## Search & Filtering
 
 ### Relationship-Based Filtering
@@ -3053,7 +3117,49 @@ When set to "system":
 
 ## AI Integration
 
-Director Assist provides flexible AI integration through a multi-provider abstraction layer that supports Anthropic (Claude), OpenAI (GPT), Google (Gemini), Mistral, and Ollama (local models).
+Director Assist provides flexible AI integration through a multi-provider abstraction layer that supports Anthropic (Claude), OpenAI (GPT), Google (Gemini), Mistral, and Ollama (local models). All AI features can be globally disabled via the AI Settings store.
+
+### AI Features Toggle
+
+**Store:** `aiSettings.svelte.ts` (see [AI Settings Store](#ai-settings-store-aisettingssveltetss) for details)
+
+The AI features toggle provides a master switch to enable or disable all AI-related functionality:
+
+**When Enabled:**
+- Generate buttons appear next to text fields during entity creation/editing
+- Chat panel and chat button are visible in the UI
+- AI configuration section appears in Settings
+- AI-powered features are accessible throughout the app
+
+**When Disabled:**
+- All AI UI elements are hidden
+- Generate buttons, sparkle icons, and AI tooltips are removed
+- Chat interface is hidden
+- AI configuration section in Settings is hidden
+- Existing AI-generated content remains visible and editable as regular text
+- The app functions as a traditional campaign management tool
+
+**Conditional Rendering Pattern:**
+
+Components check the AI settings store before rendering AI features:
+
+```typescript
+import { aiSettings } from '$lib/stores';
+
+{#if aiSettings.isEnabled}
+  <!-- AI-related UI elements -->
+  <GenerateButton ... />
+{/if}
+```
+
+**Integration Points:**
+
+Files that conditionally render based on AI settings:
+- `/src/routes/+layout.svelte` - ChatPanel visibility
+- `/src/lib/components/Header.svelte` - Chat button visibility
+- `/src/lib/components/EntitySummary.svelte` - Generate button and sparkle icons
+- `/src/routes/settings/+page.svelte` - AI configuration section
+- Entity detail and edit pages - Generate buttons for fields
 
 ### Multi-Provider Architecture
 

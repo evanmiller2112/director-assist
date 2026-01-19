@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
-	import { entitiesStore, notificationStore, campaignStore } from '$lib/stores';
+	import { aiSettings, entitiesStore, notificationStore, campaignStore } from '$lib/stores';
 	import { getEntityTypeDefinition } from '$lib/config/entityTypes';
 	import { generateEntity, hasGenerationApiKey } from '$lib/services';
 	import { generateField, isGeneratableField } from '$lib/services/fieldGenerationService';
@@ -22,7 +22,7 @@
 				)
 			: undefined
 	);
-	const canGenerate = $derived(hasGenerationApiKey());
+	const canGenerate = $derived(aiSettings.isEnabled && hasGenerationApiKey());
 
 	// Form state
 	let name = $state('');

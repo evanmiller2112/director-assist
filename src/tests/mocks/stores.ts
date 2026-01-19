@@ -136,3 +136,39 @@ export function createMockNotificationStore() {
 		dismiss: vi.fn()
 	};
 }
+
+/**
+ * Creates a mock AI settings store for testing
+ */
+export function createMockAiSettings(enabled = false) {
+	let aiEnabled = enabled;
+	return {
+		get aiEnabled() {
+			return aiEnabled;
+		},
+		get isEnabled() {
+			return aiEnabled;
+		},
+		load: vi.fn(async () => {
+			// Check for API keys and stored preference
+			const hasApiKey =
+				!!localStorage.getItem('dm-assist-api-key') ||
+				!!localStorage.getItem('ai-provider-anthropic-apikey') ||
+				!!localStorage.getItem('ai-provider-openai-apikey');
+			const stored = localStorage.getItem('dm-assist-ai-enabled');
+			if (stored !== null) {
+				aiEnabled = stored === 'true';
+			} else {
+				aiEnabled = hasApiKey;
+			}
+		}),
+		setEnabled: vi.fn(async (value: boolean) => {
+			aiEnabled = value;
+			localStorage.setItem('dm-assist-ai-enabled', String(value));
+		}),
+		toggle: vi.fn(async () => {
+			aiEnabled = !aiEnabled;
+			localStorage.setItem('dm-assist-ai-enabled', String(aiEnabled));
+		})
+	};
+}

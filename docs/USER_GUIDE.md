@@ -732,7 +732,24 @@ Opens the settings page.
 
 ## AI Features
 
-Director Assist supports multiple AI providers to help generate content for your campaign. Choose the provider that works best for you.
+Director Assist supports multiple AI providers to help generate content for your campaign. All AI features can be completely disabled with a single toggle, allowing you to use Director Assist as a pure campaign management tool without any AI elements.
+
+**AI Features Toggle**
+
+The master "Enable AI Features" toggle in Settings controls all AI-related functionality:
+
+- **When enabled**: Generate buttons, sparkle icons, chat interface, and AI settings are visible
+- **When disabled**: All AI elements are hidden; the app functions as a traditional campaign organizer
+- **Default behavior**: Enabled automatically if you have an API key configured, disabled otherwise
+- **Existing content**: AI-generated summaries and content remain visible when disabled, but you cannot generate new content
+
+To toggle AI features on or off:
+1. Open Settings (gear icon in header)
+2. Find "Enable AI Features" at the top of the settings page
+3. Click the toggle switch
+4. The change takes effect immediately across the entire app
+
+Choose the provider that works best for you.
 
 ### Supported AI Providers
 
@@ -764,13 +781,39 @@ Director Assist supports multiple AI providers to help generate content for your
 ### Setting Up AI
 
 1. Open Settings (gear icon or `/settings` command)
-2. Find the "AI Configuration" section
-3. Select your preferred provider
-4. Enter your API key (or base URL for Ollama)
-5. Choose a model (recommended models are marked)
-6. Click "Save Settings"
+2. Ensure "Enable AI Features" toggle is turned on
+3. Find the "AI Configuration" section
+4. Select your preferred provider
+5. Enter your API key (or base URL for Ollama)
+6. Choose a model (recommended models are marked)
+7. Click "Save Settings"
 
 **Important**: Your API key is stored only in your browser. It's never included in backups and never sent anywhere except to your chosen provider's API.
+
+### Working Without AI
+
+Director Assist is a fully-functional campaign management tool even with AI features disabled.
+
+**When AI is Disabled**
+
+With the "Enable AI Features" toggle turned off in Settings:
+
+- **Hidden**: Generate buttons, sparkle icons, chat interface, chat button in header, and AI configuration settings
+- **Visible**: All entity management, relationships, search, command palette, backup/restore, and other core features
+- **Content preservation**: Existing AI-generated content (like summaries) remains visible and editable as regular text
+- **Data retention**: AI-generated content is preserved in your database and backups
+
+**Use Cases for Disabling AI**
+
+- You prefer manual campaign management without AI assistance
+- You want to reduce distractions and keep the interface minimal
+- You're working offline or without an API key
+- You want to prevent accidental AI API usage and costs
+- You're sharing your screen and want to hide AI features
+
+**Re-enabling AI**
+
+Simply toggle "Enable AI Features" back on in Settings to restore all AI functionality. Your API key and model preferences are preserved.
 
 ### Generating Field Content
 
@@ -1160,11 +1203,22 @@ Search looks at name, description, and tags only.
 Several things could cause this.
 
 **Solutions**:
+- Verify "Enable AI Features" toggle is turned ON in Settings
 - Verify your API key is entered correctly in Settings
-- Check your API key is active in the Anthropic console
+- Check your API key is active in your provider's console
 - Ensure you have API credits available
 - Check your internet connection
 - Try refreshing the page
+
+**Issue: I don't see generate buttons or AI features**
+
+AI features may be disabled.
+
+**Solutions**:
+- Open Settings and check if "Enable AI Features" toggle is turned ON
+- If you just added an API key, the toggle should enable automatically on page refresh
+- Try manually toggling the switch on
+- Refresh the page after toggling
 
 **Issue: The app is running slowly**
 

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Sparkles, Edit2, RefreshCw, Check, X } from 'lucide-svelte';
 	import { generateSummary, hasApiKey } from '$lib/services/summaryService';
-	import { entitiesStore, notificationStore } from '$lib/stores';
+	import { aiSettings, entitiesStore, notificationStore } from '$lib/stores';
 	import type { BaseEntity } from '$lib/types';
 
 	interface Props {
@@ -16,7 +16,7 @@
 	let editValue = $state('');
 
 	const hasSummary = $derived(!!entity.summary && entity.summary.trim() !== '');
-	const canGenerate = $derived(hasApiKey());
+	const canGenerate = $derived(aiSettings.isEnabled && hasApiKey());
 
 	async function handleGenerate() {
 		isGenerating = true;
@@ -57,7 +57,9 @@
 			class="text-sm font-medium text-slate-700 dark:text-slate-300 flex items-center gap-2 cursor-help"
 			title="This summary will be submitted as context when calling an AI agent for a related task."
 		>
-			<Sparkles class="w-4 h-4 text-purple-500" />
+			{#if aiSettings.isEnabled}
+				<Sparkles class="w-4 h-4 text-purple-500" />
+			{/if}
 			Summary
 		</h3>
 
@@ -72,22 +74,24 @@
 						<Edit2 class="w-4 h-4" />
 					</button>
 				{/if}
-				<button
-					class="p-1 text-slate-400 hover:text-purple-600 dark:hover:text-purple-400 disabled:opacity-50"
-					onclick={handleGenerate}
-					disabled={isGenerating || !canGenerate}
-					title={canGenerate
-						? hasSummary
-							? 'Regenerate summary'
-							: 'Generate summary'
-						: 'Configure API key in Settings'}
-				>
-					{#if isGenerating}
-						<RefreshCw class="w-4 h-4 animate-spin" />
-					{:else}
-						<Sparkles class="w-4 h-4" />
-					{/if}
-				</button>
+				{#if aiSettings.isEnabled}
+					<button
+						class="p-1 text-slate-400 hover:text-purple-600 dark:hover:text-purple-400 disabled:opacity-50"
+						onclick={handleGenerate}
+						disabled={isGenerating || !canGenerate}
+						title={canGenerate
+							? hasSummary
+								? 'Regenerate summary'
+								: 'Generate summary'
+							: 'Configure API key in Settings'}
+					>
+						{#if isGenerating}
+							<RefreshCw class="w-4 h-4 animate-spin" />
+						{:else}
+							<Sparkles class="w-4 h-4" />
+						{/if}
+					</button>
+				{/if}
 			</div>
 		{/if}
 	</div>
@@ -115,7 +119,9 @@
 		</p>
 	{:else}
 		<p class="text-sm text-slate-400 dark:text-slate-500 italic">
-			{#if canGenerate}
+			{#if !aiSettings.isEnabled}
+				AI features are disabled. Enable in Settings to generate summaries.
+			{:else if canGenerate}
 				No summary yet. Click the sparkle icon to generate one.
 			{:else}
 				Configure your API key in Settings to generate summaries.

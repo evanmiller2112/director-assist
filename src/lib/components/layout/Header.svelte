@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { MessageSquare, Settings, Menu, ChevronDown, Check } from 'lucide-svelte';
-	import { campaignStore, uiStore, notificationStore } from '$lib/stores';
+	import { aiSettings, campaignStore, uiStore, notificationStore } from '$lib/stores';
 	import HeaderSearch from './HeaderSearch.svelte';
 
 	let campaignDropdownOpen = $state(false);
@@ -118,14 +118,16 @@
 		<HeaderSearch bind:this={searchComponent} />
 
 		<!-- Chat toggle -->
-		<button
-			class="btn btn-ghost p-2"
-			onclick={() => uiStore.toggleChatPanel()}
-			aria-label="Toggle AI chat"
-			title="AI Assistant"
-		>
-			<MessageSquare class="w-5 h-5 text-slate-700 dark:text-slate-300" />
-		</button>
+		{#if aiSettings.isEnabled}
+			<button
+				class="btn btn-ghost p-2"
+				onclick={() => uiStore.toggleChatPanel()}
+				aria-label="Toggle AI chat"
+				title="AI Assistant"
+			>
+				<MessageSquare class="w-5 h-5 text-slate-700 dark:text-slate-300" />
+			</button>
+		{/if}
 
 		<!-- Settings -->
 		<a href="/settings" class="btn btn-ghost p-2" aria-label="Settings" title="Settings">

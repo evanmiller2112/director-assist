@@ -954,12 +954,33 @@ When editing an entity that has relationships, you can choose to include informa
 
 **How to Use:**
 
-When editing an entity with relationships, a checkbox appears below the tags field:
+When editing an entity with relationships, an expandable Relationship Context panel appears below the tags field. This panel provides granular control over which relationships to include.
 
-- **Include relationship context** - When enabled, the AI receives information about entities connected to the one you're editing
-- The checkbox shows how many relationships exist
-- When enabled, displays an estimated token cost
-- Only appears when the entity has relationships and AI features are enabled
+**The Relationship Context Panel:**
+
+- **Expand/Collapse**: Click the header to show or hide the relationship list
+- **Relationship count**: Badge shows total number of relationships
+- **Cache status summary**: Displays how many relationship summaries are valid, stale, or missing
+- **Select All/Select None**: Quick controls to toggle all relationships at once
+- **Total token count**: Shows estimated tokens for all selected relationships
+
+**Individual Relationship Cards:**
+
+Each relationship displays:
+- **Checkbox**: Include or exclude this relationship from context
+- **Entity name and type**: Target entity and relationship type
+- **Cache status badge**:
+  - "Valid" (green): Summary is up-to-date
+  - "Stale" (yellow): Entity changed since summary was cached
+  - "No Cache" (gray): No summary generated yet
+- **Cache age**: When the summary was last generated (e.g., "Cached 2 hours ago")
+- **Summary preview**: First two lines of the cached relationship summary
+- **Token count**: Estimated tokens this relationship contributes
+- **Regenerate button**: Click to generate a fresh summary for this relationship
+
+**Smart Selection:**
+
+Only appears when the entity has relationships and AI features are enabled. The panel remembers which relationships you've selected for future generations.
 
 **Smart Field Detection:**
 
@@ -994,13 +1015,14 @@ Relationship context works best for:
 
 **What Gets Included:**
 
-When relationship context is enabled:
-- Names and descriptions of related entities
-- Relationship types (how entities are connected)
-- Non-hidden fields from related entities
-- Up to the maximum number of entities configured in Settings (default: 20)
+For each selected relationship:
+- Cached summary of the related entity (if available)
+- Or raw entity data if no summary exists
+- Relationship type and metadata
+- Non-hidden fields only
+- Token budget controlled by field priority (see Smart Field Detection below)
 
-**Example:**
+**Example Workflow:**
 
 ```
 1. You have an NPC "Elena the Bard" with relationships:
@@ -1008,27 +1030,47 @@ When relationship context is enabled:
    - knows: "Grimwald the Wise" (NPC)
    - enemy_of: "Shadow Guild" (Faction)
 
-2. You click Generate on the "personality" field (high priority)
+2. Open the Relationship Context panel:
+   - All three relationships appear with cache status
+   - The Silver Circle: "Valid" (green badge) - Cached 1 hour ago
+   - Grimwald the Wise: "Stale" (yellow badge) - Cached 3 days ago
+   - Shadow Guild: "No Cache" (gray badge)
 
-3. The AI receives:
+3. Select relationships to include:
+   - Check "The Silver Circle" and "Grimwald the Wise"
+   - Optionally click Regenerate on Grimwald to refresh stale summary
+   - Total token count updates: "2,450 tokens"
+
+4. Click Generate on the "personality" field (high priority)
+
+5. The AI receives:
    - Elena's existing fields (name, description, tags)
    - Campaign context
-   - Relationship context showing her three connections
+   - Summaries for the two selected relationships
    - Character budget: ~3000 characters for relationships
 
-4. Generated personality reflects her relationships:
+6. Generated personality reflects selected relationships:
    "Elena is fiercely loyal to the Silver Circle and their cause,
-   drawing wisdom from her friendship with Grimwald while harboring
-   a deep-seated grudge against the Shadow Guild..."
+   drawing wisdom from her friendship with Grimwald..."
 ```
 
 **When Relationship Context is NOT Included:**
 
 - Creating new entities (they have no relationships yet)
 - Fields that don't benefit from relationship awareness (equipment, stats, etc.)
-- When relationship context is disabled in Settings or the checkbox is unchecked
+- When no relationships are selected in the panel
+- When relationship context is disabled in Settings
 - When the entity has no relationships
 - For entity types that don't benefit from social context (items, encounters, etc.)
+
+**Cache Regeneration:**
+
+When you click the Regenerate button:
+- AI creates a fresh summary for that specific relationship
+- Cache status updates to "Valid" with current timestamp
+- Summary preview updates with new content
+- Token count recalculates
+- The regenerated summary is immediately available for AI generation
 
 **Privacy Protection:**
 
@@ -1036,7 +1078,13 @@ Hidden fields (secrets) from related entities are never included, protecting you
 
 **Default Behavior:**
 
-The default setting for this checkbox is configured in Settings under "Relationship Context". You can set whether relationship context is included by default for all entities
+Settings under "Relationship Context" control:
+- Whether the panel is visible by default
+- Maximum number of relationships to show
+- Maximum characters per relationship summary
+- Context budget allocation between entity and relationships
+
+You can override these defaults on a per-entity basis using the panel controls.
 
 ### Privacy and AI
 

@@ -10,11 +10,12 @@ Welcome to Director Assist! This guide will help you get started managing your D
 4. [Connecting Entities](#connecting-entities)
 5. [Using Search](#using-search)
 6. [Using Commands](#using-commands)
-7. [Settings](#settings)
-8. [AI Features](#ai-features)
-9. [Backup & Restore](#backup--restore)
-10. [Tips & Best Practices](#tips--best-practices)
-11. [Troubleshooting](#troubleshooting)
+7. [Managing Campaigns](#managing-campaigns)
+8. [Settings](#settings)
+9. [AI Features](#ai-features)
+10. [Backup & Restore](#backup--restore)
+11. [Tips & Best Practices](#tips--best-practices)
+12. [Troubleshooting](#troubleshooting)
 
 ## What is Director Assist?
 
@@ -730,6 +731,104 @@ Opens the settings page.
 - Only relevant commands show (e.g., `/relate` only appears when viewing an entity)
 - You can use arrow keys to select commands before pressing Enter
 - Commands save time compared to clicking through menus
+
+## Managing Campaigns
+
+Director Assist supports multiple campaigns, allowing you to manage different adventures or game systems in one place.
+
+### Viewing Your Campaigns
+
+Access your campaign list by navigating to `/entities/campaign` or clicking on campaigns in the entity navigation.
+
+**What You'll See:**
+- List of all your campaigns
+- Active campaign badge showing which campaign is currently active
+- Campaign details (name, description, system, setting)
+- Creation and update timestamps
+
+### Active Campaign
+
+One campaign is always marked as "active" - this is the campaign you're currently working with. All entities, relationships, and data belong to the active campaign.
+
+**Campaign Switcher:**
+- Available in the header for quick access
+- Click to see all campaigns and switch between them
+- Active campaign clearly indicated
+
+### Switching Campaigns
+
+To switch to a different campaign:
+
+1. Navigate to the campaigns list (`/entities/campaign`)
+2. Find the campaign you want to activate
+3. Click the "Set as Active" button
+4. The page will reload with the new active campaign
+
+All navigation, entities, and relationships will now show data from the newly active campaign.
+
+### Creating Additional Campaigns
+
+To create a new campaign:
+
+1. Go to the campaigns list
+2. Click "New Campaign"
+3. Fill in campaign details:
+   - **Name**: Campaign title
+   - **Description**: Brief overview
+   - **System**: Game system (Draw Steel, D&D 5e, etc.)
+   - **Setting**: Campaign world or setting name
+4. Click "Create Campaign"
+
+The new campaign is created but doesn't become active automatically.
+
+### Editing Campaign Details
+
+To update a campaign:
+
+1. Click on the campaign to view its details
+2. Click "Edit"
+3. Modify any fields
+4. Click "Save Changes"
+
+**Editable Fields:**
+- Campaign name
+- Description
+- Game system
+- Setting name
+- Custom entity types
+- Campaign settings
+
+### Deleting Campaigns
+
+To delete a campaign:
+
+1. Navigate to the campaign detail page
+2. Scroll to the bottom
+3. Click the "Delete" button
+4. Confirm the deletion
+
+**Important Protection:**
+- You cannot delete the last remaining campaign
+- The delete button will be disabled with a tooltip explaining why
+- If you're viewing the last campaign, you must create another campaign first
+- Deleting the active campaign automatically switches to another available campaign
+
+**Warning:** Deleting a campaign removes all associated entities, relationships, and data permanently. This action cannot be undone unless you have a backup.
+
+### Campaign Settings
+
+Each campaign has its own settings stored separately:
+
+- **Custom Entity Types**: Define custom entity types specific to this campaign
+- **Entity Type Overrides**: Customize built-in entity types for this campaign
+- **Custom Relationships**: Define custom relationship types
+- **Enabled Entity Types**: Control which entity types appear in the UI
+
+Access campaign-specific settings:
+1. View the campaign details
+2. Click "Edit"
+3. Scroll to the settings section
+4. Make changes and save
 
 ## Settings
 

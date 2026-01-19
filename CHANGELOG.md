@@ -8,10 +8,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Campaign as first-class entity type (Issue #46)
+  - Campaigns now stored as entities with `type: 'campaign'` in the entities table
+  - Multiple campaigns supported with active campaign tracking
+  - Campaign list page at `/entities/campaign` with active campaign badge
+  - "Set as Active" button for switching between campaigns
+  - Campaign switcher in header for quick access
+  - Delete protection: cannot delete last remaining campaign (disabled button with tooltip)
+  - Campaign deletion guard in entity repository
+  - Automatic migration from old singleton campaign table to entities table
+  - Campaign store manages campaigns via entityRepository (no separate repository)
+  - Active campaign ID tracked via appConfigRepository
+  - `reset()` method added to campaign store for testing
+  - Fixed campaign store error handling
+  - 69 tests covering campaign functionality
 
 ### Fixed
 
 ### Changed
+- Removed legacy `campaignRepository.ts` (campaigns managed via entityRepository)
+- Campaign store now uses entityRepository for all CRUD operations
+- Database schema updated to include appConfig table for active campaign tracking
 
 ## [0.3.0] - 2026-01-19
 

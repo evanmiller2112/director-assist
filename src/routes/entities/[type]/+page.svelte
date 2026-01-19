@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
-	import { entitiesStore, campaignStore } from '$lib/stores';
+	import { entitiesStore, campaignStore, notificationStore } from '$lib/stores';
 	import { getEntityTypeDefinition } from '$lib/config/entityTypes';
-	import { Plus, Search, Link, EyeOff } from 'lucide-svelte';
+	import { Plus, Search, Link, EyeOff, Check, Circle } from 'lucide-svelte';
 	import RelateCommand from '$lib/components/entity/RelateCommand.svelte';
 	import Pagination from '$lib/components/ui/Pagination.svelte';
 	import LoadingSkeleton from '$lib/components/ui/LoadingSkeleton.svelte';
@@ -21,6 +21,7 @@
 			: undefined
 	);
 	const entities = $derived(entityType ? entitiesStore.getByType(entityType) : []);
+	const isCampaignPage = $derived(entityType === 'campaign');
 
 	let searchQuery = $state('');
 	let relateCommandOpen = $state(false);
@@ -98,6 +99,22 @@
 		event.stopPropagation();
 		selectedEntityForLink = entity;
 		relateCommandOpen = true;
+	}
+
+	async function setAsActiveCampaign(entity: BaseEntity, event: MouseEvent) {
+		event.preventDefault();
+		event.stopPropagation();
+		if (entity.id === campaignStore.activeCampaignId) return;
+
+		try {
+			await campaignStore.setActiveCampaign(entity.id);
+			notificationStore.success(`Switched to campaign: ${entity.name}`);
+			// Reload page to refresh all data for new campaign
+			window.location.reload();
+		} catch (error) {
+			console.error('Failed to set active campaign:', error);
+			notificationStore.error('Failed to set active campaign');
+		}
 	}
 
 	function handlePageChange(newPage: number) {
@@ -234,8 +251,19 @@
 					data-testid="entity-card"
 				>
 					<div class="flex-1 min-w-0">
-						<div class="font-medium text-slate-900 dark:text-white truncate">
-							{entity.name}
+						<div class="flex items-center gap-2">
+							<div class="font-medium text-slate-900 dark:text-white truncate">
+								{entity.name}
+							</div>
+							{#if isCampaignPage && entity.id === campaignStore.activeCampaignId}
+								<span
+									class="inline-flex items-center gap-1 text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded"
+									title="Active campaign"
+								>
+									<Check class="w-3 h-3" />
+									Active
+								</span>
+							{/if}
 						</div>
 						{#if entity.description}
 							<p class="text-sm text-slate-500 dark:text-slate-400 line-clamp-2 mt-1">
@@ -266,15 +294,28 @@
 						<div class="text-xs text-slate-400 whitespace-nowrap">
 							{new Date(entity.updatedAt).toLocaleDateString()}
 						</div>
-						<button
-							onclick={(e) => openLinkModal(entity, e)}
-							class="opacity-0 group-hover:opacity-100 transition-opacity p-2 rounded hover:bg-slate-100 dark:hover:bg-slate-700"
-							aria-label="Link {entity.name}"
-							title="Link entity"
-							data-testid="link-button-{entity.id}"
-						>
-							<Link class="w-4 h-4 text-slate-600 dark:text-slate-400" />
-						</button>
+						{#if isCampaignPage && entity.id !== campaignStore.activeCampaignId}
+							<button
+								onclick={(e) => setAsActiveCampaign(entity, e)}
+								class="opacity-0 group-hover:opacity-100 transition-opacity px-3 py-1 text-xs rounded bg-blue-600 hover:bg-blue-700 text-white"
+								aria-label="Set {entity.name} as active campaign"
+								title="Set as active campaign"
+								data-testid="set-active-button-{entity.id}"
+							>
+								Set as Active
+							</button>
+						{/if}
+						{#if !isCampaignPage}
+							<button
+								onclick={(e) => openLinkModal(entity, e)}
+								class="opacity-0 group-hover:opacity-100 transition-opacity p-2 rounded hover:bg-slate-100 dark:hover:bg-slate-700"
+								aria-label="Link {entity.name}"
+								title="Link entity"
+								data-testid="link-button-{entity.id}"
+							>
+								<Link class="w-4 h-4 text-slate-600 dark:text-slate-400" />
+							</button>
+						{/if}
 					</div>
 				</a>
 			{/each}

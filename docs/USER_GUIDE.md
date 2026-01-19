@@ -7,15 +7,16 @@ Welcome to Director Assist! This guide will help you get started managing your D
 1. [What is Director Assist?](#what-is-director-assist)
 2. [Getting Started](#getting-started)
 3. [Creating Entities](#creating-entities)
-4. [Connecting Entities](#connecting-entities)
-5. [Using Search](#using-search)
-6. [Using Commands](#using-commands)
-7. [Managing Campaigns](#managing-campaigns)
-8. [Settings](#settings)
-9. [AI Features](#ai-features)
-10. [Backup & Restore](#backup--restore)
-11. [Tips & Best Practices](#tips--best-practices)
-12. [Troubleshooting](#troubleshooting)
+4. [Custom Entity Types](#custom-entity-types)
+5. [Connecting Entities](#connecting-entities)
+6. [Using Search](#using-search)
+7. [Using Commands](#using-commands)
+8. [Managing Campaigns](#managing-campaigns)
+9. [Settings](#settings)
+10. [AI Features](#ai-features)
+11. [Backup & Restore](#backup--restore)
+12. [Tips & Best Practices](#tips--best-practices)
+13. [Troubleshooting](#troubleshooting)
 
 ## What is Director Assist?
 
@@ -88,7 +89,7 @@ Congratulations! You've created your first entity. You'll see it listed on the N
 
 ## Creating Entities
 
-Director Assist includes 11 entity types to help you organize your campaign.
+Director Assist includes 11 built-in entity types to help you organize your campaign. You can also create custom entity types with your own fields to track anything specific to your campaign.
 
 ### Entity Types
 
@@ -200,6 +201,397 @@ Examples of hidden fields:
 - NPC secrets
 - Location secrets
 - Faction hidden agendas
+
+## Custom Entity Types
+
+Beyond the 11 built-in entity types, you can create custom entity types tailored to your campaign's unique needs. Define your own fields, choose field types, and even create computed fields that calculate values automatically.
+
+### Why Use Custom Entity Types?
+
+**Campaign-Specific Tracking**
+Track anything unique to your world:
+- Spells with custom properties (components, casting time, effects)
+- Vehicles with stats (speed, cargo capacity, crew)
+- Organizations with member rosters and resources
+- Contracts with terms, parties, and deadlines
+- Prophecies with clues and fulfillment conditions
+
+**Specialized Workflows**
+Create types optimized for your GMing style:
+- Trap templates with trigger, effect, and disable methods
+- Rumor tables with truth levels and sources
+- Random encounter templates with difficulty scaling
+- Shop inventories with stock and pricing
+
+**System-Specific Content**
+Add support for game systems beyond Draw Steel:
+- Custom classes or ancestries
+- Homebrew monsters
+- Magic items with system-specific properties
+- Campaign-specific mechanics
+
+### Creating a Custom Entity Type
+
+**How to Create:**
+
+1. Open Settings (gear icon or `/settings` command)
+2. Scroll to "Custom Entity Types"
+3. Click "Create Custom Entity Type"
+4. Fill in the basic information:
+   - **Type Key**: Unique identifier (lowercase, letters/numbers/hyphens/underscores)
+   - **Label**: Singular display name (e.g., "Spell")
+   - **Label Plural**: Plural display name (e.g., "Spells")
+   - **Icon**: Lucide icon name (e.g., "wand-sparkles")
+   - **Color**: Hex color code for UI theming (e.g., "#9C27B0")
+   - **Description**: Brief explanation of this entity type
+5. Add field definitions (see below)
+6. Click "Save Custom Entity Type"
+
+**Type Key Rules:**
+- Must start with a letter
+- Lowercase only
+- Can contain letters, numbers, hyphens, and underscores
+- Cannot contain spaces
+- Cannot conflict with built-in types
+- Examples: `spell`, `magic-item`, `npc-template`, `custom_faction`
+
+### Adding Fields to Custom Types
+
+Custom entity types can have any combination of 14 field types. Click "Add Field" to create a new field definition.
+
+**Field Configuration:**
+
+- **Key**: Unique field identifier (letters, numbers, underscores only)
+- **Label**: Display name shown in forms
+- **Type**: Field type (see below)
+- **Required**: Whether the field must be filled
+- **Order**: Display order in forms (lower numbers appear first)
+- **Help Text**: Optional guidance shown below the field
+- **Placeholder**: Example text shown in empty fields
+
+**Available Field Types:**
+
+| Type | Use Case | Example |
+|------|----------|---------|
+| **Text** | Short single-line input | Name, title, identifier |
+| **Textarea** | Multi-line plain text | Notes, description, observations |
+| **Rich Text** | Markdown-formatted content | Detailed backstory, formatted rules |
+| **Number** | Numeric values | Level, damage, duration, cost |
+| **Boolean** | True/false checkboxes | Is legendary, requires attunement |
+| **Select** | Single choice from dropdown | Rarity (common/uncommon/rare) |
+| **Multi-Select** | Multiple choices | Damage types, creature types |
+| **Tags** | Freeform tag input | Keywords, categories, traits |
+| **Entity Reference** | Link to one entity | Creator, owner, location |
+| **Entity References** | Link to multiple entities | Party members, witnesses, allies |
+| **Date** | Date values | Date discovered, expiration |
+| **URL** | External links | Source, art reference, inspiration |
+| **Image** | Image upload | Portrait, map, diagram |
+| **Computed** | Calculated from formula | Total cost, derived stats |
+
+**Type-Specific Options:**
+
+**Select & Multi-Select**
+- Add options (one per line or comma-separated)
+- Options display with underscores replaced by spaces
+- Example: `common, uncommon, rare, very_rare, legendary`
+
+**Entity References**
+- Choose which entity types can be referenced
+- Example: For a "Creator" field, allow NPC and Character types
+
+**Computed Fields**
+- Define a formula using `{fieldKey}` placeholders
+- Declare dependencies (fields used in the formula)
+- Choose output type (text, number, or boolean)
+- See Computed Fields section below for details
+
+### Computed Fields
+
+Computed fields automatically calculate values based on other fields. Perfect for derived stats, concatenations, or conditional logic.
+
+**Formula Syntax:**
+
+**String Templates**
+Combine text and field values:
+```
+{firstName} {lastName}
+Level {level} {className}
+```
+
+**Arithmetic**
+Calculate numeric values:
+```
+{level} * 10
+({baseHP} + {constitution}) * {level}
+({strength} + {dexterity}) / 2
+```
+
+**Comparisons**
+Create boolean conditions:
+```
+{hp} > 0
+{level} >= 5
+{rarity} == "legendary"
+```
+
+**Formula Examples:**
+
+| Formula | Dependencies | Output | Result |
+|---------|--------------|--------|--------|
+| `{firstName} {lastName}` | firstName, lastName | text | "Elena Thornvale" |
+| `{quantity} * {unitPrice}` | quantity, unitPrice | number | 150 |
+| `{hp} > 0` | hp | boolean | true/false |
+| `Level {level} {class}` | level, class | text | "Level 5 Rogue" |
+
+**Creating a Computed Field:**
+
+1. Click "Add Field" when editing a custom entity type
+2. Set field type to "Computed"
+3. Enter a formula using `{fieldName}` placeholders
+4. Click "Add Dependency" for each field used in the formula
+5. Select output type (text, number, or boolean)
+6. Save the field
+
+**Important Notes:**
+- All fields used in the formula must be listed as dependencies
+- Dependencies must reference existing field keys in the entity type
+- Computed fields are read-only in entity forms
+- Values update automatically when dependencies change
+- Circular dependencies are not allowed (field A depends on B, B depends on A)
+
+### Customizing Built-In Entity Types
+
+You can customize built-in entity types (NPCs, Locations, etc.) without creating entirely new types.
+
+**Customization Options:**
+
+**Hide Fields**
+Remove fields you don't use from forms:
+- Hide "voice" field from NPCs if you don't track it
+- Hide "atmosphere" from locations if unnecessary
+- Simplifies forms and reduces clutter
+
+**Reorder Fields**
+Change the order fields appear in forms:
+- Put most important fields at the top
+- Group related fields together
+- Match your prep workflow
+
+**Add Custom Fields**
+Extend built-in types with additional fields:
+- Add "accent" field to NPCs
+- Add "ruling_faction" entity reference to locations
+- Add "threat_level" to encounters
+
+**How to Customize:**
+
+1. Open Settings
+2. Scroll to "Entity Type Customization"
+3. Select a built-in entity type
+4. Configure customizations:
+   - Toggle "Hidden Fields" for fields to hide
+   - Drag fields in "Field Order" to reorder
+   - Click "Add Custom Field" to add new fields
+5. Save changes
+
+All customizations are per-campaign, so different campaigns can have different configurations.
+
+### Custom Type Examples
+
+**Example 1: Spell Entity Type**
+
+```
+Type Key: spell
+Label: Spell
+Label Plural: Spells
+Icon: wand-sparkles
+Color: #9C27B0
+
+Fields:
+- name (text, required)
+- description (richtext)
+- level (number, required)
+- school (select: abjuration, conjuration, divination, etc.)
+- castingTime (text, e.g., "1 action", "1 minute")
+- range (text, e.g., "60 feet", "Self")
+- components (multi-select: verbal, somatic, material)
+- materialComponents (textarea)
+- duration (text, e.g., "Instantaneous", "1 hour")
+- ritual (boolean)
+- concentration (boolean)
+- classes (multi-select: wizard, cleric, druid, etc.)
+- damageType (select: fire, cold, lightning, etc.)
+- source (text, e.g., "Player's Handbook")
+- displayName (computed): "{name} (Level {level})" [dependencies: name, level, output: text]
+```
+
+**Example 2: Quest Entity Type**
+
+```
+Type Key: quest
+Label: Quest
+Label Plural: Quests
+Icon: scroll-text
+Color: #FF9800
+
+Fields:
+- title (text, required)
+- description (richtext)
+- questGiver (entity-ref: npc, character)
+- objectives (textarea)
+- status (select: not_started, in_progress, completed, failed, abandoned)
+- difficulty (select: trivial, easy, medium, hard, deadly)
+- rewards (richtext)
+- location (entity-ref: location)
+- relatedNPCs (entity-refs: npc, character)
+- prerequisites (textarea)
+- timeLimit (text)
+- sessionStarted (number)
+- sessionCompleted (number)
+- notes (textarea)
+- summary (computed): "{title} - {status}" [dependencies: title, status, output: text]
+```
+
+**Example 3: Vehicle Entity Type**
+
+```
+Type Key: vehicle
+Label: Vehicle
+Label Plural: Vehicles
+Icon: ship
+Color: #607D8B
+
+Fields:
+- name (text, required)
+- type (select: ship, wagon, airship, submersible)
+- size (select: small, medium, large, huge)
+- speed (number)
+- cargoCapacity (number)
+- crewMin (number)
+- crewMax (number)
+- passengers (number)
+- armor (number)
+- hitPoints (number)
+- currentHP (number)
+- damageThreshold (number)
+- description (richtext)
+- owner (entity-ref: npc, character, faction)
+- currentLocation (entity-ref: location)
+- features (textarea)
+- weapons (textarea)
+- cost (number)
+- condition (select: pristine, good, fair, poor, wrecked)
+- hpPercentage (computed): "({currentHP} / {hitPoints}) * 100" [dependencies: currentHP, hitPoints, output: number]
+```
+
+### Managing Custom Entity Types
+
+**Editing Custom Types**
+
+1. Open Settings
+2. Find the custom type in "Custom Entity Types"
+3. Click "Edit"
+4. Modify fields, add new fields, or change type properties
+5. Save changes
+
+Changes apply to the entity type definition, not existing entities. Existing entities keep their data even if you remove fields.
+
+**Deleting Custom Types**
+
+1. Open Settings
+2. Find the custom type
+3. Click "Delete"
+4. Confirm deletion
+
+Deleting a custom entity type does not delete entities of that type. Entities remain accessible but won't have a type definition for creating new ones.
+
+**Hiding Custom Types**
+
+If you want to temporarily disable a custom type without deleting it:
+
+1. Edit the custom type
+2. Toggle "Hidden from Sidebar"
+3. The type won't appear in navigation but existing entities remain accessible
+
+### Validation and Error Prevention
+
+Director Assist validates custom entity types to prevent errors:
+
+**Type Key Validation**
+- Must be unique (no duplicates or conflicts with built-in types)
+- Lowercase only
+- Starts with a letter
+- No spaces allowed
+
+**Field Validation**
+- Field keys must be unique within the type
+- Required fields cannot be empty
+- Select fields must have at least one option
+- Entity reference fields must specify allowed types
+- Computed fields must have valid formulas
+
+**Computed Field Validation**
+- All placeholders must reference existing fields
+- All dependencies must be used in the formula
+- All fields in formula must be in dependencies
+- No circular dependencies (A depends on B, B depends on A)
+- Balanced braces and parentheses
+
+Validation errors appear immediately in the form, preventing invalid configurations.
+
+### Best Practices
+
+**Keep It Simple**
+Start with a few essential fields. You can always add more later.
+
+**Use Descriptive Keys**
+Field keys should be readable: `castingTime` not `ct`, `hitPoints` not `hp`.
+
+**Leverage Computed Fields**
+Use computed fields for derived values to keep data consistent:
+- Display names: `{firstName} {lastName}`
+- Totals: `{quantity} * {price}`
+- Status indicators: `{hp} > 0`
+
+**Organize with Sections**
+Use the `section` property to group related fields in the UI.
+
+**Provide Help Text**
+Add helpful guidance for complex fields to remind yourself what they're for.
+
+**Consider AI Generation**
+Fields marked for AI generation can be populated automatically. Disable for fields like IDs or system-specific stats.
+
+**Test Your Types**
+Create a test entity to verify your custom type works as expected before using it extensively.
+
+**Document Custom Types**
+Add a description to help remember what the type is for, especially if you have many custom types.
+
+### Custom Types and AI Generation
+
+AI generation works with custom entity types just like built-in types:
+
+- Text, textarea, and richtext fields can be generated
+- The AI uses field labels, help text, and other field values as context
+- Computed fields are never generated (they calculate automatically)
+- You can disable AI generation per-field with `aiGenerate: false`
+
+When generating content for custom entities, provide clear field names and descriptions so the AI understands what to generate.
+
+### Limitations
+
+**Cannot Modify Core Entity Structure**
+Custom types use the same base entity structure (name, description, tags, etc.). You cannot remove these core fields.
+
+**No Custom Validation Rules**
+Field validation is limited to built-in rules (required, type checking). You cannot add custom validation logic.
+
+**Formula Evaluation is Client-Side**
+Computed field formulas evaluate in the browser using JavaScript eval(). Keep formulas simple to avoid errors.
+
+**No Scripting or Advanced Logic**
+Computed fields support basic arithmetic and string concatenation, not complex programming logic.
 
 ## Connecting Entities
 

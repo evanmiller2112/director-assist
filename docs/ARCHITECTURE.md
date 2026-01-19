@@ -283,9 +283,10 @@ interface SystemTerminology {
      - Health: maxHP, currentHP, vitality, conditions
      - Resources: xp, gold, weapons, armor
    - Custom fields for NPCs: threatLevel (minion/standard/elite/boss/solo), role
-   - Custom fields for encounters: victoryPoints, negotiationDC
+   - Custom fields for encounters: victoryPoints, negotiationDC, challengeLevel, threats, environment, victoryConditions, defeatConditions, readAloudText, tacticalNotes, treasureRewards, negotiationPosition, negotiationMotivations
+   - Custom fields for sessions: sessionDuration, inWorldDate, partyPresent, xpAwarded, gloryAwarded, treasureAwarded, keyDecisions, characterDevelopment, campaignMilestones, powerRollOutcomes, negotiationOutcomes, initiativeOrder, encountersRun
    - Encounter types: combat, negotiation, montage, exploration, social, puzzle, trap
-   - Terminology: "Director" instead of "GM", "Characteristics" instead of "Ability Scores"
+   - Terminology: "Director" instead of "GM", "Characteristics" instead of "Ability Scores", "threats" instead of "enemies"
    - AI context includes Draw Steel mechanics and concepts
 
 **How System Profiles Work:**

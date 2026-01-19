@@ -108,10 +108,10 @@ Organizations, guilds, noble houses, or cults. Track their goals, resources, lea
 Magic items, artifacts, or important mundane objects. Document properties, history, and current location.
 
 **Encounters**
-Plan combat, social, or exploration encounters. Include objective, difficulty, enemies, rewards, and notes.
+Plan combat, social, or exploration encounters. Include objective, difficulty, threats, rewards, and notes. For Draw Steel campaigns, track victory points, negotiation DC, challenge level, and tactical details.
 
 **Sessions**
-Keep session notes and prep for upcoming sessions. Track what happened, what's next, and any loose threads.
+Keep session notes and prep for upcoming sessions. Track what happened, what's next, and any loose threads. For Draw Steel campaigns, track XP awarded, glory distribution, power roll outcomes, and negotiation results.
 
 **Deities**
 Gods, goddesses, or other divine entities. Note their domains, worshippers, symbols, and influence on the world.
@@ -854,7 +854,8 @@ When you select a game system, entity forms automatically adapt to show system-a
   - Health: Max HP, Current HP, Vitality, Conditions
   - Resources: XP, Gold, Weapons, Armor
 - **NPCs**: Threat Level (minion/standard/elite/boss/solo), Combat Role (ambusher, artillery, brute, controller, defender, harrier, hexer, leader, mount, support)
-- **Encounters**: Victory Points, Negotiation DC, system-specific encounter types (combat, negotiation, montage, exploration)
+- **Encounters**: Victory Points, Negotiation DC, Challenge Level, Threats (entity references to NPCs), Environment, Victory Conditions, Defeat Conditions, Read-Aloud Text, Tactical Notes, Treasure & Rewards, Negotiation Position (hostile/unfavorable/neutral/favorable/friendly), Negotiation Motivations, system-specific encounter types (combat, negotiation, montage, exploration, social, puzzle, trap)
+- **Sessions**: Session Duration, In-World Date, Party Present (entity references to characters), XP Awarded, Glory Awarded, Treasure Awarded, Key Decisions, Character Development, Campaign Milestones (tags), Power Roll Outcomes, Negotiation Outcomes, Initiative Order, Encounters Run (entity references to encounters)
 
 **System Agnostic:**
 - Uses only generic fields without system-specific mechanics

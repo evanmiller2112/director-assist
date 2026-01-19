@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Draw Steel-specific fields for Encounter and Session entities (Issue #3)
+  - 10 new Encounter fields in Draw Steel system profile: challengeLevel, threats (entity-refs), environment, victoryConditions, defeatConditions, readAloudText, tacticalNotes, treasureRewards, negotiationPosition (select), negotiationMotivations
+  - 13 new Session fields in Draw Steel system profile: sessionDuration, inWorldDate, partyPresent (entity-refs), xpAwarded, gloryAwarded, treasureAwarded, keyDecisions, characterDevelopment, campaignMilestones (tags), powerRollOutcomes, negotiationOutcomes, initiativeOrder, encountersRun (entity-refs)
+  - Renamed "enemies" terminology to "threats" for accurate Draw Steel nomenclature
+  - Added gloryAwarded field for Draw Steel's Glory progression system
+  - Fields automatically appear when campaign uses Draw Steel system profile
+  - Maintains backwards compatibility with existing System Agnostic campaigns
 - Campaign as first-class entity type (Issue #46)
   - Campaigns now stored as entities with `type: 'campaign'` in the entities table
   - Multiple campaigns supported with active campaign tracking

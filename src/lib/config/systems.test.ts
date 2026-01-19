@@ -1,9 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import {
-	getSystemProfile,
-	getAllSystemProfiles,
-	type SystemProfile
-} from './systems';
+import { getSystemProfile, getAllSystemProfiles } from './systems';
+import type { SystemProfile } from '$lib/types/systems';
 
 /**
  * Test Strategy: System Profiles Configuration
@@ -556,6 +553,331 @@ describe('systems.ts - System Profile Configuration', () => {
 				expect(negotiationDCField).toBeDefined();
 				expect(negotiationDCField?.type).toBe('number');
 			});
+
+			/**
+			 * Tests for NEW Draw Steel Encounter Fields (Issue #3)
+			 * These tests define the additional fields required for encounters.
+			 */
+
+			it('should have challengeLevel field as number type', () => {
+				const profile = getSystemProfile('draw-steel');
+				const encounterMods = profile?.entityTypeModifications?.encounter;
+				const challengeLevelField = encounterMods?.additionalFields?.find(
+					(f) => f.key === 'challengeLevel'
+				);
+
+				expect(challengeLevelField).toBeDefined();
+				expect(challengeLevelField?.label).toBe('Challenge Level');
+				expect(challengeLevelField?.type).toBe('number');
+				expect(challengeLevelField?.required).toBe(false);
+			});
+
+			it('should have threats field as entity-refs type with npc entityType', () => {
+				const profile = getSystemProfile('draw-steel');
+				const encounterMods = profile?.entityTypeModifications?.encounter;
+				const threatsField = encounterMods?.additionalFields?.find((f) => f.key === 'threats');
+
+				expect(threatsField).toBeDefined();
+				expect(threatsField?.label).toBe('Threats');
+				expect(threatsField?.type).toBe('entity-refs');
+				expect(threatsField?.entityTypes).toBeDefined();
+				expect(threatsField?.entityTypes).toContain('npc');
+				expect(threatsField?.required).toBe(false);
+			});
+
+			it('should have environment field as richtext type', () => {
+				const profile = getSystemProfile('draw-steel');
+				const encounterMods = profile?.entityTypeModifications?.encounter;
+				const environmentField = encounterMods?.additionalFields?.find(
+					(f) => f.key === 'environment'
+				);
+
+				expect(environmentField).toBeDefined();
+				expect(environmentField?.label).toBe('Environment');
+				expect(environmentField?.type).toBe('richtext');
+				expect(environmentField?.required).toBe(false);
+			});
+
+			it('should have victoryConditions field as richtext type', () => {
+				const profile = getSystemProfile('draw-steel');
+				const encounterMods = profile?.entityTypeModifications?.encounter;
+				const victoryConditionsField = encounterMods?.additionalFields?.find(
+					(f) => f.key === 'victoryConditions'
+				);
+
+				expect(victoryConditionsField).toBeDefined();
+				expect(victoryConditionsField?.label).toBe('Victory Conditions');
+				expect(victoryConditionsField?.type).toBe('richtext');
+				expect(victoryConditionsField?.required).toBe(false);
+			});
+
+			it('should have defeatConditions field as richtext type', () => {
+				const profile = getSystemProfile('draw-steel');
+				const encounterMods = profile?.entityTypeModifications?.encounter;
+				const defeatConditionsField = encounterMods?.additionalFields?.find(
+					(f) => f.key === 'defeatConditions'
+				);
+
+				expect(defeatConditionsField).toBeDefined();
+				expect(defeatConditionsField?.label).toBe('Defeat Conditions');
+				expect(defeatConditionsField?.type).toBe('richtext');
+				expect(defeatConditionsField?.required).toBe(false);
+			});
+
+			it('should have readAloudText field as richtext type', () => {
+				const profile = getSystemProfile('draw-steel');
+				const encounterMods = profile?.entityTypeModifications?.encounter;
+				const readAloudTextField = encounterMods?.additionalFields?.find(
+					(f) => f.key === 'readAloudText'
+				);
+
+				expect(readAloudTextField).toBeDefined();
+				expect(readAloudTextField?.label).toBe('Read-Aloud Text');
+				expect(readAloudTextField?.type).toBe('richtext');
+				expect(readAloudTextField?.required).toBe(false);
+			});
+
+			it('should have tacticalNotes field as richtext type', () => {
+				const profile = getSystemProfile('draw-steel');
+				const encounterMods = profile?.entityTypeModifications?.encounter;
+				const tacticalNotesField = encounterMods?.additionalFields?.find(
+					(f) => f.key === 'tacticalNotes'
+				);
+
+				expect(tacticalNotesField).toBeDefined();
+				expect(tacticalNotesField?.label).toBe('Tactical Notes');
+				expect(tacticalNotesField?.type).toBe('richtext');
+				expect(tacticalNotesField?.required).toBe(false);
+			});
+
+			it('should have treasureRewards field as richtext type', () => {
+				const profile = getSystemProfile('draw-steel');
+				const encounterMods = profile?.entityTypeModifications?.encounter;
+				const treasureRewardsField = encounterMods?.additionalFields?.find(
+					(f) => f.key === 'treasureRewards'
+				);
+
+				expect(treasureRewardsField).toBeDefined();
+				expect(treasureRewardsField?.label).toBe('Treasure & Rewards');
+				expect(treasureRewardsField?.type).toBe('richtext');
+				expect(treasureRewardsField?.required).toBe(false);
+			});
+
+			it('should have negotiationPosition field as select type with specific positions', () => {
+				const profile = getSystemProfile('draw-steel');
+				const encounterMods = profile?.entityTypeModifications?.encounter;
+				const negotiationPositionField = encounterMods?.additionalFields?.find(
+					(f) => f.key === 'negotiationPosition'
+				);
+
+				expect(negotiationPositionField).toBeDefined();
+				expect(negotiationPositionField?.label).toBe('Negotiation Position');
+				expect(negotiationPositionField?.type).toBe('select');
+				expect(negotiationPositionField?.options).toBeDefined();
+				expect(negotiationPositionField?.options).toContain('hostile');
+				expect(negotiationPositionField?.options).toContain('unfavorable');
+				expect(negotiationPositionField?.options).toContain('neutral');
+				expect(negotiationPositionField?.options).toContain('favorable');
+				expect(negotiationPositionField?.options).toContain('friendly');
+				expect(negotiationPositionField?.required).toBe(false);
+			});
+
+			it('should have negotiationMotivations field as richtext type', () => {
+				const profile = getSystemProfile('draw-steel');
+				const encounterMods = profile?.entityTypeModifications?.encounter;
+				const negotiationMotivationsField = encounterMods?.additionalFields?.find(
+					(f) => f.key === 'negotiationMotivations'
+				);
+
+				expect(negotiationMotivationsField).toBeDefined();
+				expect(negotiationMotivationsField?.label).toBe('Negotiation Motivations');
+				expect(negotiationMotivationsField?.type).toBe('richtext');
+				expect(negotiationMotivationsField?.required).toBe(false);
+			});
+
+			/**
+			 * Tests for NEW Draw Steel Session Fields (Issue #3)
+			 * These tests define the additional fields required for session tracking.
+			 */
+
+			it('should have entityTypeModifications for session type', () => {
+				const profile = getSystemProfile('draw-steel');
+
+				expect(profile?.entityTypeModifications).toBeDefined();
+				expect(profile?.entityTypeModifications?.session).toBeDefined();
+			});
+
+			it('should have sessionDuration field as text type', () => {
+				const profile = getSystemProfile('draw-steel');
+				const sessionMods = profile?.entityTypeModifications?.session;
+				const sessionDurationField = sessionMods?.additionalFields?.find(
+					(f) => f.key === 'sessionDuration'
+				);
+
+				expect(sessionDurationField).toBeDefined();
+				expect(sessionDurationField?.label).toBe('Session Duration');
+				expect(sessionDurationField?.type).toBe('text');
+				expect(sessionDurationField?.required).toBe(false);
+			});
+
+			it('should have inWorldDate field as text type', () => {
+				const profile = getSystemProfile('draw-steel');
+				const sessionMods = profile?.entityTypeModifications?.session;
+				const inWorldDateField = sessionMods?.additionalFields?.find(
+					(f) => f.key === 'inWorldDate'
+				);
+
+				expect(inWorldDateField).toBeDefined();
+				expect(inWorldDateField?.label).toBe('In-World Date');
+				expect(inWorldDateField?.type).toBe('text');
+				expect(inWorldDateField?.required).toBe(false);
+			});
+
+			it('should have partyPresent field as entity-refs type with character entityType', () => {
+				const profile = getSystemProfile('draw-steel');
+				const sessionMods = profile?.entityTypeModifications?.session;
+				const partyPresentField = sessionMods?.additionalFields?.find(
+					(f) => f.key === 'partyPresent'
+				);
+
+				expect(partyPresentField).toBeDefined();
+				expect(partyPresentField?.label).toBe('Party Present');
+				expect(partyPresentField?.type).toBe('entity-refs');
+				expect(partyPresentField?.entityTypes).toBeDefined();
+				expect(partyPresentField?.entityTypes).toContain('character');
+				expect(partyPresentField?.required).toBe(false);
+			});
+
+			it('should have xpAwarded field as number type', () => {
+				const profile = getSystemProfile('draw-steel');
+				const sessionMods = profile?.entityTypeModifications?.session;
+				const xpAwardedField = sessionMods?.additionalFields?.find((f) => f.key === 'xpAwarded');
+
+				expect(xpAwardedField).toBeDefined();
+				expect(xpAwardedField?.label).toBe('XP Awarded');
+				expect(xpAwardedField?.type).toBe('number');
+				expect(xpAwardedField?.required).toBe(false);
+			});
+
+			// Issue #3 + Draw Steel accuracy refinement
+			it('should have gloryAwarded field as richtext type', () => {
+				const profile = getSystemProfile('draw-steel');
+				const sessionMods = profile?.entityTypeModifications?.session;
+				const gloryAwardedField = sessionMods?.additionalFields?.find(
+					(f) => f.key === 'gloryAwarded'
+				);
+
+				expect(gloryAwardedField).toBeDefined();
+				expect(gloryAwardedField?.label).toBe('Glory Awarded');
+				expect(gloryAwardedField?.type).toBe('richtext');
+				expect(gloryAwardedField?.required).toBe(false);
+			});
+
+			it('should have treasureAwarded field as richtext type', () => {
+				const profile = getSystemProfile('draw-steel');
+				const sessionMods = profile?.entityTypeModifications?.session;
+				const treasureAwardedField = sessionMods?.additionalFields?.find(
+					(f) => f.key === 'treasureAwarded'
+				);
+
+				expect(treasureAwardedField).toBeDefined();
+				expect(treasureAwardedField?.label).toBe('Treasure Awarded');
+				expect(treasureAwardedField?.type).toBe('richtext');
+				expect(treasureAwardedField?.required).toBe(false);
+			});
+
+			it('should have keyDecisions field as richtext type', () => {
+				const profile = getSystemProfile('draw-steel');
+				const sessionMods = profile?.entityTypeModifications?.session;
+				const keyDecisionsField = sessionMods?.additionalFields?.find(
+					(f) => f.key === 'keyDecisions'
+				);
+
+				expect(keyDecisionsField).toBeDefined();
+				expect(keyDecisionsField?.label).toBe('Key Decisions');
+				expect(keyDecisionsField?.type).toBe('richtext');
+				expect(keyDecisionsField?.required).toBe(false);
+			});
+
+			it('should have characterDevelopment field as richtext type', () => {
+				const profile = getSystemProfile('draw-steel');
+				const sessionMods = profile?.entityTypeModifications?.session;
+				const characterDevelopmentField = sessionMods?.additionalFields?.find(
+					(f) => f.key === 'characterDevelopment'
+				);
+
+				expect(characterDevelopmentField).toBeDefined();
+				expect(characterDevelopmentField?.label).toBe('Character Development');
+				expect(characterDevelopmentField?.type).toBe('richtext');
+				expect(characterDevelopmentField?.required).toBe(false);
+			});
+
+			it('should have campaignMilestones field as tags type', () => {
+				const profile = getSystemProfile('draw-steel');
+				const sessionMods = profile?.entityTypeModifications?.session;
+				const campaignMilestonesField = sessionMods?.additionalFields?.find(
+					(f) => f.key === 'campaignMilestones'
+				);
+
+				expect(campaignMilestonesField).toBeDefined();
+				expect(campaignMilestonesField?.label).toBe('Campaign Milestones');
+				expect(campaignMilestonesField?.type).toBe('tags');
+				expect(campaignMilestonesField?.required).toBe(false);
+			});
+
+			it('should have powerRollOutcomes field as richtext type', () => {
+				const profile = getSystemProfile('draw-steel');
+				const sessionMods = profile?.entityTypeModifications?.session;
+				const powerRollOutcomesField = sessionMods?.additionalFields?.find(
+					(f) => f.key === 'powerRollOutcomes'
+				);
+
+				expect(powerRollOutcomesField).toBeDefined();
+				expect(powerRollOutcomesField?.label).toBe('Power Roll Outcomes');
+				expect(powerRollOutcomesField?.type).toBe('richtext');
+				expect(powerRollOutcomesField?.required).toBe(false);
+			});
+
+			it('should have negotiationOutcomes field as richtext type', () => {
+				const profile = getSystemProfile('draw-steel');
+				const sessionMods = profile?.entityTypeModifications?.session;
+				const negotiationOutcomesField = sessionMods?.additionalFields?.find(
+					(f) => f.key === 'negotiationOutcomes'
+				);
+
+				expect(negotiationOutcomesField).toBeDefined();
+				expect(negotiationOutcomesField?.label).toBe('Negotiation Outcomes');
+				expect(negotiationOutcomesField?.type).toBe('richtext');
+				expect(negotiationOutcomesField?.required).toBe(false);
+			});
+
+			it('should have initiativeOrder field as richtext type', () => {
+				const profile = getSystemProfile('draw-steel');
+				const sessionMods = profile?.entityTypeModifications?.session;
+				const initiativeOrderField = sessionMods?.additionalFields?.find(
+					(f) => f.key === 'initiativeOrder'
+				);
+
+				expect(initiativeOrderField).toBeDefined();
+				expect(initiativeOrderField?.label).toBe('Initiative Order');
+				expect(initiativeOrderField?.type).toBe('richtext');
+				expect(initiativeOrderField?.required).toBe(false);
+			});
+
+			it('should have encountersRun field as entity-refs type with encounter entityType', () => {
+				const profile = getSystemProfile('draw-steel');
+				const sessionMods = profile?.entityTypeModifications?.session;
+				const encountersRunField = sessionMods?.additionalFields?.find(
+					(f) => f.key === 'encountersRun'
+				);
+
+				expect(encountersRunField).toBeDefined();
+				expect(encountersRunField?.label).toBe('Encounters Run');
+				expect(encountersRunField?.type).toBe('entity-refs');
+				expect(encountersRunField?.entityTypes).toBeDefined();
+				expect(encountersRunField?.entityTypes).toContain('encounter');
+				expect(encountersRunField?.required).toBe(false);
+			});
 		});
 
 		describe('Built-in System: system-agnostic', () => {
@@ -808,6 +1130,253 @@ describe('systems.ts - System Profile Configuration', () => {
 
 			expect(profile1?.id).toBe(profile2?.id);
 			expect(profile1?.name).toBe(profile2?.name);
+		});
+	});
+
+	describe('Field Completeness and Structure (Issue #3)', () => {
+		describe('Encounter Fields - Comprehensive Coverage', () => {
+			it('should have all 10 new encounter fields defined', () => {
+				const profile = getSystemProfile('draw-steel');
+				const encounterMods = profile?.entityTypeModifications?.encounter;
+				const fieldKeys = encounterMods?.additionalFields?.map((f) => f.key) ?? [];
+
+				// Original fields
+				expect(fieldKeys).toContain('victoryPoints');
+				expect(fieldKeys).toContain('negotiationDC');
+
+				// New fields from Issue #3
+				expect(fieldKeys).toContain('challengeLevel');
+				expect(fieldKeys).toContain('threats');
+				expect(fieldKeys).toContain('environment');
+				expect(fieldKeys).toContain('victoryConditions');
+				expect(fieldKeys).toContain('defeatConditions');
+				expect(fieldKeys).toContain('readAloudText');
+				expect(fieldKeys).toContain('tacticalNotes');
+				expect(fieldKeys).toContain('treasureRewards');
+				expect(fieldKeys).toContain('negotiationPosition');
+				expect(fieldKeys).toContain('negotiationMotivations');
+			});
+
+			it('should have unique field keys in encounter modifications', () => {
+				const profile = getSystemProfile('draw-steel');
+				const encounterMods = profile?.entityTypeModifications?.encounter;
+				const fieldKeys = encounterMods?.additionalFields?.map((f) => f.key) ?? [];
+				const uniqueKeys = new Set(fieldKeys);
+
+				expect(fieldKeys.length).toBe(uniqueKeys.size);
+			});
+
+			it('should have positive order values for all encounter fields', () => {
+				const profile = getSystemProfile('draw-steel');
+				const encounterMods = profile?.entityTypeModifications?.encounter;
+				const fields = encounterMods?.additionalFields ?? [];
+
+				fields.forEach((field) => {
+					expect(field.order).toBeGreaterThan(0);
+				});
+			});
+		});
+
+		describe('Session Fields - Comprehensive Coverage', () => {
+			it('should have all 13 session fields defined', () => {
+				const profile = getSystemProfile('draw-steel');
+				const sessionMods = profile?.entityTypeModifications?.session;
+				const fieldKeys = sessionMods?.additionalFields?.map((f) => f.key) ?? [];
+
+				// All fields from Issue #3 + gloryAwarded from Draw Steel review
+				expect(fieldKeys).toContain('sessionDuration');
+				expect(fieldKeys).toContain('inWorldDate');
+				expect(fieldKeys).toContain('partyPresent');
+				expect(fieldKeys).toContain('xpAwarded');
+				expect(fieldKeys).toContain('gloryAwarded');
+				expect(fieldKeys).toContain('treasureAwarded');
+				expect(fieldKeys).toContain('keyDecisions');
+				expect(fieldKeys).toContain('characterDevelopment');
+				expect(fieldKeys).toContain('campaignMilestones');
+				expect(fieldKeys).toContain('powerRollOutcomes');
+				expect(fieldKeys).toContain('negotiationOutcomes');
+				expect(fieldKeys).toContain('initiativeOrder');
+				expect(fieldKeys).toContain('encountersRun');
+			});
+
+			it('should have unique field keys in session modifications', () => {
+				const profile = getSystemProfile('draw-steel');
+				const sessionMods = profile?.entityTypeModifications?.session;
+				const fieldKeys = sessionMods?.additionalFields?.map((f) => f.key) ?? [];
+				const uniqueKeys = new Set(fieldKeys);
+
+				expect(fieldKeys.length).toBe(uniqueKeys.size);
+			});
+
+			it('should have positive order values for all session fields', () => {
+				const profile = getSystemProfile('draw-steel');
+				const sessionMods = profile?.entityTypeModifications?.session;
+				const fields = sessionMods?.additionalFields ?? [];
+
+				fields.forEach((field) => {
+					expect(field.order).toBeGreaterThan(0);
+				});
+			});
+
+			it('should have properly structured field definitions for session', () => {
+				const profile = getSystemProfile('draw-steel');
+				const sessionMods = profile?.entityTypeModifications?.session;
+				const fields = sessionMods?.additionalFields ?? [];
+
+				fields.forEach((field) => {
+					expect(field).toHaveProperty('key');
+					expect(field).toHaveProperty('label');
+					expect(field).toHaveProperty('type');
+					expect(field).toHaveProperty('required');
+					expect(field).toHaveProperty('order');
+
+					expect(typeof field.key).toBe('string');
+					expect(typeof field.label).toBe('string');
+					expect(typeof field.type).toBe('string');
+					expect(typeof field.required).toBe('boolean');
+					expect(typeof field.order).toBe('number');
+				});
+			});
+		});
+
+		describe('Entity-Refs Field Validation', () => {
+			it('should have correct entityTypes for threats field', () => {
+				const profile = getSystemProfile('draw-steel');
+				const encounterMods = profile?.entityTypeModifications?.encounter;
+				const threatsField = encounterMods?.additionalFields?.find((f) => f.key === 'threats');
+
+				expect(threatsField?.entityTypes).toBeDefined();
+				expect(Array.isArray(threatsField?.entityTypes)).toBe(true);
+				expect(threatsField?.entityTypes?.length).toBe(1);
+				expect(threatsField?.entityTypes?.[0]).toBe('npc');
+			});
+
+			it('should have correct entityTypes for partyPresent field', () => {
+				const profile = getSystemProfile('draw-steel');
+				const sessionMods = profile?.entityTypeModifications?.session;
+				const partyPresentField = sessionMods?.additionalFields?.find(
+					(f) => f.key === 'partyPresent'
+				);
+
+				expect(partyPresentField?.entityTypes).toBeDefined();
+				expect(Array.isArray(partyPresentField?.entityTypes)).toBe(true);
+				expect(partyPresentField?.entityTypes?.length).toBe(1);
+				expect(partyPresentField?.entityTypes?.[0]).toBe('character');
+			});
+
+			it('should have correct entityTypes for encountersRun field', () => {
+				const profile = getSystemProfile('draw-steel');
+				const sessionMods = profile?.entityTypeModifications?.session;
+				const encountersRunField = sessionMods?.additionalFields?.find(
+					(f) => f.key === 'encountersRun'
+				);
+
+				expect(encountersRunField?.entityTypes).toBeDefined();
+				expect(Array.isArray(encountersRunField?.entityTypes)).toBe(true);
+				expect(encountersRunField?.entityTypes?.length).toBe(1);
+				expect(encountersRunField?.entityTypes?.[0]).toBe('encounter');
+			});
+		});
+
+		describe('Select Field Options Validation', () => {
+			it('should have exactly 5 options for negotiationPosition field', () => {
+				const profile = getSystemProfile('draw-steel');
+				const encounterMods = profile?.entityTypeModifications?.encounter;
+				const negotiationPositionField = encounterMods?.additionalFields?.find(
+					(f) => f.key === 'negotiationPosition'
+				);
+
+				expect(negotiationPositionField?.options).toBeDefined();
+				expect(Array.isArray(negotiationPositionField?.options)).toBe(true);
+				expect(negotiationPositionField?.options?.length).toBe(5);
+			});
+
+			it('should have negotiationPosition options in expected order', () => {
+				const profile = getSystemProfile('draw-steel');
+				const encounterMods = profile?.entityTypeModifications?.encounter;
+				const negotiationPositionField = encounterMods?.additionalFields?.find(
+					(f) => f.key === 'negotiationPosition'
+				);
+
+				const expectedOptions = ['hostile', 'unfavorable', 'neutral', 'favorable', 'friendly'];
+				expect(negotiationPositionField?.options).toEqual(expectedOptions);
+			});
+		});
+
+		describe('Field Type Validation', () => {
+			it('should use richtext type for all narrative/descriptive fields', () => {
+				const profile = getSystemProfile('draw-steel');
+				const encounterMods = profile?.entityTypeModifications?.encounter;
+				const sessionMods = profile?.entityTypeModifications?.session;
+
+				const encounterRichtextFields = [
+					'environment',
+					'victoryConditions',
+					'defeatConditions',
+					'readAloudText',
+					'tacticalNotes',
+					'treasureRewards',
+					'negotiationMotivations'
+				];
+
+				const sessionRichtextFields = [
+					'treasureAwarded',
+					'keyDecisions',
+					'characterDevelopment',
+					'powerRollOutcomes',
+					'negotiationOutcomes',
+					'initiativeOrder'
+				];
+
+				encounterRichtextFields.forEach((fieldKey) => {
+					const field = encounterMods?.additionalFields?.find((f) => f.key === fieldKey);
+					expect(field?.type).toBe('richtext');
+				});
+
+				sessionRichtextFields.forEach((fieldKey) => {
+					const field = sessionMods?.additionalFields?.find((f) => f.key === fieldKey);
+					expect(field?.type).toBe('richtext');
+				});
+			});
+
+			it('should use number type for numeric fields', () => {
+				const profile = getSystemProfile('draw-steel');
+				const encounterMods = profile?.entityTypeModifications?.encounter;
+				const sessionMods = profile?.entityTypeModifications?.session;
+
+				const challengeLevelField = encounterMods?.additionalFields?.find(
+					(f) => f.key === 'challengeLevel'
+				);
+				const xpAwardedField = sessionMods?.additionalFields?.find((f) => f.key === 'xpAwarded');
+
+				expect(challengeLevelField?.type).toBe('number');
+				expect(xpAwardedField?.type).toBe('number');
+			});
+
+			it('should use text type for simple text fields', () => {
+				const profile = getSystemProfile('draw-steel');
+				const sessionMods = profile?.entityTypeModifications?.session;
+
+				const sessionDurationField = sessionMods?.additionalFields?.find(
+					(f) => f.key === 'sessionDuration'
+				);
+				const inWorldDateField = sessionMods?.additionalFields?.find(
+					(f) => f.key === 'inWorldDate'
+				);
+
+				expect(sessionDurationField?.type).toBe('text');
+				expect(inWorldDateField?.type).toBe('text');
+			});
+
+			it('should use tags type for campaignMilestones field', () => {
+				const profile = getSystemProfile('draw-steel');
+				const sessionMods = profile?.entityTypeModifications?.session;
+				const campaignMilestonesField = sessionMods?.additionalFields?.find(
+					(f) => f.key === 'campaignMilestones'
+				);
+
+				expect(campaignMilestonesField?.type).toBe('tags');
+			});
 		});
 	});
 });

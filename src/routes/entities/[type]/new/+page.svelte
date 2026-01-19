@@ -5,13 +5,14 @@
 	import { getEntityTypeDefinition } from '$lib/config/entityTypes';
 	import { generateEntity, hasGenerationApiKey } from '$lib/services';
 	import { generateField, isGeneratableField } from '$lib/services/fieldGenerationService';
-	import { createEntity, type FieldValue, type FieldDefinition } from '$lib/types';
+	import { createEntity, type FieldValue, type FieldDefinition, type PendingRelationship } from '$lib/types';
 	import { validateEntity, formatContextSummary } from '$lib/utils';
 	import { getSystemAwareEntityType } from '$lib/utils/entityFormUtils';
-	import { ArrowLeft, Save, Sparkles, Loader2, ExternalLink, ImagePlus, X as XIcon, Upload, Search, ChevronDown, Eye, EyeOff } from 'lucide-svelte';
+	import { ArrowLeft, Save, Sparkles, Loader2, ExternalLink, ImagePlus, X as XIcon, Upload, Search, ChevronDown, Eye, EyeOff, Plus, ChevronRight } from 'lucide-svelte';
 	import FieldGenerateButton from '$lib/components/entity/FieldGenerateButton.svelte';
 	import LoadingButton from '$lib/components/ui/LoadingButton.svelte';
 	import { MarkdownEditor } from '$lib/components/markdown';
+	import { PendingRelationshipList, CreateRelateCommand } from '$lib/components/entity';
 
 	const entityType = $derived($page.params.type ?? '');
 	const typeDefinition = $derived(
@@ -41,6 +42,11 @@
 	let imageLoading = $state<Record<string, boolean>>({});
 	let entityRefSearchQuery = $state<Record<string, string>>({});
 	let entityRefDropdownOpen = $state<Record<string, boolean>>({});
+
+	// Relationship state
+	let pendingRelationships = $state<PendingRelationship[]>([]);
+	let showRelateCommand = $state(false);
+	let relationshipsExpanded = $state(false);
 
 	// Validation
 	function validate(): boolean {
@@ -94,7 +100,15 @@
 				fields: $state.snapshot(fields)
 			});
 
-			const created = await entitiesStore.create(newEntity);
+			let created;
+			if (pendingRelationships.length > 0) {
+				// Use createWithRelationships when there are pending relationships
+				created = await entitiesStore.createWithRelationships(newEntity, pendingRelationships);
+			} else {
+				// Use standard create when no relationships
+				created = await entitiesStore.create(newEntity);
+			}
+
 			goto(`/entities/${entityType}/${created.id}`);
 		} catch (error) {
 			console.error('Failed to create entity:', error);
@@ -337,6 +351,15 @@
 			campaignContext,
 			targetFieldKey
 		});
+	}
+
+	// Relationship functions
+	function handleAddRelationship(relationship: PendingRelationship) {
+		pendingRelationships = [...pendingRelationships, relationship];
+	}
+
+	function handleRemoveRelationship(tempId: string) {
+		pendingRelationships = pendingRelationships.filter((r) => r.tempId !== tempId);
 	}
 </script>
 
@@ -825,6 +848,54 @@
 			</p>
 		</div>
 
+		<!-- Relationships -->
+		<div class="border border-slate-200 dark:border-slate-700 rounded-lg">
+			<button
+				type="button"
+				onclick={() => (relationshipsExpanded = !relationshipsExpanded)}
+				class="w-full flex items-center justify-between p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+			>
+				<div class="flex items-center gap-2">
+					<h3 class="text-base font-medium text-slate-900 dark:text-white">Relationships</h3>
+					{#if pendingRelationships.length > 0}
+						<span
+							class="inline-flex items-center justify-center w-5 h-5 rounded-full text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
+						>
+							{pendingRelationships.length}
+						</span>
+					{/if}
+				</div>
+				<ChevronRight
+					class="w-5 h-5 text-slate-400 transition-transform {relationshipsExpanded
+						? 'rotate-90'
+						: ''}"
+				/>
+			</button>
+
+			{#if relationshipsExpanded}
+				<div class="border-t border-slate-200 dark:border-slate-700 p-4">
+					<p class="text-sm text-slate-600 dark:text-slate-400 mb-3">
+						Add relationships that will be created when this entity is saved.
+					</p>
+
+					<button
+						type="button"
+						onclick={() => (showRelateCommand = true)}
+						class="btn btn-secondary mb-4"
+						disabled={isSaving}
+					>
+						<Plus class="w-4 h-4" />
+						Add Relationship
+					</button>
+
+					<PendingRelationshipList
+						relationships={pendingRelationships}
+						onRemove={handleRemoveRelationship}
+					/>
+				</div>
+			{/if}
+		</div>
+
 		<!-- DM Notes -->
 		<div>
 			<label for="notes" class="label">DM Notes</label>
@@ -869,3 +940,12 @@
 		</div>
 	</form>
 </div>
+
+<!-- Create Relationship Modal -->
+{#if entityType}
+	<CreateRelateCommand
+		entityType={entityType}
+		bind:open={showRelateCommand}
+		onSubmit={handleAddRelationship}
+	/>
+{/if}

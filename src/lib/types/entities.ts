@@ -121,6 +121,20 @@ export interface EntityTypeOverride {
 // Helper type for creating new entities
 export type NewEntity = Omit<BaseEntity, 'id' | 'createdAt' | 'updatedAt'>;
 
+// Pending relationship for entity creation (Issue #124)
+export interface PendingRelationship {
+	tempId: string;
+	targetId: string;
+	targetType: EntityType;
+	relationship: string;
+	bidirectional: boolean;
+	notes?: string;
+	strength?: 'strong' | 'moderate' | 'weak';
+	metadata?: { tags?: string[]; tension?: number; [key: string]: unknown };
+	reverseRelationship?: string;
+	playerVisible?: boolean;
+}
+
 // Relationship chain types for graph traversal
 export interface ChainNode {
 	entity: BaseEntity;

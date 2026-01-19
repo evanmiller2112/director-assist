@@ -10,6 +10,7 @@
 	import { relationshipSummaryCacheService } from '$lib/services';
 	import type { FieldValue, FieldDefinition, BaseEntity } from '$lib/types';
 	import { validateEntity, formatContextSummary } from '$lib/utils';
+	import { getSystemAwareEntityType } from '$lib/utils/entityFormUtils';
 	import { ArrowLeft, Save, ExternalLink, ImagePlus, X as XIcon, Upload, Search, ChevronDown, Eye, EyeOff } from 'lucide-svelte';
 	import FieldGenerateButton from '$lib/components/entity/FieldGenerateButton.svelte';
 	import LoadingButton from '$lib/components/ui/LoadingButton.svelte';
@@ -22,8 +23,9 @@
 	const entity = $derived(entityId ? entitiesStore.getById(entityId) : undefined);
 	const typeDefinition = $derived(
 		entityType
-			? getEntityTypeDefinition(
+			? getSystemAwareEntityType(
 					entityType,
+					campaignStore.getCurrentSystemProfile(),
 					campaignStore.customEntityTypes,
 					campaignStore.entityTypeOverrides
 				)

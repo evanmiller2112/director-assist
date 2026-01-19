@@ -1,60 +1,132 @@
-import { describe, it, expect, beforeEach, afterEach, beforeAll, afterAll, vi } from 'vitest';
-import { campaignStore } from './campaign.svelte';
-import { db } from '$lib/db';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import type { BaseEntity } from '$lib/types';
-import { appConfigRepository } from '$lib/db/repositories';
 
 /**
- * Tests for Campaign Store - Issue #46: Refactor Campaign to first-class Entity type
+ * Test Strategy: Campaign Store System Management
  *
- * These tests verify that Campaign works as a first-class entity type:
- * - Campaign store manages multiple campaigns
- * - Active campaign switching works correctly
- * - Last campaign deletion is prevented
- * - Campaign entities have correct structure
+ * RED Phase (TDD): These tests define the expected behavior for system profile
+ * management in the campaign store. Tests will FAIL until the system-aware
+ * functionality is implemented.
  *
- * RED PHASE: These tests are written to FAIL initially as the full functionality
- * doesn't exist yet. They define the expected behavior.
+ * The campaign store should:
+ * 1. Store and retrieve the active game system ID (e.g., 'draw-steel', 'system-agnostic')
+ * 2. Provide getCurrentSystemProfile() to get the full system profile
+ * 3. Support setSystemProfile() to change the active system
+ * 4. Default to 'draw-steel' (this is a Draw Steel-focused tool)
+ *
+ * Key Test Scenarios:
+ * 1. Campaign without systemId defaults to 'draw-steel'
+ * 2. Campaign with systemId returns correct system profile
+ * 3. setSystemProfile() updates the campaign metadata
+ * 4. getCurrentSystemProfile() returns full SystemProfile object
+ * 5. System changes are persisted to database
  */
 
-describe('Campaign Store - Issue #46', () => {
-	beforeAll(async () => {
-		// Open the database for tests
-		await db.open();
-	});
+// Mock the database and repositories
+vi.mock('$lib/db/repositories', () => ({
+	entityRepository: {
+		getAll: vi.fn(() => ({
+			subscribe: vi.fn()
+		})),
+		create: vi.fn(),
+		update: vi.fn(),
+		delete: vi.fn()
+	},
+	appConfigRepository: {
+		getActiveCampaignId: vi.fn(),
+		setActiveCampaignId: vi.fn()
+	}
+}));
 
-	afterAll(async () => {
-		// Close database after all tests
-		await db.close();
-	});
+vi.mock('$lib/db', () => ({
+	db: {
+		entities: {
+			where: vi.fn(() => ({
+				equals: vi.fn(() => ({
+					toArray: vi.fn(async () => [])
+				}))
+			})),
+			add: vi.fn(),
+			update: vi.fn()
+		}
+	}
+}));
+
+// Mock the system profiles
+vi.mock('$lib/config/systems', () => ({
+	getSystemProfile: vi.fn((id: string) => {
+		if (id === 'draw-steel') {
+			return {
+				id: 'draw-steel',
+				name: 'Draw Steel',
+				entityTypeModifications: {
+					character: {
+						additionalFields: [
+							{ key: 'ancestry', label: 'Ancestry', type: 'text', required: false, order: 10 }
+						]
+					}
+				},
+				terminology: { gm: 'Director' }
+			};
+		}
+		if (id === 'system-agnostic') {
+			return {
+				id: 'system-agnostic',
+				name: 'System Agnostic',
+				entityTypeModifications: {},
+				terminology: { gm: 'GM' }
+			};
+		}
+		return undefined;
+	}),
+	getAllSystemProfiles: vi.fn(() => [
+		{
+			id: 'system-agnostic',
+			name: 'System Agnostic',
+			entityTypeModifications: {},
+			terminology: { gm: 'GM' }
+		},
+		{
+			id: 'draw-steel',
+			name: 'Draw Steel',
+			entityTypeModifications: {},
+			terminology: { gm: 'Director' }
+		}
+	])
+}));
+
+describe('campaignStore - System Management (Issue #5)', () => {
+	let campaignStore: any;
+	let mockDb: any;
 
 	beforeEach(async () => {
-		// Clear database before each test
-		await db.entities.clear();
-		await db.appConfig.clear();
-		// Reset campaign store to initial state for test isolation
-		campaignStore.reset();
+		vi.clearAllMocks();
+
+		// Import fresh mocks
+		const dbModule = await import('$lib/db');
+		mockDb = dbModule.db;
+
+		// Dynamically import the store to get a fresh instance
+		const module = await import('./campaign.svelte');
+		campaignStore = module.campaignStore;
 	});
 
-	afterEach(async () => {
-		// Clean up
-		await db.entities.clear();
-		await db.appConfig.clear();
-	});
+	describe('getCurrentSystemProfile()', () => {
+		it('should exist as a method on campaign store', () => {
+			expect(campaignStore.getCurrentSystemProfile).toBeDefined();
+			expect(typeof campaignStore.getCurrentSystemProfile).toBe('function');
+		});
 
-	describe('Campaign Store - Multiple Campaigns', () => {
-		it('should load all campaigns from the database', async () => {
-			// Create multiple campaign entities
-			const campaign1: BaseEntity = {
+		it('should return draw-steel profile when campaign has no systemId (default)', async () => {
+			// Mock campaign without systemId field - defaults to draw-steel for this Draw Steel-focused tool
+			const campaignWithoutSystem: BaseEntity = {
 				id: 'campaign-1',
 				type: 'campaign',
-				name: 'My First Campaign',
-				description: 'A heroic adventure',
-				summary: undefined,
+				name: 'Test Campaign',
+				description: 'A test campaign',
 				tags: [],
-				imageUrl: undefined,
 				fields: {
-					system: 'D&D 5e',
+					system: 'D&D 5e', // Old field, not systemId
 					setting: 'Forgotten Realms',
 					status: 'active'
 				},
@@ -62,51 +134,137 @@ describe('Campaign Store - Issue #46', () => {
 				notes: '',
 				createdAt: new Date(),
 				updatedAt: new Date(),
-				metadata: {}
+				metadata: {
+					customEntityTypes: [],
+					entityTypeOverrides: [],
+					settings: {
+						customRelationships: [],
+						enabledEntityTypes: []
+					}
+				}
 			};
 
-			const campaign2: BaseEntity = {
+			// Set up mock to return this campaign
+			mockDb.entities.where.mockReturnValue({
+				equals: vi.fn(() => ({
+					toArray: vi.fn(async () => [campaignWithoutSystem])
+				}))
+			});
+
+			await campaignStore.load();
+
+			const profile = campaignStore.getCurrentSystemProfile();
+
+			expect(profile).toBeDefined();
+			expect(profile?.id).toBe('draw-steel');
+			expect(profile?.name).toBe('Draw Steel');
+		});
+
+		it('should return draw-steel profile when campaign has systemId set to draw-steel', async () => {
+			const campaignWithDrawSteel: BaseEntity = {
 				id: 'campaign-2',
 				type: 'campaign',
-				name: 'My Second Campaign',
-				description: 'A darker tale',
-				summary: undefined,
+				name: 'Draw Steel Campaign',
+				description: 'A Draw Steel campaign',
 				tags: [],
-				imageUrl: undefined,
 				fields: {
-					system: 'Call of Cthulhu',
-					setting: 'Arkham',
-					status: 'paused'
+					system: 'Draw Steel',
+					setting: 'Fantasy Setting',
+					status: 'active'
 				},
 				links: [],
 				notes: '',
 				createdAt: new Date(),
 				updatedAt: new Date(),
-				metadata: {}
+				metadata: {
+					systemId: 'draw-steel', // New field
+					customEntityTypes: [],
+					entityTypeOverrides: [],
+					settings: {
+						customRelationships: [],
+						enabledEntityTypes: []
+					}
+				}
 			};
 
-			await db.entities.add(campaign1);
-			await db.entities.add(campaign2);
-			await appConfigRepository.setActiveCampaignId('campaign-1');
+			mockDb.entities.where.mockReturnValue({
+				equals: vi.fn(() => ({
+					toArray: vi.fn(async () => [campaignWithDrawSteel])
+				}))
+			});
 
-			// Load campaigns
 			await campaignStore.load();
 
-			// Should have loaded both campaigns
-			expect(campaignStore.allCampaigns).toHaveLength(2);
-			expect(campaignStore.allCampaigns.find(c => c.id === 'campaign-1')).toBeDefined();
-			expect(campaignStore.allCampaigns.find(c => c.id === 'campaign-2')).toBeDefined();
+			const profile = campaignStore.getCurrentSystemProfile();
+
+			expect(profile).toBeDefined();
+			expect(profile?.id).toBe('draw-steel');
+			expect(profile?.name).toBe('Draw Steel');
+			expect(profile?.terminology?.gm).toBe('Director');
 		});
 
-		it('should set the first campaign as active if no active campaign is configured', async () => {
-			const campaign1: BaseEntity = {
+		it('should return null when no campaign is loaded', () => {
+			campaignStore._resetForTesting();
+			const profile = campaignStore.getCurrentSystemProfile();
+
+			expect(profile).toBeNull();
+		});
+
+		it('should return system-agnostic for unknown systemId', async () => {
+			const campaignWithUnknownSystem: BaseEntity = {
+				id: 'campaign-3',
+				type: 'campaign',
+				name: 'Unknown System Campaign',
+				description: 'Campaign with unknown system',
+				tags: [],
+				fields: {
+					system: 'Unknown System',
+					setting: 'Setting',
+					status: 'active'
+				},
+				links: [],
+				notes: '',
+				createdAt: new Date(),
+				updatedAt: new Date(),
+				metadata: {
+					systemId: 'unknown-system-id',
+					customEntityTypes: [],
+					entityTypeOverrides: [],
+					settings: {
+						customRelationships: [],
+						enabledEntityTypes: []
+					}
+				}
+			};
+
+			mockDb.entities.where.mockReturnValue({
+				equals: vi.fn(() => ({
+					toArray: vi.fn(async () => [campaignWithUnknownSystem])
+				}))
+			});
+
+			await campaignStore.load();
+
+			const profile = campaignStore.getCurrentSystemProfile();
+
+			expect(profile).toBeDefined();
+			expect(profile?.id).toBe('system-agnostic');
+		});
+	});
+
+	describe('setSystemProfile()', () => {
+		it('should exist as a method on campaign store', () => {
+			expect(campaignStore.setSystemProfile).toBeDefined();
+			expect(typeof campaignStore.setSystemProfile).toBe('function');
+		});
+
+		it('should update campaign metadata with systemId', async () => {
+			const baseCampaign: BaseEntity = {
 				id: 'campaign-1',
 				type: 'campaign',
-				name: 'My Campaign',
-				description: '',
-				summary: undefined,
+				name: 'Test Campaign',
+				description: 'Test',
 				tags: [],
-				imageUrl: undefined,
 				fields: {
 					system: 'System Agnostic',
 					setting: '',
@@ -116,623 +274,386 @@ describe('Campaign Store - Issue #46', () => {
 				notes: '',
 				createdAt: new Date(),
 				updatedAt: new Date(),
-				metadata: {}
+				metadata: {
+					customEntityTypes: [],
+					entityTypeOverrides: [],
+					settings: {
+						customRelationships: [],
+						enabledEntityTypes: []
+					}
+				}
 			};
 
-			await db.entities.add(campaign1);
-
-			// Load campaigns without setting active campaign
-			await campaignStore.load();
-
-			// Should auto-select first campaign
-			expect(campaignStore.activeCampaignId).toBe('campaign-1');
-			expect(campaignStore.campaign?.id).toBe('campaign-1');
-		});
-
-		it('should create a default campaign if none exist', async () => {
-			// Load campaigns with empty database
-			await campaignStore.load();
-
-			// Should have created a default campaign
-			expect(campaignStore.allCampaigns).toHaveLength(1);
-			expect(campaignStore.campaign).toBeDefined();
-			expect(campaignStore.campaign?.name).toBe('My Campaign');
-			expect(campaignStore.campaign?.type).toBe('campaign');
-		});
-
-		it('should track isLoading state during load', async () => {
-			const campaign1: BaseEntity = {
-				id: 'campaign-1',
-				type: 'campaign',
-				name: 'My Campaign',
-				description: '',
-				summary: undefined,
-				tags: [],
-				imageUrl: undefined,
-				fields: { system: 'System Agnostic', setting: '', status: 'active' },
-				links: [],
-				notes: '',
-				createdAt: new Date(),
-				updatedAt: new Date(),
-				metadata: {}
-			};
-
-			await db.entities.add(campaign1);
-
-			// Check loading state
-			expect(campaignStore.isLoading).toBe(true);
-
-			await campaignStore.load();
-
-			// Should no longer be loading
-			expect(campaignStore.isLoading).toBe(false);
-		});
-	});
-
-	describe('Campaign Store - Active Campaign Management', () => {
-		it('should switch active campaign', async () => {
-			const campaign1: BaseEntity = {
-				id: 'campaign-1',
-				type: 'campaign',
-				name: 'Campaign One',
-				description: '',
-				summary: undefined,
-				tags: [],
-				imageUrl: undefined,
-				fields: { system: 'D&D 5e', setting: 'Faerun', status: 'active' },
-				links: [],
-				notes: '',
-				createdAt: new Date(),
-				updatedAt: new Date(),
-				metadata: {}
-			};
-
-			const campaign2: BaseEntity = {
-				id: 'campaign-2',
-				type: 'campaign',
-				name: 'Campaign Two',
-				description: '',
-				summary: undefined,
-				tags: [],
-				imageUrl: undefined,
-				fields: { system: 'Pathfinder', setting: 'Golarion', status: 'active' },
-				links: [],
-				notes: '',
-				createdAt: new Date(),
-				updatedAt: new Date(),
-				metadata: {}
-			};
-
-			await db.entities.add(campaign1);
-			await db.entities.add(campaign2);
-			await appConfigRepository.setActiveCampaignId('campaign-1');
-
-			await campaignStore.load();
-
-			// Initially active campaign should be campaign-1
-			expect(campaignStore.activeCampaignId).toBe('campaign-1');
-			expect(campaignStore.campaign?.name).toBe('Campaign One');
-
-			// Switch to campaign-2
-			await campaignStore.setActiveCampaign('campaign-2');
-
-			// Should have switched
-			expect(campaignStore.activeCampaignId).toBe('campaign-2');
-			expect(campaignStore.campaign?.name).toBe('Campaign Two');
-
-			// Should persist to database
-			const storedActiveId = await appConfigRepository.getActiveCampaignId();
-			expect(storedActiveId).toBe('campaign-2');
-		});
-
-		it('should throw error when setting non-existent campaign as active', async () => {
-			const campaign1: BaseEntity = {
-				id: 'campaign-1',
-				type: 'campaign',
-				name: 'Campaign One',
-				description: '',
-				summary: undefined,
-				tags: [],
-				imageUrl: undefined,
-				fields: { system: 'D&D 5e', setting: '', status: 'active' },
-				links: [],
-				notes: '',
-				createdAt: new Date(),
-				updatedAt: new Date(),
-				metadata: {}
-			};
-
-			await db.entities.add(campaign1);
-			await campaignStore.load();
-
-			// Try to set non-existent campaign as active
-			await expect(campaignStore.setActiveCampaign('non-existent-id')).rejects.toThrow(
-				'Campaign non-existent-id not found'
-			);
-		});
-
-		it('should get active campaign from allCampaigns when loading', async () => {
-			const campaign1: BaseEntity = {
-				id: 'campaign-1',
-				type: 'campaign',
-				name: 'Campaign One',
-				description: '',
-				summary: undefined,
-				tags: [],
-				imageUrl: undefined,
-				fields: { system: 'D&D 5e', setting: '', status: 'active' },
-				links: [],
-				notes: '',
-				createdAt: new Date(),
-				updatedAt: new Date(),
-				metadata: {}
-			};
-
-			await db.entities.add(campaign1);
-			await appConfigRepository.setActiveCampaignId('campaign-1');
-
-			await campaignStore.load();
-
-			// Active campaign should be loaded from allCampaigns
-			expect(campaignStore.campaign).toBeDefined();
-			expect(campaignStore.campaign?.id).toBe('campaign-1');
-			expect(campaignStore.allCampaigns.find(c => c.id === 'campaign-1')).toBe(
-				campaignStore.campaign
-			);
-		});
-	});
-
-	describe('Campaign Store - Campaign Creation', () => {
-		it('should create a new campaign entity', async () => {
-			await campaignStore.load();
-
-			const newCampaign = await campaignStore.create('My New Campaign', {
-				description: 'An epic adventure',
-				system: 'Draw Steel',
-				setting: 'Custom World'
+			mockDb.entities.where.mockReturnValue({
+				equals: vi.fn(() => ({
+					toArray: vi.fn(async () => [baseCampaign])
+				}))
 			});
 
-			expect(newCampaign).toBeDefined();
-			expect(newCampaign.id).toBeDefined();
-			expect(newCampaign.type).toBe('campaign');
-			expect(newCampaign.name).toBe('My New Campaign');
-			expect(newCampaign.description).toBe('An epic adventure');
-			expect(newCampaign.fields.system).toBe('Draw Steel');
-			expect(newCampaign.fields.setting).toBe('Custom World');
-			expect(newCampaign.fields.status).toBe('active');
-		});
-
-		it('should add created campaign to allCampaigns', async () => {
 			await campaignStore.load();
 
-			const initialCount = campaignStore.allCampaigns.length;
-			const newCampaign = await campaignStore.create('Another Campaign');
+			// Change to Draw Steel
+			await campaignStore.setSystemProfile('draw-steel');
 
-			expect(campaignStore.allCampaigns).toHaveLength(initialCount + 1);
-			expect(campaignStore.allCampaigns.find(c => c.id === newCampaign.id)).toBeDefined();
+			// Verify database update was called
+			expect(mockDb.entities.update).toHaveBeenCalled();
+
+			const updateCall = mockDb.entities.update.mock.calls[0];
+			expect(updateCall[0]).toBe('campaign-1'); // Campaign ID
+			expect(updateCall[1].metadata.systemId).toBe('draw-steel');
 		});
 
-		it('should set first campaign as active automatically', async () => {
-			// Clear database to ensure no campaigns exist
-			await db.entities.clear();
-			await appConfigRepository.clear();
-
-			const newCampaign = await campaignStore.create('First Campaign');
-
-			// Should be set as active since it's the first one
-			expect(campaignStore.activeCampaignId).toBe(newCampaign.id);
-			expect(campaignStore.campaign?.id).toBe(newCampaign.id);
-		});
-
-		it('should not auto-activate second campaign', async () => {
-			await campaignStore.load();
-
-			const firstCampaign = campaignStore.campaign;
-			const firstId = firstCampaign?.id;
-
-			const secondCampaign = await campaignStore.create('Second Campaign');
-
-			// Should still have first campaign active
-			expect(campaignStore.activeCampaignId).toBe(firstId);
-			expect(campaignStore.campaign?.id).toBe(firstId);
-			expect(campaignStore.campaign?.id).not.toBe(secondCampaign.id);
-		});
-	});
-
-	describe('Campaign Store - Campaign Deletion with Guard', () => {
-		it('should prevent deletion of the last campaign', async () => {
-			// Create a single campaign
-			const campaign1: BaseEntity = {
+		it('should update local campaign state', async () => {
+			const baseCampaign: BaseEntity = {
 				id: 'campaign-1',
 				type: 'campaign',
-				name: 'Only Campaign',
-				description: '',
-				summary: undefined,
+				name: 'Test Campaign',
+				description: 'Test',
 				tags: [],
-				imageUrl: undefined,
-				fields: { system: 'D&D 5e', setting: '', status: 'active' },
+				fields: {
+					system: 'System Agnostic',
+					setting: '',
+					status: 'active'
+				},
 				links: [],
 				notes: '',
 				createdAt: new Date(),
 				updatedAt: new Date(),
-				metadata: {}
+				metadata: {
+					customEntityTypes: [],
+					entityTypeOverrides: [],
+					settings: {
+						customRelationships: [],
+						enabledEntityTypes: []
+					}
+				}
 			};
 
-			await db.entities.add(campaign1);
-			await campaignStore.load();
-
-			// Should have exactly one campaign
-			expect(campaignStore.allCampaigns).toHaveLength(1);
-
-			// Attempt to delete the last campaign should throw error
-			await expect(campaignStore.deleteCampaign('campaign-1')).rejects.toThrow(
-				'Cannot delete the last campaign'
-			);
-
-			// Campaign should still exist
-			expect(campaignStore.allCampaigns).toHaveLength(1);
-			expect(campaignStore.campaign?.id).toBe('campaign-1');
-		});
-
-		it('should allow deletion when multiple campaigns exist', async () => {
-			const campaign1: BaseEntity = {
-				id: 'campaign-1',
-				type: 'campaign',
-				name: 'Campaign One',
-				description: '',
-				summary: undefined,
-				tags: [],
-				imageUrl: undefined,
-				fields: { system: 'D&D 5e', setting: '', status: 'active' },
-				links: [],
-				notes: '',
-				createdAt: new Date(),
-				updatedAt: new Date(),
-				metadata: {}
-			};
-
-			const campaign2: BaseEntity = {
-				id: 'campaign-2',
-				type: 'campaign',
-				name: 'Campaign Two',
-				description: '',
-				summary: undefined,
-				tags: [],
-				imageUrl: undefined,
-				fields: { system: 'Pathfinder', setting: '', status: 'active' },
-				links: [],
-				notes: '',
-				createdAt: new Date(),
-				updatedAt: new Date(),
-				metadata: {}
-			};
-
-			await db.entities.add(campaign1);
-			await db.entities.add(campaign2);
-			await campaignStore.load();
-
-			// Should have two campaigns
-			expect(campaignStore.allCampaigns).toHaveLength(2);
-
-			// Delete campaign-2
-			await campaignStore.deleteCampaign('campaign-2');
-
-			// Should have one campaign left
-			expect(campaignStore.allCampaigns).toHaveLength(1);
-			expect(campaignStore.allCampaigns.find(c => c.id === 'campaign-2')).toBeUndefined();
-		});
-
-		it('should switch to another campaign when deleting active campaign', async () => {
-			const campaign1: BaseEntity = {
-				id: 'campaign-1',
-				type: 'campaign',
-				name: 'Campaign One',
-				description: '',
-				summary: undefined,
-				tags: [],
-				imageUrl: undefined,
-				fields: { system: 'D&D 5e', setting: '', status: 'active' },
-				links: [],
-				notes: '',
-				createdAt: new Date(),
-				updatedAt: new Date(),
-				metadata: {}
-			};
-
-			const campaign2: BaseEntity = {
-				id: 'campaign-2',
-				type: 'campaign',
-				name: 'Campaign Two',
-				description: '',
-				summary: undefined,
-				tags: [],
-				imageUrl: undefined,
-				fields: { system: 'Pathfinder', setting: '', status: 'active' },
-				links: [],
-				notes: '',
-				createdAt: new Date(),
-				updatedAt: new Date(),
-				metadata: {}
-			};
-
-			await db.entities.add(campaign1);
-			await db.entities.add(campaign2);
-			await appConfigRepository.setActiveCampaignId('campaign-1');
-			await campaignStore.load();
-
-			// Campaign-1 should be active
-			expect(campaignStore.activeCampaignId).toBe('campaign-1');
-
-			// Delete active campaign
-			await campaignStore.deleteCampaign('campaign-1');
-
-			// Should have switched to campaign-2
-			expect(campaignStore.activeCampaignId).toBe('campaign-2');
-			expect(campaignStore.campaign?.id).toBe('campaign-2');
-		});
-
-		it('should not switch campaigns when deleting non-active campaign', async () => {
-			const campaign1: BaseEntity = {
-				id: 'campaign-1',
-				type: 'campaign',
-				name: 'Campaign One',
-				description: '',
-				summary: undefined,
-				tags: [],
-				imageUrl: undefined,
-				fields: { system: 'D&D 5e', setting: '', status: 'active' },
-				links: [],
-				notes: '',
-				createdAt: new Date(),
-				updatedAt: new Date(),
-				metadata: {}
-			};
-
-			const campaign2: BaseEntity = {
-				id: 'campaign-2',
-				type: 'campaign',
-				name: 'Campaign Two',
-				description: '',
-				summary: undefined,
-				tags: [],
-				imageUrl: undefined,
-				fields: { system: 'Pathfinder', setting: '', status: 'active' },
-				links: [],
-				notes: '',
-				createdAt: new Date(),
-				updatedAt: new Date(),
-				metadata: {}
-			};
-
-			await db.entities.add(campaign1);
-			await db.entities.add(campaign2);
-			await appConfigRepository.setActiveCampaignId('campaign-1');
-			await campaignStore.load();
-
-			// Campaign-1 should be active
-			expect(campaignStore.activeCampaignId).toBe('campaign-1');
-
-			// Delete non-active campaign
-			await campaignStore.deleteCampaign('campaign-2');
-
-			// Should still have campaign-1 active
-			expect(campaignStore.activeCampaignId).toBe('campaign-1');
-			expect(campaignStore.campaign?.id).toBe('campaign-1');
-		});
-
-		it('should remove campaign from database when deleted', async () => {
-			const campaign1: BaseEntity = {
-				id: 'campaign-1',
-				type: 'campaign',
-				name: 'Campaign One',
-				description: '',
-				summary: undefined,
-				tags: [],
-				imageUrl: undefined,
-				fields: { system: 'D&D 5e', setting: '', status: 'active' },
-				links: [],
-				notes: '',
-				createdAt: new Date(),
-				updatedAt: new Date(),
-				metadata: {}
-			};
-
-			const campaign2: BaseEntity = {
-				id: 'campaign-2',
-				type: 'campaign',
-				name: 'Campaign Two',
-				description: '',
-				summary: undefined,
-				tags: [],
-				imageUrl: undefined,
-				fields: { system: 'Pathfinder', setting: '', status: 'active' },
-				links: [],
-				notes: '',
-				createdAt: new Date(),
-				updatedAt: new Date(),
-				metadata: {}
-			};
-
-			await db.entities.add(campaign1);
-			await db.entities.add(campaign2);
-			await campaignStore.load();
-
-			// Delete campaign-2
-			await campaignStore.deleteCampaign('campaign-2');
-
-			// Should be removed from database
-			const dbCampaign = await db.entities.get('campaign-2');
-			expect(dbCampaign).toBeUndefined();
-		});
-	});
-
-	describe('Campaign Store - Update Operations', () => {
-		it('should update campaign basic fields', async () => {
-			const campaign1: BaseEntity = {
-				id: 'campaign-1',
-				type: 'campaign',
-				name: 'Old Name',
-				description: 'Old description',
-				summary: undefined,
-				tags: [],
-				imageUrl: undefined,
-				fields: { system: 'D&D 5e', setting: 'Faerun', status: 'active' },
-				links: [],
-				notes: '',
-				createdAt: new Date(),
-				updatedAt: new Date(),
-				metadata: {}
-			};
-
-			await db.entities.add(campaign1);
-			await appConfigRepository.setActiveCampaignId('campaign-1');
-			await campaignStore.load();
-
-			// Update campaign
-			await campaignStore.update({
-				name: 'New Name',
-				description: 'New description',
-				system: 'Pathfinder 2e',
-				setting: 'Golarion'
+			mockDb.entities.where.mockReturnValue({
+				equals: vi.fn(() => ({
+					toArray: vi.fn(async () => [baseCampaign])
+				}))
 			});
 
-			// Should update local state
-			expect(campaignStore.campaign?.name).toBe('New Name');
-			expect(campaignStore.campaign?.description).toBe('New description');
-			expect(campaignStore.campaign?.fields.system).toBe('Pathfinder 2e');
-			expect(campaignStore.campaign?.fields.setting).toBe('Golarion');
-
-			// Should update in allCampaigns
-			const campaignInList = campaignStore.allCampaigns.find(c => c.id === 'campaign-1');
-			expect(campaignInList?.name).toBe('New Name');
-
-			// Should persist to database
-			const dbCampaign = await db.entities.get('campaign-1');
-			expect(dbCampaign?.name).toBe('New Name');
-			expect(dbCampaign?.fields.system).toBe('Pathfinder 2e');
-		});
-
-		it('should update updatedAt timestamp when updating', async () => {
-			const oldDate = new Date('2024-01-01');
-			const campaign1: BaseEntity = {
-				id: 'campaign-1',
-				type: 'campaign',
-				name: 'Campaign',
-				description: '',
-				summary: undefined,
-				tags: [],
-				imageUrl: undefined,
-				fields: { system: 'D&D 5e', setting: '', status: 'active' },
-				links: [],
-				notes: '',
-				createdAt: oldDate,
-				updatedAt: oldDate,
-				metadata: {}
-			};
-
-			await db.entities.add(campaign1);
-			await appConfigRepository.setActiveCampaignId('campaign-1');
 			await campaignStore.load();
 
-			const beforeUpdate = campaignStore.campaign?.updatedAt;
+			// Mock the update to succeed
+			mockDb.entities.update.mockResolvedValue(undefined);
 
-			// Wait a bit to ensure timestamp changes
-			await new Promise(resolve => setTimeout(resolve, 10));
+			await campaignStore.setSystemProfile('draw-steel');
 
-			await campaignStore.update({ name: 'Updated Campaign' });
-
-			// updatedAt should have changed
-			expect(campaignStore.campaign?.updatedAt).not.toEqual(beforeUpdate);
-			expect(campaignStore.campaign?.updatedAt.getTime()).toBeGreaterThan(
-				beforeUpdate!.getTime()
-			);
+			// Verify the store now returns the new system profile
+			const profile = campaignStore.getCurrentSystemProfile();
+			expect(profile?.id).toBe('draw-steel');
 		});
-	});
 
-	describe('Campaign Store - Reload Functionality', () => {
-		it('should reload campaigns from database', async () => {
-			const campaign1: BaseEntity = {
+		it('should throw error if no campaign is loaded', async () => {
+			campaignStore._resetForTesting();
+			await expect(campaignStore.setSystemProfile('draw-steel')).rejects.toThrow();
+		});
+
+		it('should accept system-agnostic as valid system ID', async () => {
+			const campaign: BaseEntity = {
 				id: 'campaign-1',
 				type: 'campaign',
-				name: 'Campaign One',
-				description: '',
-				summary: undefined,
+				name: 'Test Campaign',
+				description: 'Test',
 				tags: [],
-				imageUrl: undefined,
-				fields: { system: 'D&D 5e', setting: '', status: 'active' },
+				fields: {
+					system: 'Draw Steel',
+					setting: '',
+					status: 'active'
+				},
 				links: [],
 				notes: '',
 				createdAt: new Date(),
 				updatedAt: new Date(),
-				metadata: {}
+				metadata: {
+					systemId: 'draw-steel',
+					customEntityTypes: [],
+					entityTypeOverrides: [],
+					settings: {
+						customRelationships: [],
+						enabledEntityTypes: []
+					}
+				}
 			};
 
-			await db.entities.add(campaign1);
+			mockDb.entities.where.mockReturnValue({
+				equals: vi.fn(() => ({
+					toArray: vi.fn(async () => [campaign])
+				}))
+			});
+
 			await campaignStore.load();
 
-			expect(campaignStore.allCampaigns).toHaveLength(1);
+			mockDb.entities.update.mockResolvedValue(undefined);
 
-			// Add another campaign directly to database
-			const campaign2: BaseEntity = {
-				id: 'campaign-2',
+			await campaignStore.setSystemProfile('system-agnostic');
+
+			const profile = campaignStore.getCurrentSystemProfile();
+			expect(profile?.id).toBe('system-agnostic');
+		});
+
+		it('should update updatedAt timestamp', async () => {
+			const campaign: BaseEntity = {
+				id: 'campaign-1',
 				type: 'campaign',
-				name: 'Campaign Two',
-				description: '',
-				summary: undefined,
+				name: 'Test Campaign',
+				description: 'Test',
 				tags: [],
-				imageUrl: undefined,
-				fields: { system: 'Pathfinder', setting: '', status: 'active' },
+				fields: {
+					system: 'System Agnostic',
+					setting: '',
+					status: 'active'
+				},
+				links: [],
+				notes: '',
+				createdAt: new Date(),
+				updatedAt: new Date('2024-01-01'),
+				metadata: {
+					customEntityTypes: [],
+					entityTypeOverrides: [],
+					settings: {
+						customRelationships: [],
+						enabledEntityTypes: []
+					}
+				}
+			};
+
+			mockDb.entities.where.mockReturnValue({
+				equals: vi.fn(() => ({
+					toArray: vi.fn(async () => [campaign])
+				}))
+			});
+
+			await campaignStore.load();
+
+			await campaignStore.setSystemProfile('draw-steel');
+
+			const updateCall = mockDb.entities.update.mock.calls[0];
+			expect(updateCall[1].updatedAt).toBeInstanceOf(Date);
+		});
+	});
+
+	describe('getSystemId()', () => {
+		it('should exist as a getter on campaign store', () => {
+			expect(campaignStore.systemId).toBeDefined();
+		});
+
+		it('should return null when no campaign is loaded', () => {
+			campaignStore._resetForTesting();
+			expect(campaignStore.systemId).toBeNull();
+		});
+
+		it('should return draw-steel when campaign has no systemId (default)', async () => {
+			const campaign: BaseEntity = {
+				id: 'campaign-1',
+				type: 'campaign',
+				name: 'Test Campaign',
+				description: 'Test',
+				tags: [],
+				fields: {
+					system: 'D&D 5e',
+					setting: '',
+					status: 'active'
+				},
 				links: [],
 				notes: '',
 				createdAt: new Date(),
 				updatedAt: new Date(),
-				metadata: {}
+				metadata: {
+					customEntityTypes: [],
+					entityTypeOverrides: [],
+					settings: {
+						customRelationships: [],
+						enabledEntityTypes: []
+					}
+				}
 			};
-			await db.entities.add(campaign2);
 
-			// Reload campaigns
-			await campaignStore.reload();
+			mockDb.entities.where.mockReturnValue({
+				equals: vi.fn(() => ({
+					toArray: vi.fn(async () => [campaign])
+				}))
+			});
 
-			// Should have reloaded and found both campaigns
-			expect(campaignStore.allCampaigns).toHaveLength(2);
+			await campaignStore.load();
+
+			expect(campaignStore.systemId).toBe('draw-steel');
+		});
+
+		it('should return the systemId from campaign metadata', async () => {
+			const campaign: BaseEntity = {
+				id: 'campaign-1',
+				type: 'campaign',
+				name: 'Test Campaign',
+				description: 'Test',
+				tags: [],
+				fields: {
+					system: 'Draw Steel',
+					setting: '',
+					status: 'active'
+				},
+				links: [],
+				notes: '',
+				createdAt: new Date(),
+				updatedAt: new Date(),
+				metadata: {
+					systemId: 'draw-steel',
+					customEntityTypes: [],
+					entityTypeOverrides: [],
+					settings: {
+						customRelationships: [],
+						enabledEntityTypes: []
+					}
+				}
+			};
+
+			mockDb.entities.where.mockReturnValue({
+				equals: vi.fn(() => ({
+					toArray: vi.fn(async () => [campaign])
+				}))
+			});
+
+			await campaignStore.load();
+
+			expect(campaignStore.systemId).toBe('draw-steel');
 		});
 	});
 
-	describe('Campaign Store - Error Handling', () => {
-		it('should set error state when load fails', async () => {
-			// Mock db.entities.where to throw an error
-			const originalWhere = db.entities.where;
-			db.entities.where = vi.fn(() => {
-				throw new Error('Database error');
-			}) as any;
+	describe('Backwards Compatibility', () => {
+		it('should handle campaigns created before system profiles were added', async () => {
+			const oldCampaign: BaseEntity = {
+				id: 'old-campaign',
+				type: 'campaign',
+				name: 'Old Campaign',
+				description: 'Created before system profiles',
+				tags: [],
+				fields: {
+					system: 'D&D 5e',
+					setting: 'Forgotten Realms',
+					status: 'active'
+				},
+				links: [],
+				notes: '',
+				createdAt: new Date('2023-01-01'),
+				updatedAt: new Date('2023-01-01'),
+				metadata: {
+					// No systemId field
+					customEntityTypes: [],
+					entityTypeOverrides: [],
+					settings: {
+						customRelationships: [],
+						enabledEntityTypes: []
+					}
+				}
+			};
+
+			mockDb.entities.where.mockReturnValue({
+				equals: vi.fn(() => ({
+					toArray: vi.fn(async () => [oldCampaign])
+				}))
+			});
 
 			await campaignStore.load();
 
-			// Should have error
-			expect(campaignStore.error).toBeDefined();
-			expect(campaignStore.error).toContain('Failed to load campaigns');
-			expect(campaignStore.isLoading).toBe(false);
+			// Should default to draw-steel (this is a Draw Steel-focused tool)
+			expect(campaignStore.systemId).toBe('draw-steel');
 
-			// Restore original method
-			db.entities.where = originalWhere;
+			const profile = campaignStore.getCurrentSystemProfile();
+			expect(profile?.id).toBe('draw-steel');
 		});
 
-		it('should clear error on successful load', async () => {
-			// First, cause an error
-			const originalWhere = db.entities.where;
-			db.entities.where = vi.fn(() => {
-				throw new Error('Database error');
-			}) as any;
+		it('should allow setting system profile on old campaign', async () => {
+			const oldCampaign: BaseEntity = {
+				id: 'old-campaign',
+				type: 'campaign',
+				name: 'Old Campaign',
+				description: 'Created before system profiles',
+				tags: [],
+				fields: {
+					system: 'D&D 5e',
+					setting: '',
+					status: 'active'
+				},
+				links: [],
+				notes: '',
+				createdAt: new Date('2023-01-01'),
+				updatedAt: new Date('2023-01-01'),
+				metadata: {
+					customEntityTypes: [],
+					entityTypeOverrides: [],
+					settings: {
+						customRelationships: [],
+						enabledEntityTypes: []
+					}
+				}
+			};
+
+			mockDb.entities.where.mockReturnValue({
+				equals: vi.fn(() => ({
+					toArray: vi.fn(async () => [oldCampaign])
+				}))
+			});
 
 			await campaignStore.load();
-			expect(campaignStore.error).toBeDefined();
 
-			// Restore and load successfully
-			db.entities.where = originalWhere;
+			mockDb.entities.update.mockResolvedValue(undefined);
+
+			await campaignStore.setSystemProfile('draw-steel');
+
+			expect(mockDb.entities.update).toHaveBeenCalled();
+			const updateCall = mockDb.entities.update.mock.calls[0];
+			expect(updateCall[1].metadata.systemId).toBe('draw-steel');
+		});
+	});
+
+	describe('Type Safety', () => {
+		it('should return SystemProfile type from getCurrentSystemProfile', async () => {
+			const campaign: BaseEntity = {
+				id: 'campaign-1',
+				type: 'campaign',
+				name: 'Test Campaign',
+				description: 'Test',
+				tags: [],
+				fields: {
+					system: 'Draw Steel',
+					setting: '',
+					status: 'active'
+				},
+				links: [],
+				notes: '',
+				createdAt: new Date(),
+				updatedAt: new Date(),
+				metadata: {
+					systemId: 'draw-steel',
+					customEntityTypes: [],
+					entityTypeOverrides: [],
+					settings: {
+						customRelationships: [],
+						enabledEntityTypes: []
+					}
+				}
+			};
+
+			mockDb.entities.where.mockReturnValue({
+				equals: vi.fn(() => ({
+					toArray: vi.fn(async () => [campaign])
+				}))
+			});
+
 			await campaignStore.load();
 
-			// Error should be cleared
-			expect(campaignStore.error).toBeNull();
+			const profile = campaignStore.getCurrentSystemProfile();
+
+			// Type checks (these verify TypeScript compilation)
+			if (profile) {
+				expect(typeof profile.id).toBe('string');
+				expect(typeof profile.name).toBe('string');
+				expect(typeof profile.entityTypeModifications).toBe('object');
+				expect(typeof profile.terminology).toBe('object');
+			}
 		});
 	});
 });

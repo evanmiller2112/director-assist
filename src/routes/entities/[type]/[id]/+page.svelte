@@ -2,7 +2,7 @@
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
 	import { entitiesStore, campaignStore, notificationStore } from '$lib/stores';
-	import { getEntityTypeDefinition } from '$lib/config/entityTypes';
+	import { getSystemAwareEntityType } from '$lib/utils/entityFormUtils';
 	import { ArrowLeft, ArrowRight, Edit, Trash2, Link, Plus, X, ExternalLink, Check, X as XIcon, EyeOff } from 'lucide-svelte';
 	import { EntitySummary, RelateCommand, RelationshipCard, EditRelationshipModal } from '$lib/components/entity';
 	import { RelationshipBreadcrumbs } from '$lib/components/navigation';
@@ -15,8 +15,9 @@
 	const entity = $derived(entityId ? entitiesStore.getById(entityId) : undefined);
 	const typeDefinition = $derived(
 		entityType
-			? getEntityTypeDefinition(
+			? getSystemAwareEntityType(
 					entityType,
+					campaignStore.getCurrentSystemProfile(),
 					campaignStore.customEntityTypes,
 					campaignStore.entityTypeOverrides
 				)

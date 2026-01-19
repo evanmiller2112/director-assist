@@ -5,9 +5,11 @@ import type {
 	EntityTypeDefinition,
 	EntityTypeOverride,
 	CampaignMetadata,
-	CampaignSettings
+	CampaignSettings,
+	SystemProfile
 } from '$lib/types';
 import { DEFAULT_CAMPAIGN_METADATA, DEFAULT_CAMPAIGN_SETTINGS } from '$lib/types';
+import { getSystemProfile } from '$lib/config/systems';
 import { nanoid } from 'nanoid';
 
 /**
@@ -17,6 +19,7 @@ function getCampaignMetadata(entity: BaseEntity | null): CampaignMetadata {
 	if (!entity) return { ...DEFAULT_CAMPAIGN_METADATA };
 	const metadata = entity.metadata as unknown as CampaignMetadata | undefined;
 	return {
+		systemId: metadata?.systemId,
 		customEntityTypes: metadata?.customEntityTypes ?? [],
 		entityTypeOverrides: metadata?.entityTypeOverrides ?? [],
 		settings: metadata?.settings ?? { ...DEFAULT_CAMPAIGN_SETTINGS }
@@ -63,6 +66,76 @@ function createCampaignStore() {
 
 		get settings(): CampaignSettings {
 			return getCampaignMetadata(campaign).settings;
+		},
+
+		/**
+		 * Get the system ID for the current campaign
+		 * Returns 'draw-steel' as default for new campaigns (this is a Draw Steel-focused tool)
+		 */
+		get systemId(): string | null {
+			if (!campaign) return null;
+			const metadata = getCampaignMetadata(campaign);
+			return metadata.systemId ?? 'draw-steel';
+		},
+
+		/**
+		 * Get the full system profile for the current campaign
+		 * Returns null if no campaign is loaded
+		 * Falls back to draw-steel if the system is not found
+		 */
+		getCurrentSystemProfile(): SystemProfile | null {
+			if (!campaign) return null;
+
+			const metadata = getCampaignMetadata(campaign);
+			const systemId = metadata.systemId ?? 'draw-steel';
+
+			// Try to get the system profile
+			const profile = getSystemProfile(systemId);
+
+			// If not found (e.g., unknown system), fall back to system-agnostic
+			if (!profile) {
+				return getSystemProfile('system-agnostic') ?? null;
+			}
+
+			return profile;
+		},
+
+		/**
+		 * Set the system profile for the current campaign
+		 * Updates the campaign metadata with the new system ID
+		 */
+		async setSystemProfile(systemId: string): Promise<void> {
+			if (!campaign) {
+				throw new Error('No campaign loaded');
+			}
+
+			try {
+				const metadata = getCampaignMetadata(campaign);
+				const updatedMetadata: CampaignMetadata = {
+					...metadata,
+					systemId
+				};
+
+				// Deep clone to remove Svelte 5 Proxy wrappers
+				const clonedMetadata = JSON.parse(JSON.stringify(updatedMetadata));
+
+				await db.entities.update(campaign.id, {
+					metadata: clonedMetadata,
+					updatedAt: new Date()
+				});
+
+				// Update local state
+				campaign = {
+					...campaign,
+					metadata: clonedMetadata,
+					updatedAt: new Date()
+				};
+				allCampaigns = allCampaigns.map((c) => (c.id === campaign!.id ? campaign! : c));
+			} catch (e) {
+				error = e instanceof Error ? e.message : 'Failed to set system profile';
+				console.error('Failed to set system profile:', e);
+				throw e;
+			}
 		},
 
 		/**
@@ -493,6 +566,14 @@ function createCampaignStore() {
 			allCampaigns = [];
 			isLoading = true;
 			error = null;
+		},
+
+		/**
+		 * Reset the store state for testing purposes (alias for reset)
+		 * @internal
+		 */
+		_resetForTesting() {
+			this.reset();
 		}
 	};
 }

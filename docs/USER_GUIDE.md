@@ -832,6 +832,51 @@ Access campaign-specific settings:
 
 ## Settings
 
+### Game System
+
+Director Assist supports multiple game systems with system-specific fields and terminology. You can change your campaign's game system at any time.
+
+**Available Systems:**
+
+- **Draw Steel**: MCDM's Draw Steel system with specific fields for ancestry, class, kit, threat levels, victory points, and combat roles
+- **System Agnostic**: Generic fields suitable for any TTRPG system without game-specific mechanics
+
+**How System Selection Affects Your Campaign:**
+
+When you select a game system, entity forms automatically adapt to show system-appropriate fields:
+
+**Draw Steel System Adds:**
+- **Characters**: Ancestry, Class, Kit, Heroic Resource fields
+- **NPCs**: Threat Level (minion/standard/elite/boss/solo), Combat Role (ambusher, artillery, brute, controller, defender, harrier, hexer, lurker, skulker, support)
+- **Encounters**: Victory Points, Negotiation DC, system-specific encounter types (combat, negotiation, montage, exploration)
+
+**System Agnostic:**
+- Uses only generic fields without system-specific mechanics
+- Suitable for any TTRPG system
+- Default for backwards compatibility with existing campaigns
+
+**Changing Your Game System:**
+
+1. Open Settings (gear icon in header or `/settings` command)
+2. Scroll to the "Game System" section
+3. Select your preferred game system from the dropdown
+4. The system description explains what changes
+5. Changes apply immediately to all entity forms
+
+**When to Change System:**
+
+- You started with System Agnostic but now want Draw Steel-specific fields
+- You're switching campaign systems and want appropriate terminology
+- You want to remove system-specific fields by switching to System Agnostic
+
+**Important Notes:**
+
+- Changing systems does not delete existing entity data
+- System-specific field values are preserved even when hidden
+- If you switch from Draw Steel to System Agnostic, Draw Steel fields are hidden but not deleted
+- Switching back to Draw Steel restores visibility of those fields with their original values
+- AI generation uses system-appropriate context and terminology
+
 ### Relationship Context Settings
 
 When generating content with AI, Director Assist can include information about related entities to provide richer context. These settings control how relationship context is used during both per-field generation and full-entity generation.

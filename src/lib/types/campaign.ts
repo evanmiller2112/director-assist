@@ -32,6 +32,7 @@ export interface CampaignSettings {
  * This is used when Campaign is stored as a BaseEntity.
  */
 export interface CampaignMetadata {
+	systemId?: string; // Game system identifier (e.g., 'draw-steel', 'system-agnostic')
 	customEntityTypes: EntityTypeDefinition[];
 	entityTypeOverrides: EntityTypeOverride[];
 	settings: CampaignSettings;

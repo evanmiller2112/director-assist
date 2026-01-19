@@ -1,4 +1,10 @@
-import type { EntityTypeDefinition, EntityTypeOverride, FieldDefinition } from '$lib/types';
+import type {
+	EntityTypeDefinition,
+	EntityTypeOverride,
+	FieldDefinition,
+	EntityType
+} from '$lib/types';
+import type { SystemProfile, SystemEntityModification } from '$lib/types/systems';
 
 export const BUILT_IN_ENTITY_TYPES: EntityTypeDefinition[] = [
 	{
@@ -805,6 +811,94 @@ export const DEFAULT_RELATIONSHIPS = [
 	'affects',
 	'plays'
 ];
+
+/**
+ * Apply system modifications to field definitions
+ * This is the internal helper that merges system-specific modifications
+ *
+ * @param baseFields - The base field definitions from the entity type
+ * @param modification - The system-specific modifications to apply
+ * @returns Modified field definitions
+ */
+export function applySystemModifications(
+	baseFields: FieldDefinition[],
+	modification: SystemEntityModification
+): FieldDefinition[] {
+	// Start with a copy of base fields
+	let fields = [...baseFields];
+
+	// Apply hidden fields filter
+	if (modification.hiddenFields && modification.hiddenFields.length > 0) {
+		fields = fields.filter((f) => !modification.hiddenFields!.includes(f.key));
+	}
+
+	// Apply field option overrides
+	if (modification.fieldOptionOverrides) {
+		fields = fields.map((field) => {
+			const override = modification.fieldOptionOverrides?.[field.key];
+			if (override) {
+				return { ...field, options: override };
+			}
+			return field;
+		});
+	}
+
+	// Add additional fields
+	// If an additional field has the same key as a base field, replace the base field
+	if (modification.additionalFields && modification.additionalFields.length > 0) {
+		const additionalFieldKeys = new Set(modification.additionalFields.map((f) => f.key));
+
+		// Remove base fields that will be replaced
+		fields = fields.filter((f) => !additionalFieldKeys.has(f.key));
+
+		// Add additional fields
+		fields = [...fields, ...modification.additionalFields];
+	}
+
+	// Sort by order
+	fields.sort((a, b) => a.order - b.order);
+
+	return fields;
+}
+
+/**
+ * Get entity type definition with system modifications applied
+ * This function takes a base entity type and applies system-specific customizations
+ *
+ * @param type - The entity type identifier
+ * @param baseDefinition - The base entity type definition (can be from BUILT_IN_ENTITY_TYPES or custom)
+ * @param systemProfile - Optional system profile to apply modifications from
+ * @param customTypes - Optional custom entity types
+ * @param overrides - Optional entity type overrides
+ * @returns Entity type definition with system modifications applied
+ */
+export function getEntityTypeDefinitionWithSystem(
+	type: EntityType,
+	baseDefinition: EntityTypeDefinition,
+	systemProfile?: SystemProfile | null,
+	customTypes: EntityTypeDefinition[] = [],
+	overrides: EntityTypeOverride[] = []
+): EntityTypeDefinition {
+	// Start with the base definition
+	let result = { ...baseDefinition };
+
+	// Apply system modifications if a system profile is provided
+	if (systemProfile && systemProfile.entityTypeModifications[type]) {
+		const modification = systemProfile.entityTypeModifications[type];
+		result = {
+			...result,
+			fieldDefinitions: applySystemModifications(result.fieldDefinitions, modification)
+		};
+	}
+
+	// Apply entity type overrides (for backwards compatibility and additional customization)
+	const override = overrides.find((o) => o.type === type);
+	if (override) {
+		result = applyOverrideToType(result, override);
+	}
+
+	return result;
+}
 
 /**
  * Get the default order for entity types, with campaign first.

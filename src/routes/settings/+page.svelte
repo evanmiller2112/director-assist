@@ -16,6 +16,7 @@
 	} from '$lib/services';
 	import { Download, Upload, Moon, Sun, Monitor, Trash2, Key, RefreshCw, Layers, ChevronRight } from 'lucide-svelte';
 	import LoadingButton from '$lib/components/ui/LoadingButton.svelte';
+	import { SystemSelector } from '$lib/components/settings';
 
 	// Form state
 	let apiKey = $state('');
@@ -31,6 +32,10 @@
 	// Relationship context settings state
 	let relationshipSettings = $state<RelationshipContextSettings>(getRelationshipContextSettings());
 
+	// System profile state
+	let currentSystemId = $state<string>('draw-steel');
+	let isSavingSystem = $state(false);
+
 	// Load API key and models from storage
 	$effect(() => {
 		if (typeof window !== 'undefined') {
@@ -40,6 +45,14 @@
 				loadModels(stored);
 			}
 			selectedModel = getSelectedModel();
+		}
+	});
+
+	// Load current system profile from campaign
+	$effect(() => {
+		const systemProfile = campaignStore.getCurrentSystemProfile();
+		if (systemProfile) {
+			currentSystemId = systemProfile.id;
 		}
 	});
 
@@ -73,6 +86,24 @@
 	function saveRelationshipSettings() {
 		setRelationshipContextSettings(relationshipSettings);
 		notificationStore.success('Relationship context settings saved!');
+	}
+
+	async function handleSystemChange(systemId: string) {
+		isSavingSystem = true;
+		try {
+			await campaignStore.setSystemProfile(systemId);
+			notificationStore.success('Game system updated!');
+		} catch (error) {
+			console.error('Failed to update system:', error);
+			notificationStore.error('Failed to update game system');
+			// Revert on error
+			const systemProfile = campaignStore.getCurrentSystemProfile();
+			if (systemProfile) {
+				currentSystemId = systemProfile.id;
+			}
+		} finally {
+			isSavingSystem = false;
+		}
 	}
 
 	function saveApiKey() {
@@ -286,6 +317,25 @@
 			Manage Campaigns
 			<ChevronRight class="w-4 h-4" />
 		</a>
+	</section>
+
+	<!-- Game System -->
+	<section class="mb-8">
+		<h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">Game System</h2>
+		<p class="text-sm text-slate-500 dark:text-slate-400 mb-4">
+			Select the game system for your campaign. This determines which fields appear on entity forms (e.g., Draw Steel adds ancestry, class, and kit fields to characters).
+		</p>
+		<SystemSelector
+			bind:value={currentSystemId}
+			onchange={handleSystemChange}
+			disabled={isSavingSystem || !campaignStore.campaign}
+			showDescription={true}
+		/>
+		{#if !campaignStore.campaign}
+			<p class="text-sm text-amber-600 dark:text-amber-400 mt-2">
+				Create or select a campaign to change the game system.
+			</p>
+		{/if}
 	</section>
 
 	<!-- Theme -->

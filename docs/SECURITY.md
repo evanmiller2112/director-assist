@@ -159,6 +159,9 @@ Fields marked as hidden (section: 'hidden'):
 ### Campaign Data Security
 
 1. **Regular backups**: Export backups frequently to prevent data loss
+   - Director Assist includes smart backup reminders that prompt you when it's time to export
+   - Reminders appear at milestones (5, 10, 25, 50, 100+ entities) and time intervals (7+ days)
+   - Use the "Days since last backup" indicator on the Settings page to track export history
 2. **Secure backup storage**: Store backup files in encrypted storage or secure cloud services
 3. **Version control**: Keep multiple backup versions with timestamps
 4. **Sensitive content**: Be mindful of what information you store in non-hidden fields

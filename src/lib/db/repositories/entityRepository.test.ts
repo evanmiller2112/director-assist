@@ -3843,3 +3843,647 @@ describe('EntityRepository - Player Visibility Flags (Issues #50 and #51)', () =
 		});
 	});
 });
+
+/**
+ * Tests for Issue #124: Allow adding relationships on entity create screen
+ *
+ * This feature allows users to add relationships during entity creation by:
+ * 1. Storing pending relationships before the entity is saved
+ * 2. Creating the entity and all its relationships atomically
+ * 3. Handling bidirectional relationships correctly during initial creation
+ *
+ * These tests are written in the RED phase of TDD - they will FAIL until
+ * the functionality is implemented.
+ */
+
+describe('EntityRepository - Create Entity with Relationships (Issue #124)', () => {
+	let targetEntity1: BaseEntity;
+	let targetEntity2: BaseEntity;
+	let targetEntity3: BaseEntity;
+
+	beforeAll(async () => {
+		await db.open();
+	});
+
+	afterAll(async () => {
+		await db.close();
+	});
+
+	beforeEach(async () => {
+		await db.entities.clear();
+
+		// Create target entities that the new entity will link to
+		targetEntity1 = createMockEntity({
+			id: 'target-1',
+			name: 'Fellowship of the Ring',
+			type: 'faction',
+			links: []
+		});
+
+		targetEntity2 = createMockEntity({
+			id: 'target-2',
+			name: 'Gandalf',
+			type: 'character',
+			links: []
+		});
+
+		targetEntity3 = createMockEntity({
+			id: 'target-3',
+			name: 'Rivendell',
+			type: 'location',
+			links: []
+		});
+
+		await db.entities.add(targetEntity1);
+		await db.entities.add(targetEntity2);
+		await db.entities.add(targetEntity3);
+	});
+
+	afterEach(async () => {
+		await db.entities.clear();
+	});
+
+	describe('createWithLinks() Method', () => {
+		it('should have createWithLinks method', () => {
+			expect(entityRepository.createWithLinks).toBeDefined();
+			expect(typeof entityRepository.createWithLinks).toBe('function');
+		});
+
+		it('should create entity with single relationship', async () => {
+			const newEntity = createMockEntity({
+				name: 'Aragorn',
+				type: 'character',
+				links: []
+			});
+
+			const pendingLinks = [
+				{
+					tempId: 'temp-1',
+					targetId: targetEntity1.id,
+					targetType: targetEntity1.type as 'faction',
+					relationship: 'member_of',
+					bidirectional: false
+				}
+			];
+
+			const createdEntity = await entityRepository.createWithLinks(newEntity, pendingLinks);
+
+			// Entity should be created
+			expect(createdEntity).toBeDefined();
+			expect(createdEntity.id).toBeDefined();
+			expect(createdEntity.name).toBe('Aragorn');
+
+			// Entity should have the relationship
+			expect(createdEntity.links).toHaveLength(1);
+			expect(createdEntity.links[0].targetId).toBe(targetEntity1.id);
+			expect(createdEntity.links[0].relationship).toBe('member_of');
+			expect(createdEntity.links[0].bidirectional).toBe(false);
+		});
+
+		it('should create entity with multiple relationships', async () => {
+			const newEntity = createMockEntity({
+				name: 'Aragorn',
+				type: 'character',
+				links: []
+			});
+
+			const pendingLinks = [
+				{
+					tempId: 'temp-1',
+					targetId: targetEntity1.id,
+					targetType: targetEntity1.type as 'faction',
+					relationship: 'member_of',
+					bidirectional: false
+				},
+				{
+					tempId: 'temp-2',
+					targetId: targetEntity2.id,
+					targetType: targetEntity2.type as 'character',
+					relationship: 'friend_of',
+					bidirectional: true
+				},
+				{
+					tempId: 'temp-3',
+					targetId: targetEntity3.id,
+					targetType: targetEntity3.type as 'location',
+					relationship: 'visited',
+					bidirectional: false
+				}
+			];
+
+			const createdEntity = await entityRepository.createWithLinks(newEntity, pendingLinks);
+
+			// Entity should have all three relationships
+			expect(createdEntity.links).toHaveLength(3);
+
+			const relationships = createdEntity.links.map((l) => l.relationship);
+			expect(relationships).toContain('member_of');
+			expect(relationships).toContain('friend_of');
+			expect(relationships).toContain('visited');
+		});
+
+		it('should handle bidirectional relationship correctly', async () => {
+			const newEntity = createMockEntity({
+				name: 'Aragorn',
+				type: 'character',
+				links: []
+			});
+
+			const pendingLinks = [
+				{
+					tempId: 'temp-1',
+					targetId: targetEntity2.id,
+					targetType: targetEntity2.type as 'character',
+					relationship: 'friend_of',
+					bidirectional: true
+				}
+			];
+
+			const createdEntity = await entityRepository.createWithLinks(newEntity, pendingLinks);
+
+			// Forward link should exist on created entity
+			expect(createdEntity.links).toHaveLength(1);
+			expect(createdEntity.links[0].targetId).toBe(targetEntity2.id);
+			expect(createdEntity.links[0].relationship).toBe('friend_of');
+			expect(createdEntity.links[0].bidirectional).toBe(true);
+
+			// Reverse link should exist on target entity
+			const updatedTarget = await db.entities.get(targetEntity2.id);
+			expect(updatedTarget).toBeDefined();
+			expect(updatedTarget!.links).toHaveLength(1);
+			expect(updatedTarget!.links[0].targetId).toBe(createdEntity.id);
+			expect(updatedTarget!.links[0].bidirectional).toBe(true);
+		});
+
+		it('should create reverse link on target entity for bidirectional relationships', async () => {
+			const newEntity = createMockEntity({
+				name: 'Aragorn',
+				type: 'character',
+				links: []
+			});
+
+			const pendingLinks = [
+				{
+					tempId: 'temp-1',
+					targetId: targetEntity1.id,
+					targetType: targetEntity1.type as 'faction',
+					relationship: 'member_of',
+					bidirectional: true,
+					reverseRelationship: 'has_member'
+				}
+			];
+
+			const createdEntity = await entityRepository.createWithLinks(newEntity, pendingLinks);
+
+			// Target entity should have reverse link
+			const updatedTarget = await db.entities.get(targetEntity1.id);
+			expect(updatedTarget).toBeDefined();
+			expect(updatedTarget!.links).toHaveLength(1);
+			expect(updatedTarget!.links[0].targetId).toBe(createdEntity.id);
+			expect(updatedTarget!.links[0].relationship).toBe('has_member');
+		});
+
+		it('should use inverse relationship when reverseRelationship not specified', async () => {
+			const newEntity = createMockEntity({
+				name: 'Aragorn',
+				type: 'character',
+				links: []
+			});
+
+			const pendingLinks = [
+				{
+					tempId: 'temp-1',
+					targetId: targetEntity2.id,
+					targetType: targetEntity2.type as 'character',
+					relationship: 'friend_of',
+					bidirectional: true
+					// No reverseRelationship specified
+				}
+			];
+
+			const createdEntity = await entityRepository.createWithLinks(newEntity, pendingLinks);
+
+			// Target should have inverse relationship
+			const updatedTarget = await db.entities.get(targetEntity2.id);
+			expect(updatedTarget).toBeDefined();
+			expect(updatedTarget!.links).toHaveLength(1);
+
+			// Should use the inverse relationship logic
+			const expectedInverse = entityRepository.getInverseRelationship('friend_of');
+			expect(updatedTarget!.links[0].relationship).toBe(expectedInverse);
+		});
+
+		it('should preserve all link properties (strength, metadata, notes)', async () => {
+			const newEntity = createMockEntity({
+				name: 'Aragorn',
+				type: 'character',
+				links: []
+			});
+
+			const pendingLinks = [
+				{
+					tempId: 'temp-1',
+					targetId: targetEntity1.id,
+					targetType: targetEntity1.type as 'faction',
+					relationship: 'member_of',
+					bidirectional: false,
+					notes: 'Leader of the Rangers',
+					strength: 'strong' as const,
+					metadata: {
+						tags: ['fellowship', 'leader'],
+						tension: 3,
+						customField: 'test-value'
+					}
+				}
+			];
+
+			const createdEntity = await entityRepository.createWithLinks(newEntity, pendingLinks);
+
+			const link = createdEntity.links[0];
+			expect(link.notes).toBe('Leader of the Rangers');
+			expect(link.strength).toBe('strong');
+			expect(link.metadata).toBeDefined();
+			expect(link.metadata?.tags).toEqual(['fellowship', 'leader']);
+			expect(link.metadata?.tension).toBe(3);
+			expect(link.metadata?.customField).toBe('test-value');
+		});
+
+		it('should preserve playerVisible flag on links', async () => {
+			const newEntity = createMockEntity({
+				name: 'Secret Agent',
+				type: 'character',
+				links: []
+			});
+
+			const pendingLinks = [
+				{
+					tempId: 'temp-1',
+					targetId: targetEntity1.id,
+					targetType: targetEntity1.type as 'faction',
+					relationship: 'secret_member_of',
+					bidirectional: false,
+					playerVisible: false
+				}
+			];
+
+			const createdEntity = await entityRepository.createWithLinks(newEntity, pendingLinks);
+
+			expect(createdEntity.links[0].playerVisible).toBe(false);
+		});
+
+		it('should handle target entity not found gracefully', async () => {
+			const newEntity = createMockEntity({
+				name: 'Aragorn',
+				type: 'character',
+				links: []
+			});
+
+			const pendingLinks = [
+				{
+					tempId: 'temp-1',
+					targetId: 'non-existent-id',
+					targetType: 'character' as const,
+					relationship: 'friend_of',
+					bidirectional: true
+				}
+			];
+
+			// Should either throw an error or skip the invalid link
+			await expect(
+				entityRepository.createWithLinks(newEntity, pendingLinks)
+			).rejects.toThrow();
+		});
+
+		it('should generate unique IDs for entity and all links', async () => {
+			const newEntity = createMockEntity({
+				name: 'Aragorn',
+				type: 'character',
+				links: []
+			});
+
+			const pendingLinks = [
+				{
+					tempId: 'temp-1',
+					targetId: targetEntity1.id,
+					targetType: targetEntity1.type as 'faction',
+					relationship: 'member_of',
+					bidirectional: false
+				},
+				{
+					tempId: 'temp-2',
+					targetId: targetEntity2.id,
+					targetType: targetEntity2.type as 'character',
+					relationship: 'friend_of',
+					bidirectional: true
+				}
+			];
+
+			const createdEntity = await entityRepository.createWithLinks(newEntity, pendingLinks);
+
+			// Entity should have unique ID
+			expect(createdEntity.id).toBeDefined();
+			expect(createdEntity.id).not.toBe('');
+
+			// All links should have unique IDs
+			expect(createdEntity.links[0].id).toBeDefined();
+			expect(createdEntity.links[1].id).toBeDefined();
+			expect(createdEntity.links[0].id).not.toBe(createdEntity.links[1].id);
+
+			// Link IDs should not match temp IDs
+			expect(createdEntity.links[0].id).not.toBe('temp-1');
+			expect(createdEntity.links[1].id).not.toBe('temp-2');
+		});
+
+		it('should set sourceId on all created links', async () => {
+			const newEntity = createMockEntity({
+				name: 'Aragorn',
+				type: 'character',
+				links: []
+			});
+
+			const pendingLinks = [
+				{
+					tempId: 'temp-1',
+					targetId: targetEntity1.id,
+					targetType: targetEntity1.type as 'faction',
+					relationship: 'member_of',
+					bidirectional: false
+				}
+			];
+
+			const createdEntity = await entityRepository.createWithLinks(newEntity, pendingLinks);
+
+			expect(createdEntity.links[0].sourceId).toBe(createdEntity.id);
+		});
+
+		it('should set timestamps (createdAt, updatedAt) on all links', async () => {
+			const beforeCreate = new Date();
+
+			const newEntity = createMockEntity({
+				name: 'Aragorn',
+				type: 'character',
+				links: []
+			});
+
+			const pendingLinks = [
+				{
+					tempId: 'temp-1',
+					targetId: targetEntity1.id,
+					targetType: targetEntity1.type as 'faction',
+					relationship: 'member_of',
+					bidirectional: false
+				}
+			];
+
+			const createdEntity = await entityRepository.createWithLinks(newEntity, pendingLinks);
+
+			const afterCreate = new Date();
+
+			const link = createdEntity.links[0];
+			expect(link.createdAt).toBeDefined();
+			expect(link.updatedAt).toBeDefined();
+			expect(new Date(link.createdAt!).getTime()).toBeGreaterThanOrEqual(beforeCreate.getTime());
+			expect(new Date(link.createdAt!).getTime()).toBeLessThanOrEqual(afterCreate.getTime());
+		});
+
+		it('should work with empty pending links array', async () => {
+			const newEntity = createMockEntity({
+				name: 'Aragorn',
+				type: 'character',
+				links: []
+			});
+
+			const createdEntity = await entityRepository.createWithLinks(newEntity, []);
+
+			expect(createdEntity).toBeDefined();
+			expect(createdEntity.links).toHaveLength(0);
+		});
+
+		it('should handle mix of bidirectional and unidirectional relationships', async () => {
+			const newEntity = createMockEntity({
+				name: 'Aragorn',
+				type: 'character',
+				links: []
+			});
+
+			const pendingLinks = [
+				{
+					tempId: 'temp-1',
+					targetId: targetEntity1.id,
+					targetType: targetEntity1.type as 'faction',
+					relationship: 'member_of',
+					bidirectional: false
+				},
+				{
+					tempId: 'temp-2',
+					targetId: targetEntity2.id,
+					targetType: targetEntity2.type as 'character',
+					relationship: 'friend_of',
+					bidirectional: true
+				}
+			];
+
+			const createdEntity = await entityRepository.createWithLinks(newEntity, pendingLinks);
+
+			expect(createdEntity.links).toHaveLength(2);
+			expect(createdEntity.links[0].bidirectional).toBe(false);
+			expect(createdEntity.links[1].bidirectional).toBe(true);
+
+			// Only bidirectional link should create reverse
+			const updatedTarget1 = await db.entities.get(targetEntity1.id);
+			const updatedTarget2 = await db.entities.get(targetEntity2.id);
+
+			expect(updatedTarget1!.links).toHaveLength(0); // Unidirectional
+			expect(updatedTarget2!.links).toHaveLength(1); // Bidirectional
+		});
+
+		it('should atomically create entity and all relationships', async () => {
+			// This test verifies that either all succeed or all fail
+			const newEntity = createMockEntity({
+				name: 'Aragorn',
+				type: 'character',
+				links: []
+			});
+
+			const pendingLinks = [
+				{
+					tempId: 'temp-1',
+					targetId: targetEntity1.id,
+					targetType: targetEntity1.type as 'faction',
+					relationship: 'member_of',
+					bidirectional: false
+				},
+				{
+					tempId: 'temp-2',
+					targetId: 'invalid-target',
+					targetType: 'character' as const,
+					relationship: 'friend_of',
+					bidirectional: true
+				}
+			];
+
+			// Should fail due to invalid target
+			await expect(
+				entityRepository.createWithLinks(newEntity, pendingLinks)
+			).rejects.toThrow();
+
+			// Entity should not have been created
+			const allEntities = await db.entities.toArray();
+			const wasCreated = allEntities.some((e) => e.name === 'Aragorn');
+			expect(wasCreated).toBe(false);
+		});
+
+		it('should handle asymmetric bidirectional relationships', async () => {
+			const newEntity = createMockEntity({
+				name: 'Patron Noble',
+				type: 'character',
+				links: []
+			});
+
+			const pendingLinks = [
+				{
+					tempId: 'temp-1',
+					targetId: targetEntity2.id,
+					targetType: targetEntity2.type as 'character',
+					relationship: 'patron_of',
+					bidirectional: true,
+					reverseRelationship: 'client_of'
+				}
+			];
+
+			const createdEntity = await entityRepository.createWithLinks(newEntity, pendingLinks);
+
+			// Forward link
+			expect(createdEntity.links[0].relationship).toBe('patron_of');
+			expect(createdEntity.links[0].reverseRelationship).toBe('client_of');
+
+			// Reverse link should use reverseRelationship
+			const updatedTarget = await db.entities.get(targetEntity2.id);
+			expect(updatedTarget!.links[0].relationship).toBe('client_of');
+			expect(updatedTarget!.links[0].reverseRelationship).toBe('patron_of');
+		});
+
+		it('should preserve metadata on bidirectional reverse links', async () => {
+			const newEntity = createMockEntity({
+				name: 'Aragorn',
+				type: 'character',
+				links: []
+			});
+
+			const pendingLinks = [
+				{
+					tempId: 'temp-1',
+					targetId: targetEntity1.id,
+					targetType: targetEntity1.type as 'faction',
+					relationship: 'member_of',
+					bidirectional: true,
+					strength: 'strong' as const,
+					metadata: {
+						tags: ['fellowship'],
+						tension: 2
+					}
+				}
+			];
+
+			const createdEntity = await entityRepository.createWithLinks(newEntity, pendingLinks);
+
+			// Check reverse link has same metadata and strength
+			const updatedTarget = await db.entities.get(targetEntity1.id);
+			const reverseLink = updatedTarget!.links[0];
+
+			expect(reverseLink.strength).toBe('strong');
+			expect(reverseLink.metadata?.tags).toEqual(['fellowship']);
+			expect(reverseLink.metadata?.tension).toBe(2);
+		});
+
+		it('should NOT share notes between forward and reverse links', async () => {
+			const newEntity = createMockEntity({
+				name: 'Aragorn',
+				type: 'character',
+				links: []
+			});
+
+			const pendingLinks = [
+				{
+					tempId: 'temp-1',
+					targetId: targetEntity1.id,
+					targetType: targetEntity1.type as 'faction',
+					relationship: 'member_of',
+					bidirectional: true,
+					notes: 'Forward-specific notes'
+				}
+			];
+
+			const createdEntity = await entityRepository.createWithLinks(newEntity, pendingLinks);
+
+			// Forward link should have notes
+			expect(createdEntity.links[0].notes).toBe('Forward-specific notes');
+
+			// Reverse link should NOT have the same notes
+			const updatedTarget = await db.entities.get(targetEntity1.id);
+			expect(updatedTarget!.links[0].notes).not.toBe('Forward-specific notes');
+		});
+
+		it('should create entity with correct timestamps', async () => {
+			const beforeCreate = new Date();
+
+			const newEntity = createMockEntity({
+				name: 'Aragorn',
+				type: 'character',
+				links: []
+			});
+
+			const pendingLinks = [
+				{
+					tempId: 'temp-1',
+					targetId: targetEntity1.id,
+					targetType: targetEntity1.type as 'faction',
+					relationship: 'member_of',
+					bidirectional: false
+				}
+			];
+
+			const createdEntity = await entityRepository.createWithLinks(newEntity, pendingLinks);
+
+			const afterCreate = new Date();
+
+			expect(createdEntity.createdAt).toBeDefined();
+			expect(createdEntity.updatedAt).toBeDefined();
+			expect(createdEntity.createdAt.getTime()).toBeGreaterThanOrEqual(beforeCreate.getTime());
+			expect(createdEntity.createdAt.getTime()).toBeLessThanOrEqual(afterCreate.getTime());
+		});
+	});
+
+	describe('PendingRelationship Type', () => {
+		it('should accept all required PendingRelationship fields', () => {
+			const pendingLink = {
+				tempId: 'temp-1',
+				targetId: targetEntity1.id,
+				targetType: targetEntity1.type as 'faction',
+				relationship: 'member_of',
+				bidirectional: false
+			};
+
+			// This is a type check - if it compiles, the type is correct
+			expect(pendingLink).toBeDefined();
+			expect(pendingLink.tempId).toBe('temp-1');
+		});
+
+		it('should accept optional fields (notes, strength, metadata, reverseRelationship)', () => {
+			const pendingLink = {
+				tempId: 'temp-1',
+				targetId: targetEntity1.id,
+				targetType: targetEntity1.type as 'faction',
+				relationship: 'member_of',
+				bidirectional: true,
+				notes: 'Test notes',
+				strength: 'strong' as const,
+				metadata: { tags: ['test'] },
+				reverseRelationship: 'has_member',
+				playerVisible: false
+			};
+
+			expect(pendingLink).toBeDefined();
+		});
+	});
+});

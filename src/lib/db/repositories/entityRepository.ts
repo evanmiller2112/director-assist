@@ -160,6 +160,119 @@ export const entityRepository = {
 		return entity;
 	},
 
+	// Create a new entity with relationships (Issue #124)
+	async createWithLinks(
+		newEntity: NewEntity,
+		pendingLinks: import('$lib/types').PendingRelationship[]
+	): Promise<BaseEntity> {
+		await ensureDbReady();
+
+		return await db.transaction('rw', db.entities, async () => {
+			const now = new Date();
+			const entityId = nanoid();
+
+			// Validate all target entities exist before creating anything
+			for (const pendingLink of pendingLinks) {
+				const targetExists = await db.entities.get(pendingLink.targetId);
+				if (!targetExists) {
+					throw new Error(`Target entity ${pendingLink.targetId} not found`);
+				}
+			}
+
+			// Build EntityLink array from pending relationships
+			const links: BaseEntity['links'] = pendingLinks.map((pending) => {
+				const link: BaseEntity['links'][0] = {
+					id: nanoid(),
+					sourceId: entityId,
+					targetId: pending.targetId,
+					targetType: pending.targetType,
+					relationship: pending.relationship,
+					bidirectional: pending.bidirectional,
+					createdAt: now,
+					updatedAt: now
+				};
+
+				// Add optional fields if present
+				if (pending.notes !== undefined) {
+					link.notes = pending.notes;
+				}
+				if (pending.strength !== undefined) {
+					link.strength = pending.strength;
+				}
+				if (pending.metadata !== undefined) {
+					link.metadata = pending.metadata;
+				}
+				if (pending.playerVisible !== undefined) {
+					link.playerVisible = pending.playerVisible;
+				}
+				if (pending.bidirectional && pending.reverseRelationship) {
+					link.reverseRelationship = pending.reverseRelationship;
+				}
+
+				return link;
+			});
+
+			// Create the entity with its links
+			const entity: BaseEntity = {
+				...newEntity,
+				id: entityId,
+				links,
+				createdAt: now,
+				updatedAt: now
+			};
+
+			await db.entities.add(entity);
+
+			// Handle bidirectional relationships - create reverse links on target entities
+			for (let i = 0; i < pendingLinks.length; i++) {
+				const pending = pendingLinks[i];
+				if (pending.bidirectional) {
+					const targetEntity = await db.entities.get(pending.targetId);
+					if (!targetEntity) continue;
+
+					// Create reverse link
+					const reverseLink: BaseEntity['links'][0] = {
+						id: nanoid(),
+						sourceId: pending.targetId,
+						targetId: entityId,
+						targetType: entity.type,
+						relationship: pending.reverseRelationship || this.getInverseRelationship(pending.relationship),
+						bidirectional: true,
+						createdAt: now,
+						updatedAt: now
+					};
+
+					// Add strength and metadata to reverse link (but not notes)
+					if (pending.strength !== undefined) {
+						reverseLink.strength = pending.strength;
+					}
+					if (pending.metadata !== undefined) {
+						reverseLink.metadata = pending.metadata;
+					}
+					if (pending.playerVisible !== undefined) {
+						reverseLink.playerVisible = pending.playerVisible;
+					}
+					// Set reverse relationship metadata if forward had reverseRelationship
+					if (pending.reverseRelationship) {
+						reverseLink.reverseRelationship = pending.relationship;
+					}
+
+					// Update target entity with reverse link
+					const updatedTargetLinks = JSON.parse(
+						JSON.stringify([...targetEntity.links, reverseLink])
+					);
+
+					await db.entities.update(pending.targetId, {
+						links: updatedTargetLinks,
+						updatedAt: now
+					});
+				}
+			}
+
+			return entity;
+		});
+	},
+
 	// Update an existing entity
 	async update(id: string, changes: Partial<BaseEntity>): Promise<void> {
 		await ensureDbReady();

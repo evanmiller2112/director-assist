@@ -246,6 +246,78 @@ export const DRAW_STEEL_PROFILE: SystemProfile = {
 					type: 'number',
 					required: false,
 					order: 11
+				},
+				{
+					key: 'challengeLevel',
+					label: 'Challenge Level',
+					type: 'number',
+					required: false,
+					order: 12
+				},
+				{
+					key: 'threats',
+					label: 'Threats',
+					type: 'entity-refs',
+					entityTypes: ['npc'],
+					required: false,
+					order: 13
+				},
+				{
+					key: 'environment',
+					label: 'Environment',
+					type: 'richtext',
+					required: false,
+					order: 14
+				},
+				{
+					key: 'victoryConditions',
+					label: 'Victory Conditions',
+					type: 'richtext',
+					required: false,
+					order: 15
+				},
+				{
+					key: 'defeatConditions',
+					label: 'Defeat Conditions',
+					type: 'richtext',
+					required: false,
+					order: 16
+				},
+				{
+					key: 'readAloudText',
+					label: 'Read-Aloud Text',
+					type: 'richtext',
+					required: false,
+					order: 17
+				},
+				{
+					key: 'tacticalNotes',
+					label: 'Tactical Notes',
+					type: 'richtext',
+					required: false,
+					order: 18
+				},
+				{
+					key: 'treasureRewards',
+					label: 'Treasure & Rewards',
+					type: 'richtext',
+					required: false,
+					order: 19
+				},
+				{
+					key: 'negotiationPosition',
+					label: 'Negotiation Position',
+					type: 'select',
+					options: ['hostile', 'unfavorable', 'neutral', 'favorable', 'friendly'],
+					required: false,
+					order: 20
+				},
+				{
+					key: 'negotiationMotivations',
+					label: 'Negotiation Motivations',
+					type: 'richtext',
+					required: false,
+					order: 21
 				}
 			],
 			fieldOptionOverrides: {
@@ -259,6 +331,103 @@ export const DRAW_STEEL_PROFILE: SystemProfile = {
 					'trap'
 				]
 			}
+		},
+		session: {
+			additionalFields: [
+				{
+					key: 'sessionDuration',
+					label: 'Session Duration',
+					type: 'text',
+					required: false,
+					order: 10
+				},
+				{
+					key: 'inWorldDate',
+					label: 'In-World Date',
+					type: 'text',
+					required: false,
+					order: 11
+				},
+				{
+					key: 'partyPresent',
+					label: 'Party Present',
+					type: 'entity-refs',
+					entityTypes: ['character'],
+					required: false,
+					order: 12
+				},
+				{
+					key: 'xpAwarded',
+					label: 'XP Awarded',
+					type: 'number',
+					required: false,
+					order: 13
+				},
+				{
+					key: 'gloryAwarded',
+					label: 'Glory Awarded',
+					type: 'richtext',
+					required: false,
+					order: 14
+				},
+				{
+					key: 'treasureAwarded',
+					label: 'Treasure Awarded',
+					type: 'richtext',
+					required: false,
+					order: 15
+				},
+				{
+					key: 'keyDecisions',
+					label: 'Key Decisions',
+					type: 'richtext',
+					required: false,
+					order: 16
+				},
+				{
+					key: 'characterDevelopment',
+					label: 'Character Development',
+					type: 'richtext',
+					required: false,
+					order: 17
+				},
+				{
+					key: 'campaignMilestones',
+					label: 'Campaign Milestones',
+					type: 'tags',
+					required: false,
+					order: 18
+				},
+				{
+					key: 'powerRollOutcomes',
+					label: 'Power Roll Outcomes',
+					type: 'richtext',
+					required: false,
+					order: 19
+				},
+				{
+					key: 'negotiationOutcomes',
+					label: 'Negotiation Outcomes',
+					type: 'richtext',
+					required: false,
+					order: 20
+				},
+				{
+					key: 'initiativeOrder',
+					label: 'Initiative Order',
+					type: 'richtext',
+					required: false,
+					order: 21
+				},
+				{
+					key: 'encountersRun',
+					label: 'Encounters Run',
+					type: 'entity-refs',
+					entityTypes: ['encounter'],
+					required: false,
+					order: 22
+				}
+			]
 		}
 	},
 	aiContext: {

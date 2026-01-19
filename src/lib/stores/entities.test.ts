@@ -18,6 +18,32 @@ vi.mock('$lib/db/repositories', () => ({
 			subscribe: vi.fn()
 		})),
 		create: vi.fn(),
+		createWithLinks: vi.fn((newEntity, pendingLinks) => {
+			// Default mock implementation - returns entity with ID and links
+			const entity = {
+				...newEntity,
+				id: 'mock-id-' + Math.random(),
+				createdAt: new Date(),
+				updatedAt: new Date(),
+				links: pendingLinks.map((pending: any) => ({
+					id: 'link-' + Math.random(),
+					sourceId: 'mock-id-' + Math.random(),
+					targetId: pending.targetId,
+					targetType: pending.targetType,
+					relationship: pending.relationship,
+					bidirectional: pending.bidirectional,
+					createdAt: new Date(),
+					updatedAt: new Date()
+				}))
+			};
+
+			// Simulate error for non-existent targets
+			if (pendingLinks.some((p: any) => p.targetId === 'non-existent')) {
+				return Promise.reject(new Error('Target entity not found'));
+			}
+
+			return Promise.resolve(entity);
+		}),
 		update: vi.fn(),
 		delete: vi.fn(),
 		addLink: vi.fn(),
@@ -1064,6 +1090,140 @@ describe('EntitiesStore - Relationship Filters (Issue #78)', () => {
 
 			const filtered = entitiesStore.filteredEntities;
 			expect(filtered.length).toBeGreaterThan(0);
+		});
+	});
+});
+
+/**
+ * Tests for Issue #124: Allow adding relationships on entity create screen - Store Layer
+ *
+ * These tests verify that the entities store correctly wraps the repository's
+ * createWithLinks functionality and provides a clean interface for the UI layer.
+ *
+ * These tests are written in the RED phase of TDD - they will FAIL until
+ * the functionality is implemented.
+ */
+
+describe('EntitiesStore - createWithRelationships (Issue #124)', () => {
+	let entitiesStore: any;
+	let mockEntities: BaseEntity[];
+
+	beforeEach(async () => {
+		vi.clearAllMocks();
+
+		const module = await import('./entities.svelte');
+		entitiesStore = module.entitiesStore;
+
+		// Create target entities for relationships
+		mockEntities = [
+			createMockEntity({
+				id: 'faction-1',
+				name: 'Fellowship',
+				type: 'faction',
+				links: []
+			}),
+			createMockEntity({
+				id: 'char-1',
+				name: 'Gandalf',
+				type: 'character',
+				links: []
+			})
+		];
+
+		entitiesStore._setEntities(mockEntities);
+	});
+
+	describe('Store Method', () => {
+		it('should have createWithRelationships method', () => {
+			expect(entitiesStore.createWithRelationships).toBeDefined();
+			expect(typeof entitiesStore.createWithRelationships).toBe('function');
+		});
+
+		it('should call repository.createWithLinks with correct arguments', async () => {
+			const { entityRepository } = await import('$lib/db/repositories');
+			const createWithLinksSpy = vi.spyOn(entityRepository, 'createWithLinks');
+
+			const newEntity = createMockEntity({
+				name: 'Aragorn',
+				type: 'character',
+				links: []
+			});
+
+			const pendingLinks = [
+				{
+					tempId: 'temp-1',
+					targetId: 'faction-1',
+					targetType: 'faction' as const,
+					relationship: 'member_of',
+					bidirectional: false
+				}
+			];
+
+			await entitiesStore.createWithRelationships(newEntity, pendingLinks);
+
+			// Verify repository method was called with correct args
+			expect(createWithLinksSpy).toHaveBeenCalledWith(newEntity, pendingLinks);
+			expect(createWithLinksSpy).toHaveBeenCalledTimes(1);
+		});
+
+		it('should return the created entity', async () => {
+			const newEntity = createMockEntity({
+				name: 'Aragorn',
+				type: 'character',
+				links: []
+			});
+
+			const pendingLinks = [
+				{
+					tempId: 'temp-1',
+					targetId: 'faction-1',
+					targetType: 'faction' as const,
+					relationship: 'member_of',
+					bidirectional: false
+				}
+			];
+
+			const result = await entitiesStore.createWithRelationships(newEntity, pendingLinks);
+
+			expect(result).toBeDefined();
+			expect(result.id).toBeDefined();
+			expect(result.name).toBe('Aragorn');
+		});
+
+		it('should work with empty pending links', async () => {
+			const newEntity = createMockEntity({
+				name: 'Aragorn',
+				type: 'character',
+				links: []
+			});
+
+			const result = await entitiesStore.createWithRelationships(newEntity, []);
+
+			expect(result).toBeDefined();
+			expect(result.links).toHaveLength(0);
+		});
+
+		it('should propagate errors from repository', async () => {
+			const newEntity = createMockEntity({
+				name: 'Aragorn',
+				type: 'character',
+				links: []
+			});
+
+			const pendingLinks = [
+				{
+					tempId: 'temp-1',
+					targetId: 'non-existent',
+					targetType: 'faction' as const,
+					relationship: 'member_of',
+					bidirectional: false
+				}
+			];
+
+			// Should throw error due to non-existent target
+			await expect(
+				entitiesStore.createWithRelationships(newEntity, pendingLinks)
+			).rejects.toThrow();
 		});
 	});
 });

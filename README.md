@@ -11,7 +11,7 @@ Director Assist features a **system-aware architecture** with first-class suppor
 - **Visualize Connections**: Relationship Matrix View shows a 2D grid of relationships between entity types with filtering, sorting, and color-coded cell density
 - **Find Anything Fast**: Global search with Cmd/Ctrl+K shortcut, results grouped by type, keyboard navigation
 - **Command Palette**: Quick actions by typing "/" in the search bar—create entities, navigate pages, relate entities, and more
-- **Never Lose Your Notes**: All data stored locally in your browser with backup/restore
+- **Never Lose Your Notes**: All data stored locally in your browser with backup/restore and smart backup reminders
 - **Work Your Way**: Light and dark themes, customizable entity types
 - **System-Aware**: First-class support for Draw Steel and System Agnostic modes with game-specific fields and terminology
 - **AI-Powered Content Generation**: Generate content using Claude AI with campaign context awareness
@@ -41,7 +41,9 @@ Open your browser to `http://localhost:5173`
 npm run build
 ```
 
-The app builds to a static site in the `build` directory. Deploy to any static hosting service (Netlify, Vercel, GitHub Pages, etc.).
+The app builds to a static site in the `build` directory. Deploy to any static hosting service (Netlify, Vercel, GitHub Pages, etc.) or self-host on Apache, Nginx, or Caddy.
+
+See [DEPLOYMENT.md](./docs/DEPLOYMENT.md) for detailed deployment instructions including server configurations for SPA routing.
 
 ## How to Use
 
@@ -188,7 +190,7 @@ All campaign data is stored locally in your browser's IndexedDB:
 - Your data stays private
 - No account or login needed
 
-**Important**: Export regular backups from Settings. Browser data can be cleared accidentally.
+**Important**: Export regular backups from Settings. Browser data can be cleared accidentally. Director Assist includes smart backup reminders to help you remember when it's time to export.
 
 **Security**: Exported backups never include your API key or sensitive settings. Backups contain only your campaign data (entities, chat history, and campaign reference). Safe to share or store in cloud services.
 

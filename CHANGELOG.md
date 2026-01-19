@@ -7,8 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-01-19
+
 ### Added
-- Generation Type Selector in Chat interface (Issue #41)
+- Generation Type Selector in Chat interface (Issue #41, PR #153)
   - Dropdown selector in chat interface for choosing specific content generation types
   - 8 generation types: NPC, Location, Plot Hook, Encounter, Item, Faction, Session Prep, and General
   - Each type includes custom prompt templates and suggested output structures
@@ -18,6 +20,61 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Visual indicator shows currently active generation type
   - Accessible on both desktop and mobile interfaces
   - Configuration in `src/lib/config/generationTypes.ts` with prompt templates and structured output suggestions
+- Custom entity types with full field customization (Issue #25, PR #169)
+  - Create custom entity types with 14 field types: text, number, date, boolean, select, multiselect, currency, percentage, rating, richtext, file, image, entity-ref, entity-refs
+  - Computed fields with dynamic formula evaluation and automatic type inference
+  - Built-in entity type customization: hide fields, reorder fields, add new fields
+  - Comprehensive validation system for entity types and field definitions
+  - Dynamic form components (FieldInput, FieldRenderer) for rendering entity-specific forms
+  - Drag-and-drop sidebar reordering for custom entity types
+  - New routes: `/settings/custom-entities`, `/settings/custom-entities/new`, `/settings/custom-entities/[type]/edit`
+  - Built-in entity override management at `/settings/built-in-entities` and `/settings/built-in-entities/[type]/edit`
+  - Components: ComputedFieldEditor, DeleteEntityTypeModal, BuiltInTypeOverrideForm
+  - Utilities: `fieldTypes.ts` for field metadata and evaluation, `entityTypeValidation.ts` for validation rules
+  - Documentation: `docs/api/FIELD_TYPES.md`, `docs/api/ENTITY_TYPE_VALIDATION.md`, `docs/USER_GUIDE.md`
+- Smart backup reminder system (Issue #152, PR #162)
+  - Non-intrusive amber banner prompts users to export campaign data at appropriate times
+  - Three trigger types: first-time (5 entities), milestones (10, 25, 50, 100, 150, 200+), time-based (7+ days)
+  - Progressive milestone sequence with increments of 50 after reaching 100 entities
+  - 24-hour dismissal window prevents repeated prompts during single sessions
+  - Minimum 5 entities required before any reminder appears
+  - "Days since last backup" indicator on Settings page with color coding (green/yellow/red)
+  - BackupReminderBanner component with contextual messages and action buttons
+  - backupReminderService tracks export dates, dismissals, and milestone progress in localStorage
+  - Integrated with Settings page export button to automatically update last export timestamp
+  - Integrated with root layout to display banner when trigger conditions are met
+  - Full accessibility support with ARIA attributes for screen readers
+  - Documentation: `docs/features/backup-system.md`
+- Relationship creation during entity creation (Issue #124, PR #151)
+  - Add relationships while creating entities, before the first save
+  - Relationships saved atomically with entity in single transaction
+  - Collapsible "Relationships" section on entity create forms
+  - PendingRelationshipList component displays pending relationships on create form
+  - CreateRelateCommand component provides relationship picker for unsaved entities
+  - New `PendingRelationship` type for storing relationship data before entity exists
+  - Repository method `createWithLinks()` for atomic entity and relationships creation
+  - Store method `createWithRelationships()` wrapper for transaction management
+  - Full feature parity with edit page: bidirectional, strength, notes, tags, tension
+  - Works for all entity types with proper error handling
+- Deployment guide with SPA routing configuration (Issue #132, PR #147)
+  - Comprehensive `docs/DEPLOYMENT.md` covering self-hosting and static deployment
+  - Server configurations: Apache (.htaccess), Nginx (server block), Caddy (Caddyfile)
+  - Rust web server examples: Axum, Rocket, Actix Web, Warp with full working code and Cargo.toml
+  - Static hosting services: GitHub Pages (with Actions workflow), Netlify (_redirects and netlify.toml), Vercel, Cloudflare Pages
+  - IndexedDB data storage notes (browser-local, no backend needed)
+  - HTTPS requirements for browser APIs
+  - Browser compatibility notes and troubleshooting section
+
+## [0.3.0] - 2026-01-19
+
+### Added
+- Draw Steel-specific fields for Encounter and Session entities (Issue #3)
+  - 10 new Encounter fields in Draw Steel system profile: challengeLevel, threats (entity-refs), environment, victoryConditions, defeatConditions, readAloudText, tacticalNotes, treasureRewards, negotiationPosition (select), negotiationMotivations
+  - 13 new Session fields in Draw Steel system profile: sessionDuration, inWorldDate, partyPresent (entity-refs), xpAwarded, gloryAwarded, treasureAwarded, keyDecisions, characterDevelopment, campaignMilestones (tags), powerRollOutcomes, negotiationOutcomes, initiativeOrder, encountersRun (entity-refs)
+  - Renamed "enemies" terminology to "threats" for accurate Draw Steel nomenclature
+  - Added gloryAwarded field for Draw Steel's Glory progression system
+  - Fields automatically appear when campaign uses Draw Steel system profile
+  - Maintains backwards compatibility with existing System Agnostic campaigns
 - Campaign as first-class entity type (Issue #46)
   - Campaigns now stored as entities with `type: 'campaign'` in the entities table
   - Multiple campaigns supported with active campaign tracking
@@ -39,8 +96,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Removed legacy `campaignRepository.ts` (campaigns managed via entityRepository)
 - Campaign store now uses entityRepository for all CRUD operations
 - Database schema updated to include appConfig table for active campaign tracking
-
-## [0.3.0] - 2026-01-19
 
 ### Added
 - UI for previewing relationship context before AI generation (Issue #62)

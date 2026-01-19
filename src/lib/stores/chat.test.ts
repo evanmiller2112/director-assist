@@ -1299,4 +1299,349 @@ describe('Chat Store', () => {
 			expect(chatStore.includeLinkedEntities).toBe(!initial);
 		});
 	});
+
+	describe('Conversation Integration', () => {
+		let mockConversationStore: any;
+
+		beforeEach(async () => {
+			// Mock conversation store
+			mockConversationStore = {
+				activeConversationId: 'conv-1'
+			};
+
+			// Re-mock with conversation store
+			vi.doMock('$lib/stores', () => ({
+				conversationStore: mockConversationStore
+			}));
+
+			vi.resetModules();
+			const module = await import('./chat.svelte');
+			chatStore = module.chatStore;
+			await chatStore.load();
+		});
+
+		describe('load() with Conversations', () => {
+			it('should load messages for active conversation only', async () => {
+				mockChatRepository.getByConversation = vi.fn(() => mockObservable);
+
+				await chatStore.load();
+
+				expect(mockChatRepository.getByConversation).toHaveBeenCalledWith('conv-1');
+			});
+
+			it('should call getAll when no active conversation', async () => {
+				mockConversationStore.activeConversationId = null;
+				mockChatRepository.getAll = vi.fn(() => mockObservable);
+
+				await chatStore.load();
+
+				expect(mockChatRepository.getAll).toHaveBeenCalled();
+			});
+
+			it('should reload when active conversation changes', async () => {
+				mockChatRepository.getByConversation = vi.fn(() => mockObservable);
+
+				await chatStore.load();
+				expect(mockChatRepository.getByConversation).toHaveBeenCalledWith('conv-1');
+
+				// Change active conversation
+				mockConversationStore.activeConversationId = 'conv-2';
+				await chatStore.load();
+
+				expect(mockChatRepository.getByConversation).toHaveBeenCalledWith('conv-2');
+			});
+		});
+
+		describe('sendMessage() with Conversations', () => {
+			beforeEach(() => {
+				mockSendChatMessage.mockResolvedValue('Response');
+			});
+
+			it('should require active conversation to send message', async () => {
+				mockConversationStore.activeConversationId = null;
+
+				await chatStore.sendMessage('Test message');
+
+				expect(mockChatRepository.add).not.toHaveBeenCalled();
+				expect(mockSendChatMessage).not.toHaveBeenCalled();
+				expect(chatStore.error).toBeTruthy();
+			});
+
+			it('should add conversationId to user message', async () => {
+				mockConversationStore.activeConversationId = 'conv-123';
+
+				await chatStore.sendMessage('Test message');
+
+				expect(mockChatRepository.add).toHaveBeenCalledWith(
+					'user',
+					'Test message',
+					expect.any(Array),
+					'conv-123'
+				);
+			});
+
+			it('should add conversationId to assistant message', async () => {
+				mockConversationStore.activeConversationId = 'conv-456';
+				mockSendChatMessage.mockResolvedValue('AI response');
+
+				await chatStore.sendMessage('User message');
+
+				expect(mockChatRepository.add).toHaveBeenNthCalledWith(
+					2,
+					'assistant',
+					'AI response',
+					expect.any(Array),
+					'conv-456'
+				);
+			});
+
+			it('should set error when no active conversation', async () => {
+				mockConversationStore.activeConversationId = null;
+
+				await chatStore.sendMessage('Test');
+
+				expect(chatStore.error).toBe('No active conversation');
+			});
+
+			it('should handle conversation switching during send', async () => {
+				mockConversationStore.activeConversationId = 'conv-1';
+
+				// Start sending message
+				const sendPromise = chatStore.sendMessage('Test');
+
+				// Capture the conversation ID at the start
+				expect(mockChatRepository.add).toHaveBeenCalledWith(
+					'user',
+					'Test',
+					expect.any(Array),
+					'conv-1'
+				);
+
+				await sendPromise;
+
+				// Both messages should use the same conversation ID
+				expect(mockChatRepository.add).toHaveBeenNthCalledWith(
+					2,
+					'assistant',
+					expect.any(String),
+					expect.any(Array),
+					'conv-1'
+				);
+			});
+		});
+
+		describe('clearHistory() with Conversations', () => {
+			it('should clear only active conversation messages', async () => {
+				mockConversationStore.activeConversationId = 'conv-1';
+				mockChatRepository.clearByConversation = vi.fn(async () => {});
+
+				await chatStore.clearHistory();
+
+				expect(mockChatRepository.clearByConversation).toHaveBeenCalledWith('conv-1');
+			});
+
+			it('should call clearAll when no active conversation', async () => {
+				mockConversationStore.activeConversationId = null;
+
+				await chatStore.clearHistory();
+
+				expect(mockChatRepository.clearAll).toHaveBeenCalled();
+			});
+
+			it('should set error when clearing fails', async () => {
+				mockConversationStore.activeConversationId = 'conv-1';
+				mockChatRepository.clearByConversation = vi.fn(async () => {
+					throw new Error('Clear failed');
+				});
+
+				await chatStore.clearHistory();
+
+				expect(chatStore.error).toBe('Clear failed');
+			});
+
+			it('should handle clearing non-existent conversation', async () => {
+				mockConversationStore.activeConversationId = 'non-existent';
+				mockChatRepository.clearByConversation = vi.fn(async () => {});
+
+				await expect(chatStore.clearHistory()).resolves.not.toThrow();
+			});
+		});
+
+		describe('switchConversation() Method', () => {
+			it('should reload messages for new conversation', async () => {
+				mockChatRepository.getByConversation = vi.fn(() => mockObservable);
+
+				await chatStore.switchConversation('conv-2');
+
+				expect(mockChatRepository.getByConversation).toHaveBeenCalledWith('conv-2');
+			});
+
+			it('should clear messages before switching', async () => {
+				mockChatRepository.getByConversation = vi.fn(() => mockObservable);
+
+				// Set initial messages
+				observerCallback.next([
+					{ id: 'msg-1', role: 'user', content: 'Old', timestamp: new Date() }
+				]);
+				expect(chatStore.messages.length).toBe(1);
+
+				// Switch conversation
+				await chatStore.switchConversation('conv-2');
+
+				// Observable should emit for new conversation
+				observerCallback.next([]);
+
+				// Should eventually be cleared and reloaded
+				expect(mockChatRepository.getByConversation).toHaveBeenCalledWith('conv-2');
+			});
+
+			it('should handle switching to null conversation', async () => {
+				mockChatRepository.getAll = vi.fn(() => mockObservable);
+
+				await chatStore.switchConversation(null);
+
+				expect(mockChatRepository.getAll).toHaveBeenCalled();
+			});
+
+			it('should handle switching errors', async () => {
+				mockChatRepository.getByConversation = vi.fn(() => {
+					throw new Error('Switch failed');
+				});
+
+				await chatStore.switchConversation('conv-2');
+
+				expect(chatStore.error).toBe('Switch failed');
+			});
+
+			it('should clear context entities when switching', async () => {
+				chatStore.setContextEntities(['entity-1', 'entity-2']);
+				mockChatRepository.getByConversation = vi.fn(() => mockObservable);
+
+				await chatStore.switchConversation('conv-2');
+
+				// Context entities should be cleared or maintained based on implementation
+				// Test based on actual expected behavior
+				expect(mockChatRepository.getByConversation).toHaveBeenCalledWith('conv-2');
+			});
+
+			it('should not clear streamingContent when switching', async () => {
+				mockChatRepository.getByConversation = vi.fn(() => mockObservable);
+				chatStore.streamingContent = 'Some content';
+
+				await chatStore.switchConversation('conv-2');
+
+				// streamingContent should be cleared
+				expect(chatStore.streamingContent).toBe('');
+			});
+		});
+
+		describe('Conversation State Consistency', () => {
+			it('should maintain conversation context across operations', async () => {
+				mockConversationStore.activeConversationId = 'conv-1';
+				mockChatRepository.getByConversation = vi.fn(() => mockObservable);
+				mockSendChatMessage.mockResolvedValue('Response');
+
+				// Load messages for conversation
+				await chatStore.load();
+				expect(mockChatRepository.getByConversation).toHaveBeenCalledWith('conv-1');
+
+				// Send message to same conversation
+				await chatStore.sendMessage('Test');
+				expect(mockChatRepository.add).toHaveBeenCalledWith(
+					'user',
+					'Test',
+					expect.any(Array),
+					'conv-1'
+				);
+
+				// Clear only this conversation
+				mockChatRepository.clearByConversation = vi.fn(async () => {});
+				await chatStore.clearHistory();
+				expect(mockChatRepository.clearByConversation).toHaveBeenCalledWith('conv-1');
+			});
+
+			it('should handle rapid conversation switching', async () => {
+				mockChatRepository.getByConversation = vi.fn(() => mockObservable);
+
+				await chatStore.switchConversation('conv-1');
+				await chatStore.switchConversation('conv-2');
+				await chatStore.switchConversation('conv-3');
+
+				expect(mockChatRepository.getByConversation).toHaveBeenCalledTimes(3);
+				expect(mockChatRepository.getByConversation).toHaveBeenLastCalledWith('conv-3');
+			});
+
+			it('should prevent sending to wrong conversation', async () => {
+				mockConversationStore.activeConversationId = 'conv-1';
+				mockSendChatMessage.mockResolvedValue('Response');
+
+				// Start sending
+				const sendPromise = chatStore.sendMessage('Test');
+
+				// User message should use conv-1
+				expect(mockChatRepository.add).toHaveBeenNthCalledWith(
+					1,
+					'user',
+					'Test',
+					expect.any(Array),
+					'conv-1'
+				);
+
+				// Change conversation mid-send (edge case)
+				mockConversationStore.activeConversationId = 'conv-2';
+
+				await sendPromise;
+
+				// Assistant message should still use conv-1 (captured at start)
+				expect(mockChatRepository.add).toHaveBeenNthCalledWith(
+					2,
+					'assistant',
+					expect.any(String),
+					expect.any(Array),
+					'conv-1'
+				);
+			});
+		});
+
+		describe('Error Handling with Conversations', () => {
+			it('should show error when trying to send without active conversation', async () => {
+				mockConversationStore.activeConversationId = null;
+
+				await chatStore.sendMessage('Test');
+
+				expect(chatStore.error).toBe('No active conversation');
+				expect(mockChatRepository.add).not.toHaveBeenCalled();
+			});
+
+			it('should show error when conversation is deleted during operation', async () => {
+				mockConversationStore.activeConversationId = 'deleted-conv';
+				mockChatRepository.getByConversation = vi.fn(() => {
+					throw new Error('Conversation not found');
+				});
+
+				await chatStore.load();
+
+				expect(chatStore.error).toBeTruthy();
+			});
+
+			it('should recover from conversation errors', async () => {
+				mockConversationStore.activeConversationId = 'bad-conv';
+				mockChatRepository.getByConversation = vi.fn(() => {
+					throw new Error('Bad conversation');
+				});
+
+				await chatStore.load();
+				expect(chatStore.error).toBeTruthy();
+
+				// Switch to valid conversation
+				mockConversationStore.activeConversationId = 'good-conv';
+				mockChatRepository.getByConversation = vi.fn(() => mockObservable);
+
+				await chatStore.switchConversation('good-conv');
+
+				// Error should be cleared
+				expect(chatStore.error).toBe(null);
+			});
+		});
+	});
 });

@@ -3,10 +3,12 @@ import type {
 	BaseEntity,
 	Campaign,
 	ChatMessage,
+	Conversation,
 	AISuggestion,
 	RelationshipSummaryCache
 } from '$lib/types';
 import { migrateCampaignToEntity } from './migrations/migrateCampaignToEntity';
+import { migrateExistingChatMessages } from './migrations/migrateExistingChatMessages';
 
 // App-level configuration stored in IndexedDB
 export interface AppConfig {
@@ -17,6 +19,7 @@ export interface AppConfig {
 class DMAssistantDB extends Dexie {
 	entities!: Table<BaseEntity>;
 	campaign!: Table<Campaign>;
+	conversations!: Table<Conversation>;
 	chatMessages!: Table<ChatMessage>;
 	suggestions!: Table<AISuggestion>;
 	appConfig!: Table<AppConfig>;
@@ -50,6 +53,17 @@ class DMAssistantDB extends Dexie {
 			entities: 'id, type, name, *tags, createdAt, updatedAt',
 			campaign: 'id',
 			chatMessages: 'id, timestamp',
+			suggestions: 'id, type, dismissed, createdAt',
+			appConfig: 'key',
+			relationshipSummaryCache: 'id, sourceId, targetId, relationship, generatedAt'
+		});
+
+		// Version 4: Add conversations table and update chatMessages index for conversation support
+		this.version(4).stores({
+			entities: 'id, type, name, *tags, createdAt, updatedAt',
+			campaign: 'id',
+			conversations: 'id, name, updatedAt',
+			chatMessages: 'id, conversationId, timestamp',
 			suggestions: 'id, type, dismissed, createdAt',
 			appConfig: 'key',
 			relationshipSummaryCache: 'id, sourceId, targetId, relationship, generatedAt'
@@ -94,6 +108,7 @@ export async function initializeDatabase(): Promise<void> {
 
 			// Run migrations after database is ready
 			await migrateCampaignToEntity();
+			await migrateExistingChatMessages();
 		} catch (error) {
 			console.error('Failed to initialize database:', error);
 			dbInitializing = null; // Reset so we can retry

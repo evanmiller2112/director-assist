@@ -1298,6 +1298,92 @@ For generating short field content, Fast tier models work great. Save Powerful t
 - Ollama is free (runs locally on your computer)
 - Relationship summaries are automatically cached to avoid repeated API calls for unchanged entities
 
+### Managing Conversations
+
+Director Assist includes a conversation management system that lets you organize your AI assistant chats into separate conversations, similar to how messaging apps work. This helps you keep different topics, sessions, or planning phases organized.
+
+**Opening the AI Assistant**
+
+Click the chat icon in the header to open the AI Assistant panel. The panel slides in from the right side of the screen and includes:
+- Conversation sidebar (top section)
+- Context selector (to attach entities to your messages)
+- Message history for the active conversation
+- Input area to send messages
+
+**Creating Conversations**
+
+1. Open the AI Assistant panel
+2. Click the "New Conversation" button at the top of the sidebar
+3. A new conversation is created with a default name like "New Conversation"
+4. The new conversation becomes active automatically
+5. Start chatting in the new conversation
+
+**Viewing Your Conversations**
+
+The conversation sidebar shows all your conversations with:
+- **Conversation name**: Click to switch to that conversation
+- **Message count**: Badge showing how many messages are in the conversation
+- **Last activity time**: Relative time (e.g., "2 hours ago", "just now")
+- **Active indicator**: Blue highlight on the currently active conversation
+
+**Switching Between Conversations**
+
+1. Click any conversation in the sidebar to switch to it
+2. The message history reloads to show messages from that conversation
+3. The active conversation is highlighted with a blue background
+4. You can have as many conversations as you need
+
+**Renaming Conversations**
+
+Keep your conversations organized with descriptive names:
+
+1. Double-click on a conversation name in the sidebar
+2. The name becomes editable (you'll see an input field)
+3. Type the new name (e.g., "Session 1 Planning", "NPC Ideas", "World Building")
+4. Press Enter to save or Escape to cancel
+5. Empty names are not allowed - the original name will be kept
+
+**Deleting Conversations**
+
+1. Hover over a conversation in the sidebar
+2. A trash icon appears on the right
+3. Click the trash icon
+4. Confirm the deletion in the dialog
+5. The conversation and all its messages are permanently deleted
+6. If you delete the active conversation, another conversation becomes active automatically
+
+**When No Conversations Exist**
+
+- When you first open the AI Assistant, a default conversation is automatically created
+- If you delete all conversations, a new one is created automatically next time you open the panel
+- You'll never be left without a way to start chatting
+
+**Auto-Created Default Conversation**
+
+The first time you open the AI Assistant (after clearing data or on first use), Director Assist automatically creates a "New Conversation" for you. You can rename this to whatever makes sense for your first chat session.
+
+**Conversation Tips**
+
+- **Organize by purpose**: Create separate conversations for different aspects of your campaign (e.g., "Session Prep", "NPC Development", "Plot Ideas")
+- **Organize by session**: Create a new conversation for each game session to keep planning organized
+- **Keep context focused**: Use different conversations to keep different topics separated and avoid confusing the AI with unrelated context
+- **Clean up old conversations**: Delete conversations you no longer need to keep your sidebar tidy
+- **Use descriptive names**: Rename conversations as soon as you know what they're about
+
+**What's Preserved**
+
+- All conversations and their messages are stored in your browser
+- Conversations are included in backup exports
+- Conversation history persists between sessions
+- Deleting conversations is permanent and cannot be undone
+
+**Conversation Context**
+
+Messages within a conversation maintain context:
+- The AI remembers previous messages in the same conversation
+- Entities you attach via the Context Selector are remembered for that message
+- Switching conversations starts a fresh context
+
 ## Backup & Restore
 
 Your campaign data is stored in your browser's local storage. It's important to export regular backups in case you clear your browser data or switch devices.

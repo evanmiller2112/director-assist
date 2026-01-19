@@ -1020,4 +1020,502 @@ describe('ChatRepository', () => {
 			]);
 		});
 	});
+
+	describe('Conversation-Related Methods', () => {
+		describe('getByConversation', () => {
+			it('should return observable', () => {
+				const observable = chatRepository.getByConversation('conv-1');
+
+				expect(observable).toBeDefined();
+				expect(typeof observable.subscribe).toBe('function');
+			});
+
+			it('should return empty array when no messages exist for conversation', async () => {
+				return new Promise<void>((resolve) => {
+					const observable = chatRepository.getByConversation('conv-1');
+
+					const subscription = observable.subscribe((messages) => {
+						expect(messages).toEqual([]);
+						subscription.unsubscribe();
+						resolve();
+					});
+				});
+			});
+
+			it('should return messages for specific conversation ordered by timestamp ascending', async () => {
+				const messages: ChatMessage[] = [
+					{
+						id: 'msg-1',
+						conversationId: 'conv-1',
+						role: 'user',
+						content: 'First in conv1',
+						timestamp: new Date('2024-01-15T10:00:00Z')
+					},
+					{
+						id: 'msg-2',
+						conversationId: 'conv-2',
+						role: 'user',
+						content: 'First in conv2',
+						timestamp: new Date('2024-01-15T10:30:00Z')
+					},
+					{
+						id: 'msg-3',
+						conversationId: 'conv-1',
+						role: 'assistant',
+						content: 'Second in conv1',
+						timestamp: new Date('2024-01-15T11:00:00Z')
+					}
+				];
+
+				await db.chatMessages.bulkAdd(messages);
+
+				return new Promise<void>((resolve) => {
+					const observable = chatRepository.getByConversation('conv-1');
+					const subscription = observable.subscribe((retrievedMessages) => {
+						expect(retrievedMessages).toHaveLength(2);
+						expect(retrievedMessages[0].content).toBe('First in conv1');
+						expect(retrievedMessages[1].content).toBe('Second in conv1');
+						subscription.unsubscribe();
+						resolve();
+					});
+				});
+			});
+
+			it('should only return messages from specified conversation', async () => {
+				const messages: ChatMessage[] = [
+					{
+						id: 'msg-1',
+						conversationId: 'conv-1',
+						role: 'user',
+						content: 'Conv1 message',
+						timestamp: new Date()
+					},
+					{
+						id: 'msg-2',
+						conversationId: 'conv-2',
+						role: 'user',
+						content: 'Conv2 message',
+						timestamp: new Date()
+					},
+					{
+						id: 'msg-3',
+						conversationId: 'conv-3',
+						role: 'user',
+						content: 'Conv3 message',
+						timestamp: new Date()
+					}
+				];
+
+				await db.chatMessages.bulkAdd(messages);
+
+				return new Promise<void>((resolve) => {
+					const observable = chatRepository.getByConversation('conv-2');
+					const subscription = observable.subscribe((retrievedMessages) => {
+						expect(retrievedMessages).toHaveLength(1);
+						expect(retrievedMessages[0].content).toBe('Conv2 message');
+						expect(retrievedMessages[0].conversationId).toBe('conv-2');
+						subscription.unsubscribe();
+						resolve();
+					});
+				});
+			});
+
+			it('should return updated results when messages are added to conversation', async () => {
+				const observable = chatRepository.getByConversation('conv-1');
+				const results: ChatMessage[][] = [];
+
+				return new Promise<void>((resolve) => {
+					const subscription = observable.subscribe((messages) => {
+						results.push(messages);
+
+						if (results.length === 1) {
+							// First emission: empty
+							expect(messages).toHaveLength(0);
+							// Add a message to this conversation
+							chatRepository.add('user', 'New message', [], 'conv-1');
+						} else if (results.length === 2) {
+							// Second emission: after adding message
+							expect(messages).toHaveLength(1);
+							expect(messages[0].content).toBe('New message');
+							subscription.unsubscribe();
+							resolve();
+						}
+					});
+				});
+			});
+
+			it('should not include messages from other conversations', async () => {
+				await db.chatMessages.bulkAdd([
+					{
+						id: 'msg-1',
+						conversationId: 'conv-1',
+						role: 'user',
+						content: 'Conv1',
+						timestamp: new Date()
+					},
+					{
+						id: 'msg-2',
+						conversationId: 'conv-2',
+						role: 'user',
+						content: 'Conv2',
+						timestamp: new Date()
+					}
+				]);
+
+				const observable = chatRepository.getByConversation('conv-1');
+
+				return new Promise<void>((resolve) => {
+					const subscription = observable.subscribe((messages) => {
+						// Add message to different conversation
+						chatRepository.add('user', 'Conv2 new', [], 'conv-2');
+
+						// Original conversation should still have only 1 message
+						setTimeout(() => {
+							expect(messages).toHaveLength(1);
+							subscription.unsubscribe();
+							resolve();
+						}, 50);
+					});
+				});
+			});
+		});
+
+		describe('getRecentByConversation', () => {
+			it('should return observable', () => {
+				const observable = chatRepository.getRecentByConversation('conv-1');
+
+				expect(observable).toBeDefined();
+				expect(typeof observable.subscribe).toBe('function');
+			});
+
+			it('should return empty array when no messages exist for conversation', async () => {
+				return new Promise<void>((resolve) => {
+					const observable = chatRepository.getRecentByConversation('conv-1');
+
+					const subscription = observable.subscribe((messages) => {
+						expect(messages).toEqual([]);
+						subscription.unsubscribe();
+						resolve();
+					});
+				});
+			});
+
+			it('should default to 50 messages limit', async () => {
+				// Add 60 messages to conv-1
+				const messages: ChatMessage[] = [];
+				for (let i = 0; i < 60; i++) {
+					messages.push({
+						id: `msg-${i}`,
+						conversationId: 'conv-1',
+						role: 'user',
+						content: `Message ${i}`,
+						timestamp: new Date(Date.now() + i * 1000)
+					});
+				}
+
+				await db.chatMessages.bulkAdd(messages);
+
+				return new Promise<void>((resolve) => {
+					const observable = chatRepository.getRecentByConversation('conv-1');
+					const subscription = observable.subscribe((retrievedMessages) => {
+						expect(retrievedMessages).toHaveLength(50);
+						subscription.unsubscribe();
+						resolve();
+					});
+				});
+			});
+
+			it('should return most recent messages up to limit', async () => {
+				// Add 20 messages
+				const messages: ChatMessage[] = [];
+				for (let i = 0; i < 20; i++) {
+					messages.push({
+						id: `msg-${i}`,
+						conversationId: 'conv-1',
+						role: 'user',
+						content: `Message ${i}`,
+						timestamp: new Date(Date.now() + i * 1000)
+					});
+				}
+
+				await db.chatMessages.bulkAdd(messages);
+
+				return new Promise<void>((resolve) => {
+					const observable = chatRepository.getRecentByConversation('conv-1', 10);
+					const subscription = observable.subscribe((retrievedMessages) => {
+						expect(retrievedMessages).toHaveLength(10);
+						// Should return messages 10-19 (most recent)
+						expect(retrievedMessages[0].content).toContain('19');
+						expect(retrievedMessages[9].content).toContain('10');
+						subscription.unsubscribe();
+						resolve();
+					});
+				});
+			});
+
+			it('should order by timestamp descending', async () => {
+				const messages: ChatMessage[] = [
+					{
+						id: 'msg-1',
+						conversationId: 'conv-1',
+						role: 'user',
+						content: 'First message',
+						timestamp: new Date('2024-01-15T10:00:00Z')
+					},
+					{
+						id: 'msg-2',
+						conversationId: 'conv-1',
+						role: 'assistant',
+						content: 'Second message',
+						timestamp: new Date('2024-01-15T11:00:00Z')
+					},
+					{
+						id: 'msg-3',
+						conversationId: 'conv-1',
+						role: 'user',
+						content: 'Third message',
+						timestamp: new Date('2024-01-15T12:00:00Z')
+					}
+				];
+
+				await db.chatMessages.bulkAdd(messages);
+
+				return new Promise<void>((resolve) => {
+					const observable = chatRepository.getRecentByConversation('conv-1', 10);
+					const subscription = observable.subscribe((retrievedMessages) => {
+						expect(retrievedMessages).toHaveLength(3);
+						expect(retrievedMessages[0].content).toBe('Third message');
+						expect(retrievedMessages[1].content).toBe('Second message');
+						expect(retrievedMessages[2].content).toBe('First message');
+						subscription.unsubscribe();
+						resolve();
+					});
+				});
+			});
+
+			it('should only return messages from specified conversation', async () => {
+				await db.chatMessages.bulkAdd([
+					{
+						id: 'msg-1',
+						conversationId: 'conv-1',
+						role: 'user',
+						content: 'Conv1 message',
+						timestamp: new Date()
+					},
+					{
+						id: 'msg-2',
+						conversationId: 'conv-2',
+						role: 'user',
+						content: 'Conv2 message',
+						timestamp: new Date()
+					}
+				]);
+
+				return new Promise<void>((resolve) => {
+					const observable = chatRepository.getRecentByConversation('conv-1', 10);
+					const subscription = observable.subscribe((messages) => {
+						expect(messages).toHaveLength(1);
+						expect(messages[0].conversationId).toBe('conv-1');
+						subscription.unsubscribe();
+						resolve();
+					});
+				});
+			});
+		});
+
+		describe('add with conversationId', () => {
+			it('should add message with conversationId', async () => {
+				const message = await chatRepository.add('user', 'Hello', [], 'conv-1');
+
+				expect(message).toBeDefined();
+				expect(message.conversationId).toBe('conv-1');
+				expect(message.role).toBe('user');
+				expect(message.content).toBe('Hello');
+			});
+
+			it('should persist conversationId to database', async () => {
+				const message = await chatRepository.add('user', 'Test message', [], 'conv-123');
+
+				const stored = await db.chatMessages.get(message.id);
+				expect(stored).toBeDefined();
+				expect(stored?.conversationId).toBe('conv-123');
+			});
+
+			it('should add message without conversationId when not provided', async () => {
+				const message = await chatRepository.add('user', 'No conv');
+
+				expect(message.conversationId).toBeUndefined();
+			});
+
+			it('should handle empty string conversationId', async () => {
+				const message = await chatRepository.add('user', 'Test', [], '');
+
+				expect(message.conversationId).toBe('');
+			});
+
+			it('should handle special characters in conversationId', async () => {
+				const specialId = 'conv-with-dashes_and_underscores.123';
+				const message = await chatRepository.add('user', 'Test', [], specialId);
+
+				expect(message.conversationId).toBe(specialId);
+			});
+		});
+
+		describe('clearByConversation', () => {
+			it('should clear messages from specific conversation', async () => {
+				await db.chatMessages.bulkAdd([
+					{
+						id: 'msg-1',
+						conversationId: 'conv-1',
+						role: 'user',
+						content: 'Conv1 Msg1',
+						timestamp: new Date()
+					},
+					{
+						id: 'msg-2',
+						conversationId: 'conv-1',
+						role: 'assistant',
+						content: 'Conv1 Msg2',
+						timestamp: new Date()
+					},
+					{
+						id: 'msg-3',
+						conversationId: 'conv-2',
+						role: 'user',
+						content: 'Conv2 Msg1',
+						timestamp: new Date()
+					}
+				]);
+
+				await chatRepository.clearByConversation('conv-1');
+
+				const conv1Messages = await db.chatMessages
+					.where('conversationId')
+					.equals('conv-1')
+					.toArray();
+				const conv2Messages = await db.chatMessages
+					.where('conversationId')
+					.equals('conv-2')
+					.toArray();
+
+				expect(conv1Messages).toHaveLength(0);
+				expect(conv2Messages).toHaveLength(1);
+			});
+
+			it('should not affect messages from other conversations', async () => {
+				await db.chatMessages.bulkAdd([
+					{
+						id: 'msg-1',
+						conversationId: 'conv-1',
+						role: 'user',
+						content: 'Conv1',
+						timestamp: new Date()
+					},
+					{
+						id: 'msg-2',
+						conversationId: 'conv-2',
+						role: 'user',
+						content: 'Conv2',
+						timestamp: new Date()
+					},
+					{
+						id: 'msg-3',
+						conversationId: 'conv-3',
+						role: 'user',
+						content: 'Conv3',
+						timestamp: new Date()
+					}
+				]);
+
+				await chatRepository.clearByConversation('conv-2');
+
+				const allMessages = await db.chatMessages.toArray();
+				expect(allMessages).toHaveLength(2);
+				expect(allMessages.find((m) => m.id === 'msg-1')).toBeDefined();
+				expect(allMessages.find((m) => m.id === 'msg-3')).toBeDefined();
+				expect(allMessages.find((m) => m.id === 'msg-2')).toBeUndefined();
+			});
+
+			it('should not throw error when clearing non-existent conversation', async () => {
+				await expect(chatRepository.clearByConversation('non-existent')).resolves.not.toThrow();
+			});
+
+			it('should handle clearing empty conversation', async () => {
+				await chatRepository.clearByConversation('empty-conv');
+
+				const count = await db.chatMessages.count();
+				expect(count).toBe(0);
+			});
+
+			it('should handle large number of messages in conversation', async () => {
+				// Add 100 messages to conv-1 and 50 to conv-2
+				const messages: ChatMessage[] = [];
+				for (let i = 0; i < 100; i++) {
+					messages.push({
+						id: `conv1-msg-${i}`,
+						conversationId: 'conv-1',
+						role: 'user',
+						content: `Message ${i}`,
+						timestamp: new Date()
+					});
+				}
+				for (let i = 0; i < 50; i++) {
+					messages.push({
+						id: `conv2-msg-${i}`,
+						conversationId: 'conv-2',
+						role: 'user',
+						content: `Message ${i}`,
+						timestamp: new Date()
+					});
+				}
+
+				await db.chatMessages.bulkAdd(messages);
+
+				await chatRepository.clearByConversation('conv-1');
+
+				const totalCount = await db.chatMessages.count();
+				expect(totalCount).toBe(50); // Only conv-2 messages remain
+			});
+
+			it('should trigger observable updates after clearing conversation', async () => {
+				await db.chatMessages.bulkAdd([
+					{
+						id: 'msg-1',
+						conversationId: 'conv-1',
+						role: 'user',
+						content: 'Message 1',
+						timestamp: new Date()
+					},
+					{
+						id: 'msg-2',
+						conversationId: 'conv-1',
+						role: 'user',
+						content: 'Message 2',
+						timestamp: new Date()
+					}
+				]);
+
+				const observable = chatRepository.getByConversation('conv-1');
+				const results: ChatMessage[][] = [];
+
+				return new Promise<void>((resolve) => {
+					const subscription = observable.subscribe((messages) => {
+						results.push(messages);
+
+						if (results.length === 1) {
+							// First emission: two messages
+							expect(messages).toHaveLength(2);
+							// Clear conversation
+							chatRepository.clearByConversation('conv-1');
+						} else if (results.length === 2) {
+							// Second emission: after clearing
+							expect(messages).toHaveLength(0);
+							subscription.unsubscribe();
+							resolve();
+						}
+					});
+				});
+			});
+		});
+	});
 });

@@ -433,6 +433,160 @@ describe('AppConfigRepository', () => {
 		});
 	});
 
+	describe('getActiveConversationId', () => {
+		it('should return null when active conversation ID is not set', async () => {
+			const result = await appConfigRepository.getActiveConversationId();
+			expect(result).toBeNull();
+		});
+
+		it('should return stored conversation ID', async () => {
+			await appConfigRepository.setActiveConversationId('conv-123');
+			const result = await appConfigRepository.getActiveConversationId();
+			expect(result).toBe('conv-123');
+		});
+
+		it('should return null after conversation ID is cleared', async () => {
+			await appConfigRepository.setActiveConversationId('conv-123');
+			await appConfigRepository.clearActiveConversationId();
+			const result = await appConfigRepository.getActiveConversationId();
+			expect(result).toBeNull();
+		});
+
+		it('should use correct config key constant', async () => {
+			await appConfigRepository.set('activeConversationId', 'conv-456');
+			const result = await appConfigRepository.getActiveConversationId();
+			expect(result).toBe('conv-456');
+		});
+
+		it('should handle UUID format conversation IDs', async () => {
+			const uuid = '550e8400-e29b-41d4-a716-446655440000';
+			await appConfigRepository.setActiveConversationId(uuid);
+			const result = await appConfigRepository.getActiveConversationId();
+			expect(result).toBe(uuid);
+		});
+
+		it('should handle nanoid format conversation IDs', async () => {
+			const nanoid = 'V1StGXR8_Z5jdHi6B-myT';
+			await appConfigRepository.setActiveConversationId(nanoid);
+			const result = await appConfigRepository.getActiveConversationId();
+			expect(result).toBe(nanoid);
+		});
+	});
+
+	describe('setActiveConversationId', () => {
+		it('should store conversation ID', async () => {
+			await appConfigRepository.setActiveConversationId('conv-123');
+			const result = await db.appConfig.get('activeConversationId');
+			expect(result).toBeDefined();
+			expect(result?.value).toBe('conv-123');
+		});
+
+		it('should overwrite existing conversation ID', async () => {
+			await appConfigRepository.setActiveConversationId('conv-old');
+			await appConfigRepository.setActiveConversationId('conv-new');
+
+			const result = await appConfigRepository.getActiveConversationId();
+			expect(result).toBe('conv-new');
+		});
+
+		it('should handle empty string conversation ID', async () => {
+			await appConfigRepository.setActiveConversationId('');
+			const result = await appConfigRepository.getActiveConversationId();
+			expect(result).toBe('');
+		});
+
+		it('should handle conversation IDs with special characters', async () => {
+			const specialId = 'conv-with-dashes_and_underscores.123';
+			await appConfigRepository.setActiveConversationId(specialId);
+			const result = await appConfigRepository.getActiveConversationId();
+			expect(result).toBe(specialId);
+		});
+
+		it('should not affect active campaign ID', async () => {
+			await appConfigRepository.setActiveCampaignId('campaign-123');
+			await appConfigRepository.setActiveConversationId('conv-456');
+
+			const campaignId = await appConfigRepository.getActiveCampaignId();
+			const conversationId = await appConfigRepository.getActiveConversationId();
+
+			expect(campaignId).toBe('campaign-123');
+			expect(conversationId).toBe('conv-456');
+		});
+	});
+
+	describe('clearActiveConversationId', () => {
+		it('should remove active conversation ID', async () => {
+			await appConfigRepository.setActiveConversationId('conv-123');
+			await appConfigRepository.clearActiveConversationId();
+
+			const result = await appConfigRepository.getActiveConversationId();
+			expect(result).toBeNull();
+		});
+
+		it('should not throw error when clearing non-existent conversation ID', async () => {
+			await expect(appConfigRepository.clearActiveConversationId()).resolves.not.toThrow();
+		});
+
+		it('should not affect other config keys', async () => {
+			await appConfigRepository.setActiveConversationId('conv-123');
+			await appConfigRepository.setActiveCampaignId('campaign-456');
+			await appConfigRepository.set('otherKey', 'otherValue');
+
+			await appConfigRepository.clearActiveConversationId();
+
+			const conversationId = await appConfigRepository.getActiveConversationId();
+			const campaignId = await appConfigRepository.getActiveCampaignId();
+			const otherValue = await appConfigRepository.get<string>('otherKey');
+
+			expect(conversationId).toBeNull();
+			expect(campaignId).toBe('campaign-456');
+			expect(otherValue).toBe('otherValue');
+		});
+
+		it('should be idempotent - multiple clears should not error', async () => {
+			await appConfigRepository.setActiveConversationId('conv-123');
+			await appConfigRepository.clearActiveConversationId();
+			await appConfigRepository.clearActiveConversationId();
+			await appConfigRepository.clearActiveConversationId();
+
+			const result = await appConfigRepository.getActiveConversationId();
+			expect(result).toBeNull();
+		});
+	});
+
+	describe('Conversation ID switching scenarios', () => {
+		it('should handle conversation ID switching', async () => {
+			// Set initial conversation
+			await appConfigRepository.setActiveConversationId('conv-1');
+			let result = await appConfigRepository.getActiveConversationId();
+			expect(result).toBe('conv-1');
+
+			// Switch to new conversation
+			await appConfigRepository.setActiveConversationId('conv-2');
+			result = await appConfigRepository.getActiveConversationId();
+			expect(result).toBe('conv-2');
+
+			// Clear (user closes conversation)
+			await appConfigRepository.clearActiveConversationId();
+			result = await appConfigRepository.getActiveConversationId();
+			expect(result).toBeNull();
+
+			// Set new conversation again
+			await appConfigRepository.setActiveConversationId('conv-3');
+			result = await appConfigRepository.getActiveConversationId();
+			expect(result).toBe('conv-3');
+		});
+
+		it('should handle rapid conversation switching', async () => {
+			await appConfigRepository.setActiveConversationId('conv-1');
+			await appConfigRepository.setActiveConversationId('conv-2');
+			await appConfigRepository.setActiveConversationId('conv-3');
+
+			const result = await appConfigRepository.getActiveConversationId();
+			expect(result).toBe('conv-3');
+		});
+	});
+
 	describe('Edge Cases and Concurrency', () => {
 		it('should handle rapid successive writes to same key', async () => {
 			await appConfigRepository.set('key', 'value1');

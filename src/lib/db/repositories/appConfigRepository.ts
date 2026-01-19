@@ -2,7 +2,8 @@ import { db, type AppConfig } from '../index';
 
 // Keys used in app config
 export const APP_CONFIG_KEYS = {
-	ACTIVE_CAMPAIGN_ID: 'activeCampaignId'
+	ACTIVE_CAMPAIGN_ID: 'activeCampaignId',
+	ACTIVE_CONVERSATION_ID: 'activeConversationId'
 } as const;
 
 export const appConfigRepository = {
@@ -36,6 +37,22 @@ export const appConfigRepository = {
 	// Clear active campaign ID
 	async clearActiveCampaignId(): Promise<void> {
 		await this.delete(APP_CONFIG_KEYS.ACTIVE_CAMPAIGN_ID);
+	},
+
+	// Get the active conversation ID
+	async getActiveConversationId(): Promise<string | null> {
+		const id = await this.get<string>(APP_CONFIG_KEYS.ACTIVE_CONVERSATION_ID);
+		return id ?? null;
+	},
+
+	// Set the active conversation ID
+	async setActiveConversationId(id: string): Promise<void> {
+		await this.set(APP_CONFIG_KEYS.ACTIVE_CONVERSATION_ID, id);
+	},
+
+	// Clear active conversation ID
+	async clearActiveConversationId(): Promise<void> {
+		await this.delete(APP_CONFIG_KEYS.ACTIVE_CONVERSATION_ID);
 	},
 
 	// Clear all app config

@@ -70,24 +70,24 @@ function createCampaignStore() {
 
 		/**
 		 * Get the system ID for the current campaign
-		 * Returns 'system-agnostic' as default for backwards compatibility
+		 * Returns 'draw-steel' as default for new campaigns (this is a Draw Steel-focused tool)
 		 */
 		get systemId(): string | null {
 			if (!campaign) return null;
 			const metadata = getCampaignMetadata(campaign);
-			return metadata.systemId ?? 'system-agnostic';
+			return metadata.systemId ?? 'draw-steel';
 		},
 
 		/**
 		 * Get the full system profile for the current campaign
 		 * Returns null if no campaign is loaded
-		 * Falls back to system-agnostic if the system is not found
+		 * Falls back to draw-steel if the system is not found
 		 */
 		getCurrentSystemProfile(): SystemProfile | null {
 			if (!campaign) return null;
 
 			const metadata = getCampaignMetadata(campaign);
-			const systemId = metadata.systemId ?? 'system-agnostic';
+			const systemId = metadata.systemId ?? 'draw-steel';
 
 			// Try to get the system profile
 			const profile = getSystemProfile(systemId);

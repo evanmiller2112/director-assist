@@ -7,6 +7,7 @@
 	import { generateField, isGeneratableField } from '$lib/services/fieldGenerationService';
 	import { createEntity, type FieldValue, type FieldDefinition } from '$lib/types';
 	import { validateEntity, formatContextSummary } from '$lib/utils';
+	import { getSystemAwareEntityType } from '$lib/utils/entityFormUtils';
 	import { ArrowLeft, Save, Sparkles, Loader2, ExternalLink, ImagePlus, X as XIcon, Upload, Search, ChevronDown, Eye, EyeOff } from 'lucide-svelte';
 	import FieldGenerateButton from '$lib/components/entity/FieldGenerateButton.svelte';
 	import LoadingButton from '$lib/components/ui/LoadingButton.svelte';
@@ -15,8 +16,9 @@
 	const entityType = $derived($page.params.type ?? '');
 	const typeDefinition = $derived(
 		entityType
-			? getEntityTypeDefinition(
+			? getSystemAwareEntityType(
 					entityType,
+					campaignStore.getCurrentSystemProfile(),
 					campaignStore.customEntityTypes,
 					campaignStore.entityTypeOverrides
 				)

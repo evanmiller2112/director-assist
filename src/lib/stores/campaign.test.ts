@@ -12,10 +12,10 @@ import type { BaseEntity } from '$lib/types';
  * 1. Store and retrieve the active game system ID (e.g., 'draw-steel', 'system-agnostic')
  * 2. Provide getCurrentSystemProfile() to get the full system profile
  * 3. Support setSystemProfile() to change the active system
- * 4. Default to 'system-agnostic' for backwards compatibility
+ * 4. Default to 'draw-steel' (this is a Draw Steel-focused tool)
  *
  * Key Test Scenarios:
- * 1. Campaign without systemId defaults to 'system-agnostic'
+ * 1. Campaign without systemId defaults to 'draw-steel'
  * 2. Campaign with systemId returns correct system profile
  * 3. setSystemProfile() updates the campaign metadata
  * 4. getCurrentSystemProfile() returns full SystemProfile object
@@ -117,8 +117,8 @@ describe('campaignStore - System Management (Issue #5)', () => {
 			expect(typeof campaignStore.getCurrentSystemProfile).toBe('function');
 		});
 
-		it('should return system-agnostic profile when campaign has no systemId', async () => {
-			// Mock campaign without systemId field
+		it('should return draw-steel profile when campaign has no systemId (default)', async () => {
+			// Mock campaign without systemId field - defaults to draw-steel for this Draw Steel-focused tool
 			const campaignWithoutSystem: BaseEntity = {
 				id: 'campaign-1',
 				type: 'campaign',
@@ -156,8 +156,8 @@ describe('campaignStore - System Management (Issue #5)', () => {
 			const profile = campaignStore.getCurrentSystemProfile();
 
 			expect(profile).toBeDefined();
-			expect(profile?.id).toBe('system-agnostic');
-			expect(profile?.name).toBe('System Agnostic');
+			expect(profile?.id).toBe('draw-steel');
+			expect(profile?.name).toBe('Draw Steel');
 		});
 
 		it('should return draw-steel profile when campaign has systemId set to draw-steel', async () => {
@@ -446,7 +446,7 @@ describe('campaignStore - System Management (Issue #5)', () => {
 			expect(campaignStore.systemId).toBeNull();
 		});
 
-		it('should return system-agnostic when campaign has no systemId', async () => {
+		it('should return draw-steel when campaign has no systemId (default)', async () => {
 			const campaign: BaseEntity = {
 				id: 'campaign-1',
 				type: 'campaign',
@@ -480,7 +480,7 @@ describe('campaignStore - System Management (Issue #5)', () => {
 
 			await campaignStore.load();
 
-			expect(campaignStore.systemId).toBe('system-agnostic');
+			expect(campaignStore.systemId).toBe('draw-steel');
 		});
 
 		it('should return the systemId from campaign metadata', async () => {
@@ -558,11 +558,11 @@ describe('campaignStore - System Management (Issue #5)', () => {
 
 			await campaignStore.load();
 
-			// Should default to system-agnostic
-			expect(campaignStore.systemId).toBe('system-agnostic');
+			// Should default to draw-steel (this is a Draw Steel-focused tool)
+			expect(campaignStore.systemId).toBe('draw-steel');
 
 			const profile = campaignStore.getCurrentSystemProfile();
-			expect(profile?.id).toBe('system-agnostic');
+			expect(profile?.id).toBe('draw-steel');
 		});
 
 		it('should allow setting system profile on old campaign', async () => {

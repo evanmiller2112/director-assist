@@ -74,6 +74,8 @@ src/
 │   │   │   └── NetworkEdgeDetails.svelte    # Edge detail panel
 │   │   ├── navigation/      # Navigation components
 │   │   │   └── RelationshipBreadcrumbs.svelte
+│   │   ├── settings/        # Settings components
+│   │   │   └── SystemSelector.svelte           # Game system selector dropdown
 │   │   ├── markdown/        # Markdown editing and rendering
 │   │   │   ├── MarkdownEditor.svelte
 │   │   │   └── MarkdownViewer.svelte
@@ -98,7 +100,8 @@ src/
 │   │   ├── networkGraph.ts              # Network graph visualization utilities
 │   │   ├── markdownUtils.ts             # HTML sanitization for markdown rendering
 │   │   ├── relationshipContextFields.ts # Smart field detection for relationship context
-│   │   └── timeFormat.ts                # Relative time formatting for cache timestamps
+│   │   ├── timeFormat.ts                # Relative time formatting for cache timestamps
+│   │   └── entityFormUtils.ts           # System-aware entity form utilities
 │   ├── db/                  # Database layer
 │   │   ├── index.ts         # Dexie database setup
 │   │   └── repositories/    # Data access layer
@@ -2031,6 +2034,82 @@ interface ConfirmDialogProps {
 - Escape key to close
 - Click backdrop to dismiss
 
+#### SystemSelector Component
+
+**Location:** `/src/lib/components/settings/SystemSelector.svelte`
+
+**Purpose:** Dropdown selector for choosing a game system (Draw Steel, System Agnostic, etc.) that controls which system-specific fields appear on entity forms.
+
+**Props:**
+
+```typescript
+interface SystemSelectorProps {
+  value?: string;                    // Current system ID (bindable, defaults to 'draw-steel')
+  onchange?: (systemId: string) => void; // Callback when selection changes
+  disabled?: boolean;                // Disable the selector (default: false)
+  showDescription?: boolean;         // Show system description text (default: false)
+}
+```
+
+**Features:**
+
+- Lists all available system profiles from `getAllSystemProfiles()`
+- Displays system name in dropdown options
+- Shows optional system description below selector when `showDescription={true}`
+- Properly handles disabled state
+- Uses bindable `value` prop for two-way binding
+- Defaults to 'draw-steel' if no value provided
+- Accessible with proper label and ARIA attributes
+
+**System Profiles:**
+
+The component displays all system profiles defined in `src/lib/config/systems.ts`:
+- **Draw Steel**: Adds game-specific fields (ancestry, class, threat levels, etc.)
+- **System Agnostic**: Generic fields suitable for any TTRPG system
+
+**Usage:**
+
+```svelte
+<script lang="ts">
+  import { SystemSelector } from '$lib/components/settings';
+  import { campaignStore } from '$lib/stores/campaign.svelte';
+
+  // Get current system ID from campaign
+  let currentSystemId = $state(campaignStore.systemId ?? 'draw-steel');
+
+  // Handle system change
+  async function handleSystemChange(systemId: string) {
+    await campaignStore.setSystemProfile(systemId);
+    console.log('System changed to:', systemId);
+  }
+</script>
+
+<!-- Basic usage with description -->
+<SystemSelector
+  bind:value={currentSystemId}
+  onchange={handleSystemChange}
+  showDescription={true}
+/>
+
+<!-- Disabled state -->
+<SystemSelector
+  value={currentSystemId}
+  disabled={!campaignStore.campaign}
+  showDescription={false}
+/>
+```
+
+**Integration:**
+
+Used in Settings page (`/src/routes/settings/+page.svelte`) to allow users to change their campaign's game system. When the system changes, all entity forms automatically show the appropriate system-specific fields.
+
+**Accessibility:**
+
+- Proper `<label>` element with `for` attribute
+- ARIA label for screen readers
+- Keyboard navigable (standard `<select>` element)
+- Disabled state properly communicated
+
 #### MarkdownEditor Component
 
 **Location:** `/src/lib/components/markdown/MarkdownEditor.svelte`
@@ -3946,9 +4025,15 @@ Hidden fields (with `section: 'hidden'`) are automatically excluded from AI cont
 
 #### Integration Points
 
-**Entity Forms:** New and edit pages for entities include generate buttons next to applicable fields:
-- `/src/routes/entities/[type]/new/+page.svelte`
-- `/src/routes/entities/[type]/[id]/edit/+page.svelte`
+**Entity Forms:** New and edit pages for entities include generate buttons next to applicable fields and use system-aware entity type definitions:
+- `/src/routes/entities/[type]/new/+page.svelte` - Uses `getSystemAwareEntityType()` to show system-specific fields
+- `/src/routes/entities/[type]/[id]/edit/+page.svelte` - Uses `getSystemAwareEntityType()` to show system-specific fields
+- `/src/routes/entities/[type]/[id]/+page.svelte` - Uses `getSystemAwareEntityType()` to display system-specific field values
+
+**System Selection:**
+- `/src/routes/settings/+page.svelte` - Includes SystemSelector component for changing campaign's game system
+- System changes apply immediately to all entity forms
+- System profile affects which fields appear and AI generation context
 
 **Configuration:**
 - API keys stored in localStorage (key: `ai-provider-{provider}-apikey`)
@@ -4402,6 +4487,109 @@ Lightweight utility with no external dependencies. Calculations use simple arith
 - Last modified timestamps
 - Activity feeds and logs
 - Any UI element showing "time ago" information
+
+#### Entity Form Utils
+
+**Location:** `/src/lib/utils/entityFormUtils.ts`
+
+**Purpose:** Provides helper functions for entity forms to retrieve system-aware entity type definitions. This utility is the primary interface for entity creation and editing pages to get the correct field definitions based on the active campaign's system profile.
+
+**Key Function:**
+
+```typescript
+// Get entity type definition with system-aware modifications applied
+getSystemAwareEntityType(
+  entityType: string,
+  systemProfile: SystemProfile | null | undefined,
+  customTypes?: EntityTypeDefinition[],
+  overrides?: EntityTypeOverride[]
+): EntityTypeDefinition | undefined
+```
+
+**Parameters:**
+
+- `entityType`: The entity type identifier (e.g., 'character', 'npc', 'location')
+- `systemProfile`: The system profile to apply modifications from (can be null/undefined)
+- `customTypes`: Optional custom entity type definitions from campaign
+- `overrides`: Optional entity type overrides from campaign
+
+**Returns:**
+
+The entity type definition with system modifications applied, or `undefined` if the entity type is not found.
+
+**How It Works:**
+
+1. Retrieves the base entity type definition using `getEntityTypeDefinition()`
+2. If no base definition exists, returns `undefined`
+3. If no system profile is provided, returns the base definition unmodified
+4. If a system profile is provided, applies system modifications using `getEntityTypeDefinitionWithSystem()`
+5. Returns the merged definition with system-specific fields, hidden fields, and option overrides applied
+
+**System Modifications:**
+
+When a system profile is provided, the function applies these modifications:
+- **Additional Fields**: System-specific fields are added (e.g., ancestry, class for Draw Steel characters)
+- **Hidden Fields**: Base fields can be hidden if not relevant to the system
+- **Field Option Overrides**: Dropdown options can be customized (e.g., system-specific encounter types)
+- **Field Ordering**: System fields use the `order` property to control placement
+
+**Usage in Entity Forms:**
+
+```typescript
+// In /src/routes/entities/[type]/new/+page.svelte
+import { getSystemAwareEntityType } from '$lib/utils/entityFormUtils';
+import { campaignStore } from '$lib/stores/campaign.svelte';
+
+// Get system-aware entity type definition
+const typeDefinition = $derived(
+  getSystemAwareEntityType(
+    entityType,
+    campaignStore.getCurrentSystemProfile(),
+    campaignStore.customEntityTypes,
+    campaignStore.entityTypeOverrides
+  )
+);
+
+// Render fields based on typeDefinition.fields
+{#if typeDefinition}
+  {#each typeDefinition.fields as field}
+    <!-- Render appropriate input for field.type -->
+  {/each}
+{/if}
+```
+
+**Example: Draw Steel Character Fields**
+
+```typescript
+// Without system profile (System Agnostic)
+const baseCharacter = getSystemAwareEntityType('character', null);
+// Returns: background, goals, secrets, etc.
+
+// With Draw Steel system profile
+const drawSteelCharacter = getSystemAwareEntityType(
+  'character',
+  drawSteelProfile
+);
+// Returns: background, goals, secrets + ancestry, class, kit, heroicResource
+```
+
+**Integration Points:**
+
+Used in all entity form pages to ensure the correct fields are displayed:
+- `/src/routes/entities/[type]/new/+page.svelte` - Entity creation
+- `/src/routes/entities/[type]/[id]/edit/+page.svelte` - Entity editing
+- `/src/routes/entities/[type]/[id]/+page.svelte` - Entity detail view
+
+**Why This Exists:**
+
+Before this utility, entity forms would directly call `getEntityTypeDefinitionWithSystem()` with repetitive code to fetch the campaign profile, custom types, and overrides. This utility consolidates that logic into a single reusable function with a clear purpose: "get me the entity type definition that's appropriate for the current campaign's system."
+
+**Backwards Compatibility:**
+
+If `systemProfile` is `null` or `undefined`, the function returns the base entity type definition without modifications. This ensures that:
+- Existing campaigns without a system profile continue to work
+- New campaigns default to base definitions if system selection is skipped
+- The app gracefully handles missing system data
 
 #### Model Service
 

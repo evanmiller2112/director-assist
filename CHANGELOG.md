@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.5.0] - 2026-01-19
 
 ### Added
+
+**New Dependencies**: `svelte-dnd-action` - Run `npm install` after upgrading to this version.
 - Custom entity types with full field customization (Issue #25, PR #169)
   - Create custom entity types with 14 field types: text, number, date, boolean, select, multiselect, currency, percentage, rating, richtext, file, image, entity-ref, entity-refs
   - Computed fields with dynamic formula evaluation and automatic type inference

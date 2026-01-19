@@ -1,6 +1,8 @@
 # Director Assist
 
-An AI-powered campaign management tool for Directors running Draw Steel TTRPG campaigns. Keep track of NPCs, locations, factions, plot threads, and more—all in one place, with intelligent search and relationship mapping.
+An AI-powered campaign management tool for Directors running TTRPG campaigns. Keep track of NPCs, locations, factions, plot threads, and more—all in one place, with intelligent search and relationship mapping.
+
+Director Assist features a **system-aware architecture** with first-class support for Draw Steel and other game systems. Select your game system when creating a campaign, and the app automatically customizes entity fields, terminology, and AI context to match.
 
 ## Features
 
@@ -11,6 +13,7 @@ An AI-powered campaign management tool for Directors running Draw Steel TTRPG ca
 - **Command Palette**: Quick actions by typing "/" in the search bar—create entities, navigate pages, relate entities, and more
 - **Never Lose Your Notes**: All data stored locally in your browser with backup/restore
 - **Work Your Way**: Light and dark themes, customizable entity types
+- **System-Aware**: First-class support for Draw Steel and System Agnostic modes with game-specific fields and terminology
 - **AI-Powered Content Generation**: Generate content using Claude AI with campaign context awareness
 - **Responsive Loading States**: Polished loading feedback with skeleton screens, spinners, and loading buttons
 
@@ -44,7 +47,9 @@ The app builds to a static site in the `build` directory. Deploy to any static h
 
 ### First Steps
 
-1. Create a campaign with a name, system (Draw Steel, D&D 5e, or System Agnostic), and setting description
+1. Create a campaign with a name, game system (Draw Steel or System Agnostic), and setting description
+   - **Draw Steel**: Adds system-specific fields (ancestry, class, threat levels, victory points) and uses "Director" terminology
+   - **System Agnostic**: Generic fields suitable for any TTRPG system
 2. Add an AI provider API key in Settings to enable AI features (optional)
 3. Start adding entities using the sidebar or dashboard
 4. Link entities together to build relationships
@@ -145,7 +150,17 @@ Director Assist includes 11 built-in entity types:
 - **World Rules** - How magic, society, or nature works in your world
 - **Player Profiles** - Player preferences and boundaries
 
-Each entity type has custom fields relevant to its purpose. See [ARCHITECTURE.md](./docs/ARCHITECTURE.md) for technical details on the entity system.
+Each entity type has custom fields relevant to its purpose. When you select a game system for your campaign, entity types automatically gain system-specific fields:
+
+**Draw Steel System Enhancements:**
+- **Characters**: Ancestry, Class, Kit, Heroic Resource
+- **NPCs**: Threat Level (minion/standard/elite/boss/solo), Combat Role (ambusher, artillery, brute, etc.)
+- **Encounters**: Victory Points, Negotiation DC, system-specific encounter types (combat, negotiation, montage, exploration)
+
+**System Agnostic Mode:**
+Uses generic fields suitable for any TTRPG system without game-specific terminology or mechanics.
+
+See [ARCHITECTURE.md](./docs/ARCHITECTURE.md) for technical details on the system-aware entity architecture.
 
 ## Tech Stack
 

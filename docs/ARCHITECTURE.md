@@ -89,7 +89,8 @@ src/
 │   │       └── Sidebar.svelte
 │   ├── config/              # Configuration and definitions
 │   │   ├── commands.ts      # Command palette definitions
-│   │   └── entityTypes.ts   # Entity type definitions
+│   │   ├── entityTypes.ts   # Entity type definitions
+│   │   └── systems.ts       # Game system profiles (Draw Steel, System Agnostic)
 │   ├── utils/               # Utility functions
 │   │   ├── commandUtils.ts              # Command parsing and filtering
 │   │   ├── matrixUtils.ts               # Matrix data processing and sorting
@@ -121,6 +122,7 @@ src/
 │   └── types/               # TypeScript definitions
 │       ├── entities.ts      # Entity type system
 │       ├── campaign.ts      # Campaign types
+│       ├── systems.ts       # Game system profile types
 │       ├── ai.ts            # AI integration types
 │       ├── relationships.ts # Relationship filtering and sorting types
 │       ├── matrix.ts        # Matrix view types
@@ -165,12 +167,20 @@ interface Campaign {
   id: EntityId;
   name: string;
   description: string;
-  system: string;              // "Draw Steel", "D&D 5e", etc.
+  system: string;              // Display name: "Draw Steel", "D&D 5e", etc.
   setting: string;             // Campaign setting name
   createdAt: Date;
   updatedAt: Date;
   customEntityTypes: EntityTypeDefinition[];
   settings: CampaignSettings;
+  metadata: CampaignMetadata;  // Includes systemId and other metadata
+}
+
+interface CampaignMetadata {
+  systemId?: string;           // System profile ID ('draw-steel', 'system-agnostic')
+  customEntityTypes?: EntityTypeDefinition[];
+  entityTypeOverrides?: EntityTypeOverride[];
+  settings?: CampaignSettings;
 }
 
 interface CampaignSettings {
@@ -183,6 +193,125 @@ interface CampaignSettings {
 **Relationships:**
 - One campaign per database
 - Contains all entities and chat history
+
+**System Awareness:**
+- Campaigns track their selected game system via `systemId` in metadata
+- The `systemId` field references a system profile (e.g., 'draw-steel', 'system-agnostic')
+- System profiles customize entity fields, terminology, and AI context
+- Existing campaigns default to 'system-agnostic' for backwards compatibility
+
+#### System Profiles
+
+System profiles enable first-class support for different game systems like Draw Steel. Each profile customizes how Director Assist works for that specific system.
+
+**SystemProfile Interface:**
+
+```typescript
+interface SystemProfile {
+  id: SystemId;                    // Unique identifier (e.g., 'draw-steel')
+  name: string;                    // Display name
+  description?: string;            // Optional description
+  entityTypeModifications: Record<EntityType, SystemEntityModification>;
+  aiContext?: SystemAIContext;     // AI-specific context
+  terminology: SystemTerminology;  // UI term overrides
+}
+
+interface SystemEntityModification {
+  additionalFields?: FieldDefinition[];     // Fields to add
+  hiddenFields?: string[];                  // Fields to hide
+  fieldOptionOverrides?: Record<string, string[]>;  // Override select options
+}
+
+interface SystemAIContext {
+  systemDescription?: string;      // Description for AI context
+  keyMechanics?: string[];         // Important mechanics AI should know
+  preferredTerms?: Record<string, string>;  // Terminology preferences
+}
+
+interface SystemTerminology {
+  gm?: string;                     // Term for GM/DM (e.g., "Director")
+  player?: string;                 // Term for player character
+  [key: string]: string | undefined;
+}
+```
+
+**Built-in System Profiles:**
+
+1. **System Agnostic** (default)
+   - ID: `'system-agnostic'`
+   - No custom fields or modifications
+   - Generic terminology (GM, player)
+   - Backwards compatible fallback
+
+2. **Draw Steel**
+   - ID: `'draw-steel'`
+   - Custom fields for characters: ancestry, class, kit, heroicResource
+   - Custom fields for NPCs: threatLevel (minion/standard/elite/boss/solo), role
+   - Custom fields for encounters: victoryPoints, negotiationDC
+   - Encounter types: combat, negotiation, montage, exploration, social, puzzle, trap
+   - Terminology: "Director" instead of "GM"
+   - AI context includes Draw Steel mechanics and concepts
+
+**How System Profiles Work:**
+
+1. **Configuration**: System profiles are defined in `src/lib/config/systems.ts`
+2. **Campaign Association**: Each campaign has a `systemId` in its metadata
+3. **Field Merging**: `getEntityTypeDefinitionWithSystem()` merges base entity type definitions with system modifications
+4. **Dynamic Fields**: System-specific fields appear automatically when creating/editing entities
+5. **AI Context**: System's `aiContext` is included in AI generation prompts
+6. **Terminology**: System's terminology overrides UI labels throughout the app
+
+**Key Functions:**
+
+```typescript
+// Get a system profile by ID
+function getSystemProfile(systemId: SystemId): SystemProfile | undefined
+
+// Get all available system profiles
+function getAllSystemProfiles(customSystems?: SystemProfile[]): SystemProfile[]
+
+// Get entity type definition with system modifications applied
+function getEntityTypeDefinitionWithSystem(
+  type: EntityType,
+  baseDefinition: EntityTypeDefinition,
+  systemProfile?: SystemProfile | null,
+  customTypes?: EntityTypeDefinition[],
+  overrides?: EntityTypeOverride[]
+): EntityTypeDefinition
+
+// Apply system modifications to field definitions
+function applySystemModifications(
+  baseFields: FieldDefinition[],
+  modification: SystemEntityModification
+): FieldDefinition[]
+```
+
+**Implementation Files:**
+- `src/lib/types/systems.ts` - TypeScript interfaces
+- `src/lib/config/systems.ts` - Built-in system profiles and utility functions
+- `src/lib/config/entityTypes.ts` - System-aware entity type definitions
+- `src/lib/stores/campaign.svelte.ts` - Campaign system management
+
+**Campaign Store Methods:**
+
+```typescript
+// Get current campaign's system ID
+get systemId(): string | null
+
+// Get full system profile for current campaign
+getCurrentSystemProfile(): SystemProfile | null
+
+// Set system profile for current campaign
+async setSystemProfile(systemId: string): Promise<void>
+```
+
+**Example: Draw Steel Character Creation**
+
+When a campaign uses the Draw Steel system profile, creating a character shows:
+- All standard character fields (background, goals, secrets)
+- Draw Steel-specific fields: Ancestry (dropdown), Class (dropdown), Kit (text), Heroic Resource (rich text)
+- Field order controlled by the `order` property in field definitions
+- AI generation understands Draw Steel terminology and mechanics
 
 #### BaseEntity
 All entity types extend this base structure.
@@ -2158,12 +2287,30 @@ interface EntityTypeDefinition {
 ```
 
 **How It Works:**
-1. Entity types are defined in `src/lib/config/entityTypes.ts`
-2. Each type specifies what fields it has
-3. When creating an entity, the UI renders the appropriate field components
-4. Field values are stored in the `fields` object on the entity
+1. Base entity types are defined in `src/lib/config/entityTypes.ts`
+2. System profiles can add, hide, or override fields via `SystemEntityModification`
+3. `getEntityTypeDefinitionWithSystem()` merges base type + system modifications
+4. When creating an entity, the UI renders the appropriate field components
+5. Field values are stored in the `fields` object on the entity
 
-**Example:** NPC entity type has fields like `role`, `personality`, `appearance`, `voice`, `greetings`, `motivation`, `secrets`, `status`, and `importance`.
+**System-Aware Entity Types:**
+
+Entity types are now system-aware, meaning they can be customized based on the campaign's selected game system:
+
+- **Base Definition**: Every entity type has a base set of fields (defined in `BUILT_IN_ENTITY_TYPES`)
+- **System Modifications**: System profiles can add additional fields, hide existing fields, or override field options
+- **Field Merging**: The `getEntityTypeDefinitionWithSystem()` function merges base + system modifications
+- **Order Preservation**: System fields include an `order` property to control where they appear
+- **Backwards Compatibility**: Campaigns without a `systemId` use base definitions only
+
+**Example: System-Modified NPC Type**
+
+Base NPC fields: `role`, `personality`, `appearance`, `voice`, `greetings`, `motivation`, `secrets`, `status`, `importance`
+
+When using Draw Steel system:
+- Adds `threatLevel` field (select: minion, standard, elite, boss, solo)
+- Adds `role` field (select: ambusher, artillery, brute, controller, etc.)
+- These fields appear after base fields, controlled by `order` property
 
 #### Field Type Implementation Details
 

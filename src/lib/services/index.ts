@@ -38,3 +38,12 @@ export {
 	extractDateFromModelId,
 	findLatestHaikuModel
 } from './modelService';
+
+// Relationship context settings service
+export {
+	getRelationshipContextSettings,
+	setRelationshipContextSettings,
+	resetRelationshipContextSettings,
+	DEFAULT_RELATIONSHIP_CONTEXT_SETTINGS
+} from './relationshipContextSettingsService';
+export type { RelationshipContextSettings } from './relationshipContextSettingsService';

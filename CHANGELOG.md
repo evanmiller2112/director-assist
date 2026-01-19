@@ -138,6 +138,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Removing reverse link when toggling bidirectional OFF
   - Preserves timestamps and metadata during edits
   - Success notification after saving changes
+- Relationship context settings for AI generation (Issue #61)
+  - New "Relationship Context" section in Settings page
+  - Enable/disable relationship context in generation (default: enabled)
+  - Configure maximum related entities to include (1-50, default: 20)
+  - Set maximum characters per entity (1000-10000, default: 4000)
+  - Adjust context budget allocation slider (0-100%, default: 50% balanced)
+  - Option to auto-generate relationship summaries (default: off)
+  - Settings stored in localStorage for persistence
+  - New relationshipContextSettingsService with get/set/reset functions
+  - Defaults: enabled=true, maxRelatedEntities=20, maxCharacters=4000, contextBudgetAllocation=50, autoGenerateSummaries=false
 
 ### Fixed
 - Resolved Svelte 5 state_unsafe_mutation error in entity pages (Issue #98)

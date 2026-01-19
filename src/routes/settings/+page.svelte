@@ -9,7 +9,10 @@
 		getSelectedModel,
 		setSelectedModel,
 		clearModelsCache,
-		getFallbackModels
+		getFallbackModels,
+		getRelationshipContextSettings,
+		setRelationshipContextSettings,
+		type RelationshipContextSettings
 	} from '$lib/services';
 	import { Download, Upload, Moon, Sun, Monitor, Trash2, Key, RefreshCw, Layers, ChevronRight } from 'lucide-svelte';
 	import LoadingButton from '$lib/components/ui/LoadingButton.svelte';
@@ -24,6 +27,9 @@
 	let selectedModel = $state('');
 	let isLoadingModels = $state(false);
 	let modelError = $state<string | null>(null);
+
+	// Relationship context settings state
+	let relationshipSettings = $state<RelationshipContextSettings>(getRelationshipContextSettings());
 
 	// Load API key and models from storage
 	$effect(() => {
@@ -62,6 +68,11 @@
 			await loadModels(key);
 			notificationStore.success('Models refreshed!');
 		}
+	}
+
+	function saveRelationshipSettings() {
+		setRelationshipContextSettings(relationshipSettings);
+		notificationStore.success('Relationship context settings saved!');
 	}
 
 	function saveApiKey() {
@@ -402,6 +413,102 @@
 					{/if}
 				</div>
 			{/if}
+		</div>
+	</section>
+
+	<!-- Relationship Context Settings -->
+	<section class="mb-8">
+		<h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">Relationship Context</h2>
+		<p class="text-sm text-slate-500 mb-4">
+			Configure how related entities are included in AI generation context. These settings help balance context richness with API token usage.
+		</p>
+		<div class="space-y-4">
+			<!-- Enable/Disable -->
+			<div class="flex items-center gap-2">
+				<input
+					id="relationship-enabled"
+					type="checkbox"
+					class="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-blue-600 focus:ring-blue-500"
+					bind:checked={relationshipSettings.enabled}
+				/>
+				<label for="relationship-enabled" class="text-sm font-medium text-slate-700 dark:text-slate-300">
+					Include related entities in generation context
+				</label>
+			</div>
+
+			<!-- Max Related Entities -->
+			<div>
+				<label for="max-related-entities" class="label">Maximum Related Entities</label>
+				<p class="text-sm text-slate-500 mb-2">
+					Limit how many related entities to include (1-50). Higher values provide more context but use more tokens.
+				</p>
+				<input
+					id="max-related-entities"
+					type="number"
+					class="input"
+					bind:value={relationshipSettings.maxRelatedEntities}
+					min="1"
+					max="50"
+				/>
+			</div>
+
+			<!-- Max Characters -->
+			<div>
+				<label for="max-characters" class="label">Maximum Characters per Entity</label>
+				<p class="text-sm text-slate-500 mb-2">
+					Truncate entity content to this length (1000-10000). Prevents very large entities from consuming too much context.
+				</p>
+				<input
+					id="max-characters"
+					type="number"
+					class="input"
+					bind:value={relationshipSettings.maxCharacters}
+					min="1000"
+					max="10000"
+					step="500"
+				/>
+			</div>
+
+			<!-- Context Budget Allocation -->
+			<div>
+				<label for="context-budget" class="label">
+					Context Budget for Relationships: {relationshipSettings.contextBudgetAllocation}%
+				</label>
+				<p class="text-sm text-slate-500 mb-2">
+					Percentage of total context budget to allocate for related entities (0-100). The rest goes to primary context.
+				</p>
+				<input
+					id="context-budget"
+					type="range"
+					class="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-600"
+					bind:value={relationshipSettings.contextBudgetAllocation}
+					min="0"
+					max="100"
+				/>
+				<div class="flex justify-between text-xs text-slate-500 mt-1">
+					<span>0% (Minimal)</span>
+					<span>50% (Balanced)</span>
+					<span>100% (Maximum)</span>
+				</div>
+			</div>
+
+			<!-- Auto Generate Summaries -->
+			<div class="flex items-center gap-2">
+				<input
+					id="auto-generate-summaries"
+					type="checkbox"
+					class="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-blue-600 focus:ring-blue-500"
+					bind:checked={relationshipSettings.autoGenerateSummaries}
+				/>
+				<label for="auto-generate-summaries" class="text-sm font-medium text-slate-700 dark:text-slate-300">
+					Automatically generate entity summaries (requires API key and tokens)
+				</label>
+			</div>
+
+			<!-- Save Button -->
+			<button class="btn btn-primary" onclick={saveRelationshipSettings}>
+				Save Relationship Settings
+			</button>
 		</div>
 	</section>
 

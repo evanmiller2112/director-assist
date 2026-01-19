@@ -805,3 +805,116 @@ export const DEFAULT_RELATIONSHIPS = [
 	'affects',
 	'plays'
 ];
+
+/**
+ * Get the default order for entity types, with campaign first.
+ * Returns a new array instance each time to prevent shared references.
+ */
+export function getDefaultEntityTypeOrder(): string[] {
+	return [
+		'campaign',
+		'character',
+		'npc',
+		'location',
+		'faction',
+		'item',
+		'encounter',
+		'session',
+		'deity',
+		'timeline_event',
+		'world_rule',
+		'player_profile'
+	];
+}
+
+/**
+ * Get entity types in a specific order.
+ * Applies custom ordering to built-in types, handles overrides, and filters hidden types.
+ *
+ * Order logic:
+ * 1. Built-in types appear first, in the order specified by customOrder (or default order if null)
+ * 2. Types in customOrder that don't exist are skipped
+ * 3. Built-in types not in customOrder are appended in default order
+ * 4. Custom types always appear after all built-in types, in their defined order
+ * 5. If custom types appear in customOrder, they respect that order among themselves
+ *
+ * @param customTypes User-defined entity types
+ * @param overrides Overrides for built-in types
+ * @param customOrder Custom ordering of entity type keys (null/undefined for default order)
+ * @returns Ordered array of entity type definitions
+ */
+export function getOrderedEntityTypes(
+	customTypes: EntityTypeDefinition[] = [],
+	overrides: EntityTypeOverride[] = [],
+	customOrder: string[] | null | undefined
+): EntityTypeDefinition[] {
+	// Get all entity types (with overrides applied, hidden filtered)
+	const allTypes = getAllEntityTypes(customTypes, overrides);
+
+	// Separate built-in and custom types
+	const builtInTypes = allTypes.filter((t) => t.isBuiltIn);
+	const customTypesFiltered = allTypes.filter((t) => !t.isBuiltIn);
+
+	// If no custom order, use default order
+	const orderToUse = customOrder && customOrder.length > 0 ? customOrder : getDefaultEntityTypeOrder();
+
+	// Create a map for quick lookup
+	const typeMap = new Map<string, EntityTypeDefinition>();
+	builtInTypes.forEach((t) => typeMap.set(t.type, t));
+
+	// Order built-in types according to customOrder
+	const orderedBuiltIn: EntityTypeDefinition[] = [];
+	const processedTypes = new Set<string>();
+
+	// First pass: add types that are in the custom order
+	orderToUse.forEach((typeKey) => {
+		const typeDef = typeMap.get(typeKey);
+		if (typeDef && !processedTypes.has(typeKey)) {
+			orderedBuiltIn.push(typeDef);
+			processedTypes.add(typeKey);
+		}
+	});
+
+	// Second pass: add remaining built-in types not in custom order (in default order)
+	const defaultOrder = getDefaultEntityTypeOrder();
+	defaultOrder.forEach((typeKey) => {
+		const typeDef = typeMap.get(typeKey);
+		if (typeDef && !processedTypes.has(typeKey)) {
+			orderedBuiltIn.push(typeDef);
+			processedTypes.add(typeKey);
+		}
+	});
+
+	// Handle custom types ordering
+	let orderedCustom: EntityTypeDefinition[] = [];
+
+	if (customOrder && customOrder.length > 0) {
+		// If custom types are in the order, respect that order
+		const customTypeMap = new Map<string, EntityTypeDefinition>();
+		customTypesFiltered.forEach((t) => customTypeMap.set(t.type, t));
+
+		const processedCustom = new Set<string>();
+
+		// Add custom types that appear in customOrder
+		customOrder.forEach((typeKey) => {
+			const typeDef = customTypeMap.get(typeKey);
+			if (typeDef && !processedCustom.has(typeKey)) {
+				orderedCustom.push(typeDef);
+				processedCustom.add(typeKey);
+			}
+		});
+
+		// Add remaining custom types in their original order
+		customTypesFiltered.forEach((typeDef) => {
+			if (!processedCustom.has(typeDef.type)) {
+				orderedCustom.push(typeDef);
+			}
+		});
+	} else {
+		// No custom order, use original order
+		orderedCustom = customTypesFiltered;
+	}
+
+	// Combine: built-in types first, then custom types
+	return [...orderedBuiltIn, ...orderedCustom];
+}

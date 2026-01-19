@@ -25,6 +25,10 @@
 	const linkedEntitiesWithRelationships = $derived(
 		entity ? entitiesStore.getLinkedWithRelationships(entity.id) : []
 	);
+	const isCampaignPage = $derived(entityType === 'campaign');
+	const canDeleteCampaign = $derived(
+		!isCampaignPage || (isCampaignPage && campaignStore.allCampaigns.length > 1)
+	);
 
 	// Breadcrumb navigation state
 	const navPathParam = $derived($page.url.searchParams.get('navPath'));
@@ -91,9 +95,21 @@
 
 	async function handleDelete() {
 		if (!entity) return;
+
+		// Check if this is the last campaign
+		if (isCampaignPage && campaignStore.allCampaigns.length <= 1) {
+			notificationStore.error('Cannot delete the last campaign');
+			return;
+		}
+
 		if (confirm(`Are you sure you want to delete "${entity.name}"?`)) {
-			await entitiesStore.delete(entity.id);
-			goto(`/entities/${entityType}`);
+			try {
+				await entitiesStore.delete(entity.id);
+				goto(`/entities/${entityType}`);
+			} catch (error) {
+				console.error('Failed to delete entity:', error);
+				notificationStore.error(error instanceof Error ? error.message : 'Failed to delete entity');
+			}
 		}
 	}
 
@@ -179,7 +195,12 @@
 					<Edit class="w-4 h-4" />
 					Edit
 				</a>
-				<button class="btn btn-ghost text-red-600 hover:bg-red-50" onclick={handleDelete}>
+				<button
+					class="btn btn-ghost text-red-600 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
+					onclick={handleDelete}
+					disabled={!canDeleteCampaign}
+					title={!canDeleteCampaign ? 'Cannot delete the last campaign' : 'Delete'}
+				>
 					<Trash2 class="w-4 h-4" />
 				</button>
 			</div>

@@ -170,17 +170,22 @@ describe('CampaignStore Loading States (Issue #12)', () => {
 	let campaignStore: any;
 	let mockDb: any;
 	let mockAppConfigRepository: any;
+	let mockQueryChain: any;
 
 	beforeEach(async () => {
 		vi.clearAllMocks();
+
+		// Create a stable mock chain for the database
+		mockQueryChain = {
+			toArray: vi.fn(),
+			count: vi.fn()
+		};
 
 		// Mock database
 		mockDb = {
 			entities: {
 				where: vi.fn(() => ({
-					equals: vi.fn(() => ({
-						toArray: vi.fn()
-					}))
+					equals: vi.fn(() => mockQueryChain)
 				})),
 				add: vi.fn(),
 				update: vi.fn()
@@ -210,13 +215,14 @@ describe('CampaignStore Loading States (Issue #12)', () => {
 		});
 
 		it('should set isLoading to false when load completes successfully', async () => {
-			mockDb.entities.where().equals().toArray.mockResolvedValue([
+			mockQueryChain.toArray.mockResolvedValue([
 				{
 					id: 'campaign-1',
 					type: 'campaign',
 					name: 'Test Campaign'
 				}
 			]);
+			mockQueryChain.count.mockResolvedValue(1);
 
 			mockAppConfigRepository.getActiveCampaignId.mockResolvedValue('campaign-1');
 
@@ -226,9 +232,10 @@ describe('CampaignStore Loading States (Issue #12)', () => {
 		});
 
 		it('should set isLoading to false when load fails', async () => {
-			mockDb.entities.where().equals().toArray.mockRejectedValue(
+			mockQueryChain.toArray.mockRejectedValue(
 				new Error('Load failed')
 			);
+			mockQueryChain.count.mockResolvedValue(0);
 
 			await campaignStore.load();
 
@@ -236,6 +243,12 @@ describe('CampaignStore Loading States (Issue #12)', () => {
 		});
 
 		it('should clear error when load starts', async () => {
+			mockQueryChain.toArray.mockResolvedValue([]);
+			mockQueryChain.count.mockResolvedValue(0);
+			mockAppConfigRepository.getActiveCampaignId.mockResolvedValue(null);
+			mockDb.entities.add.mockResolvedValue(undefined);
+			mockAppConfigRepository.setActiveCampaignId.mockResolvedValue(undefined);
+
 			await campaignStore.load();
 
 			// Initially error should be null
@@ -243,9 +256,10 @@ describe('CampaignStore Loading States (Issue #12)', () => {
 		});
 
 		it('should set error when load fails', async () => {
-			mockDb.entities.where().equals().toArray.mockRejectedValue(
+			mockQueryChain.toArray.mockRejectedValue(
 				new Error('Database error')
 			);
+			mockQueryChain.count.mockResolvedValue(0);
 
 			await campaignStore.load();
 
@@ -257,6 +271,7 @@ describe('CampaignStore Loading States (Issue #12)', () => {
 	describe('Create Campaign Loading State', () => {
 		it('should create campaign and handle loading appropriately', async () => {
 			mockDb.entities.add.mockResolvedValue(undefined);
+			mockQueryChain.count.mockResolvedValue(1);
 			mockAppConfigRepository.setActiveCampaignId.mockResolvedValue(undefined);
 
 			const campaign = await campaignStore.create('New Campaign');
@@ -267,6 +282,7 @@ describe('CampaignStore Loading States (Issue #12)', () => {
 
 		it('should handle create errors gracefully', async () => {
 			mockDb.entities.add.mockRejectedValue(new Error('Create failed'));
+			mockQueryChain.count.mockResolvedValue(0);
 
 			await expect(
 				campaignStore.create('New Campaign')

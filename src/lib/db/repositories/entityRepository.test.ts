@@ -3213,3 +3213,633 @@ describe('EntityRepository - getRelationshipChain() (Issue #69)', () => {
 		});
 	});
 });
+
+describe('EntityRepository - Player Visibility Flags (Issues #50 and #51)', () => {
+	let sourceEntity: BaseEntity;
+	let targetEntity: BaseEntity;
+
+	beforeAll(async () => {
+		// Open the database for tests
+		await db.open();
+	});
+
+	afterAll(async () => {
+		// Close database after all tests
+		await db.close();
+	});
+
+	beforeEach(async () => {
+		// Clear database before each test
+		await db.entities.clear();
+
+		// Create test entities
+		sourceEntity = createMockEntity({
+			id: 'source-1',
+			name: 'Secret NPC',
+			type: 'npc',
+			links: []
+		});
+
+		targetEntity = createMockEntity({
+			id: 'target-1',
+			name: 'Hidden Faction',
+			type: 'faction',
+			links: []
+		});
+
+		// Add entities to database
+		await db.entities.add(sourceEntity);
+		await db.entities.add(targetEntity);
+	});
+
+	afterEach(async () => {
+		// Clean up
+		await db.entities.clear();
+	});
+
+	describe('Issue #50 - Entity playerVisible field', () => {
+		describe('Creating entities with playerVisible flag', () => {
+			it('should create entity with playerVisible set to false', async () => {
+				const hiddenEntity = createMockEntity({
+					name: 'Hidden Boss',
+					type: 'npc',
+					playerVisible: false
+				});
+
+				const created = await entityRepository.create(hiddenEntity);
+
+				expect(created.playerVisible).toBe(false);
+
+				// Verify it persisted to database
+				const retrieved = await db.entities.get(created.id);
+				expect(retrieved?.playerVisible).toBe(false);
+			});
+
+			it('should create entity with playerVisible set to true', async () => {
+				const visibleEntity = createMockEntity({
+					name: 'Visible NPC',
+					type: 'npc',
+					playerVisible: true
+				});
+
+				const created = await entityRepository.create(visibleEntity);
+
+				expect(created.playerVisible).toBe(true);
+
+				// Verify it persisted to database
+				const retrieved = await db.entities.get(created.id);
+				expect(retrieved?.playerVisible).toBe(true);
+			});
+
+			it('should create entity with playerVisible undefined (default behavior)', async () => {
+				const defaultEntity = createMockEntity({
+					name: 'Default NPC',
+					type: 'npc'
+					// playerVisible not set - should be undefined
+				});
+
+				const created = await entityRepository.create(defaultEntity);
+
+				// Should be undefined (not false or true)
+				expect(created.playerVisible).toBeUndefined();
+
+				// Verify it persisted to database
+				const retrieved = await db.entities.get(created.id);
+				expect(retrieved?.playerVisible).toBeUndefined();
+			});
+		});
+
+		describe('Updating entities with playerVisible flag', () => {
+			it('should update entity to set playerVisible to false', async () => {
+				// Create entity without playerVisible flag
+				const entity = await entityRepository.create(
+					createMockEntity({
+						name: 'NPC to Hide',
+						type: 'npc'
+					})
+				);
+
+				// Update to hide from players
+				await entityRepository.update(entity.id, {
+					playerVisible: false
+				});
+
+				const updated = await db.entities.get(entity.id);
+				expect(updated?.playerVisible).toBe(false);
+			});
+
+			it('should update entity to set playerVisible to true', async () => {
+				// Create entity that is hidden
+				const entity = await entityRepository.create(
+					createMockEntity({
+						name: 'Hidden NPC',
+						type: 'npc',
+						playerVisible: false
+					})
+				);
+
+				// Update to show to players
+				await entityRepository.update(entity.id, {
+					playerVisible: true
+				});
+
+				const updated = await db.entities.get(entity.id);
+				expect(updated?.playerVisible).toBe(true);
+			});
+
+			it('should update entity to clear playerVisible (set to undefined)', async () => {
+				// Create entity that is explicitly visible
+				const entity = await entityRepository.create(
+					createMockEntity({
+						name: 'Visible NPC',
+						type: 'npc',
+						playerVisible: true
+					})
+				);
+
+				// Update to remove explicit visibility flag
+				await entityRepository.update(entity.id, {
+					playerVisible: undefined
+				});
+
+				const retrieved = await db.entities.get(entity.id);
+				expect(retrieved?.playerVisible).toBeUndefined();
+			});
+		});
+
+		describe('Behavior with different entity types', () => {
+			it('should support playerVisible on character entities', async () => {
+				const character = await entityRepository.create(
+					createMockEntity({
+						name: 'Secret Character',
+						type: 'character',
+						playerVisible: false
+					})
+				);
+
+				expect(character.playerVisible).toBe(false);
+			});
+
+			it('should support playerVisible on location entities', async () => {
+				const location = await entityRepository.create(
+					createMockEntity({
+						name: 'Hidden Location',
+						type: 'location',
+						playerVisible: false
+					})
+				);
+
+				expect(location.playerVisible).toBe(false);
+			});
+
+			it('should support playerVisible on faction entities', async () => {
+				const faction = await entityRepository.create(
+					createMockEntity({
+						name: 'Secret Society',
+						type: 'faction',
+						playerVisible: false
+					})
+				);
+
+				expect(faction.playerVisible).toBe(false);
+			});
+
+			it('should support playerVisible on item entities', async () => {
+				const item = await entityRepository.create(
+					createMockEntity({
+						name: 'Hidden Artifact',
+						type: 'item',
+						playerVisible: false
+					})
+				);
+
+				expect(item.playerVisible).toBe(false);
+			});
+		});
+	});
+
+	describe('Issue #51 - EntityLink playerVisible field', () => {
+		describe('Creating links with playerVisible flag', () => {
+			it('should create link with playerVisible set to false', async () => {
+				// Note: playerVisible should be added as a direct parameter to addLink
+				// For now, we're testing that it can be passed through and stored
+				await entityRepository.addLink(
+					sourceEntity.id,
+					targetEntity.id,
+					'secret_member_of',
+					false, // bidirectional
+					undefined, // notes
+					undefined, // strength
+					undefined, // metadata
+					undefined, // reverseRelationship
+					false // playerVisible - will need to add this parameter
+				);
+
+				const updatedSource = await db.entities.get(sourceEntity.id);
+				expect(updatedSource).toBeDefined();
+				expect(updatedSource!.links).toHaveLength(1);
+
+				const link = updatedSource!.links[0];
+				expect(link.playerVisible).toBe(false);
+			});
+
+			it('should create link with playerVisible set to true', async () => {
+				await entityRepository.addLink(
+					sourceEntity.id,
+					targetEntity.id,
+					'public_member_of',
+					false,
+					undefined,
+					undefined,
+					undefined,
+					undefined,
+					true // playerVisible
+				);
+
+				const updatedSource = await db.entities.get(sourceEntity.id);
+				const link = updatedSource!.links[0];
+
+				expect(link.playerVisible).toBe(true);
+			});
+
+			it('should create link with playerVisible undefined (default behavior)', async () => {
+				await entityRepository.addLink(
+					sourceEntity.id,
+					targetEntity.id,
+					'member_of',
+					false
+					// playerVisible not provided - should default to undefined
+				);
+
+				const updatedSource = await db.entities.get(sourceEntity.id);
+				const link = updatedSource!.links[0];
+
+				// Should be undefined (defaults to visible for players)
+				expect(link.playerVisible).toBeUndefined();
+			});
+		});
+
+		describe('Bidirectional links with playerVisible', () => {
+			it('should create bidirectional link with playerVisible on both sides', async () => {
+				await entityRepository.addLink(
+					sourceEntity.id,
+					targetEntity.id,
+					'allied_with',
+					true, // bidirectional
+					undefined,
+					undefined,
+					undefined,
+					undefined,
+					false // playerVisible
+				);
+
+				// Check forward link
+				const updatedSource = await db.entities.get(sourceEntity.id);
+				expect(updatedSource!.links[0].playerVisible).toBe(false);
+
+				// Check reverse link
+				const updatedTarget = await db.entities.get(targetEntity.id);
+				expect(updatedTarget!.links[0].playerVisible).toBe(false);
+			});
+
+			it('should maintain playerVisible flag independently on bidirectional links', async () => {
+				// Create bidirectional link with playerVisible = false
+				await entityRepository.addLink(
+					sourceEntity.id,
+					targetEntity.id,
+					'allied_with',
+					true,
+					undefined,
+					undefined,
+					undefined,
+					undefined,
+					false // playerVisible
+				);
+
+				// Both sides should have playerVisible = false
+				const source = await db.entities.get(sourceEntity.id);
+				const target = await db.entities.get(targetEntity.id);
+
+				expect(source!.links[0].playerVisible).toBe(false);
+				expect(target!.links[0].playerVisible).toBe(false);
+			});
+		});
+
+		describe('Updating links with playerVisible', () => {
+			it('should update link to set playerVisible to false', async () => {
+				// Create link without playerVisible
+				await entityRepository.addLink(
+					sourceEntity.id,
+					targetEntity.id,
+					'member_of',
+					false
+				);
+
+				const source = await db.entities.get(sourceEntity.id);
+				const linkId = source!.links[0].id;
+
+				// Update link to hide from players
+				await entityRepository.updateLink(sourceEntity.id, linkId, {
+					playerVisible: false
+				});
+
+				const updatedSource = await db.entities.get(sourceEntity.id);
+				expect(updatedSource!.links[0].playerVisible).toBe(false);
+			});
+
+			it('should update link to set playerVisible to true', async () => {
+				// Create hidden link
+				await entityRepository.addLink(
+					sourceEntity.id,
+					targetEntity.id,
+					'secret_alliance',
+					false,
+					undefined,
+					undefined,
+					undefined,
+					undefined,
+					false // playerVisible
+				);
+
+				const source = await db.entities.get(sourceEntity.id);
+				const linkId = source!.links[0].id;
+
+				// Update link to show to players
+				await entityRepository.updateLink(sourceEntity.id, linkId, {
+					playerVisible: true
+				});
+
+				const updatedSource = await db.entities.get(sourceEntity.id);
+				expect(updatedSource!.links[0].playerVisible).toBe(true);
+			});
+
+			it('should update link to clear playerVisible (set to undefined)', async () => {
+				// Create explicitly visible link
+				await entityRepository.addLink(
+					sourceEntity.id,
+					targetEntity.id,
+					'public_alliance',
+					false,
+					undefined,
+					undefined,
+					undefined,
+					undefined,
+					true // playerVisible
+				);
+
+				const source = await db.entities.get(sourceEntity.id);
+				const linkId = source!.links[0].id;
+
+				// Update to remove explicit visibility flag
+				await entityRepository.updateLink(sourceEntity.id, linkId, {
+					playerVisible: undefined
+				});
+
+				const updatedSource = await db.entities.get(sourceEntity.id);
+				expect(updatedSource!.links[0].playerVisible).toBeUndefined();
+			});
+		});
+
+		describe('Complex scenarios with playerVisible', () => {
+			it('should handle entity with mix of visible and hidden links', async () => {
+				// Add visible link
+				await entityRepository.addLink(
+					sourceEntity.id,
+					targetEntity.id,
+					'public_member',
+					false,
+					undefined,
+					undefined,
+					undefined,
+					undefined,
+					true // playerVisible
+				);
+
+				// Create another entity for second link
+				const thirdEntity = createMockEntity({
+					id: 'third-1',
+					name: 'Third Entity',
+					type: 'faction'
+				});
+				await db.entities.add(thirdEntity);
+
+				// Add hidden link
+				await entityRepository.addLink(
+					sourceEntity.id,
+					thirdEntity.id,
+					'secret_member',
+					false,
+					undefined,
+					undefined,
+					undefined,
+					undefined,
+					false // playerVisible
+				);
+
+				const source = await db.entities.get(sourceEntity.id);
+				expect(source!.links).toHaveLength(2);
+
+				// Find each link
+				const visibleLink = source!.links.find(l => l.relationship === 'public_member');
+				const hiddenLink = source!.links.find(l => l.relationship === 'secret_member');
+
+				expect(visibleLink?.playerVisible).toBe(true);
+				expect(hiddenLink?.playerVisible).toBe(false);
+			});
+
+			it('should preserve playerVisible when updating other link properties', async () => {
+				// Create hidden link
+				await entityRepository.addLink(
+					sourceEntity.id,
+					targetEntity.id,
+					'secret_alliance',
+					false,
+					'Initial notes',
+					'weak',
+					undefined,
+					undefined,
+					false // playerVisible
+				);
+
+				const source = await db.entities.get(sourceEntity.id);
+				const linkId = source!.links[0].id;
+
+				// Update strength and notes, but not playerVisible
+				await entityRepository.updateLink(sourceEntity.id, linkId, {
+					strength: 'strong',
+					notes: 'Updated notes'
+				});
+
+				const updatedSource = await db.entities.get(sourceEntity.id);
+				const link = updatedSource!.links[0];
+
+				// playerVisible should remain false
+				expect(link.playerVisible).toBe(false);
+				// Other properties should be updated
+				expect(link.strength).toBe('strong');
+				expect(link.notes).toBe('Updated notes');
+			});
+		});
+
+		describe('Removing links with playerVisible', () => {
+			it('should successfully remove hidden link', async () => {
+				await entityRepository.addLink(
+					sourceEntity.id,
+					targetEntity.id,
+					'secret_link',
+					false,
+					undefined,
+					undefined,
+					undefined,
+					undefined,
+					false // playerVisible
+				);
+
+				const source = await db.entities.get(sourceEntity.id);
+				const linkId = source!.links[0].id;
+
+				await entityRepository.removeLink(sourceEntity.id, targetEntity.id);
+
+				const updatedSource = await db.entities.get(sourceEntity.id);
+				expect(updatedSource!.links).toHaveLength(0);
+			});
+
+			it('should remove hidden link from both sides of bidirectional relationship', async () => {
+				await entityRepository.addLink(
+					sourceEntity.id,
+					targetEntity.id,
+					'secret_alliance',
+					true, // bidirectional
+					undefined,
+					undefined,
+					undefined,
+					undefined,
+					false // playerVisible
+				);
+
+				const source = await db.entities.get(sourceEntity.id);
+				const linkId = source!.links[0].id;
+
+				await entityRepository.removeLink(sourceEntity.id, targetEntity.id);
+
+				const updatedSource = await db.entities.get(sourceEntity.id);
+				const updatedTarget = await db.entities.get(targetEntity.id);
+
+				expect(updatedSource!.links).toHaveLength(0);
+				expect(updatedTarget!.links).toHaveLength(0);
+			});
+		});
+	});
+
+	describe('Integration: Entity and Link visibility together', () => {
+		it('should support hidden entity with visible link', async () => {
+			// Create hidden entity
+			const hiddenEntity = await entityRepository.create(
+				createMockEntity({
+					name: 'Hidden NPC',
+					type: 'npc',
+					playerVisible: false
+				})
+			);
+
+			// Create visible entity
+			const visibleEntity = await entityRepository.create(
+				createMockEntity({
+					name: 'Visible Faction',
+					type: 'faction',
+					playerVisible: true
+				})
+			);
+
+			// Add visible link between them
+			await entityRepository.addLink(
+				hiddenEntity.id,
+				visibleEntity.id,
+				'member_of',
+				false,
+				undefined,
+				undefined,
+				undefined,
+				undefined,
+				true // playerVisible
+			);
+
+			const hidden = await db.entities.get(hiddenEntity.id);
+			expect(hidden?.playerVisible).toBe(false);
+			expect(hidden?.links[0].playerVisible).toBe(true);
+		});
+
+		it('should support visible entity with hidden link', async () => {
+			// Create visible entity
+			const visibleEntity = await entityRepository.create(
+				createMockEntity({
+					name: 'Public NPC',
+					type: 'npc',
+					playerVisible: true
+				})
+			);
+
+			// Create another visible entity
+			const anotherEntity = await entityRepository.create(
+				createMockEntity({
+					name: 'Public Faction',
+					type: 'faction',
+					playerVisible: true
+				})
+			);
+
+			// Add hidden link between them
+			await entityRepository.addLink(
+				visibleEntity.id,
+				anotherEntity.id,
+				'secret_member_of',
+				false,
+				undefined,
+				undefined,
+				undefined,
+				undefined,
+				false // playerVisible
+			);
+
+			const entity = await db.entities.get(visibleEntity.id);
+			expect(entity?.playerVisible).toBe(true);
+			expect(entity?.links[0].playerVisible).toBe(false);
+		});
+
+		it('should support hidden entity with hidden link', async () => {
+			// Create hidden entity
+			const hiddenEntity1 = await entityRepository.create(
+				createMockEntity({
+					name: 'Secret Agent',
+					type: 'npc',
+					playerVisible: false
+				})
+			);
+
+			const hiddenEntity2 = await entityRepository.create(
+				createMockEntity({
+					name: 'Secret Organization',
+					type: 'faction',
+					playerVisible: false
+				})
+			);
+
+			// Add hidden link
+			await entityRepository.addLink(
+				hiddenEntity1.id,
+				hiddenEntity2.id,
+				'secret_member_of',
+				false,
+				undefined,
+				undefined,
+				undefined,
+				undefined,
+				false // playerVisible
+			);
+
+			const entity = await db.entities.get(hiddenEntity1.id);
+			expect(entity?.playerVisible).toBe(false);
+			expect(entity?.links[0].playerVisible).toBe(false);
+		});
+	});
+});

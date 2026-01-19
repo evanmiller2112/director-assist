@@ -242,7 +242,8 @@ export const entityRepository = {
 		notes?: string,
 		strength?: 'strong' | 'moderate' | 'weak',
 		metadata?: { tags?: string[]; tension?: number; [key: string]: unknown },
-		reverseRelationship?: string
+		reverseRelationship?: string,
+		playerVisible?: boolean
 	): Promise<void> {
 		await ensureDbReady();
 
@@ -272,6 +273,7 @@ export const entityRepository = {
 				bidirectional,
 				notes: notes || undefined,
 				strength,
+				playerVisible,
 				createdAt: now,
 				updatedAt: now,
 				metadata,
@@ -298,6 +300,7 @@ export const entityRepository = {
 					relationship: reverseRelationship || this.getInverseRelationship(relationship),
 					bidirectional: true,
 					strength,
+					playerVisible,
 					createdAt: now,
 					updatedAt: now,
 					metadata,
@@ -326,6 +329,7 @@ export const entityRepository = {
 			strength?: 'strong' | 'moderate' | 'weak';
 			metadata?: { tags?: string[]; tension?: number; [key: string]: unknown };
 			bidirectional?: boolean;
+			playerVisible?: boolean;
 		}
 	): Promise<void> {
 		await ensureDbReady();
@@ -429,6 +433,11 @@ export const entityRepository = {
 					// Update metadata if it changed
 					if (changes.metadata !== undefined) {
 						updatedReverseLink.metadata = changes.metadata;
+					}
+
+					// Update playerVisible if it changed
+					if (changes.playerVisible !== undefined) {
+						updatedReverseLink.playerVisible = changes.playerVisible;
 					}
 
 					// Note: Do NOT update notes - notes are link-specific

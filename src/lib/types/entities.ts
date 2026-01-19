@@ -36,6 +36,7 @@ export interface EntityLink {
 	reverseRelationship?: string; // For asymmetric bidirectional links (e.g., patron_of/client_of)
 	notes?: string;
 	strength?: 'strong' | 'moderate' | 'weak'; // Relationship strength
+	playerVisible?: boolean; // Whether players can see this relationship (undefined = true)
 	createdAt?: Date; // When link was created
 	updatedAt?: Date; // When link was last updated
 	metadata?: {
@@ -58,6 +59,7 @@ export interface BaseEntity {
 	fields: Record<string, FieldValue>;
 	links: EntityLink[];
 	notes: string; // Private DM notes
+	playerVisible?: boolean; // Whether players can see this entity (undefined = true)
 	createdAt: Date;
 	updatedAt: Date;
 	metadata: Record<string, unknown>;

@@ -3,7 +3,7 @@
 	import { goto } from '$app/navigation';
 	import { entitiesStore, campaignStore } from '$lib/stores';
 	import { getEntityTypeDefinition } from '$lib/config/entityTypes';
-	import { Plus, Search, Link } from 'lucide-svelte';
+	import { Plus, Search, Link, EyeOff } from 'lucide-svelte';
 	import RelateCommand from '$lib/components/entity/RelateCommand.svelte';
 	import Pagination from '$lib/components/ui/Pagination.svelte';
 	import LoadingSkeleton from '$lib/components/ui/LoadingSkeleton.svelte';
@@ -260,6 +260,9 @@
 						{/if}
 					</div>
 					<div class="flex items-center gap-2">
+						{#if entity.playerVisible === false}
+							<span title="Hidden from players"><EyeOff class="w-4 h-4 text-amber-500" /></span>
+						{/if}
 						<div class="text-xs text-slate-400 whitespace-nowrap">
 							{new Date(entity.updatedAt).toLocaleDateString()}
 						</div>

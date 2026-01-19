@@ -9,7 +9,7 @@
 	import { getRelationshipContextSettings } from '$lib/services/relationshipContextSettingsService';
 	import type { FieldValue, FieldDefinition } from '$lib/types';
 	import { validateEntity, formatContextSummary } from '$lib/utils';
-	import { ArrowLeft, Save, ExternalLink, ImagePlus, X as XIcon, Upload, Search, ChevronDown } from 'lucide-svelte';
+	import { ArrowLeft, Save, ExternalLink, ImagePlus, X as XIcon, Upload, Search, ChevronDown, Eye, EyeOff } from 'lucide-svelte';
 	import FieldGenerateButton from '$lib/components/entity/FieldGenerateButton.svelte';
 	import LoadingButton from '$lib/components/ui/LoadingButton.svelte';
 	import { MarkdownEditor } from '$lib/components/markdown';
@@ -35,6 +35,7 @@
 	let summary = $state('');
 	let tags = $state('');
 	let notes = $state('');
+	let playerVisible = $state<boolean | undefined>(undefined);
 	let fields = $state<Record<string, FieldValue>>({});
 	let isSaving = $state(false);
 	let isInitialized = $state(false);
@@ -81,6 +82,7 @@
 			summary = entity.summary ?? '';
 			tags = entity.tags.join(', ');
 			notes = entity.notes;
+			playerVisible = entity.playerVisible;
 			fields = { ...entity.fields };
 
 			// Initialize relationship context checkbox from settings (Issue #59)
@@ -108,6 +110,7 @@
 					.map((t) => t.trim())
 					.filter(Boolean),
 				notes: notes.trim(),
+				playerVisible,
 				fields: $state.snapshot(fields),
 				updatedAt: new Date()
 			});
@@ -1013,6 +1016,30 @@
 					bind:value={tags}
 					placeholder="Comma-separated tags..."
 				/>
+			</div>
+
+			<!-- Player Visibility -->
+			<div>
+				<label class="label">Player Visibility</label>
+				<div class="flex items-start gap-3">
+					<label class="flex items-center gap-2 cursor-pointer">
+						<input
+							type="checkbox"
+							class="w-4 h-4 rounded border-slate-300 text-slate-900 focus:ring-slate-500 dark:border-slate-600 dark:bg-slate-700 dark:checked:bg-slate-600"
+							checked={playerVisible === false}
+							onchange={(e) => {
+								playerVisible = e.currentTarget.checked ? false : undefined;
+							}}
+						/>
+						<EyeOff class="w-4 h-4 text-amber-500" />
+						<span class="text-sm text-slate-700 dark:text-slate-300">
+							Hide from players (DM only)
+						</span>
+					</label>
+				</div>
+				<p class="text-xs text-slate-500 mt-1">
+					When checked, this entity will be marked as hidden from players. Useful for secret NPCs, plot twists, etc.
+				</p>
 			</div>
 
 			<!-- DM Notes -->

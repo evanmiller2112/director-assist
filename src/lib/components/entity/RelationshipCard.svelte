@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { getEntityTypeDefinition } from '$lib/config/entityTypes';
 	import { campaignStore } from '$lib/stores';
-	import { X, ArrowRight, ArrowLeftRight, Edit } from 'lucide-svelte';
+	import { X, ArrowRight, ArrowLeftRight, Edit, EyeOff } from 'lucide-svelte';
 	import type { BaseEntity, EntityLink, EntityTypeDefinition } from '$lib/types';
 
 	interface Props {
@@ -100,6 +100,12 @@
 				>
 					{linkedTypeDefinition?.label ?? linkedEntity.type}
 				</span>
+				{#if link.playerVisible === false}
+					<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300" title="Hidden from players">
+						<EyeOff class="w-3 h-3" />
+						DM Only
+					</span>
+				{/if}
 			</div>
 		</div>
 

@@ -8,6 +8,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+
+### Fixed
+
+### Changed
+
+## [0.3.0] - 2026-01-19
+
+### Added
+- UI for previewing relationship context before AI generation (Issue #62)
+  - New RelationshipContextSelector component - expandable section showing relationship context for AI generation
+  - RelationshipContextItem component - displays individual relationships with cache status and controls
+  - Select/deselect individual relationships to include in AI context
+  - Token count estimates for context size awareness
+  - Cache status display with color coding (valid/stale/missing)
+  - Cache age display with relative time formatting ("Cached 2 hours ago")
+  - Manual regeneration buttons for relationship summaries
+  - timeFormat utility for human-readable relative time formatting
+- Relationship summary cache status and manual regeneration UI (Issue #134)
+  - Visual cache status indicators on relationship context items
+  - "Regenerate" button to manually refresh stale relationship summaries
+  - Cache validation checks based on entity update timestamps
+  - Real-time cache status updates in the UI
 - Multi-AI provider support (Issue #26)
   - New AI abstraction layer in `src/lib/ai/` supporting multiple providers
   - Supported providers: Anthropic (Claude), OpenAI (GPT), Google (Gemini), Mistral, Ollama (local)

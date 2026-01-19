@@ -41,7 +41,9 @@ Open your browser to `http://localhost:5173`
 npm run build
 ```
 
-The app builds to a static site in the `build` directory. Deploy to any static hosting service (Netlify, Vercel, GitHub Pages, etc.).
+The app builds to a static site in the `build` directory. Deploy to any static hosting service (Netlify, Vercel, GitHub Pages, etc.) or self-host on Apache, Nginx, or Caddy.
+
+See [DEPLOYMENT.md](./docs/DEPLOYMENT.md) for detailed deployment instructions including server configurations for SPA routing.
 
 ## How to Use
 

@@ -8,6 +8,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Smart backup reminder system (Issue #152)
+  - Non-intrusive amber banner prompts users to export campaign data at appropriate times
+  - Three trigger types: first-time (5 entities), milestones (10, 25, 50, 100+), time-based (7+ days)
+  - Progressive milestone sequence: 5, 10, 25, 50, then increments of 50 (100, 150, 200, ...)
+  - 24-hour dismissal window prevents repeated prompts during single sessions
+  - Minimum 5 entities required before any reminder appears
+  - "Days since last backup" indicator on Settings page shows export history
+  - BackupReminderBanner component with contextual messages and actions
+  - backupReminderService tracks export dates, dismissals, and milestone progress in localStorage
+  - Integrated with Settings page export button to automatically update last export timestamp
+  - Integrated with root layout to show banner when conditions are met
 - Draw Steel-specific fields for Encounter and Session entities (Issue #3)
   - 10 new Encounter fields in Draw Steel system profile: challengeLevel, threats (entity-refs), environment, victoryConditions, defeatConditions, readAloudText, tacticalNotes, treasureRewards, negotiationPosition (select), negotiationMotivations
   - 13 new Session fields in Draw Steel system profile: sessionDuration, inWorldDate, partyPresent (entity-refs), xpAwarded, gloryAwarded, treasureAwarded, keyDecisions, characterDevelopment, campaignMilestones (tags), powerRollOutcomes, negotiationOutcomes, initiativeOrder, encountersRun (entity-refs)

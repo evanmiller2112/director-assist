@@ -49,6 +49,14 @@ export interface CampaignBackup {
 	selectedModel?: string; // Issue #34: User's selected Claude model preference
 }
 
+// Issue #152: Backup reminder system types
+export type BackupReminderReason = 'first-time' | 'milestone' | 'time-based';
+
+export interface BackupReminderResult {
+	show: boolean;
+	reason: BackupReminderReason | null;
+}
+
 // Default campaign settings
 export const DEFAULT_CAMPAIGN_SETTINGS: CampaignSettings = {
 	customRelationships: [],

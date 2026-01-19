@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import { aiSettings, campaignStore, notificationStore, uiStore } from '$lib/stores';
 	import { db } from '$lib/db';
 	import { entityRepository, chatRepository, appConfigRepository } from '$lib/db/repositories';
@@ -12,11 +13,16 @@
 		getFallbackModels,
 		getRelationshipContextSettings,
 		setRelationshipContextSettings,
+		setLastExportedAt,
+		setLastMilestoneReached,
+		getLastExportedAt,
+		getDaysSinceExport,
 		type RelationshipContextSettings
 	} from '$lib/services';
 	import { Download, Upload, Moon, Sun, Monitor, Trash2, Key, RefreshCw, Layers, ChevronRight } from 'lucide-svelte';
 	import LoadingButton from '$lib/components/ui/LoadingButton.svelte';
 	import { SystemSelector } from '$lib/components/settings';
+	import { page } from '$app/stores';
 
 	// Form state
 	let apiKey = $state('');
@@ -36,6 +42,10 @@
 	let currentSystemId = $state<string>('draw-steel');
 	let isSavingSystem = $state(false);
 
+	// Last export state
+	let lastExportedAt = $state<Date | null>(null);
+	let daysSinceExport = $state<number | null>(null);
+
 	// Load API key and models from storage
 	$effect(() => {
 		if (typeof window !== 'undefined') {
@@ -45,6 +55,19 @@
 				loadModels(stored);
 			}
 			selectedModel = getSelectedModel();
+
+			// Load last export info
+			lastExportedAt = getLastExportedAt();
+			daysSinceExport = getDaysSinceExport(lastExportedAt);
+		}
+	});
+
+	// Handle action parameter (e.g., ?action=export)
+	onMount(() => {
+		const actionParam = $page.url.searchParams.get('action');
+		if (actionParam === 'export') {
+			// Trigger export
+			exportBackup();
 		}
 	});
 
@@ -140,9 +163,10 @@
 			const storedModel = localStorage.getItem('dm-assist-selected-model');
 			const modelToExport = storedModel?.trim() || undefined;
 
+			const exportDate = new Date();
 			const backup: CampaignBackup = {
 				version: '2.0.0', // New format version
-				exportedAt: new Date(),
+				exportedAt: exportDate,
 				entities, // Campaign is now included in entities
 				chatHistory,
 				activeCampaignId: activeCampaignId ?? undefined,
@@ -155,10 +179,40 @@
 
 			const a = document.createElement('a');
 			a.href = url;
-			a.download = `${activeCampaign.name.replace(/\s+/g, '-').toLowerCase()}-backup-${new Date().toISOString().split('T')[0]}.json`;
+			a.download = `${activeCampaign.name.replace(/\s+/g, '-').toLowerCase()}-backup-${exportDate.toISOString().split('T')[0]}.json`;
 			a.click();
 
 			URL.revokeObjectURL(url);
+
+			// Save export timestamp and update milestone
+			setLastExportedAt(exportDate);
+
+			// Calculate current entity count (exclude campaigns) and update milestone
+			const entityCount = entities.filter(e => e.type !== 'campaign').length;
+
+			// Define milestones
+			const milestones = [5, 10, 25, 50];
+			let milestone = 0;
+
+			// Check fixed milestones
+			for (const m of milestones) {
+				if (entityCount >= m) {
+					milestone = m;
+				}
+			}
+
+			// Check 50-increment milestones after 50
+			if (entityCount >= 100) {
+				milestone = Math.floor(entityCount / 50) * 50;
+			}
+
+			setLastMilestoneReached(milestone);
+
+			// Update local state
+			lastExportedAt = exportDate;
+			daysSinceExport = 0;
+
+			notificationStore.success('Backup exported successfully!');
 		} catch (error) {
 			console.error('Export failed:', error);
 			notificationStore.error('Failed to export backup');
@@ -594,6 +648,34 @@
 		<p class="text-sm text-slate-500 mb-4">
 			Export your campaign data to a JSON file for backup or to switch between campaigns.
 		</p>
+
+		<!-- Last export indicator -->
+		{#if lastExportedAt}
+			<div class="mb-4 p-3 rounded-lg bg-slate-50 dark:bg-slate-800">
+				<p class="text-sm">
+					<span class="text-slate-600 dark:text-slate-400">Last export:</span>
+					{#if daysSinceExport === 0}
+						<span class="text-green-600 dark:text-green-400 font-medium">Today</span>
+					{:else if daysSinceExport === 1}
+						<span class="text-green-600 dark:text-green-400 font-medium">1 day ago</span>
+					{:else if daysSinceExport !== null && daysSinceExport < 7}
+						<span class="text-green-600 dark:text-green-400 font-medium">{daysSinceExport} days ago</span>
+					{:else if daysSinceExport !== null && daysSinceExport < 14}
+						<span class="text-yellow-600 dark:text-yellow-400 font-medium">{daysSinceExport} days ago</span>
+					{:else if daysSinceExport !== null}
+						<span class="text-red-600 dark:text-red-400 font-medium">{daysSinceExport} days ago</span>
+					{/if}
+				</p>
+			</div>
+		{:else}
+			<div class="mb-4 p-3 rounded-lg bg-slate-50 dark:bg-slate-800">
+				<p class="text-sm">
+					<span class="text-slate-600 dark:text-slate-400">Last export:</span>
+					<span class="text-slate-500 dark:text-slate-400 font-medium">Never</span>
+				</p>
+			</div>
+		{/if}
+
 		<div class="flex gap-2">
 			<LoadingButton
 				variant="secondary"

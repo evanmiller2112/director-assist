@@ -32,3 +32,6 @@ export {
 	buildNavigationUrl,
 	type BreadcrumbSegment
 } from './breadcrumbUtils';
+
+// Context summary utilities
+export { formatContextSummary, type ContextSummaryInput } from './contextSummary';

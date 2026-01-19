@@ -6,7 +6,7 @@
 	import { hasGenerationApiKey } from '$lib/services';
 	import { generateField, isGeneratableField } from '$lib/services/fieldGenerationService';
 	import type { FieldValue, FieldDefinition } from '$lib/types';
-	import { validateEntity } from '$lib/utils';
+	import { validateEntity, formatContextSummary } from '$lib/utils';
 	import { ArrowLeft, Save, ExternalLink, ImagePlus, X as XIcon, Upload, Search, ChevronDown } from 'lucide-svelte';
 	import FieldGenerateButton from '$lib/components/entity/FieldGenerateButton.svelte';
 	import LoadingButton from '$lib/components/ui/LoadingButton.svelte';
@@ -258,6 +258,36 @@
 			[fieldKey]: !entityRefDropdownOpen[fieldKey]
 		};
 	}
+
+	function getContextSummaryForField(targetFieldKey: string): string {
+		if (!typeDefinition) return '';
+
+		const campaign = campaignStore.campaign;
+		const campaignContext = campaign
+			? {
+					name: campaign.name,
+					setting: (campaign.fields?.setting as string) ?? '',
+					system: (campaign.fields?.system as string) ?? ''
+				}
+			: undefined;
+
+		return formatContextSummary({
+			entityType,
+			typeDefinition,
+			currentValues: {
+				name: name.trim() || undefined,
+				description: description.trim() || undefined,
+				tags: tags
+					.split(',')
+					.map((t) => t.trim())
+					.filter(Boolean),
+				notes: notes.trim() || undefined,
+				fields: $state.snapshot(fields)
+			},
+			campaignContext,
+			targetFieldKey
+		});
+	}
 </script>
 
 <svelte:head>
@@ -335,6 +365,7 @@
 									disabled={isSaving}
 									loading={generatingFieldKey === field.key}
 									onGenerate={() => handleGenerateField(field)}
+									contextSummary={getContextSummaryForField(field.key)}
 								/>
 							{/if}
 						</div>
@@ -706,6 +737,7 @@
 											disabled={isSaving}
 											loading={generatingFieldKey === field.key}
 											onGenerate={() => handleGenerateField(field)}
+											contextSummary={getContextSummaryForField(field.key)}
 										/>
 									{/if}
 								</div>

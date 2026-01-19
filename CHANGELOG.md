@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Generation Type Selector in Chat interface (Issue #41)
+  - Dropdown selector in chat interface for choosing specific content generation types
+  - 8 generation types: NPC, Location, Plot Hook, Encounter, Item, Faction, Session Prep, and General
+  - Each type includes custom prompt templates and suggested output structures
+  - Icon-based selector with descriptive tooltips for each generation type
+  - System prompts automatically adapt to selected generation type for focused responses
+  - Selection persists within conversation but can be changed anytime
+  - Visual indicator shows currently active generation type
+  - Accessible on both desktop and mobile interfaces
+  - Configuration in `src/lib/config/generationTypes.ts` with prompt templates and structured output suggestions
 - Campaign as first-class entity type (Issue #46)
   - Campaigns now stored as entities with `type: 'campaign'` in the entities table
   - Multiple campaigns supported with active campaign tracking

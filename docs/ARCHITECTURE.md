@@ -103,7 +103,8 @@ src/
 │   │   ├── contextBuilder.ts              # Entity context building for AI
 │   │   ├── fieldGenerationService.ts      # AI field generation
 │   │   ├── modelService.ts                # AI model selection
-│   │   └── relationshipContextBuilder.ts  # Relationship context building for AI
+│   │   ├── relationshipContextBuilder.ts  # Relationship context building for AI
+│   │   └── relationshipSummaryService.ts  # AI relationship summary generation
 │   ├── stores/              # Application state
 │   │   ├── campaign.svelte.ts
 │   │   ├── entities.svelte.ts
@@ -3501,6 +3502,73 @@ Model IDs contain 8-digit dates (YYYYMMDD format). The service uses regex to ext
 - Manual selections always respected (never overridden)
 - Graceful degradation when API unavailable
 - Reduces API calls through intelligent caching
+
+#### Relationship Summary Service
+
+**Location:** `/src/lib/services/relationshipSummaryService.ts`
+
+**Purpose:** Generates AI-powered summaries describing relationships between entities, providing contextual descriptions suitable for AI prompts and player-facing content.
+
+**Key Functions:**
+
+```typescript
+// Generate summary for a single relationship
+generateRelationshipSummary(
+  sourceEntity: BaseEntity,
+  targetEntity: BaseEntity,
+  relationship: EntityLink,
+  context?: RelationshipSummaryContext
+): Promise<RelationshipSummaryResult>
+
+// Generate summaries for multiple relationships
+generateRelationshipSummariesBatch(
+  sourceEntity: BaseEntity,
+  relationships: Array<{ targetEntity: BaseEntity; relationship: EntityLink }>,
+  context?: RelationshipSummaryContext
+): Promise<RelationshipSummaryBatchResult>
+
+// Check if API key is configured
+hasRelationshipSummaryApiKey(): boolean
+```
+
+**Privacy Protection:**
+
+The service automatically excludes sensitive information from AI prompts:
+- Fields marked in "hidden" section
+- Fields with "hidden" or "secret" in their names
+- DM notes
+- Only public-safe entity data is included
+
+**Relationship Context:**
+
+Summaries consider:
+- Relationship type and direction
+- Bidirectional relationships and reverse labels
+- Relationship strength
+- Relationship notes
+- Campaign context (name, setting, system)
+
+**Batch Processing:**
+
+The batch function processes relationships sequentially with:
+- 100ms delay between requests to avoid rate limits
+- Partial failure handling (continues on errors)
+- Success/failure tracking for each relationship
+- Detailed results for individual summaries
+
+**Example Output:**
+
+For a relationship between "Aria" (NPC) and "The Order of Light" (Faction):
+```
+Aria serves as a loyal member of The Order of Light,
+dedicated to their cause of protecting the realm from darkness.
+```
+
+**Token Usage:**
+
+- Max tokens: 300 per summary
+- Summaries typically 1-2 sentences
+- Optimized for concise, contextual descriptions
 
 ### Error Handling
 

@@ -1302,6 +1302,53 @@ For generating short field content, Fast tier models work great. Save Powerful t
 
 Your campaign data is stored in your browser's local storage. It's important to export regular backups in case you clear your browser data or switch devices.
 
+### Smart Backup Reminders
+
+Director Assist includes a smart backup reminder system that helps you remember to export your campaign data regularly. The app tracks when you should backup and shows gentle, non-intrusive reminders at the right time.
+
+**When Reminders Appear:**
+
+Backup reminders appear as an amber-colored banner at the top of the app when one of these conditions is met:
+
+1. **First-time milestone**: You've created 5 or more entities and haven't exported a backup yet
+2. **Progress milestones**: You've reached significant entity counts (10, 25, 50, 100, and then every 50 after that)
+3. **Time-based**: It's been 7 or more days since your last backup export
+
+**Minimum threshold**: Reminders only appear when you have at least 5 entities. Small campaigns with fewer entities don't trigger reminders.
+
+**24-hour dismissal window**: When you click "Remind Me Later" on a reminder, it won't appear again for 24 hours. This prevents the same reminder from appearing repeatedly during a single session.
+
+**What the Banner Shows:**
+
+The backup reminder banner displays:
+- A contextual message based on why it's appearing (milestone, time elapsed, or first-time)
+- Your current entity count or days since last backup
+- "Backup Now" button that takes you directly to the backup export
+- "Remind Me Later" button to dismiss for 24 hours
+- Close button (X) to dismiss for 24 hours
+
+**Days Since Last Backup:**
+
+On the Settings page, you'll see a "Days since last backup" indicator in the Backup & Restore section. This helps you track when you last exported your data:
+- Shows number of days since your last export
+- If you've never exported, it shows "Never"
+- Updates automatically when you create a new backup
+
+**How It Works:**
+
+The backup reminder system tracks three pieces of information in your browser:
+- **Last export date**: When you last clicked "Export Backup"
+- **Last dismissal date**: When you last dismissed a reminder
+- **Last milestone reached**: The highest entity count milestone you've hit
+
+This data is stored locally and is never sent anywhere. The system uses this to intelligently determine when to show reminders without being annoying.
+
+**Tips:**
+- Reminders automatically disappear after you export a backup
+- The 24-hour dismissal ensures you won't see the same reminder repeatedly
+- Milestones are progressive—once you hit a milestone, it won't remind you about it again
+- Days since export resets to 0 when you create a new backup
+
 ### Exporting a Backup
 
 1. Open Settings (gear icon or `/settings` command)
@@ -1309,6 +1356,8 @@ Your campaign data is stored in your browser's local storage. It's important to 
 3. Click "Export Backup"
 4. Choose where to save the file
 5. The backup downloads as a JSON file
+
+When you export a backup, the app records the timestamp. This resets the backup reminder system and updates the "Days since last backup" indicator.
 
 **File Name Format**: `director-assist-backup-YYYY-MM-DD.json`
 
@@ -1499,7 +1548,7 @@ Create a Session entity after each game session with:
 3. Create new entities for anything introduced
 4. Add relationships that emerged in play
 5. Tag entities with session numbers (e.g., "session-5")
-6. Export a backup
+6. Export a backup (the app will remind you if it's been a while)
 
 ### Field Tips
 
@@ -1635,6 +1684,27 @@ Large campaigns or images can affect performance.
 - Try a different browser
 - Close other browser tabs using lots of memory
 - Clear browser cache (but export a backup first!)
+
+**Issue: I keep seeing backup reminders**
+
+The backup reminder system is designed to be helpful, not intrusive.
+
+**Solutions**:
+- Click "Backup Now" to export a backup and reset the reminder system
+- Click "Remind Me Later" to dismiss for 24 hours
+- If you've hit a milestone, export a backup to acknowledge the reminder
+- The reminder only appears when you've reached a new milestone or it's been 7+ days
+- Once dismissed, it won't appear again for 24 hours even if you refresh the page
+
+**Issue: I don't see backup reminders**
+
+You may not meet the conditions for a reminder yet.
+
+**Solutions**:
+- Create at least 5 entities before reminders appear
+- If you just dismissed a reminder, wait 24 hours before it can appear again
+- If you recently exported a backup, reminders won't show until the next milestone or 7+ days
+- Check the "Days since last backup" on the Settings page to see your export history
 
 **Issue: Export/import isn't working**
 

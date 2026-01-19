@@ -92,3 +92,16 @@ export {
 	resetSidebarEntityTypeOrder,
 	getDefaultOrder
 } from './sidebarOrderService';
+
+// Backup reminder service
+export {
+	getLastExportedAt,
+	setLastExportedAt,
+	getLastBackupPromptDismissedAt,
+	setLastBackupPromptDismissedAt,
+	getLastMilestoneReached,
+	setLastMilestoneReached,
+	shouldShowBackupReminder,
+	getNextMilestone,
+	getDaysSinceExport
+} from './backupReminderService';

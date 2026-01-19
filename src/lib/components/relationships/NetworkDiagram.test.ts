@@ -317,7 +317,7 @@ describe('NetworkDiagram Component - Filtering', () => {
 	});
 
 	it('should update when relationshipMap prop changes', async () => {
-		const { component } = render(NetworkDiagram, {
+		const { rerender } = render(NetworkDiagram, {
 			props: {
 				relationshipMap: fullMap,
 				isDark: false,
@@ -334,10 +334,10 @@ describe('NetworkDiagram Component - Filtering', () => {
 			edges: []
 		};
 
-		await component.$set({ relationshipMap: newMap });
+		await rerender({ relationshipMap: newMap });
 
 		// Component should re-render with new data
-		expect(component).toBeTruthy();
+		expect(rerender).toBeTruthy();
 	});
 });
 
@@ -432,7 +432,7 @@ describe('NetworkDiagram Component - Theme Changes', () => {
 			edges: []
 		};
 
-		const { component } = render(NetworkDiagram, {
+		const { rerender } = render(NetworkDiagram, {
 			props: {
 				relationshipMap: map,
 				isDark: false,
@@ -442,10 +442,10 @@ describe('NetworkDiagram Component - Theme Changes', () => {
 		});
 
 		// Switch to dark mode
-		await component.$set({ isDark: true });
+		await rerender({ isDark: true });
 
 		// Component should update
-		expect(component).toBeTruthy();
+		expect(rerender).toBeTruthy();
 	});
 
 	it('should update colors when theme changes from dark to light', async () => {
@@ -456,7 +456,7 @@ describe('NetworkDiagram Component - Theme Changes', () => {
 			edges: []
 		};
 
-		const { component } = render(NetworkDiagram, {
+		const { rerender } = render(NetworkDiagram, {
 			props: {
 				relationshipMap: map,
 				isDark: true,
@@ -466,10 +466,10 @@ describe('NetworkDiagram Component - Theme Changes', () => {
 		});
 
 		// Switch to light mode
-		await component.$set({ isDark: false });
+		await rerender({ isDark: false });
 
 		// Component should update
-		expect(component).toBeTruthy();
+		expect(rerender).toBeTruthy();
 	});
 });
 

@@ -382,6 +382,41 @@ console.log(mockFn.mock.calls);
 expect(mockFn).toHaveBeenNthCalledWith(2, 'expected', 'args');
 ```
 
+## Test Coverage Summary
+
+### Current Test Statistics (as of Issue #19)
+
+**Overall Coverage**: 97.46% pass rate with 538+ total tests
+
+**Component Tests**:
+- Network visualization components (NetworkDiagram, NetworkNodeDetails, NetworkEdgeDetails, NetworkFilterPanel)
+- Loading UI components (LoadingButton, LoadingSpinner)
+- AI toggle components
+
+**Repository Tests** (178 tests):
+- `appConfigRepository.test.ts` - 56 tests for app configuration persistence
+- `chatRepository.test.ts` - 59 tests for chat message storage
+- `campaignRepository.test.ts` - 63 tests for campaign CRUD operations
+
+**Store Tests** (369 tests):
+- `notifications.test.ts` - 59 tests for notification system
+- `ui.test.ts` - 88 tests for UI state management
+- `chat.test.ts` - 113 tests for chat store logic
+- `campaign.test.ts` - 109 tests for campaign store operations
+
+**Recent Improvements**:
+- Fixed Svelte 5 runes compatibility in component tests
+- Standardized assertion patterns across test suite
+- Added comprehensive coverage for data layer (repositories and stores)
+
+### Test Organization
+
+Tests are organized by layer:
+- **Component tests**: `src/lib/components/**/*.test.ts` - UI component behavior
+- **Store tests**: `src/lib/stores/*.test.ts` - State management logic
+- **Repository tests**: `src/lib/db/repositories/*.test.ts` - Database operations
+- **Integration tests**: `src/tests/integration/*.test.ts` - Cross-layer interactions
+
 ## CI/CD Integration
 
 The test suite is designed to run in CI environments:

@@ -75,6 +75,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added gloryAwarded field for Draw Steel's Glory progression system
   - Fields automatically appear when campaign uses Draw Steel system profile
   - Maintains backwards compatibility with existing System Agnostic campaigns
+- Conversation Management System UI Components (Issue #42)
+  - ConversationListItem component for displaying individual conversations
+  - ConversationSidebar component with conversation list and management
+  - "New Conversation" button to create conversations
+  - Click to switch between conversations (messages reload automatically)
+  - Visual highlight for active conversation (blue background and border)
+  - Inline rename: double-click conversation name to edit, Enter to save, Escape to cancel
+  - Delete conversations with confirmation dialog (trash icon on hover)
+  - Metadata display: conversation name, message count badge, relative last activity time
+  - Empty state when no conversations exist
+  - Auto-create default conversation on first use
+  - Integrated into ChatPanel with conversationStore
+  - 71 tests covering all conversation UI functionality
+  - Full accessibility support (ARIA labels, keyboard navigation)
+  - Dark mode styling consistent with app theme
 - Campaign as first-class entity type (Issue #46)
   - Campaigns now stored as entities with `type: 'campaign'` in the entities table
   - Multiple campaigns supported with active campaign tracking

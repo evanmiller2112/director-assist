@@ -1,11 +1,28 @@
 import type { EntityId } from './entities';
 
+// Conversation containing chat messages
+export interface Conversation {
+	id: EntityId;
+	name: string;
+	createdAt: Date;
+	updatedAt: Date;
+}
+
+// Conversation with additional metadata
+export interface ConversationWithMetadata extends Conversation {
+	messageCount: number;
+	lastMessageTime?: Date;
+}
+
 // Chat message in conversation history
 export interface ChatMessage {
 	id: EntityId;
 	role: 'user' | 'assistant';
 	content: string;
 	timestamp: Date;
+
+	// Optional conversation reference (for backward compatibility)
+	conversationId?: EntityId;
 
 	// Context that was used for this message
 	contextEntities?: EntityId[];

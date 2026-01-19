@@ -1,10 +1,11 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { X, Send, Trash2, Loader2, Settings } from 'lucide-svelte';
-	import { chatStore, uiStore } from '$lib/stores';
+	import { chatStore, uiStore, conversationStore } from '$lib/stores';
 	import { hasChatApiKey } from '$lib/services/chatService';
 	import ChatMessage from './ChatMessage.svelte';
 	import ContextSelector from './ContextSelector.svelte';
+	import ConversationSidebar from './ConversationSidebar.svelte';
 	import GenerationTypeSelector from './GenerationTypeSelector.svelte';
 	import type { GenerationType } from '$lib/types';
 
@@ -17,8 +18,19 @@
 	const streamingContent = $derived(chatStore.streamingContent);
 	const hasApiKey = $derived(hasChatApiKey());
 
+	const conversations = $derived(conversationStore.conversations);
+	const conversationsLoading = $derived(conversationStore.isLoading);
+
 	onMount(() => {
+		conversationStore.load();
 		chatStore.load();
+	});
+
+	// Auto-create default conversation if none exist and loading is complete
+	$effect(() => {
+		if (!conversationsLoading && conversations.length === 0) {
+			conversationStore.create('New Conversation');
+		}
 	});
 
 	// Auto-scroll to bottom when new messages arrive
@@ -82,6 +94,9 @@
 			</button>
 		</div>
 	</div>
+
+	<!-- Conversation Sidebar -->
+	<ConversationSidebar />
 
 	<!-- Context selector -->
 	<ContextSelector />

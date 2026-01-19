@@ -275,12 +275,18 @@ interface SystemTerminology {
 
 2. **Draw Steel**
    - ID: `'draw-steel'`
-   - Custom fields for characters: ancestry, class, kit, heroicResource
+   - Custom fields for characters:
+     - Identity: ancestry, heritage, ancestryTrait
+     - Class: class, kit, heroicResource, classFeatures
+     - Characteristics: might, agility, reason, intuition, presence
+     - Skills: skills (with training levels)
+     - Health: maxHP, currentHP, vitality, conditions
+     - Resources: xp, gold, weapons, armor
    - Custom fields for NPCs: threatLevel (minion/standard/elite/boss/solo), role
    - Custom fields for encounters: victoryPoints, negotiationDC, challengeLevel, threats, environment, victoryConditions, defeatConditions, readAloudText, tacticalNotes, treasureRewards, negotiationPosition, negotiationMotivations
    - Custom fields for sessions: sessionDuration, inWorldDate, partyPresent, xpAwarded, gloryAwarded, treasureAwarded, keyDecisions, characterDevelopment, campaignMilestones, powerRollOutcomes, negotiationOutcomes, initiativeOrder, encountersRun
    - Encounter types: combat, negotiation, montage, exploration, social, puzzle, trap
-   - Terminology: "Director" instead of "GM", "threats" instead of "enemies"
+   - Terminology: "Director" instead of "GM", "Characteristics" instead of "Ability Scores", "threats" instead of "enemies"
    - AI context includes Draw Steel mechanics and concepts
 
 **How System Profiles Work:**
@@ -340,9 +346,15 @@ async setSystemProfile(systemId: string): Promise<void>
 
 When a campaign uses the Draw Steel system profile, creating a character shows:
 - All standard character fields (background, goals, secrets)
-- Draw Steel-specific fields: Ancestry (dropdown), Class (dropdown), Kit (text), Heroic Resource (rich text)
+- Draw Steel-specific fields organized by category:
+  - Identity: Ancestry (dropdown), Heritage (text), Ancestry Trait (rich text)
+  - Class: Class (dropdown), Kit (text), Class Features (rich text), Heroic Resource (rich text)
+  - Characteristics: Might, Agility, Reason, Intuition, Presence (all number fields)
+  - Skills (rich text for listing skills with training levels)
+  - Health: Max HP, Current HP, Vitality (numbers), Conditions (tags)
+  - Resources: XP, Gold (numbers), Weapons, Armor (rich text)
 - Field order controlled by the `order` property in field definitions
-- AI generation understands Draw Steel terminology and mechanics
+- AI generation understands Draw Steel terminology and mechanics (e.g., "Characteristics" instead of "Ability Scores")
 
 #### BaseEntity
 All entity types extend this base structure.

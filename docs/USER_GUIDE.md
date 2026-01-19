@@ -846,7 +846,13 @@ Director Assist supports multiple game systems with system-specific fields and t
 When you select a game system, entity forms automatically adapt to show system-appropriate fields:
 
 **Draw Steel System Adds:**
-- **Characters**: Ancestry, Class, Kit, Heroic Resource fields
+- **Characters**:
+  - Identity: Ancestry, Heritage, Ancestry Trait
+  - Class: Class, Kit, Heroic Resource, Class Features
+  - Characteristics: Might, Agility, Reason, Intuition, Presence
+  - Skills with training levels (Trained, Expert, Master)
+  - Health: Max HP, Current HP, Vitality, Conditions
+  - Resources: XP, Gold, Weapons, Armor
 - **NPCs**: Threat Level (minion/standard/elite/boss/solo), Combat Role (ambusher, artillery, brute, controller, defender, harrier, hexer, leader, mount, support)
 - **Encounters**: Victory Points, Negotiation DC, Challenge Level, Threats (entity references to NPCs), Environment, Victory Conditions, Defeat Conditions, Read-Aloud Text, Tactical Notes, Treasure & Rewards, Negotiation Position (hostile/unfavorable/neutral/favorable/friendly), Negotiation Motivations, system-specific encounter types (combat, negotiation, montage, exploration, social, puzzle, trap)
 - **Sessions**: Session Duration, In-World Date, Party Present (entity references to characters), XP Awarded, Glory Awarded, Treasure Awarded, Key Decisions, Character Development, Campaign Milestones (tags), Power Roll Outcomes, Negotiation Outcomes, Initiative Order, Encounters Run (entity references to encounters)

@@ -36,6 +36,8 @@ npm run dev
 
 Open your browser to `http://localhost:5173`
 
+**After pulling updates**: Always run `npm install` after pulling new changes to ensure any new dependencies are installed.
+
 ### Building for Production
 
 ```bash

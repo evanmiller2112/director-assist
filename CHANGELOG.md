@@ -8,6 +8,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+
+### Fixed
+
+### Changed
+
+## [0.4.0] - 2026-01-19
+
+### Added
+- System-aware architecture with first-class Draw Steel support (Issue #5)
+  - New SystemProfile interface defining game system configurations
+  - Entity type modifications for system-specific fields
+  - AI context customization with system-specific mechanics and terminology
+  - UI terminology overrides (e.g., "Director" for Draw Steel game master)
+  - Draw Steel profile with character fields (ancestry, class, kit, heroicResource)
+  - Draw Steel NPC fields (threatLevel, role)
+  - Draw Steel encounter fields (victoryPoints, negotiationDC)
+  - 7 Draw Steel encounter types: combat, negotiation, montage, exploration, social, puzzle, trap
+  - System-aware entity type resolution with `getEntityTypeDefinitionWithSystem()`
+  - Campaign system profile management in campaign store
+  - Backwards compatible: campaigns default to 'system-agnostic'
+  - 100+ tests for system profile functionality
+- Draw Steel character sheet fields (Issue #16)
+  - 17 new character fields for comprehensive character tracking
+  - Identity fields: heritage, ancestryTrait
+  - Ability scores: might, agility, reason, intuition, presence
+  - Health tracking: maxHP, currentHP, vitality, conditions
+  - Resources: xp, gold, weapons, armor
+  - Skills & features: skills (richtext), classFeatures (richtext)
+  - Fixed ancestries: removed generic "Elf", kept High Elf and Wode Elf
+  - Added Troubadour class (9 classes total)
+  - Enhanced AI context with accurate Draw Steel terminology and mechanics
 - Draw Steel-specific fields for Encounter and Session entities (Issue #3)
   - 10 new Encounter fields in Draw Steel system profile: challengeLevel, threats (entity-refs), environment, victoryConditions, defeatConditions, readAloudText, tacticalNotes, treasureRewards, negotiationPosition (select), negotiationMotivations
   - 13 new Session fields in Draw Steel system profile: sessionDuration, inWorldDate, partyPresent (entity-refs), xpAwarded, gloryAwarded, treasureAwarded, keyDecisions, characterDevelopment, campaignMilestones (tags), powerRollOutcomes, negotiationOutcomes, initiativeOrder, encountersRun (entity-refs)
@@ -29,6 +60,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `reset()` method added to campaign store for testing
   - Fixed campaign store error handling
   - 69 tests covering campaign functionality
+- Drag-and-drop reordering for entity types in sidebar (Issue #121)
+  - Edit mode toggle (pencil icon) in sidebar header
+  - Drag handles (GripVertical icons) for visual feedback in edit mode
+  - Smooth drag-and-drop interactions using svelte-dnd-action
+  - Order persists across sessions in browser localStorage
+  - Campaign entity type defaults to top position on first load
+  - Reset to default option available in edit mode
+  - New sidebarOrderService for localStorage persistence
+  - All entity type filtering and override logic respected
+  - 118 tests for service functionality
+- Comprehensive test coverage (Issue #19)
+  - 538 new passing tests across repositories and stores
+  - Overall test pass rate improved to 97.46%
+  - New test files for appConfigRepository (56 tests)
+  - New test files for campaignRepository (63 tests)
+  - New test files for chatRepository (59 tests)
+  - New test files for campaign store (109 tests)
+  - New test files for chat store (113 tests)
+  - New test files for notifications store (59 tests)
+  - New test files for ui store (88 tests)
+  - Fixed Svelte 5 compatibility issues in component tests
+  - Updated testing guidelines in CONTRIBUTING.md
 
 ### Fixed
 

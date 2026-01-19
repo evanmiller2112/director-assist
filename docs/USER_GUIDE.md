@@ -10,10 +10,11 @@ Welcome to Director Assist! This guide will help you get started managing your D
 4. [Connecting Entities](#connecting-entities)
 5. [Using Search](#using-search)
 6. [Using Commands](#using-commands)
-7. [AI Features](#ai-features)
-8. [Backup & Restore](#backup--restore)
-9. [Tips & Best Practices](#tips--best-practices)
-10. [Troubleshooting](#troubleshooting)
+7. [Settings](#settings)
+8. [AI Features](#ai-features)
+9. [Backup & Restore](#backup--restore)
+10. [Tips & Best Practices](#tips--best-practices)
+11. [Troubleshooting](#troubleshooting)
 
 ## What is Director Assist?
 
@@ -729,6 +730,80 @@ Opens the settings page.
 - Only relevant commands show (e.g., `/relate` only appears when viewing an entity)
 - You can use arrow keys to select commands before pressing Enter
 - Commands save time compared to clicking through menus
+
+## Settings
+
+### Relationship Context Settings
+
+When generating content with AI, Director Assist can include information about related entities to provide richer context. These settings let you control how relationship context is used during generation.
+
+**How to Access:**
+
+1. Open Settings (gear icon in header or `/settings` command)
+2. Scroll to the "Relationship Context" section
+3. Adjust settings as needed
+4. Click "Save Relationship Settings"
+
+**Available Settings:**
+
+**Include Related Entities**
+- Checkbox to enable or disable relationship context in AI generation
+- Default: On
+- When enabled, AI sees information about entities connected to the one you're generating content for
+- When disabled, AI only sees the current entity's data
+
+**Maximum Related Entities**
+- Controls how many related entities to include in generation context
+- Range: 1-50 entities
+- Default: 20 entities
+- Higher values provide more context but consume more API tokens
+- Lower values save tokens but may miss relevant connections
+
+**Maximum Characters per Entity**
+- Limits how much text from each related entity gets included
+- Range: 1000-10000 characters
+- Default: 4000 characters
+- Prevents very detailed entities from dominating the context budget
+- Content is truncated to this length if needed
+
+**Context Budget for Relationships**
+- Slider controlling what percentage of total context to allocate for relationships
+- Range: 0-100%
+- Default: 50% (balanced)
+- 0% = Minimal relationship context, maximum primary entity context
+- 50% = Equal balance between current entity and related entities
+- 100% = Maximum relationship context
+- Adjust based on whether you value breadth (relationships) or depth (current entity)
+
+**Automatically Generate Entity Summaries**
+- Checkbox to enable automatic summary generation for related entities
+- Default: Off
+- When enabled, AI creates concise summaries of related entities (uses additional API tokens)
+- When disabled, raw entity data is used as-is
+- Requires API key configured
+
+**When to Adjust These Settings:**
+
+**Increase context for complex generation:**
+- Raise maximum related entities to 30-50
+- Increase context budget to 70-80%
+- Enable auto-generate summaries
+
+**Reduce API costs:**
+- Lower maximum related entities to 5-10
+- Decrease context budget to 20-30%
+- Keep auto-generate summaries disabled
+
+**Balance quality and cost:**
+- Use default settings (20 entities, 50% budget, summaries off)
+- Adjust based on your specific needs
+
+**Technical Notes:**
+
+- Settings are stored in browser localStorage
+- Changes take effect immediately for new generation requests
+- Settings persist across browser sessions
+- Not included in backups (local preference only)
 
 ## AI Features
 

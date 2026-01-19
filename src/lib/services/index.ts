@@ -28,6 +28,18 @@ export type {
 	RelationshipContextStats
 } from './relationshipContextBuilder';
 
+// Relationship summary generation service
+export {
+	generateRelationshipSummary,
+	generateRelationshipSummariesBatch,
+	hasRelationshipSummaryApiKey
+} from './relationshipSummaryService';
+export type {
+	RelationshipSummaryResult,
+	RelationshipSummaryBatchResult,
+	RelationshipSummaryContext
+} from './relationshipSummaryService';
+
 // Model management service
 export {
 	fetchModels,
@@ -51,3 +63,12 @@ export type {
 	FieldGenerationResult,
 	CoreFieldGenerationContext
 } from './fieldGenerationService';
+
+// Relationship context settings service
+export {
+	getRelationshipContextSettings,
+	setRelationshipContextSettings,
+	resetRelationshipContextSettings,
+	DEFAULT_RELATIONSHIP_CONTEXT_SETTINGS
+} from './relationshipContextSettingsService';
+export type { RelationshipContextSettings } from './relationshipContextSettingsService';

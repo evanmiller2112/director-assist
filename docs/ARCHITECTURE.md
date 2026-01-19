@@ -81,6 +81,9 @@ src/
 │   │   ├── markdown/        # Markdown editing and rendering
 │   │   │   ├── MarkdownEditor.svelte
 │   │   │   └── MarkdownViewer.svelte
+│   │   ├── chat/            # Chat interface components
+│   │   │   ├── ChatPanel.svelte
+│   │   │   └── GenerationTypeSelector.svelte  # Type selector for focused generation
 │   │   ├── ui/              # UI components
 │   │   │   ├── LoadingSpinner.svelte
 │   │   │   ├── LoadingSkeleton.svelte
@@ -92,9 +95,10 @@ src/
 │   │       ├── HeaderSearch.svelte
 │   │       └── Sidebar.svelte
 │   ├── config/              # Configuration and definitions
-│   │   ├── commands.ts      # Command palette definitions
-│   │   ├── entityTypes.ts   # Entity type definitions
-│   │   └── systems.ts       # Game system profiles (Draw Steel, System Agnostic)
+│   │   ├── commands.ts           # Command palette definitions
+│   │   ├── entityTypes.ts        # Entity type definitions
+│   │   ├── generationTypes.ts    # Chat generation type configs and prompt templates
+│   │   └── systems.ts            # Game system profiles (Draw Steel, System Agnostic)
 │   ├── utils/               # Utility functions
 │   │   ├── commandUtils.ts              # Command parsing and filtering
 │   │   ├── matrixUtils.ts               # Matrix data processing and sorting
@@ -4597,6 +4601,112 @@ Settings are persisted in browser localStorage under the key `relationship-conte
 **Usage in Settings UI:**
 
 The settings service is used by `/src/routes/settings/+page.svelte` to display and update relationship context preferences. Changes are saved immediately and apply to all subsequent AI generation requests.
+
+#### Generation Type Selector (Chat Interface)
+
+**Location:** `/src/lib/components/chat/GenerationTypeSelector.svelte`
+
+**Purpose:** UI component in the chat interface that allows users to select the specific type of content they want the AI to generate. Provides focused, structured generation by setting clear expectations and modifying system prompts based on the selected type.
+
+**Configuration Location:** `/src/lib/config/generationTypes.ts`
+
+**Available Generation Types:**
+
+1. **General (Default)** - General-purpose assistant for any campaign needs
+2. **NPC** - Generate non-player characters with personality and background
+3. **Location** - Create locations and settings with atmosphere
+4. **Plot Hook** - Generate story threads and adventure ideas
+5. **Encounter** - Design combat encounters and challenges
+6. **Item** - Create items, artifacts, and treasures
+7. **Faction** - Build organizations and groups
+8. **Session Prep** - Help plan and prepare game sessions
+
+**Generation Type Configuration:**
+
+```typescript
+interface GenerationTypeConfig {
+  id: GenerationType;           // Unique identifier
+  label: string;                // Display name
+  description: string;          // Help text for the type
+  icon: string;                 // Lucide icon name
+  promptTemplate: string;       // System prompt instructions
+  suggestedStructure?: string;  // Markdown template for structured output
+}
+```
+
+**How It Works:**
+
+1. **User Selection**: User selects a generation type from the dropdown in the chat interface
+2. **Prompt Modification**: The selected type's `promptTemplate` is injected into the system prompt
+3. **Structured Output**: AI follows the `suggestedStructure` to format responses consistently
+4. **State Persistence**: Selection persists within the conversation but can be changed anytime
+5. **Visual Feedback**: Active type is displayed with icon and label
+
+**Example Prompt Templates:**
+
+**NPC Generation:**
+```
+When generating an NPC, create a complete character with personality, motivations,
+and background that fits naturally into the campaign world. Format the response
+using the suggested structure below.
+
+## Name
+**Role/Title**
+## Personality
+- Key traits and mannerisms
+- Speaking style
+## Motivation
+- Primary goals and desires
+- Fears and conflicts
+(additional sections...)
+```
+
+**Session Prep:**
+```
+When helping with session prep, provide structured planning guidance including
+scenes, NPCs, pacing, and key moments. Focus on practical preparation that's
+ready to run.
+
+## Session Overview
+**Expected Duration** | **Key Themes**
+## Opening Scene
+- Hook to start the session
+- Recap points from last session
+(additional sections...)
+```
+
+**Component Props:**
+
+```typescript
+interface Props {
+  value?: GenerationType;              // Currently selected type
+  onchange?: (type: GenerationType) => void;  // Change callback
+  disabled?: boolean;                  // Disable interaction
+  compact?: boolean;                   // Compact display mode
+  class?: string;                      // Additional CSS classes
+}
+```
+
+**Features:**
+
+- Icon-based visualization for quick recognition
+- Tooltip descriptions explaining each generation type
+- Keyboard and mouse accessible
+- Responsive design (desktop and mobile)
+- Compact mode for space-constrained layouts
+- Bindable value for reactive state management
+
+**Integration:**
+
+Used in `/src/lib/components/chat/ChatPanel.svelte` to allow users to select generation types before sending messages. The selected type influences how the chat service constructs system prompts, ensuring focused and structured AI responses.
+
+**User Benefits:**
+
+- More predictable output structure
+- Easier to copy content into entity forms
+- Reduces need for follow-up prompts
+- Helps AI understand context and expectations
+- Provides consistent formatting across similar requests
 
 #### Relationship Context Fields Utility
 

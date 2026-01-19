@@ -213,6 +213,7 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for:
 
 - Full-entity AI generation (create complete entities with all fields at once)
 - AI chat assistant for campaign planning and plot suggestions
+  - Generation Type Selector (implemented - choose NPC, Location, Plot Hook, Encounter, Item, Faction, Session Prep, or General)
 - AI-suggested relationships between entities
 - Session prep checklists
 - Dice roller integration

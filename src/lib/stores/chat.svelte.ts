@@ -1,6 +1,6 @@
 import { chatRepository } from '$lib/db/repositories';
 import { sendChatMessage } from '$lib/services/chatService';
-import type { ChatMessage } from '$lib/types';
+import type { ChatMessage, GenerationType } from '$lib/types';
 
 // Chat store using Svelte 5 runes
 function createChatStore() {
@@ -10,6 +10,7 @@ function createChatStore() {
 	let contextEntityIds = $state<string[]>([]);
 	let streamingContent = $state<string>('');
 	let includeLinkedEntities = $state(true);
+	let generationType = $state<GenerationType>('custom');
 
 	return {
 		get messages() {
@@ -29,6 +30,9 @@ function createChatStore() {
 		},
 		get includeLinkedEntities() {
 			return includeLinkedEntities;
+		},
+		get generationType() {
+			return generationType;
 		},
 
 		async load() {
@@ -66,7 +70,8 @@ function createChatStore() {
 					includeLinkedEntities,
 					(partial) => {
 						streamingContent = partial;
-					}
+					},
+					generationType
 				);
 
 				// Add assistant message
@@ -109,6 +114,10 @@ function createChatStore() {
 
 		setIncludeLinkedEntities(include: boolean) {
 			includeLinkedEntities = include;
+		},
+
+		setGenerationType(type: GenerationType) {
+			generationType = type;
 		}
 	};
 }

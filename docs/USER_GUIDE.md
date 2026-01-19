@@ -1644,6 +1644,99 @@ Settings under "Relationship Context" control:
 
 You can override these defaults on a per-entity basis using the panel controls.
 
+### Using Generation Types in Chat
+
+The chat interface includes a Generation Type Selector that helps you get more focused and structured responses from the AI. Instead of generic responses, you can choose the specific type of content you want to generate.
+
+**How to Use the Selector:**
+
+1. Open the chat interface (navigate to `/chat` or use `/go chat` command)
+2. Look for the dropdown selector at the top of the chat
+3. Click to see all available generation types
+4. Select the type that matches what you want to create
+5. The AI will now provide responses structured for that content type
+
+**Available Generation Types:**
+
+**General (Default)**
+- General-purpose assistant for any campaign needs
+- Use for open-ended questions or when other types don't fit
+- No specific output structure
+
+**NPC**
+- Generate non-player characters with personality and background
+- Output includes: Name, Role, Personality traits, Motivations, Background, and Relationships
+- Perfect for quickly creating quest-givers, villains, or supporting characters
+
+**Location**
+- Create locations, places, and settings with atmosphere
+- Output includes: Description, Atmosphere, Inhabitants, Points of Interest, and Connections
+- Generates vivid places with sensory details
+
+**Plot Hook**
+- Generate plot hooks, story threads, and adventure ideas
+- Output includes: Premise, Complications, Stakes, Potential Resolutions, and Connections
+- Creates actionable story ideas with clear stakes
+
+**Encounter**
+- Design combat encounters and challenges
+- Output includes: Setup, Enemies/Challenges, Terrain, Objectives, Rewards, and Scaling suggestions
+- Provides tactical details and environmental factors
+
+**Item**
+- Create items, artifacts, and treasures
+- Output includes: Appearance, Properties, History, and Value
+- Balances mechanical effects with narrative significance
+
+**Faction**
+- Build factions, organizations, and groups
+- Output includes: Overview, Goals, Resources, Leadership, Relationships, and Secrets
+- Creates cohesive organizations with clear impact on the campaign world
+
+**Session Prep**
+- Help plan and prepare game sessions
+- Output includes: Session Overview, Key Scenes, NPCs to Prep, Pacing Notes, Key Moments, and Contingencies
+- Provides practical preparation ready to run at the table
+
+**How Generation Types Work:**
+
+When you select a generation type:
+1. The system prompt changes to guide the AI for that specific content type
+2. The AI follows a suggested structure for its responses
+3. Responses are formatted with consistent sections for easier reading
+4. The selection persists for the entire conversation (or until you change it)
+5. You can switch types at any time to generate different content
+
+**Tips for Best Results:**
+
+- **Start specific**: Choose the type that best matches what you need
+- **Provide context**: Mention your campaign setting, themes, or existing elements
+- **Iterate freely**: Switch between types as your conversation evolves
+- **Use the structure**: The suggested output format makes it easy to copy content into entity forms
+- **Combine with entities**: Generate content in chat, then create entities from the results
+- **Session prep workflow**: Use Session Prep type to plan, then switch to NPC or Encounter types for details
+
+**Example Workflow:**
+
+```
+1. Select "Session Prep" type
+2. Ask: "Help me plan next session. The party just discovered the secret cult."
+3. Review the structured session plan
+4. Switch to "NPC" type
+5. Ask: "Create the cult leader mentioned in scene 2"
+6. Get detailed NPC with personality and motivations
+7. Switch to "Encounter" type
+8. Ask: "Design the ritual chamber confrontation"
+9. Get tactical encounter with terrain and objectives
+```
+
+**Mobile and Desktop:**
+
+The selector works on all device sizes:
+- Desktop: Full dropdown with icons and descriptions
+- Mobile: Compact view with touch-friendly controls
+- Both maintain the same functionality
+
 ### Privacy and AI
 
 **Your secrets are safe**:

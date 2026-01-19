@@ -1,8 +1,9 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { buildContext, formatContextForPrompt } from './contextBuilder';
 import { getSelectedModel } from './modelService';
-import type { ChatMessage } from '$lib/types';
+import type { ChatMessage, GenerationType } from '$lib/types';
 import { chatRepository } from '$lib/db/repositories';
+import { getGenerationTypeConfig } from '$lib/config/generationTypes';
 
 const SYSTEM_PROMPT = `You are a TTRPG campaign assistant for Director Assist, helping Directors (Game Masters) with campaign preparation, content generation, and world-building.
 
@@ -35,7 +36,8 @@ export async function sendChatMessage(
 	userMessage: string,
 	contextEntityIds: string[],
 	includeLinked: boolean = true,
-	onStream?: (partial: string) => void
+	onStream?: (partial: string) => void,
+	generationType: GenerationType = 'custom'
 ): Promise<string> {
 	// Get API key from localStorage
 	const apiKey = typeof window !== 'undefined' ? localStorage.getItem('dm-assist-api-key') : null;
@@ -65,6 +67,17 @@ export async function sendChatMessage(
 	let fullSystemPrompt = SYSTEM_PROMPT;
 	if (contextPrompt) {
 		fullSystemPrompt += '\n\n' + contextPrompt;
+	}
+
+	// Add generation type-specific prompt and structure
+	if (generationType && generationType !== 'custom') {
+		const typeConfig = getGenerationTypeConfig(generationType);
+		if (typeConfig) {
+			fullSystemPrompt += '\n\n' + typeConfig.promptTemplate;
+			if (typeConfig.suggestedStructure) {
+				fullSystemPrompt += '\n\n' + typeConfig.suggestedStructure;
+			}
+		}
 	}
 
 	try {

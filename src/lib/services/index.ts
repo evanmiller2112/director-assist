@@ -13,6 +13,21 @@ export type { GenerationContext, GeneratedEntity, GenerationResult } from './ent
 export { buildContext, formatContextForPrompt, formatContextEntry, getContextStats } from './contextBuilder';
 export type { ContextOptions, EntityContext, BuiltContext } from './contextBuilder';
 
+// Relationship context builder
+export {
+	buildRelationshipContext,
+	formatRelatedEntityEntry,
+	formatRelationshipContextForPrompt,
+	getRelationshipContextStats,
+	buildPrivacySafeSummary
+} from './relationshipContextBuilder';
+export type {
+	RelationshipContextOptions,
+	RelatedEntityContext,
+	RelationshipContext,
+	RelationshipContextStats
+} from './relationshipContextBuilder';
+
 // Model management service
 export {
 	fetchModels,

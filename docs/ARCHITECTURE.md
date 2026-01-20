@@ -84,6 +84,8 @@ src/
 │   │   ├── chat/            # Chat interface components
 │   │   │   ├── ChatPanel.svelte
 │   │   │   └── GenerationTypeSelector.svelte  # Type selector for focused generation
+│   │   ├── suggestions/     # AI suggestions components
+│   │   │   └── SuggestionDetailsModal.svelte  # Suggestion details and action modal
 │   │   ├── ui/              # UI components
 │   │   │   ├── LoadingSpinner.svelte
 │   │   │   ├── LoadingSkeleton.svelte
@@ -128,6 +130,8 @@ src/
 │   │   ├── relationshipSummaryService.ts          # AI relationship summary generation
 │   │   ├── relationshipSummaryCacheService.ts     # Relationship summary caching
 │   │   ├── suggestionAnalysisService.ts           # AI suggestion analysis engine
+│   │   ├── suggestionSettingsService.ts           # AI suggestion settings management
+│   │   ├── suggestionActionService.ts             # AI suggestion action execution
 │   │   └── analyzers/                             # Specialized suggestion analyzers
 │   │       ├── inconsistencyAnalyzer.ts           # Detects campaign inconsistencies
 │   │       ├── enhancementAnalyzer.ts             # Detects entity improvement opportunities
@@ -2273,6 +2277,131 @@ interface ConfirmDialogProps {
 - Auto-focus management for keyboard navigation
 - Escape key to close
 - Click backdrop to dismiss
+
+#### SuggestionDetailsModal Component
+
+**Location:** `/src/lib/components/suggestions/SuggestionDetailsModal.svelte`
+
+**Purpose:** Modal dialog for viewing full details of an AI suggestion and taking actions on it (execute, dismiss, snooze).
+
+**Props:**
+
+```typescript
+interface SuggestionDetailsModalProps {
+  open?: boolean;                                      // Controls dialog visibility
+  suggestion: AISuggestion;                            // The suggestion to display
+  entities?: Entity[];                                 // All entities for name lookup
+  onClose?: () => void;                                // Callback when modal closes
+  onExecute?: (suggestion: AISuggestion) => void;      // Callback when user executes suggestion
+  onDismiss?: (suggestionId: string) => void;          // Callback when user dismisses
+  onSnooze?: (suggestionId: string) => void;           // Callback when user snoozes
+  loading?: boolean;                                   // Loading state during action execution
+}
+```
+
+**Display Sections:**
+
+1. **Header**
+   - Suggestion title
+   - Close button (X icon)
+
+2. **Type Badge**
+   - Color-coded badge showing suggestion type
+   - Formatted type name (e.g., "Plot Thread" instead of "plot_thread")
+
+3. **Relevance Score**
+   - Numerical score (0-100) with color coding
+   - High (70+): green
+   - Medium (40-69): yellow
+   - Low (<40): gray
+
+4. **Description**
+   - Full suggestion description text
+   - Multi-line text support
+
+5. **Affected Entities**
+   - List of entities involved in the suggestion
+   - Entity names with type badges
+   - Links to entity detail pages (future enhancement)
+
+6. **Action Buttons**
+   - **Execute**: Apply the suggestion's action
+   - **Dismiss**: Mark suggestion as dismissed (hide it)
+   - **Snooze**: Postpone the suggestion for later review
+   - **Close**: Close modal without action
+
+**Features:**
+
+- Modal backdrop with click-to-close
+- Keyboard support: Escape key closes modal
+- Loading state disables action buttons during execution
+- Entity name resolution from ID
+- Type formatting for display (underscores to spaces)
+- Color-coded relevance scores for quick assessment
+
+**Usage:**
+
+```svelte
+<script lang="ts">
+  import { SuggestionDetailsModal } from '$lib/components/suggestions';
+  import type { AISuggestion } from '$lib/types';
+
+  let selectedSuggestion = $state<AISuggestion | null>(null);
+  let showDetails = $state(false);
+  let processing = $state(false);
+
+  async function handleExecute(suggestion: AISuggestion) {
+    processing = true;
+    try {
+      await suggestionActionService.executeAction(suggestion);
+      showDetails = false;
+    } finally {
+      processing = false;
+    }
+  }
+
+  async function handleDismiss(suggestionId: string) {
+    await suggestionRepository.updateStatus(suggestionId, 'dismissed');
+    showDetails = false;
+  }
+
+  async function handleSnooze(suggestionId: string) {
+    // Extend expiration date by 7 days
+    const newExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    await suggestionRepository.update(suggestionId, { expiresAt: newExpiry });
+    showDetails = false;
+  }
+</script>
+
+{#if selectedSuggestion}
+  <SuggestionDetailsModal
+    open={showDetails}
+    suggestion={selectedSuggestion}
+    entities={$entitiesStore.allEntities}
+    loading={processing}
+    onClose={() => showDetails = false}
+    onExecute={handleExecute}
+    onDismiss={handleDismiss}
+    onSnooze={handleSnooze}
+  />
+{/if}
+```
+
+**Accessibility:**
+
+- `role="dialog"` and `aria-modal="true"` for modal semantics
+- `aria-labelledby` references the suggestion title element
+- Focus management for keyboard navigation
+- Escape key handler for closing
+- Disabled buttons during loading to prevent double-execution
+- Screen reader friendly entity lists and badges
+
+**Integration Points:**
+
+- Uses `suggestionActionService.executeAction()` for action execution
+- Uses `suggestionRepository.updateStatus()` for dismiss/accept status
+- Receives entity data from `entitiesStore` for name lookup
+- Part of the AI Suggestions UI system (Phase B5)
 
 #### SystemSelector Component
 
@@ -5440,6 +5569,170 @@ await suggestionRepository.addMany(suggestions);
 - Entity quality improvement workflows
 - Plot thread tracking and development
 - Relationship graph enrichment
+
+#### Suggestion Settings Service
+
+**Location:** `/src/lib/services/suggestionSettingsService.ts`
+
+**Purpose:** Manages user preferences for the AI Suggestions system using localStorage. Controls auto-analysis behavior, frequency, relevance thresholds, and which suggestion types are enabled.
+
+**Settings Interface:**
+
+```typescript
+interface SuggestionSettings {
+  enableAutoAnalysis: boolean;           // Auto-run analysis periodically
+  analysisFrequencyHours: number;        // How often to analyze (hours)
+  minRelevanceScore: number;             // Minimum score to show (0-100)
+  enabledSuggestionTypes: AISuggestionType[];  // Which types are active
+  maxSuggestionsPerType: number;         // Limit per suggestion type
+}
+```
+
+**Default Settings:**
+
+```typescript
+{
+  enableAutoAnalysis: true,
+  analysisFrequencyHours: 24,
+  minRelevanceScore: 30,
+  enabledSuggestionTypes: ['relationship', 'plot_thread', 'inconsistency', 'enhancement', 'recommendation'],
+  maxSuggestionsPerType: 10
+}
+```
+
+**Main API Methods:**
+
+```typescript
+// Get current settings
+getSettings(): Promise<SuggestionSettings>
+
+// Update specific settings
+updateSettings(updates: Partial<SuggestionSettings>): Promise<SuggestionSettings>
+
+// Reset to defaults
+resetToDefaults(): Promise<SuggestionSettings>
+```
+
+**Validation:**
+
+- `analysisFrequencyHours`: Clamped to 1-168 hours (1 week max)
+- `minRelevanceScore`: Clamped to 0-100
+- `maxSuggestionsPerType`: Clamped to 1-100
+- `enabledSuggestionTypes`: Filtered to valid types only
+
+**Storage:**
+
+Settings are stored in localStorage with key `ai-suggestion-settings` as JSON. SSR-safe with default fallback when `window` is undefined.
+
+**Use Cases:**
+
+- User preference management in Settings UI
+- Control suggestion notification frequency
+- Filter low-value suggestions
+- Disable specific suggestion types user doesn't find helpful
+- Adjust auto-analysis schedule based on campaign pace
+
+#### Suggestion Action Service
+
+**Location:** `/src/lib/services/suggestionActionService.ts`
+
+**Purpose:** Executes actions suggested by AI suggestions and maintains a history of executed actions for undo functionality.
+
+**Action Types:**
+
+1. **create-relationship**: Create a new relationship between entities
+2. **edit-entity**: Modify entity field values
+3. **create-entity**: Create a new entity based on suggestion
+4. **flag-for-review**: Mark entity for manual review (future use)
+
+**Main API Methods:**
+
+```typescript
+// Execute a suggestion's action
+executeAction(suggestion: AISuggestion): Promise<ActionResult>
+
+// Get action history
+getActionHistory(): ActionHistoryEntry[]
+
+// Undo last action
+undoLastAction(): Promise<ActionResult | null>
+
+// Clear all history
+clearActionHistory(): void
+```
+
+**Action Result Interface:**
+
+```typescript
+interface ActionResult {
+  success: boolean;
+  message: string;              // User-friendly success/error message
+  affectedEntityIds: string[];  // Entities changed by action
+}
+```
+
+**Action History:**
+
+Each executed action creates a history entry:
+
+```typescript
+interface ActionHistoryEntry {
+  id: string;                   // Unique entry ID
+  suggestionId: string;         // Original suggestion ID
+  actionType: string;           // Type of action executed
+  timestamp: Date;              // When action was executed
+  result: ActionResult;         // Execution result
+  undone?: boolean;             // Whether action has been undone
+  undoData?: {                  // Data needed for undo
+    linkId?: string;            // For undoing relationship creation
+    originalEntityState?: Record<string, unknown>;  // For undoing edits
+    createdEntityId?: string;   // For undoing entity creation
+  };
+}
+```
+
+**Undo Behavior:**
+
+- **create-relationship**: Deletes the created relationship link
+- **edit-entity**: Restores entity to original state
+- **create-entity**: Deletes the created entity
+- **flag-for-review**: No undo action (flag removal only)
+
+**Storage:**
+
+Action history stored in localStorage with key `ai-suggestion-action-history` as JSON. Limited to last 50 actions to prevent excessive storage usage.
+
+**Error Handling:**
+
+```typescript
+// Invalid action type
+{ success: false, message: 'Unknown action type: invalid-type', affectedEntityIds: [] }
+
+// Missing entity
+{ success: false, message: 'Entity not found: entity-123', affectedEntityIds: [] }
+
+// Relationship creation failure
+{ success: false, message: 'Failed to create relationship: [reason]', affectedEntityIds: [] }
+```
+
+**Integration with SuggestionRepository:**
+
+When an action is executed, the suggestion status is automatically updated:
+
+```typescript
+const result = await suggestionActionService.executeAction(suggestion);
+if (result.success) {
+  await suggestionRepository.updateStatus(suggestion.id, 'accepted');
+}
+```
+
+**Use Cases:**
+
+- One-click execution of AI suggestions
+- Undo accidental or unwanted actions
+- Track which suggestions have been applied
+- Audit trail of AI-driven campaign changes
+- Bulk undo after experimental suggestion application
 
 ### Error Handling
 

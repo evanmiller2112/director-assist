@@ -84,6 +84,14 @@ src/
 │   │   ├── chat/            # Chat interface components
 │   │   │   ├── ChatPanel.svelte
 │   │   │   └── GenerationTypeSelector.svelte  # Type selector for focused generation
+│   │   ├── combat/          # Combat tracking components (Draw Steel)
+│   │   │   ├── InitiativeTracker.svelte      # Turn order display
+│   │   │   ├── CombatantCard.svelte          # Individual combatant card
+│   │   │   ├── TurnControls.svelte           # Turn navigation
+│   │   │   ├── HpTracker.svelte              # HP management
+│   │   │   ├── ConditionManager.svelte       # Condition management
+│   │   │   ├── ConditionBadge.svelte         # Condition display
+│   │   │   └── index.ts                      # Barrel exports
 │   │   ├── ui/              # UI components
 │   │   │   ├── LoadingSpinner.svelte
 │   │   │   ├── LoadingSkeleton.svelte
@@ -116,6 +124,7 @@ src/
 │   │       ├── entityRepository.ts      # Handles all entities including campaigns
 │   │       ├── appConfigRepository.ts   # App configuration (active campaign ID, etc.)
 │   │       ├── chatRepository.ts
+│   │       ├── combatRepository.ts      # Combat sessions CRUD and game mechanics
 │   │       └── relationshipSummaryCacheRepository.ts
 │   ├── services/            # Business logic services
 │   │   ├── contextBuilder.ts                      # Entity context building for AI
@@ -129,11 +138,13 @@ src/
 │   ├── stores/              # Application state
 │   │   ├── campaign.svelte.ts
 │   │   ├── entities.svelte.ts
+│   │   ├── combat.svelte.ts # Combat session state (Svelte 5 runes)
 │   │   └── ui.svelte.ts
 │   └── types/               # TypeScript definitions
 │       ├── entities.ts      # Entity type system
 │       ├── campaign.ts      # Campaign types
 │       ├── systems.ts       # Game system profile types
+│       ├── combat.ts        # Combat type system (Draw Steel)
 │       ├── ai.ts            # AI integration types
 │       ├── relationships.ts # Relationship filtering and sorting types
 │       ├── matrix.ts        # Matrix view types
@@ -2835,6 +2846,68 @@ Cache entries are automatically invalidated when:
 - Entity is deleted (orphaned cache entries)
 - Manual invalidation via cache service
 
+#### `combatSessions`
+
+Stores Draw Steel combat sessions with complete combat state (added in version 5).
+
+**Purpose:** Track combat encounters with combatants, initiative, HP, conditions, and combat log.
+
+**Indexes:**
+- `id` (primary key)
+- `status` (for filtering active/paused combats)
+- `createdAt` (for sorting)
+- `updatedAt` (for recent items)
+
+**Fields:**
+- `id`: Combat session ID (nanoid)
+- `name`: Combat session name
+- `description`: Optional description
+- `status`: Combat status ('preparing' | 'active' | 'paused' | 'completed')
+- `currentRound`: Current round number
+- `currentTurn`: Current turn index (into combatants array)
+- `combatants`: Array of combatants (heroes and creatures)
+- `victoryPoints`: Victory points for objectives
+- `heroPoints`: Shared party hero points
+- `log`: Array of combat log entries
+- `createdAt`: Creation timestamp
+- `updatedAt`: Last update timestamp
+
+**Combatant Structure:**
+
+Each combatant includes:
+- `id`: Combatant ID (nanoid)
+- `type`: 'hero' or 'creature'
+- `name`: Combatant name
+- `entityId`: Reference to entity in entities table
+- `initiative`: Initiative total
+- `initiativeRoll`: 2d10 dice values [roll1, roll2]
+- `hp`: Current hit points
+- `maxHp`: Maximum hit points
+- `tempHp`: Temporary hit points
+- `ac`: Armor class (optional)
+- `conditions`: Array of combat conditions
+
+Heroes also include:
+- `heroicResource`: { current, max, name } for class resources
+
+Creatures also include:
+- `threat`: Threat level (1=minion/standard, 2=elite, 3=boss/solo)
+
+**Combat Log Structure:**
+
+Each log entry includes:
+- `id`: Log entry ID (nanoid)
+- `round`: Round number when logged
+- `turn`: Turn index when logged
+- `timestamp`: Entry timestamp
+- `message`: Log message
+- `type`: Log type ('system' | 'action' | 'damage' | 'healing' | 'condition' | 'initiative' | 'note')
+- `combatantId`: Related combatant (optional)
+- `metadata`: Additional data (optional)
+
+**Related Documentation:**
+- [Combat System Guide](../COMBAT_SYSTEM.md) - Complete combat system documentation
+
 ### Database Versioning
 
 The database version is defined in `src/lib/db/index.ts`:
@@ -2866,9 +2939,28 @@ this.version(3).stores({
   appConfig: 'key',
   relationshipSummaryCache: 'id, sourceId, targetId, relationship, generatedAt'
 });
+
+// Version 4: Remove campaign table (migration complete)
+this.version(4).stores({
+  entities: 'id, type, name, *tags, createdAt, updatedAt',
+  chatMessages: 'id, timestamp',
+  suggestions: 'id, type, dismissed, createdAt',
+  appConfig: 'key',
+  relationshipSummaryCache: 'id, sourceId, targetId, relationship, generatedAt'
+});
+
+// Version 5: Add combat sessions table
+this.version(5).stores({
+  entities: 'id, type, name, *tags, createdAt, updatedAt',
+  chatMessages: 'id, timestamp',
+  suggestions: 'id, type, dismissed, createdAt',
+  appConfig: 'key',
+  relationshipSummaryCache: 'id, sourceId, targetId, relationship, generatedAt',
+  combatSessions: '++id, status, createdAt, updatedAt'
+});
 ```
 
-**Current Version:** 3
+**Current Version:** 5
 
 **Migration Notes:**
 
@@ -2881,6 +2973,14 @@ this.version(3).stores({
 - Migration is idempotent (safe to run multiple times)
 - Old `campaign` table preserved for backward compatibility during transition
 - Migration runs automatically on database initialization
+
+**Version 4:**
+- Removed deprecated `campaign` table (migration to entities complete)
+- All campaigns now stored as entities with `type: 'campaign'`
+
+**Version 5:**
+- Added `combatSessions` table for Draw Steel combat tracking
+- No data migration required (new feature)
 
 **Campaign Migration Details:**
 The `migrateCampaignToEntity()` migration:
@@ -3207,6 +3307,128 @@ The AI settings toggle affects visibility of:
 - All AI-related UI elements across the application
 
 Existing AI-generated content remains visible and editable when AI is disabled, but generation capabilities are hidden.
+
+#### Combat Store (`combat.svelte.ts`)
+
+Manages Draw Steel combat sessions using Svelte 5 runes.
+
+**Location:** `/src/lib/stores/combat.svelte.ts`
+
+**State:**
+- `combats`: All combat sessions (live query from database)
+- `activeCombat`: Currently selected combat session
+- `isLoading`: Loading state
+- `error`: Error message
+
+**Derived Values (reactive):**
+- `activeCombats`: Combats with status 'active' or 'paused'
+- `currentCombatant`: Current turn's combatant
+- `sortedCombatants`: Combatants sorted by initiative (highest first)
+- `heroes`: Hero combatants in active combat
+- `creatures`: Creature combatants in active combat
+
+**CRUD Methods:**
+- `createCombat(input)`: Create new combat session
+- `selectCombat(id)`: Load and select a combat session
+- `updateCombat(id, input)`: Update combat metadata
+- `deleteCombat(id)`: Delete combat session
+
+**Combat Lifecycle:**
+- `startCombat(id)`: Start combat (preparing → active)
+- `pauseCombat(id)`: Pause combat (active → paused)
+- `resumeCombat(id)`: Resume combat (paused → active)
+- `endCombat(id)`: End combat (any → completed)
+
+**Combatant Management:**
+- `addHero(combatId, input)`: Add hero combatant
+- `addCreature(combatId, input)`: Add creature combatant
+- `updateCombatant(combatId, combatantId, input)`: Update combatant
+- `removeCombatant(combatId, combatantId)`: Remove combatant
+- `rollInitiative(combatId, combatantId, modifier?)`: Roll 2d10 initiative
+- `rollInitiativeForAll(combatId)`: Roll initiative for all combatants
+
+**Turn Management:**
+- `nextTurn(combatId)`: Advance to next turn
+- `previousTurn(combatId)`: Go back to previous turn
+
+**HP Management:**
+- `applyDamage(combatId, combatantId, damage, source?)`: Apply damage
+- `applyHealing(combatId, combatantId, healing, source?)`: Apply healing
+- `addTemporaryHp(combatId, combatantId, tempHp)`: Add temporary HP
+
+**Condition Management:**
+- `addCondition(combatId, combatantId, condition)`: Add condition
+- `removeCondition(combatId, combatantId, conditionName)`: Remove condition
+
+**Draw Steel Mechanics:**
+- `addHeroPoints(combatId, points)`: Add hero points (shared party resource)
+- `spendHeroPoint(combatId)`: Spend one hero point
+- `addVictoryPoints(combatId, points, reason?)`: Add victory points
+- `removeVictoryPoints(combatId, points, reason?)`: Remove victory points
+
+**Combat Log:**
+- `addLogEntry(combatId, input)`: Add generic log entry
+- `logPowerRoll(combatId, input)`: Log a power roll result
+
+**Helper Methods:**
+- `getCombatantById(combatantId)`: Get combatant from active combat
+- `isHeroTurn()`: Check if current combatant is a hero
+- `clearError()`: Clear error state
+
+**Implementation Notes:**
+
+Live Query Subscription:
+```typescript
+const subscription = combatRepository.getAll().subscribe({
+  next: (data) => {
+    combats = data;
+    isLoading = false;
+  },
+  error: (err) => {
+    error = err.message;
+    isLoading = false;
+  }
+});
+```
+
+Active Combat Synchronization:
+- When operations modify the selected combat, the store automatically syncs `activeCombat`
+- Uses `updateActiveCombatIfMatch()` helper to keep state in sync
+- Clearing active combat on deletion via `clearActiveCombatIfMatch()`
+
+**Usage Example:**
+
+```typescript
+import { combatStore } from '$lib/stores/combat.svelte';
+
+// Create and setup combat
+const combat = await combatStore.createCombat({ name: 'Boss Fight' });
+await combatStore.addHero(combat.id, {
+  name: 'Aragorn',
+  entityId: 'hero-1',
+  maxHp: 45,
+  ac: 16,
+  heroicResource: { current: 0, max: 5, name: 'Victories' }
+});
+
+// Select and start combat
+await combatStore.selectCombat(combat.id);
+await combatStore.rollInitiativeForAll(combat.id);
+await combatStore.startCombat(combat.id);
+
+// Access reactive state
+const current = combatStore.currentCombatant;
+const sorted = combatStore.sortedCombatants;
+
+// Run combat
+await combatStore.applyDamage(combat.id, targetId, 15, 'Sword attack');
+await combatStore.nextTurn(combat.id);
+```
+
+**Related Documentation:**
+- [Combat System Developer Guide](../COMBAT_SYSTEM.md) - Complete combat system documentation
+- [Combat Type Definitions](/src/lib/types/combat.ts) - TypeScript types
+- [Combat Repository](/src/lib/db/repositories/combatRepository.ts) - Data layer
 
 ## Search & Filtering
 

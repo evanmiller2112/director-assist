@@ -23,6 +23,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Field density analysis boosts confidence when multiple type-specific fields are detected
   - Improved `preferredType` fallback logic: overrides only when detection confidence is low (< 0.4)
   - 22 new tests added for validation and enhanced detection (124 total tests)
+- Chat UI integration for entity detection and saving (Issue #40, Phase A3)
+  - Automatic entity detection in AI assistant responses with confidence indicators
+  - SaveEntityButton component for one-click entity saving to database
+  - EntityDetectionIndicator displays detected entities with confidence percentages
+  - ChatMessage component parses assistant responses and renders entity detection UI
+  - Support for multiple entities per message with individual save controls
+  - Loading states during save and validation error handling
+  - 72 tests covering chat UI entity detection and saving
 
 ## [0.6.1] - 2026-01-19
 

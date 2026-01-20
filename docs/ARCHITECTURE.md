@@ -113,10 +113,11 @@ src/
 │   ├── db/                  # Database layer
 │   │   ├── index.ts         # Dexie database setup
 │   │   └── repositories/    # Data access layer
-│   │       ├── entityRepository.ts      # Handles all entities including campaigns
-│   │       ├── appConfigRepository.ts   # App configuration (active campaign ID, etc.)
-│   │       ├── chatRepository.ts
-│   │       └── relationshipSummaryCacheRepository.ts
+│   │       ├── entityRepository.ts                     # Handles all entities including campaigns
+│   │       ├── appConfigRepository.ts                  # App configuration (active campaign ID, etc.)
+│   │       ├── chatRepository.ts                       # Chat messages and conversations
+│   │       ├── suggestionRepository.ts                 # AI suggestions management
+│   │       └── relationshipSummaryCacheRepository.ts   # Relationship summary cache
 │   ├── services/            # Business logic services
 │   │   ├── contextBuilder.ts                      # Entity context building for AI
 │   │   ├── fieldGenerationService.ts              # AI field generation
@@ -125,7 +126,13 @@ src/
 │   │   ├── relationshipContextBuilder.ts          # Relationship context building for AI
 │   │   ├── relationshipContextSettingsService.ts  # Relationship context settings
 │   │   ├── relationshipSummaryService.ts          # AI relationship summary generation
-│   │   └── relationshipSummaryCacheService.ts     # Relationship summary caching
+│   │   ├── relationshipSummaryCacheService.ts     # Relationship summary caching
+│   │   ├── suggestionAnalysisService.ts           # AI suggestion analysis engine
+│   │   └── analyzers/                             # Specialized suggestion analyzers
+│   │       ├── inconsistencyAnalyzer.ts           # Detects campaign inconsistencies
+│   │       ├── enhancementAnalyzer.ts             # Detects entity improvement opportunities
+│   │       ├── relationshipAnalyzer.ts            # Suggests new relationships
+│   │       └── plotThreadAnalyzer.ts              # Identifies plot threads
 │   ├── stores/              # Application state
 │   │   ├── campaign.svelte.ts
 │   │   ├── entities.svelte.ts
@@ -2800,13 +2807,29 @@ Stores AI chat conversation history.
 - `timestamp` (for chronological order)
 
 #### `suggestions`
-Stores AI-generated suggestions.
+Stores AI-generated suggestions for campaign improvements.
+
+**Purpose:** Tracks AI-generated suggestions including relationships, plot threads, inconsistencies, enhancements, and recommendations.
 
 **Indexes:**
 - `id` (primary key)
 - `type` (for filtering by suggestion type)
-- `dismissed` (for filtering active suggestions)
-- `createdAt` (for sorting)
+- `status` (for filtering by pending/accepted/dismissed)
+- `createdAt` (for chronological sorting)
+- `expiresAt` (for expiration detection)
+- `*affectedEntityIds` (multi-entry index for entity-based queries)
+
+**Fields:**
+- `id`: Unique suggestion identifier
+- `type`: Suggestion type (relationship, plot_thread, inconsistency, enhancement, recommendation)
+- `title`: Brief suggestion title
+- `description`: Detailed suggestion explanation
+- `relevanceScore`: 0-100 score indicating importance
+- `affectedEntityIds`: Array of entity IDs this suggestion relates to
+- `suggestedAction`: Optional structured action data
+- `status`: Current status (pending, accepted, dismissed)
+- `createdAt`: Creation timestamp
+- `expiresAt`: Optional expiration timestamp for stale suggestions
 
 #### `relationshipSummaryCache`
 Stores cached AI-generated relationship summaries (added in version 3).
@@ -2866,9 +2889,31 @@ this.version(3).stores({
   appConfig: 'key',
   relationshipSummaryCache: 'id, sourceId, targetId, relationship, generatedAt'
 });
+
+// Version 4: Add conversations table
+this.version(4).stores({
+  entities: 'id, type, name, *tags, createdAt, updatedAt',
+  campaign: 'id',
+  conversations: 'id, name, updatedAt',
+  chatMessages: 'id, conversationId, timestamp',
+  suggestions: 'id, type, dismissed, createdAt',
+  appConfig: 'key',
+  relationshipSummaryCache: 'id, sourceId, targetId, relationship, generatedAt'
+});
+
+// Version 5: Update suggestions table for new AISuggestion interface
+this.version(5).stores({
+  entities: 'id, type, name, *tags, createdAt, updatedAt',
+  campaign: 'id',
+  conversations: 'id, name, updatedAt',
+  chatMessages: 'id, conversationId, timestamp',
+  suggestions: 'id, type, status, createdAt, expiresAt, *affectedEntityIds',
+  appConfig: 'key',
+  relationshipSummaryCache: 'id, sourceId, targetId, relationship, generatedAt'
+});
 ```
 
-**Current Version:** 3
+**Current Version:** 5
 
 **Migration Notes:**
 
@@ -5281,6 +5326,120 @@ Cached summaries are stored in IndexedDB table `relationshipSummaryCache` (datab
 **Index:**
 - `id` (primary key - composite cache key)
 - `[sourceId+targetId+relationship]` (compound index for efficient lookups)
+
+#### Suggestion Analysis Service
+
+**Location:** `/src/lib/services/suggestionAnalysisService.ts`
+
+**Purpose:** Analyzes campaign data to generate AI-powered suggestions for improvements, inconsistencies, relationships, and plot threads. Coordinates multiple specialized analyzers to provide actionable insights.
+
+**Main API Methods:**
+
+```typescript
+// Run all analyzers on entire campaign
+runFullAnalysis(config?: Partial<AnalysisConfig>): Promise<AISuggestion[]>
+
+// Analyze a specific entity
+analyzeEntity(entityId: EntityId, config?: Partial<AnalysisConfig>): Promise<AISuggestion[]>
+
+// Get default configuration
+getConfig(): AnalysisConfig
+```
+
+**Configuration Interface:**
+
+```typescript
+interface AnalysisConfig {
+  maxSuggestionsPerType: number;    // Default: 10
+  minRelevanceScore: number;        // Default: 30 (0-100)
+  enableAIAnalysis: boolean;        // Default: true
+  rateLimitMs: number;              // Default: 1000ms between AI calls
+  expirationDays: number;           // Default: 7 days until suggestions expire
+}
+```
+
+**Specialized Analyzers:**
+
+The service coordinates four specialized analyzers, each focused on a specific type of analysis:
+
+1. **InconsistencyAnalyzer** (`src/lib/services/analyzers/inconsistencyAnalyzer.ts`)
+   - **Location Conflicts**: Detects entities marked as dead/destroyed but referenced in current locations
+   - **Status Conflicts**: Finds entities in multiple locations simultaneously
+   - **Name Duplicates**: Identifies entities with identical names that might be unintentional duplicates
+   - **Asymmetric Relationships**: Finds one-way relationships that should be bidirectional
+
+2. **EnhancementAnalyzer** (`src/lib/services/analyzers/enhancementAnalyzer.ts`)
+   - **Sparse Entities**: Detects entities with minimal information (missing descriptions, summaries)
+   - **Missing Summaries**: Identifies entities without AI-friendly summary text
+   - **Orphan Entities**: Finds entities with no relationships to other entities
+
+3. **RelationshipAnalyzer** (`src/lib/services/analyzers/relationshipAnalyzer.ts`)
+   - **Text Mentions**: Analyzes entity descriptions to find mentioned entities without formal relationships
+   - **Common Locations**: Suggests relationships between entities sharing locations
+   - **AI-Powered Suggestions**: Uses AI to analyze entity context and suggest meaningful relationships
+
+4. **PlotThreadAnalyzer** (`src/lib/services/analyzers/plotThreadAnalyzer.ts`)
+   - **Plot Thread Detection**: Uses AI to identify narrative threads across campaign entities
+   - **Theme Grouping**: Groups related plot threads by common themes
+   - **Cross-Entity Analysis**: Analyzes multiple entities together to find connected storylines
+
+**Suggestion Output:**
+
+Each analyzer produces `AISuggestion` objects with:
+- `type`: 'inconsistency' | 'enhancement' | 'relationship' | 'plot_thread'
+- `title`: Brief description
+- `description`: Detailed explanation
+- `affectedEntityIds`: Entities involved
+- `relevanceScore`: 0-100 rating
+- `actionType`: Specific action to take
+- `metadata`: Analyzer-specific data
+- `expiresAt`: Auto-calculated expiration date
+- `status`: 'pending' (all new suggestions)
+
+**Rate Limiting:**
+
+AI-powered analysis respects rate limits to prevent API throttling:
+- Configurable delay between AI calls (default 1000ms)
+- Applies only to AI-based analyzers (relationship suggestions, plot threads)
+- Non-AI analyzers run without delay
+
+**Analysis Flow:**
+
+```typescript
+// Full campaign analysis
+const suggestions = await suggestionAnalysisService.runFullAnalysis({
+  maxSuggestionsPerType: 15,
+  minRelevanceScore: 40,
+  enableAIAnalysis: true
+});
+
+// Single entity analysis
+const entitySuggestions = await suggestionAnalysisService.analyzeEntity('entity-123');
+```
+
+**Performance Characteristics:**
+
+- Non-AI analysis (inconsistencies, enhancements): Fast, synchronous
+- AI analysis (relationships, plot threads): Slower, rate-limited, requires API access
+- Entity-specific analysis: Scoped to related entities only
+- Full analysis: Processes all campaign entities
+
+**Integration with SuggestionRepository:**
+
+Suggestions generated by analyzers are typically saved to the database:
+
+```typescript
+const suggestions = await suggestionAnalysisService.runFullAnalysis();
+await suggestionRepository.addMany(suggestions);
+```
+
+**Use Cases:**
+
+- Periodic campaign health checks
+- Pre-session preparation analysis
+- Entity quality improvement workflows
+- Plot thread tracking and development
+- Relationship graph enrichment
 
 ### Error Handling
 

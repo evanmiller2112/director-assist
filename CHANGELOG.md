@@ -64,6 +64,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Default settings: 10 max suggestions per type, 30 minimum relevance score, AI enabled, 1000ms rate limit, 7 day expiration
   - 143 comprehensive unit tests covering all analyzers and service functionality
   - Ready for UI integration in Phase B3
+- AI Suggestions System - Settings & Actions (Issue #43, Phase B4)
+  - SuggestionSettingsService manages AI suggestion preferences via localStorage
+  - Settings: enableAutoAnalysis, analysisFrequencyHours (default: 24), minRelevanceScore (default: 30), enabledSuggestionTypes, maxSuggestionsPerType (default: 10)
+  - Functions: getSettings(), updateSettings(), resetToDefaults()
+  - SuggestionActionService executes AI suggestion actions with undo support
+  - Four action types: create-relationship, edit-entity, create-entity, flag-for-review
+  - Action history tracking with localStorage persistence
+  - Functions: executeAction(), getActionHistory(), undoLastAction(), clearActionHistory()
+  - SuggestionDetailsModal component for viewing and acting on suggestions
+  - Modal features: full suggestion details, type badge, relevance score, affected entities list
+  - Action buttons: Execute, Dismiss, Snooze, Close
+  - Accessibility: ARIA modal attributes, keyboard support (Escape to close)
+  - Foundation for user-facing suggestion management UI in Phase B5
 
 ## [0.6.1] - 2026-01-19
 

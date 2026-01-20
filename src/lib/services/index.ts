@@ -109,3 +109,21 @@ export {
 // Suggestion analysis service
 export { suggestionAnalysisService } from './suggestionAnalysisService';
 export type { AnalysisConfig, FullAnalysisResult } from './analyzers';
+
+// Suggestion settings service
+export {
+	getSettings,
+	updateSettings,
+	resetToDefaults,
+	DEFAULT_SUGGESTION_SETTINGS
+} from './suggestionSettingsService';
+export type { SuggestionSettings } from './suggestionSettingsService';
+
+// Suggestion action service
+export {
+	executeAction,
+	getActionHistory,
+	undoLastAction,
+	clearActionHistory
+} from './suggestionActionService';
+export type { ActionResult, ActionHistoryEntry } from './suggestionActionService';

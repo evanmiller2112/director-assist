@@ -11,6 +11,9 @@
  * - Multi-entity splitting
  * - Summary generation
  * - Complete integration tests
+ * - Validation integration (A2)
+ * - Enhanced fallback strategies (A2)
+ * - Edge cases (A2)
  */
 import { describe, it, expect } from 'vitest';
 import {
@@ -21,6 +24,7 @@ import {
 	splitIntoEntitySections,
 	generateSummary,
 	extractTags,
+	validateParsedEntity,
 	type ParsedEntity,
 	type ParseResult,
 	type ParserOptions
@@ -597,7 +601,8 @@ Some description`;
 
 				const fields = extractFields(text, 'npc', [customType]);
 
-				expect(fields.status).toBe('Unknown'); // Default value
+				// A2: Changed behavior - now keeps invalid value for validation to catch
+			expect(fields.status).toBe('resurrected'); // Invalid value kept as-is
 			});
 
 			it('should use first option when no default and invalid value', () => {
@@ -625,7 +630,8 @@ Some description`;
 
 				const fields = extractFields(text, 'npc', [customType]);
 
-				expect(fields.alignment).toBe('Good'); // First option
+				// A2: Changed behavior - now keeps invalid value for validation to catch
+			expect(fields.alignment).toBe('chaotic'); // Invalid value kept as-is
 			});
 		});
 
@@ -1388,6 +1394,635 @@ ${longDescription}`;
 				expect(result.entities[0].name).toBe('Jôhn Döe');
 				expect(result.entities[0].fields.role).toContain('Éast');
 			});
+		});
+	});
+
+	describe('Validation Integration (A2)', () => {
+		describe('ParsedEntity validationErrors', () => {
+			it('should return entities with validationErrors property', () => {
+				const responseText = `## Test NPC
+
+**Role**: Guard`;
+
+				const result = parseAIResponse(responseText);
+
+				expect(result.entities).toHaveLength(1);
+				expect(result.entities[0]).toHaveProperty('validationErrors');
+				expect(result.entities[0].validationErrors).toBeDefined();
+			});
+
+			it('should have empty validationErrors for valid entities', () => {
+				const customType: EntityTypeDefinition = {
+					type: 'npc',
+					label: 'NPC',
+					labelPlural: 'NPCs',
+					icon: 'user',
+					color: 'blue',
+					isBuiltIn: true,
+					fieldDefinitions: [
+						{
+							key: 'role',
+							label: 'Role',
+							type: 'text',
+							required: true,
+							order: 1
+						},
+						{
+							key: 'level',
+							label: 'Level',
+							type: 'number',
+							required: false,
+							order: 2
+						}
+					],
+					defaultRelationships: []
+				};
+
+				const responseText = `## Valid NPC
+
+**Role**: Guard Captain
+**Level**: 5`;
+
+				const result = parseAIResponse(responseText, { customTypes: [customType] });
+
+				expect(result.entities).toHaveLength(1);
+				expect(result.entities[0].validationErrors).toEqual({});
+			});
+
+			it('should detect invalid select values when value does not match options', () => {
+				const customType: EntityTypeDefinition = {
+					type: 'npc',
+					label: 'NPC',
+					labelPlural: 'NPCs',
+					icon: 'user',
+					color: 'blue',
+					isBuiltIn: true,
+					fieldDefinitions: [
+						{
+							key: 'status',
+							label: 'Status',
+							type: 'select',
+							options: ['Alive', 'Deceased', 'Unknown'],
+							required: true,
+							order: 1
+						}
+					],
+					defaultRelationships: []
+				};
+
+				const responseText = `## Test NPC
+
+**Status**: Resurrected`;
+
+				const result = parseAIResponse(responseText, { customTypes: [customType] });
+
+				expect(result.entities).toHaveLength(1);
+				expect(result.entities[0].validationErrors).toHaveProperty('status');
+				expect(result.entities[0].validationErrors.status).toContain('must be one of the available options');
+			});
+
+			it('should detect missing required fields', () => {
+				const customType: EntityTypeDefinition = {
+					type: 'npc',
+					label: 'NPC',
+					labelPlural: 'NPCs',
+					icon: 'user',
+					color: 'blue',
+					isBuiltIn: true,
+					fieldDefinitions: [
+						{
+							key: 'role',
+							label: 'Role',
+							type: 'text',
+							required: true,
+							order: 1
+						},
+						{
+							key: 'personality',
+							label: 'Personality',
+							type: 'text',
+							required: true,
+							order: 2
+						}
+					],
+					defaultRelationships: []
+				};
+
+				const responseText = `## Test NPC
+
+**Role**: Guard`;
+
+				const result = parseAIResponse(responseText, { customTypes: [customType] });
+
+				expect(result.entities).toHaveLength(1);
+				expect(result.entities[0].validationErrors).toHaveProperty('personality');
+				expect(result.entities[0].validationErrors.personality).toContain('required');
+			});
+
+			it('should detect invalid number values', () => {
+				const customType: EntityTypeDefinition = {
+					type: 'npc',
+					label: 'NPC',
+					labelPlural: 'NPCs',
+					icon: 'user',
+					color: 'blue',
+					isBuiltIn: true,
+					fieldDefinitions: [
+						{
+							key: 'level',
+							label: 'Level',
+							type: 'number',
+							required: true,
+							order: 1
+						}
+					],
+					defaultRelationships: []
+				};
+
+				const responseText = `## Test NPC
+
+**Level**: three`;
+
+				const result = parseAIResponse(responseText, { customTypes: [customType] });
+
+				expect(result.entities).toHaveLength(1);
+				expect(result.entities[0].validationErrors).toHaveProperty('level');
+				expect(result.entities[0].validationErrors.level).toContain('must be a valid number');
+			});
+
+			it('should detect invalid URL fields', () => {
+				const customType: EntityTypeDefinition = {
+					type: 'location',
+					label: 'Location',
+					labelPlural: 'Locations',
+					icon: 'map-pin',
+					color: 'green',
+					isBuiltIn: true,
+					fieldDefinitions: [
+						{
+							key: 'website',
+							label: 'Website',
+							type: 'url',
+							required: false,
+							order: 1
+						}
+					],
+					defaultRelationships: []
+				};
+
+				const responseText = `## Test Location
+
+**Website**: not-a-valid-url`;
+
+				const result = parseAIResponse(responseText, { customTypes: [customType] });
+
+				expect(result.entities).toHaveLength(1);
+				expect(result.entities[0].validationErrors).toHaveProperty('website');
+				expect(result.entities[0].validationErrors.website).toContain('must be a valid URL');
+			});
+		});
+
+		describe('validateParsedEntity', () => {
+			it('should validate a parsed entity and return validation errors', () => {
+				const customType: EntityTypeDefinition = {
+					type: 'npc',
+					label: 'NPC',
+					labelPlural: 'NPCs',
+					icon: 'user',
+					color: 'blue',
+					isBuiltIn: true,
+					fieldDefinitions: [
+						{
+							key: 'role',
+							label: 'Role',
+							type: 'text',
+							required: true,
+							order: 1
+						}
+					],
+					defaultRelationships: []
+				};
+
+				const entity: ParsedEntity = {
+					entityType: 'npc',
+					confidence: 0.9,
+					name: 'Test NPC',
+					description: 'A test character',
+					tags: [],
+					fields: {},
+					validationErrors: {}
+				};
+
+				const errors = validateParsedEntity(entity, customType);
+
+				expect(errors).toHaveProperty('role');
+				expect(errors.role).toContain('required');
+			});
+
+			it('should return empty errors object for valid entity', () => {
+				const customType: EntityTypeDefinition = {
+					type: 'npc',
+					label: 'NPC',
+					labelPlural: 'NPCs',
+					icon: 'user',
+					color: 'blue',
+					isBuiltIn: true,
+					fieldDefinitions: [
+						{
+							key: 'role',
+							label: 'Role',
+							type: 'text',
+							required: true,
+							order: 1
+						}
+					],
+					defaultRelationships: []
+				};
+
+				const entity: ParsedEntity = {
+					entityType: 'npc',
+					confidence: 0.9,
+					name: 'Test NPC',
+					description: 'A test character',
+					tags: [],
+					fields: { role: 'Guard' },
+					validationErrors: {}
+				};
+
+				const errors = validateParsedEntity(entity, customType);
+
+				expect(errors).toEqual({});
+			});
+
+			it('should handle multiple validation errors', () => {
+				const customType: EntityTypeDefinition = {
+					type: 'npc',
+					label: 'NPC',
+					labelPlural: 'NPCs',
+					icon: 'user',
+					color: 'blue',
+					isBuiltIn: true,
+					fieldDefinitions: [
+						{
+							key: 'role',
+							label: 'Role',
+							type: 'text',
+							required: true,
+							order: 1
+						},
+						{
+							key: 'level',
+							label: 'Level',
+							type: 'number',
+							required: true,
+							order: 2
+						}
+					],
+					defaultRelationships: []
+				};
+
+				const entity: ParsedEntity = {
+					entityType: 'npc',
+					confidence: 0.9,
+					name: 'Test NPC',
+					description: 'A test character',
+					tags: [],
+					fields: { level: 'invalid' },
+					validationErrors: {}
+				};
+
+				const errors = validateParsedEntity(entity, customType);
+
+				expect(errors).toHaveProperty('role');
+				expect(errors).toHaveProperty('level');
+				expect(Object.keys(errors).length).toBe(2);
+			});
+		});
+	});
+
+	describe('Enhanced Fallback Strategies (A2)', () => {
+		it('should detect type from explicit [NPC] marker at start of line', () => {
+			const text = `[NPC] Captain Aldric
+
+A mysterious guard captain.`;
+
+			const result = detectEntityType(text);
+
+			expect(result.type).toBe('npc');
+			expect(result.confidence).toBeGreaterThan(0.6);
+		});
+
+		it('should detect type from explicit [Location] marker at start of line', () => {
+			const text = `[Location] The Rusty Anchor
+
+A dimly lit tavern near the docks.`;
+
+			const result = detectEntityType(text);
+
+			expect(result.type).toBe('location');
+			expect(result.confidence).toBeGreaterThan(0.6);
+		});
+
+		it('should detect type from "Entity Type: Location" style header', () => {
+			const text = `## The Rusty Anchor
+
+Entity Type: Location
+
+A dimly lit tavern near the docks.`;
+
+			const result = detectEntityType(text);
+
+			expect(result.type).toBe('location');
+			expect(result.confidence).toBeGreaterThan(0.6);
+		});
+
+		it('should boost confidence when multiple fields match a type (field density)', () => {
+			const text = `## Captain Aldric
+
+**Role**: Guard Captain
+**Personality**: Stern
+**Motivation**: Protect the innocent
+**Appearance**: Tall with graying temples`;
+
+			const result = detectEntityType(text);
+
+			expect(result.type).toBe('npc');
+			// With 4 NPC field matches, confidence should be high
+			expect(result.confidence).toBeGreaterThan(0.8);
+		});
+
+		it('should use preferredType as fallback when confidence is low', () => {
+			const text = `## Something Ambiguous
+
+Just some generic text.`;
+
+			const result = detectEntityType(text, { preferredType: 'item' });
+
+			expect(result.type).toBe('item');
+			expect(result.confidence).toBeLessThan(0.6);
+		});
+
+		it('should override preferredType when confidence is high', () => {
+			const text = `## Captain Aldric
+
+**Role**: Guard Captain
+**Personality**: Stern
+**Motivation**: Protect the innocent`;
+
+			const result = detectEntityType(text, { preferredType: 'location' });
+
+			// High confidence NPC detection should override preferredType
+			expect(result.type).toBe('npc');
+			expect(result.confidence).toBeGreaterThan(0.7);
+		});
+
+		it('should apply field density analysis for custom entity types', () => {
+			const customType: EntityTypeDefinition = {
+				type: 'spell',
+				label: 'Spell',
+				labelPlural: 'Spells',
+				icon: 'sparkles',
+				color: 'purple',
+				isBuiltIn: false,
+				fieldDefinitions: [
+					{
+						key: 'level',
+						label: 'Level',
+						type: 'number',
+						required: true,
+						order: 1
+					},
+					{
+						key: 'school',
+						label: 'School',
+						type: 'select',
+						options: ['evocation', 'abjuration'],
+						required: true,
+						order: 2
+					},
+					{
+						key: 'castingTime',
+						label: 'Casting Time',
+						type: 'text',
+						required: false,
+						order: 3
+					}
+				],
+				defaultRelationships: []
+			};
+
+			const text = `## Fireball
+
+**Level**: 3
+**School**: Evocation
+**Casting Time**: 1 action`;
+
+			const result = detectEntityType(text, { customTypes: [customType] });
+
+			expect(result.type).toBe('spell');
+			// With 3 field matches, confidence should be boosted
+			expect(result.confidence).toBeGreaterThan(0.6);
+		});
+	});
+
+	describe('Validation Edge Cases (A2)', () => {
+		it('should handle empty fields object gracefully', () => {
+			const customType: EntityTypeDefinition = {
+				type: 'npc',
+				label: 'NPC',
+				labelPlural: 'NPCs',
+				icon: 'user',
+				color: 'blue',
+				isBuiltIn: true,
+				fieldDefinitions: [
+					{
+						key: 'role',
+						label: 'Role',
+						type: 'text',
+						required: false,
+						order: 1
+					}
+				],
+				defaultRelationships: []
+			};
+
+			const entity: ParsedEntity = {
+				entityType: 'npc',
+				confidence: 0.9,
+				name: 'Test NPC',
+				description: 'A test character',
+				tags: [],
+				fields: {},
+				validationErrors: {}
+			};
+
+			const errors = validateParsedEntity(entity, customType);
+
+			expect(errors).toEqual({});
+		});
+
+		it('should handle unknown entity type gracefully', () => {
+			const responseText = `## Unknown Entity
+
+Some content that does not match any known type.`;
+
+			const result = parseAIResponse(responseText);
+
+			// Should still parse successfully, even if type detection has low confidence
+			expect(result.entities.length).toBeGreaterThanOrEqual(0);
+			// If entity is created, it should have validationErrors property
+			if (result.entities.length > 0) {
+				expect(result.entities[0]).toHaveProperty('validationErrors');
+			}
+		});
+
+		it('should skip validation for hidden section fields', () => {
+			const customType: EntityTypeDefinition = {
+				type: 'npc',
+				label: 'NPC',
+				labelPlural: 'NPCs',
+				icon: 'user',
+				color: 'blue',
+				isBuiltIn: true,
+				fieldDefinitions: [
+					{
+						key: 'secretInfo',
+						label: 'Secret Info',
+						type: 'text',
+						required: true,
+						section: 'hidden',
+						order: 1
+					},
+					{
+						key: 'role',
+						label: 'Role',
+						type: 'text',
+						required: true,
+						order: 2
+					}
+				],
+				defaultRelationships: []
+			};
+
+			const entity: ParsedEntity = {
+				entityType: 'npc',
+				confidence: 0.9,
+				name: 'Test NPC',
+				description: 'A test character',
+				tags: [],
+				fields: { role: 'Guard' },
+				validationErrors: {}
+			};
+
+			const errors = validateParsedEntity(entity, customType);
+
+			// Should only have error for 'role' field not 'secretInfo' (hidden)
+			expect(errors).not.toHaveProperty('secretInfo');
+			expect(errors).toEqual({});
+		});
+
+		it('should support case-insensitive select field matching', () => {
+			const customType: EntityTypeDefinition = {
+				type: 'npc',
+				label: 'NPC',
+				labelPlural: 'NPCs',
+				icon: 'user',
+				color: 'blue',
+				isBuiltIn: true,
+				fieldDefinitions: [
+					{
+						key: 'status',
+						label: 'Status',
+						type: 'select',
+						options: ['Alive', 'Deceased', 'Unknown'],
+						required: true,
+						order: 1
+					}
+				],
+				defaultRelationships: []
+			};
+
+			const responseText = `## Test NPC
+
+**Status**: alive`;
+
+			const result = parseAIResponse(responseText, { customTypes: [customType] });
+
+			expect(result.entities).toHaveLength(1);
+			// Should normalize to exact option value
+			expect(result.entities[0].fields.status).toBe('Alive');
+			// Should have no validation errors since it matched case-insensitively
+			expect(result.entities[0].validationErrors).toEqual({});
+		});
+
+		it('should handle validation when field value is null', () => {
+			const customType: EntityTypeDefinition = {
+				type: 'npc',
+				label: 'NPC',
+				labelPlural: 'NPCs',
+				icon: 'user',
+				color: 'blue',
+				isBuiltIn: true,
+				fieldDefinitions: [
+					{
+						key: 'role',
+						label: 'Role',
+						type: 'text',
+						required: false,
+						order: 1
+					}
+				],
+				defaultRelationships: []
+			};
+
+			const entity: ParsedEntity = {
+				entityType: 'npc',
+				confidence: 0.9,
+				name: 'Test NPC',
+				description: 'A test character',
+				tags: [],
+				fields: { role: null },
+				validationErrors: {}
+			};
+
+			const errors = validateParsedEntity(entity, customType);
+
+			expect(errors).toEqual({});
+		});
+
+		it('should handle validation when field value is undefined', () => {
+			const customType: EntityTypeDefinition = {
+				type: 'npc',
+				label: 'NPC',
+				labelPlural: 'NPCs',
+				icon: 'user',
+				color: 'blue',
+				isBuiltIn: true,
+				fieldDefinitions: [
+					{
+						key: 'role',
+						label: 'Role',
+						type: 'text',
+						required: false,
+						order: 1
+					}
+				],
+				defaultRelationships: []
+			};
+
+			const entity: ParsedEntity = {
+				entityType: 'npc',
+				confidence: 0.9,
+				name: 'Test NPC',
+				description: 'A test character',
+				tags: [],
+				fields: { role: undefined },
+				validationErrors: {}
+			};
+
+			const errors = validateParsedEntity(entity, customType);
+
+			expect(errors).toEqual({});
 		});
 	});
 });

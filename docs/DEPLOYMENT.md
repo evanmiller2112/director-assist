@@ -4,6 +4,7 @@ This guide covers deploying Director Assist to various hosting environments. Dir
 
 ## Table of Contents
 
+- [Using Pre-Built Releases](#using-pre-built-releases)
 - [Building for Production](#building-for-production)
 - [Understanding SPA Routing](#understanding-spa-routing)
 - [Server Configurations](#server-configurations)
@@ -20,6 +21,44 @@ This guide covers deploying Director Assist to various hosting environments. Dir
   - [Data Storage](#data-storage)
   - [HTTPS Requirements](#https-requirements)
   - [Browser Compatibility](#browser-compatibility)
+
+## Using Pre-Built Releases
+
+The fastest way to deploy Director Assist is to download pre-built files from GitHub releases. This approach requires no Node.js installation or build process.
+
+### Steps
+
+1. Navigate to the [Releases page](https://github.com/evanmiller2112/director-assist/releases)
+2. Download `director-assist-[version]-build.zip` from the latest release
+3. Extract the zip file to your desired directory:
+   ```bash
+   unzip director-assist-v0.6.1-build.zip -d /var/www/director-assist
+   ```
+4. Configure your web server for SPA routing (see [Server Configurations](#server-configurations) below)
+5. Access the application through your web server
+
+### What's Included
+
+The pre-built zip file contains:
+- `index.html` - Main entry point
+- `_app/` - JavaScript, CSS, and other assets
+- `favicon.png` and other static files
+- All necessary files for a fully functional deployment
+
+### When to Use Pre-Built Releases
+
+Use pre-built releases when:
+- You want the fastest deployment path
+- You don't need to modify the source code
+- You're deploying to production and want official release builds
+- You don't have Node.js installed on your server
+
+### When to Build from Source
+
+Build from source when:
+- You're developing or testing changes
+- You need to modify the application
+- You want to use unreleased features from the main branch
 
 ## Building for Production
 

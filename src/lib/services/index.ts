@@ -127,3 +127,11 @@ export {
 	clearActionHistory
 } from './suggestionActionService';
 export type { ActionResult, ActionHistoryEntry } from './suggestionActionService';
+
+// AI setup reminder service
+export {
+	isAiSetupDismissed,
+	setAiSetupDismissed,
+	hasAnyApiKey,
+	shouldShowAiSetupBanner
+} from './aiSetupReminderService';

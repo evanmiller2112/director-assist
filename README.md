@@ -111,7 +111,7 @@ Director Assist can generate content for individual fields using AI from multipl
 
 **Setup:**
 1. Get an API key from your chosen provider (e.g., [console.anthropic.com](https://console.anthropic.com) for Claude)
-2. Add it in Settings (gear icon in header)
+2. Add it in Settings (gear icon in header, or use the setup banner that appears when AI is enabled)
 3. The AI uses your campaign setting and system to generate appropriate content
 4. Use the "Enable AI Features" toggle in Settings to turn all AI features on or off
 

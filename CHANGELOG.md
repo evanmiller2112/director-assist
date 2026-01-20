@@ -23,6 +23,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Field density analysis boosts confidence when multiple type-specific fields are detected
   - Improved `preferredType` fallback logic: overrides only when detection confidence is low (< 0.4)
   - 22 new tests added for validation and enhanced detection (124 total tests)
+- AI Suggestions System - Data Model & Repository (Issue #43, Phase B1)
+  - New AISuggestion interface with 5 suggestion types: relationship, plot_thread, inconsistency, enhancement, recommendation
+  - SuggestionRepository with full CRUD operations for suggestion management
+  - Status management: pending, accepted, dismissed with dedicated methods
+  - Query operations: filter by type, status, affected entities, and relevance score
+  - Bulk operations: add and delete multiple suggestions efficiently
+  - Expiration handling: automatic detection and cleanup of stale suggestions
+  - Statistics: track suggestion counts by status and type
+  - Database schema version 5 with new indexes on type, status, createdAt, expiresAt, and affectedEntityIds
+  - 116 comprehensive unit tests covering all repository operations
+  - Foundation for future AI-driven campaign analysis and recommendations
 
 ## [0.6.1] - 2026-01-19
 

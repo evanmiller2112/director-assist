@@ -113,10 +113,11 @@ src/
 │   ├── db/                  # Database layer
 │   │   ├── index.ts         # Dexie database setup
 │   │   └── repositories/    # Data access layer
-│   │       ├── entityRepository.ts      # Handles all entities including campaigns
-│   │       ├── appConfigRepository.ts   # App configuration (active campaign ID, etc.)
-│   │       ├── chatRepository.ts
-│   │       └── relationshipSummaryCacheRepository.ts
+│   │       ├── entityRepository.ts                     # Handles all entities including campaigns
+│   │       ├── appConfigRepository.ts                  # App configuration (active campaign ID, etc.)
+│   │       ├── chatRepository.ts                       # Chat messages and conversations
+│   │       ├── suggestionRepository.ts                 # AI suggestions management
+│   │       └── relationshipSummaryCacheRepository.ts   # Relationship summary cache
 │   ├── services/            # Business logic services
 │   │   ├── contextBuilder.ts                      # Entity context building for AI
 │   │   ├── fieldGenerationService.ts              # AI field generation
@@ -2800,13 +2801,29 @@ Stores AI chat conversation history.
 - `timestamp` (for chronological order)
 
 #### `suggestions`
-Stores AI-generated suggestions.
+Stores AI-generated suggestions for campaign improvements.
+
+**Purpose:** Tracks AI-generated suggestions including relationships, plot threads, inconsistencies, enhancements, and recommendations.
 
 **Indexes:**
 - `id` (primary key)
 - `type` (for filtering by suggestion type)
-- `dismissed` (for filtering active suggestions)
-- `createdAt` (for sorting)
+- `status` (for filtering by pending/accepted/dismissed)
+- `createdAt` (for chronological sorting)
+- `expiresAt` (for expiration detection)
+- `*affectedEntityIds` (multi-entry index for entity-based queries)
+
+**Fields:**
+- `id`: Unique suggestion identifier
+- `type`: Suggestion type (relationship, plot_thread, inconsistency, enhancement, recommendation)
+- `title`: Brief suggestion title
+- `description`: Detailed suggestion explanation
+- `relevanceScore`: 0-100 score indicating importance
+- `affectedEntityIds`: Array of entity IDs this suggestion relates to
+- `suggestedAction`: Optional structured action data
+- `status`: Current status (pending, accepted, dismissed)
+- `createdAt`: Creation timestamp
+- `expiresAt`: Optional expiration timestamp for stale suggestions
 
 #### `relationshipSummaryCache`
 Stores cached AI-generated relationship summaries (added in version 3).
@@ -2866,9 +2883,31 @@ this.version(3).stores({
   appConfig: 'key',
   relationshipSummaryCache: 'id, sourceId, targetId, relationship, generatedAt'
 });
+
+// Version 4: Add conversations table
+this.version(4).stores({
+  entities: 'id, type, name, *tags, createdAt, updatedAt',
+  campaign: 'id',
+  conversations: 'id, name, updatedAt',
+  chatMessages: 'id, conversationId, timestamp',
+  suggestions: 'id, type, dismissed, createdAt',
+  appConfig: 'key',
+  relationshipSummaryCache: 'id, sourceId, targetId, relationship, generatedAt'
+});
+
+// Version 5: Update suggestions table for new AISuggestion interface
+this.version(5).stores({
+  entities: 'id, type, name, *tags, createdAt, updatedAt',
+  campaign: 'id',
+  conversations: 'id, name, updatedAt',
+  chatMessages: 'id, conversationId, timestamp',
+  suggestions: 'id, type, status, createdAt, expiresAt, *affectedEntityIds',
+  appConfig: 'key',
+  relationshipSummaryCache: 'id, sourceId, targetId, relationship, generatedAt'
+});
 ```
 
-**Current Version:** 3
+**Current Version:** 5
 
 **Migration Notes:**
 

@@ -68,6 +68,17 @@ class DMAssistantDB extends Dexie {
 			appConfig: 'key',
 			relationshipSummaryCache: 'id, sourceId, targetId, relationship, generatedAt'
 		});
+
+		// Version 5: Update suggestions table for new AISuggestion interface
+		this.version(5).stores({
+			entities: 'id, type, name, *tags, createdAt, updatedAt',
+			campaign: 'id',
+			conversations: 'id, name, updatedAt',
+			chatMessages: 'id, conversationId, timestamp',
+			suggestions: 'id, type, status, createdAt, expiresAt, *affectedEntityIds',
+			appConfig: 'key',
+			relationshipSummaryCache: 'id, sourceId, targetId, relationship, generatedAt'
+		});
 	}
 }
 

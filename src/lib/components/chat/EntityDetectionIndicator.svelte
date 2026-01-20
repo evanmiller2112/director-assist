@@ -2,6 +2,7 @@
 	import type { ParsedEntity } from '$lib/services/entityParserService';
 	import type { BaseEntity } from '$lib/types';
 	import SaveEntityButton from './SaveEntityButton.svelte';
+	import ReviewEditButton from './ReviewEditButton.svelte';
 	import { saveEntityFromParsed } from '$lib/services/entitySaveService';
 	import { getIconComponent } from '$lib/utils/icons';
 	import { getEntityTypeDefinition } from '$lib/config/entityTypes';
@@ -11,9 +12,10 @@
 		entities: ParsedEntity[];
 		onEntitySaved?: (entity: BaseEntity) => void;
 		savedEntityIds?: string[];
+		messageId?: string;
 	}
 
-	let { entities, onEntitySaved, savedEntityIds = [] }: Props = $props();
+	let { entities, onEntitySaved, savedEntityIds = [], messageId }: Props = $props();
 
 	// Determine if entity is already saved by checking savedEntityIds
 	function isEntitySaved(entity: ParsedEntity, index: number): boolean {
@@ -70,10 +72,10 @@
 						</span>
 					</div>
 
-					<!-- Save button or saved indicator -->
-					<div class="flex-1">
+					<!-- Entity info and action buttons -->
+					<div class="flex-1 flex items-center gap-2">
 						{#if isSaved}
-							<div class="flex items-center gap-2">
+							<div class="flex items-center gap-2 flex-1">
 								<IconComponent class="w-4 h-4 text-{typeDef?.color ?? 'slate'}-500" />
 								<span class="text-sm font-medium text-slate-900 dark:text-white">{entity.name}</span>
 								<div class="flex items-center gap-1 text-green-600 dark:text-green-400 text-sm ml-auto">
@@ -88,6 +90,9 @@
 								onSaved={handleEntitySaved}
 							/>
 						{/if}
+
+						<!-- Review & Edit button (always shown) -->
+						<ReviewEditButton {entity} {messageId} />
 					</div>
 				</div>
 			{/each}

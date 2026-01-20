@@ -105,3 +105,7 @@ export {
 	getNextMilestone,
 	getDaysSinceExport
 } from './backupReminderService';
+
+// Suggestion analysis service
+export { suggestionAnalysisService } from './suggestionAnalysisService';
+export type { AnalysisConfig, FullAnalysisResult } from './analyzers';

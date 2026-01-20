@@ -31,6 +31,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Support for multiple entities per message with individual save controls
   - Loading states during save and validation error handling
   - 72 tests covering chat UI entity detection and saving
+- AI Entity Generation from Chat with save flow options (Issue #40, Phase A4)
+  - Complete AI entity generation feature with instant save and review options
+  - ReviewEditButton component provides "Review & Edit" option alongside instant save
+  - Navigate from chat to entity creation form with prefilled data from AI response
+  - PrefillBanner component shows form was prefilled from chat with link to original message
+  - entityPrefillUtils service for URL serialization/deserialization of prefill data
+  - Entity creation forms auto-populate name, description, tags, and type-specific fields
+  - Dismissible prefill indicator with navigation back to source chat message
+  - Two workflows: instant save in chat OR review/edit in form before saving
+  - 153 total tests covering complete entity generation pipeline
+  - Full integration: AI parsing → detection → save options → form prefill
 
 ## [0.6.1] - 2026-01-19
 

@@ -423,6 +423,198 @@ describe('EntityDetectionIndicator Component', () => {
 		});
 	});
 
+	describe('ReviewEditButton Integration - Phase A4', () => {
+		it('should render ReviewEditButton for each entity', () => {
+			render(EntityDetectionIndicator, {
+				props: {
+					entities: mockEntities,
+					onEntitySaved: vi.fn()
+				}
+			});
+
+			// Should have Review & Edit buttons for each entity (Phase A4)
+			const reviewButtons = screen.getAllByRole('button', { name: /review.*edit/i });
+			expect(reviewButtons).toHaveLength(2);
+		});
+
+		it('should render ReviewEditButton alongside SaveEntityButton', () => {
+			render(EntityDetectionIndicator, {
+				props: {
+					entities: [mockEntities[0]],
+					onEntitySaved: vi.fn()
+				}
+			});
+
+			// Both buttons should be present for same entity
+			expect(screen.getByRole('button', { name: /save/i })).toBeInTheDocument();
+			expect(screen.getByRole('button', { name: /review.*edit/i })).toBeInTheDocument();
+		});
+
+		it('should pass entity to ReviewEditButton', () => {
+			render(EntityDetectionIndicator, {
+				props: {
+					entities: [mockEntities[0]],
+					onEntitySaved: vi.fn()
+				}
+			});
+
+			// ReviewEditButton should be associated with the entity
+			const reviewButton = screen.getByRole('button', { name: /review.*edit/i });
+			expect(reviewButton).toBeInTheDocument();
+		});
+
+		it('should pass messageId to ReviewEditButton when provided', () => {
+			const messageId = 'msg-test-123';
+
+			render(EntityDetectionIndicator, {
+				props: {
+					entities: [mockEntities[0]],
+					messageId,
+					onEntitySaved: vi.fn()
+				}
+			});
+
+			// ReviewEditButton should receive messageId prop
+			const reviewButton = screen.getByRole('button', { name: /review.*edit/i });
+			expect(reviewButton).toBeInTheDocument();
+		});
+
+		it('should pass messageId to all ReviewEditButtons', () => {
+			const messageId = 'msg-multiple-entities';
+
+			render(EntityDetectionIndicator, {
+				props: {
+					entities: mockEntities,
+					messageId,
+					onEntitySaved: vi.fn()
+				}
+			});
+
+			// All ReviewEditButtons should receive the same messageId
+			const reviewButtons = screen.getAllByRole('button', { name: /review.*edit/i });
+			expect(reviewButtons).toHaveLength(2);
+		});
+
+		it('should render ReviewEditButton for each entity type', () => {
+			render(EntityDetectionIndicator, {
+				props: {
+					entities: mockEntities, // Contains both NPC and Location
+					onEntitySaved: vi.fn()
+				}
+			});
+
+			// Should have ReviewEditButton for both NPC and Location
+			const reviewButtons = screen.getAllByRole('button', { name: /review.*edit/i });
+			expect(reviewButtons).toHaveLength(2);
+		});
+
+		it('should disable ReviewEditButton when entity has validation errors', () => {
+			const entityWithErrors: ParsedEntity = {
+				...mockEntities[0],
+				validationErrors: {
+					role: 'Role is required'
+				}
+			};
+
+			render(EntityDetectionIndicator, {
+				props: {
+					entities: [entityWithErrors],
+					onEntitySaved: vi.fn()
+				}
+			});
+
+			const reviewButton = screen.getByRole('button', { name: /review.*edit/i });
+			expect(reviewButton).toBeDisabled();
+		});
+
+		it('should enable ReviewEditButton when entity has no validation errors', () => {
+			render(EntityDetectionIndicator, {
+				props: {
+					entities: [mockEntities[0]],
+					onEntitySaved: vi.fn()
+				}
+			});
+
+			const reviewButton = screen.getByRole('button', { name: /review.*edit/i });
+			expect(reviewButton).not.toBeDisabled();
+		});
+
+		it('should show ReviewEditButton even for saved entities', () => {
+			const savedEntityIds = ['entity-1'];
+
+			render(EntityDetectionIndicator, {
+				props: {
+					entities: mockEntities,
+					savedEntityIds,
+					onEntitySaved: vi.fn()
+				}
+			});
+
+			// ReviewEditButton should still be available even if entity is saved
+			const reviewButtons = screen.getAllByRole('button', { name: /review.*edit/i });
+			expect(reviewButtons.length).toBeGreaterThan(0);
+		});
+
+		it('should position ReviewEditButton appropriately in layout', () => {
+			const { container } = render(EntityDetectionIndicator, {
+				props: {
+					entities: [mockEntities[0]],
+					onEntitySaved: vi.fn()
+				}
+			});
+
+			// Both save and review buttons should be visible
+			expect(screen.getByRole('button', { name: /save/i })).toBeInTheDocument();
+			expect(screen.getByRole('button', { name: /review.*edit/i })).toBeInTheDocument();
+		});
+
+		it('should work with multiple entities and mixed validation states', () => {
+			const mixedEntities: ParsedEntity[] = [
+				mockEntities[0], // Valid
+				{
+					...mockEntities[1],
+					validationErrors: { locationType: 'Type is required' }
+				} // Invalid
+			];
+
+			render(EntityDetectionIndicator, {
+				props: {
+					entities: mixedEntities,
+					onEntitySaved: vi.fn()
+				}
+			});
+
+			const reviewButtons = screen.getAllByRole('button', { name: /review.*edit/i });
+			expect(reviewButtons).toHaveLength(2);
+
+			// First should be enabled, second disabled
+			expect(reviewButtons[0]).not.toBeDisabled();
+			expect(reviewButtons[1]).toBeDisabled();
+		});
+
+		it('should handle ReviewEditButton with custom entity types', () => {
+			const customEntity: ParsedEntity = {
+				entityType: 'custom_spell',
+				confidence: 0.8,
+				name: 'Fireball',
+				description: 'A powerful fire spell',
+				tags: ['magic'],
+				fields: { school: 'Evocation' },
+				validationErrors: {}
+			};
+
+			render(EntityDetectionIndicator, {
+				props: {
+					entities: [customEntity],
+					onEntitySaved: vi.fn()
+				}
+			});
+
+			const reviewButton = screen.getByRole('button', { name: /review.*edit/i });
+			expect(reviewButton).toBeInTheDocument();
+		});
+	});
+
 	describe('Edge Cases', () => {
 		it('should handle single entity correctly', () => {
 			render(EntityDetectionIndicator, {

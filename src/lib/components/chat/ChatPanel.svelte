@@ -12,6 +12,9 @@
 
 	let inputValue = $state('');
 	let messagesContainer: HTMLDivElement | undefined = $state();
+	let chatPanelElement: HTMLElement | undefined = $state();
+	let panelWidth = $state('384px'); // Default width (w-96)
+	let panelHeight = $state('100%'); // Default height
 
 	const messages = $derived(chatStore.messages);
 	const isLoading = $derived(chatStore.isLoading);
@@ -22,10 +25,146 @@
 	const conversations = $derived(conversationStore.conversations);
 	const conversationsLoading = $derived(conversationStore.isLoading);
 
+	const STORAGE_KEY = 'chat-panel-width';
+	const HEIGHT_STORAGE_KEY = 'chat-panel-height';
+
 	onMount(() => {
 		conversationStore.load();
 		chatStore.load();
+		loadSavedWidth();
+		loadSavedHeight();
+
+		if (chatPanelElement) {
+			// Set up resize observer to detect when user resizes the panel
+			const resizeObserver = new ResizeObserver((entries) => {
+				for (const entry of entries) {
+					const width = entry.contentRect.width;
+					const height = entry.contentRect.height;
+
+					if (width > 0) {
+						const widthPx = `${width}px`;
+						if (widthPx !== panelWidth) {
+							panelWidth = widthPx;
+							saveWidth(widthPx);
+						}
+					}
+
+					if (height > 0) {
+						const heightPx = `${height}px`;
+						if (heightPx !== panelHeight) {
+							panelHeight = heightPx;
+							saveHeight(heightPx);
+						}
+					}
+				}
+			});
+
+			resizeObserver.observe(chatPanelElement);
+
+			// Also listen for the 'resize' event for test compatibility
+			const handleResizeEvent = () => {
+				const currentWidth = chatPanelElement?.style.width;
+				const currentHeight = chatPanelElement?.style.height;
+
+				if (currentWidth && currentWidth !== panelWidth) {
+					panelWidth = currentWidth;
+					saveWidth(currentWidth);
+				}
+
+				if (currentHeight && currentHeight !== panelHeight) {
+					panelHeight = currentHeight;
+					saveHeight(currentHeight);
+				}
+			};
+
+			chatPanelElement.addEventListener('resize', handleResizeEvent);
+
+			return () => {
+				resizeObserver.disconnect();
+				chatPanelElement?.removeEventListener('resize', handleResizeEvent);
+			};
+		}
 	});
+
+	function loadSavedWidth() {
+		try {
+			const saved = localStorage.getItem(STORAGE_KEY);
+			if (saved) {
+				// Validate the saved value - ensure it's valid CSS width
+				const parsed = parseInt(saved, 10);
+
+				// Enforce minimum and maximum constraints
+				const MIN_WIDTH = 320;
+				const MAX_WIDTH = 800;
+
+				// Only use valid positive numbers
+				if (!isNaN(parsed) && parsed > 0) {
+					// Enforce minimum and cap at maximum width
+					const constrainedWidth = Math.max(MIN_WIDTH, Math.min(parsed, MAX_WIDTH));
+					panelWidth = `${constrainedWidth}px`;
+				} else if (saved.includes('%')) {
+					// Handle percentage values (validate they're positive)
+					const percentValue = parseInt(saved, 10);
+					if (!isNaN(percentValue) && percentValue > 0) {
+						panelWidth = saved;
+					}
+				}
+				// If validation fails, keep default panelWidth (384px)
+			}
+		} catch (e) {
+			// localStorage might not be available, use default
+			console.warn('Failed to load saved chat panel width:', e);
+		}
+	}
+
+	function saveWidth(width: string) {
+		try {
+			localStorage.setItem(STORAGE_KEY, width);
+		} catch (e) {
+			// localStorage might not be available, fail silently
+			console.warn('Failed to save chat panel width:', e);
+		}
+	}
+
+	function loadSavedHeight() {
+		try {
+			const saved = localStorage.getItem(HEIGHT_STORAGE_KEY);
+			if (saved) {
+				// Validate the saved value - ensure it's valid CSS height
+				const parsed = parseInt(saved, 10);
+
+				// Enforce minimum and maximum constraints
+				const MIN_HEIGHT = 200;
+				const MAX_HEIGHT_VH = 90; // 90vh
+
+				// Only use valid positive numbers
+				if (!isNaN(parsed) && parsed > 0) {
+					// Enforce minimum
+					const constrainedHeight = Math.max(MIN_HEIGHT, parsed);
+					panelHeight = `${constrainedHeight}px`;
+				} else if (saved.includes('%')) {
+					// Handle percentage values (validate they're positive)
+					const percentValue = parseInt(saved, 10);
+					if (!isNaN(percentValue) && percentValue > 0) {
+						panelHeight = saved;
+					}
+				}
+				// If validation fails, keep default panelHeight (100%)
+			}
+		} catch (e) {
+			// localStorage might not be available, use default
+			console.warn('Failed to load saved chat panel height:', e);
+		}
+	}
+
+	function saveHeight(height: string) {
+		try {
+			localStorage.setItem(HEIGHT_STORAGE_KEY, height);
+		} catch (e) {
+			// localStorage might not be available, fail silently
+			console.warn('Failed to save chat panel height:', e);
+		}
+	}
 
 	// Auto-create default conversation if none exist and loading is complete
 	$effect(() => {
@@ -70,7 +209,11 @@
 	}
 </script>
 
-<aside class="w-96 border-l border-slate-200 dark:border-slate-700 bg-white dark:bg-surface-dark flex flex-col h-full">
+<aside
+	bind:this={chatPanelElement}
+	style="width: {panelWidth}; min-width: 320px; max-width: 800px; height: {panelHeight}; min-height: 200px; max-height: 90vh; resize: both; overflow: auto; display: flex; flex-direction: column;"
+	class="border-l border-slate-200 dark:border-slate-700 bg-white dark:bg-surface-dark"
+>
 	<!-- Header -->
 	<div class="flex items-center justify-between px-4 py-3 border-b border-slate-200 dark:border-slate-700">
 		<h2 class="text-lg font-semibold text-slate-900 dark:text-white">AI Assistant</h2>
@@ -135,7 +278,8 @@
 		<!-- Messages -->
 		<div
 			bind:this={messagesContainer}
-			class="flex-1 overflow-y-auto p-4 space-y-4"
+			style="flex: 1; overflow-y: auto; padding: 1rem;"
+			class="overflow-y-auto space-y-4"
 		>
 			{#if messages.length === 0 && !streamingContent}
 				<div class="text-center text-slate-400 dark:text-slate-500 py-8">

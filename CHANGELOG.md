@@ -10,6 +10,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.7.0] - 2026-01-20
 
 ### Added
+- NPC generation with threat levels and combat roles (Issue #155)
+  - Added type-specific fields to generation type system
+  - When NPC generation type is selected in chat, two new dropdowns appear
+  - Threat Level selector: Any, Minion, Standard, Elite, Boss, Solo
+  - Combat Role selector: Any, Ambusher, Artillery, Brute, Controller, Defender, Harrier, Hexer, Leader, Mount, Support
+  - Selected values modify AI prompts to generate NPCs matching specified characteristics
+  - Each option includes descriptive tooltip explaining its purpose
+  - Foundation for adding type-specific fields to other generation types
 - Entity parser service for AI chat responses (Issue #40, Phase A1)
   - New `entityParserService.ts` extracts structured entity data from AI-generated text
   - Detects entity types (NPC, Location, Faction, Item, etc.) with confidence scoring

@@ -7,6 +7,7 @@
 	import ContextSelector from './ContextSelector.svelte';
 	import ConversationSidebar from './ConversationSidebar.svelte';
 	import GenerationTypeSelector from './GenerationTypeSelector.svelte';
+	import TypeFieldsSelector from './TypeFieldsSelector.svelte';
 	import type { GenerationType } from '$lib/types';
 
 	let inputValue = $state('');
@@ -105,6 +106,14 @@
 	<GenerationTypeSelector
 		value={chatStore.generationType}
 		onchange={(type) => chatStore.setGenerationType(type)}
+		disabled={isLoading}
+	/>
+
+	<!-- Type-specific fields (e.g., Threat Level, Combat Role for NPCs) -->
+	<TypeFieldsSelector
+		generationType={chatStore.generationType}
+		values={chatStore.typeFieldValues}
+		onchange={(key, value) => chatStore.setTypeFieldValue(key, value)}
 		disabled={isLoading}
 	/>
 

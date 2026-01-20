@@ -375,7 +375,9 @@ describe('Chat Store', () => {
 					'Hello World',
 					expect.any(Array),
 					expect.any(Boolean),
-					expect.any(Function)
+					expect.any(Function),
+					expect.any(String), // generationType
+					expect.any(Object) // typeFieldValues
 				);
 			});
 
@@ -400,7 +402,9 @@ describe('Chat Store', () => {
 					'Test message',
 					expect.any(Array),
 					expect.any(Boolean),
-					expect.any(Function)
+					expect.any(Function),
+					expect.any(String), // generationType
+					expect.any(Object) // typeFieldValues
 				);
 			});
 
@@ -414,7 +418,9 @@ describe('Chat Store', () => {
 					'Test',
 					['entity-1', 'entity-2'],
 					expect.any(Boolean),
-					expect.any(Function)
+					expect.any(Function),
+					expect.any(String), // generationType
+					expect.any(Object) // typeFieldValues
 				);
 			});
 
@@ -428,7 +434,9 @@ describe('Chat Store', () => {
 					'Test',
 					expect.any(Array),
 					false,
-					expect.any(Function)
+					expect.any(Function),
+					expect.any(String), // generationType
+					expect.any(Object) // typeFieldValues
 				);
 			});
 
@@ -1000,7 +1008,9 @@ describe('Chat Store', () => {
 					'Test message',
 					['entity-1', 'entity-2'],
 					expect.any(Boolean),
-					expect.any(Function)
+					expect.any(Function),
+					expect.any(String), // generationType
+					expect.any(Object) // typeFieldValues
 				);
 			});
 
@@ -1069,7 +1079,9 @@ describe('Chat Store', () => {
 				'Test',
 				expect.any(Array),
 				false,
-				expect.any(Function)
+				expect.any(Function),
+				expect.any(String), // generationType
+				expect.any(Object) // typeFieldValues
 			);
 		});
 
@@ -1082,7 +1094,9 @@ describe('Chat Store', () => {
 				'Test',
 				expect.any(Array),
 				true,
-				expect.any(Function)
+				expect.any(Function),
+				expect.any(String), // generationType
+				expect.any(Object) // typeFieldValues
 			);
 		});
 

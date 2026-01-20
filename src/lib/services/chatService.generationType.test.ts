@@ -21,23 +21,50 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { sendChatMessage } from './chatService';
 import type { GenerationType } from '$lib/types';
 
-// Mock Anthropic SDK
+// Use vi.hoisted to define mocks that can be used in vi.mock factories
+const { mockMessagesCreate, mockMessagesStream, mockBuildContext, mockFormatContextForPrompt } = vi.hoisted(() => ({
+	mockMessagesCreate: vi.fn(),
+	mockMessagesStream: vi.fn(),
+	mockBuildContext: vi.fn(),
+	mockFormatContextForPrompt: vi.fn()
+}));
+
+// Mock Anthropic SDK using constructor function pattern (like entityGenerationService.test.ts)
 vi.mock('@anthropic-ai/sdk', () => {
+	const MockAnthropic = function(this: any, config: any) {
+		this.messages = {
+			create: mockMessagesCreate,
+			stream: mockMessagesStream
+		};
+	};
+
+	// Add APIError class for error testing
+	(MockAnthropic as any).APIError = class APIError extends Error {
+		status: number;
+		constructor(message: string, status: number) {
+			super(message);
+			this.status = status;
+			this.name = 'APIError';
+		}
+	};
+
 	return {
-		default: vi.fn().mockImplementation(() => ({
-			messages: {
-				create: vi.fn(),
-				stream: vi.fn()
-			}
-		}))
+		default: MockAnthropic
 	};
 });
 
-describe('chatService - Generation Type Integration', () => {
-	let mockAnthropicClient: any;
-	let mockMessagesCreate: any;
-	let mockMessagesStream: any;
+// Mock context builder
+vi.mock('./contextBuilder', () => ({
+	buildContext: mockBuildContext,
+	formatContextForPrompt: mockFormatContextForPrompt
+}));
 
+// Mock model service
+vi.mock('./modelService', () => ({
+	getSelectedModel: vi.fn().mockReturnValue('claude-haiku-4-5-20250514')
+}));
+
+describe('chatService - Generation Type Integration', () => {
 	beforeEach(async () => {
 		vi.clearAllMocks();
 
@@ -61,11 +88,11 @@ describe('chatService - Generation Type Integration', () => {
 		});
 
 		// Setup mock Anthropic responses
-		mockMessagesCreate = vi.fn().mockResolvedValue({
+		mockMessagesCreate.mockResolvedValue({
 			content: [{ type: 'text', text: 'AI response' }]
 		});
 
-		mockMessagesStream = vi.fn().mockReturnValue({
+		mockMessagesStream.mockReturnValue({
 			[Symbol.asyncIterator]: async function* () {
 				yield {
 					type: 'content_block_delta',
@@ -74,16 +101,11 @@ describe('chatService - Generation Type Integration', () => {
 			}
 		});
 
-		// Mock Anthropic module
-		const Anthropic = (await import('@anthropic-ai/sdk')).default as any;
-		Anthropic.mockImplementation(() => ({
-			messages: {
-				create: mockMessagesCreate,
-				stream: mockMessagesStream
-			}
-		}));
+		// Setup context builder mocks with defaults
+		mockBuildContext.mockResolvedValue([]);
+		mockFormatContextForPrompt.mockReturnValue('');
 
-		// Mock database and context services
+		// Mock database services
 		vi.doMock('$lib/db/repositories', () => ({
 			chatRepository: {
 				getRecent: vi.fn(() => ({
@@ -93,15 +115,6 @@ describe('chatService - Generation Type Integration', () => {
 					})
 				}))
 			}
-		}));
-
-		vi.doMock('./contextBuilder', () => ({
-			buildContext: vi.fn().mockResolvedValue([]),
-			formatContextForPrompt: vi.fn().mockReturnValue('')
-		}));
-
-		vi.doMock('./modelService', () => ({
-			getSelectedModel: vi.fn().mockReturnValue('claude-haiku-4-5-20250514')
 		}));
 	});
 
@@ -319,11 +332,10 @@ describe('chatService - Generation Type Integration', () => {
 	describe('Prompt combination with context', () => {
 		it('should combine generationType prompt with context prompt', async () => {
 			// Mock context builder to return some context
-			const { buildContext, formatContextForPrompt } = await import('./contextBuilder');
-			(buildContext as any).mockResolvedValue([
+			mockBuildContext.mockResolvedValue([
 				{ id: 'entity-1', name: 'Test Entity', type: 'npc' }
 			]);
-			(formatContextForPrompt as any).mockReturnValue(
+			mockFormatContextForPrompt.mockReturnValue(
 				'# Campaign Context\n\n## Entity: Test Entity'
 			);
 
@@ -339,8 +351,7 @@ describe('chatService - Generation Type Integration', () => {
 		});
 
 		it('should append type prompt after context prompt', async () => {
-			const { formatContextForPrompt } = await import('./contextBuilder');
-			(formatContextForPrompt as any).mockReturnValue('# Context Content');
+			mockFormatContextForPrompt.mockReturnValue('# Context Content');
 
 			await sendChatMessage('Test', ['entity-1'], true, undefined, 'location');
 
@@ -349,16 +360,16 @@ describe('chatService - Generation Type Integration', () => {
 
 			// Context should come before type-specific prompt
 			const contextIndex = systemPrompt.indexOf('Context Content');
-			const typeIndex = systemPrompt.toLowerCase().indexOf('location');
+			// Look for the location-specific prompt text (not just 'location' which appears in base prompt)
+			const typeIndex = systemPrompt.toLowerCase().indexOf('vivid place with atmosphere');
 
 			expect(contextIndex).toBeGreaterThan(-1);
 			expect(typeIndex).toBeGreaterThan(contextIndex);
 		});
 
 		it('should handle empty context with generationType', async () => {
-			const { buildContext, formatContextForPrompt } = await import('./contextBuilder');
-			(buildContext as any).mockResolvedValue([]);
-			(formatContextForPrompt as any).mockReturnValue('');
+			mockBuildContext.mockResolvedValue([]);
+			mockFormatContextForPrompt.mockReturnValue('');
 
 			await sendChatMessage('Test', [], true, undefined, 'npc');
 
@@ -624,6 +635,430 @@ describe('chatService - Generation Type Integration', () => {
 				const prompt = mockMessagesCreate.mock.calls[0][0].system;
 				expect(prompt).toMatch(keyword);
 			}
+		});
+	});
+
+	describe('typeFieldValues integration (Issue #155)', () => {
+		beforeEach(() => {
+			mockMessagesCreate.mockClear();
+			mockMessagesStream.mockClear();
+		});
+
+		describe('Parameter acceptance', () => {
+			it('should accept typeFieldValues as 6th parameter', async () => {
+				await expect(
+					sendChatMessage('Test', [], true, undefined, 'npc', { threatLevel: 'elite' })
+				).resolves.not.toThrow();
+			});
+
+			it('should accept empty typeFieldValues object', async () => {
+				await expect(
+					sendChatMessage('Test', [], true, undefined, 'npc', {})
+				).resolves.not.toThrow();
+			});
+
+			it('should work without typeFieldValues parameter (backward compatibility)', async () => {
+				await expect(
+					sendChatMessage('Test', [], true, undefined, 'npc')
+				).resolves.not.toThrow();
+			});
+		});
+
+		describe('Threat Level in prompts', () => {
+			it('should include threat level in prompt when threatLevel is set', async () => {
+				await sendChatMessage('Generate NPC', [], true, undefined, 'npc', {
+					threatLevel: 'elite'
+				});
+
+				expect(mockMessagesCreate).toHaveBeenCalled();
+				const callArgs = mockMessagesCreate.mock.calls[0][0];
+				const systemPrompt = callArgs.system.toLowerCase();
+
+				expect(systemPrompt).toMatch(/elite|threat/);
+			});
+
+			it('should include minion threat level text', async () => {
+				await sendChatMessage('Test', [], true, undefined, 'npc', {
+					threatLevel: 'minion'
+				});
+
+				const systemPrompt = mockMessagesCreate.mock.calls[0][0].system.toLowerCase();
+				expect(systemPrompt).toContain('minion');
+			});
+
+			it('should include standard threat level text', async () => {
+				await sendChatMessage('Test', [], true, undefined, 'npc', {
+					threatLevel: 'standard'
+				});
+
+				const systemPrompt = mockMessagesCreate.mock.calls[0][0].system.toLowerCase();
+				expect(systemPrompt).toContain('standard');
+			});
+
+			it('should include elite threat level text', async () => {
+				await sendChatMessage('Test', [], true, undefined, 'npc', {
+					threatLevel: 'elite'
+				});
+
+				const systemPrompt = mockMessagesCreate.mock.calls[0][0].system.toLowerCase();
+				expect(systemPrompt).toContain('elite');
+			});
+
+			it('should include boss threat level text', async () => {
+				await sendChatMessage('Test', [], true, undefined, 'npc', {
+					threatLevel: 'boss'
+				});
+
+				const systemPrompt = mockMessagesCreate.mock.calls[0][0].system.toLowerCase();
+				expect(systemPrompt).toContain('boss');
+			});
+
+			it('should include solo threat level text', async () => {
+				await sendChatMessage('Test', [], true, undefined, 'npc', {
+					threatLevel: 'solo'
+				});
+
+				const systemPrompt = mockMessagesCreate.mock.calls[0][0].system.toLowerCase();
+				expect(systemPrompt).toContain('solo');
+			});
+
+			it('should not include threat level text when not specified', async () => {
+				await sendChatMessage('Test', [], true, undefined, 'npc', {});
+
+				const systemPrompt = mockMessagesCreate.mock.calls[0][0].system;
+				// Should not have placeholder text for threat level
+				expect(systemPrompt).not.toMatch(/\{threatLevel\}|\{value\}/);
+			});
+		});
+
+		describe('Combat Role in prompts', () => {
+			it('should include combat role in prompt when combatRole is set', async () => {
+				await sendChatMessage('Generate NPC', [], true, undefined, 'npc', {
+					combatRole: 'brute'
+				});
+
+				expect(mockMessagesCreate).toHaveBeenCalled();
+				const callArgs = mockMessagesCreate.mock.calls[0][0];
+				const systemPrompt = callArgs.system.toLowerCase();
+
+				expect(systemPrompt).toMatch(/brute|role|combat/);
+			});
+
+			it('should include all combat roles correctly', async () => {
+				const combatRoles = [
+					'ambusher', 'artillery', 'brute', 'controller', 'defender',
+					'harrier', 'hexer', 'leader', 'mount', 'support'
+				];
+
+				for (const role of combatRoles) {
+					mockMessagesCreate.mockClear();
+					await sendChatMessage('Test', [], true, undefined, 'npc', {
+						combatRole: role
+					});
+
+					const systemPrompt = mockMessagesCreate.mock.calls[0][0].system.toLowerCase();
+					expect(systemPrompt).toContain(role);
+				}
+			});
+
+			it('should not include combat role text when not specified', async () => {
+				await sendChatMessage('Test', [], true, undefined, 'npc', {});
+
+				const systemPrompt = mockMessagesCreate.mock.calls[0][0].system;
+				// Should not have placeholder text for combat role
+				expect(systemPrompt).not.toMatch(/\{combatRole\}|\{role\}/);
+			});
+		});
+
+		describe('Combined typeFieldValues', () => {
+			it('should include both threat level and combat role when both are set', async () => {
+				await sendChatMessage('Generate NPC', [], true, undefined, 'npc', {
+					threatLevel: 'boss',
+					combatRole: 'artillery'
+				});
+
+				const systemPrompt = mockMessagesCreate.mock.calls[0][0].system.toLowerCase();
+
+				expect(systemPrompt).toContain('boss');
+				expect(systemPrompt).toContain('artillery');
+			});
+
+			it('should include only threat level when combat role is empty', async () => {
+				await sendChatMessage('Test', [], true, undefined, 'npc', {
+					threatLevel: 'elite',
+					combatRole: ''
+				});
+
+				const systemPrompt = mockMessagesCreate.mock.calls[0][0].system.toLowerCase();
+
+				expect(systemPrompt).toContain('elite');
+				// Empty values should be excluded from prompt
+			});
+
+			it('should include only combat role when threat level is empty', async () => {
+				await sendChatMessage('Test', [], true, undefined, 'npc', {
+					threatLevel: '',
+					combatRole: 'defender'
+				});
+
+				const systemPrompt = mockMessagesCreate.mock.calls[0][0].system.toLowerCase();
+
+				expect(systemPrompt).toContain('defender');
+			});
+
+			it('should exclude both when both are empty strings', async () => {
+				await sendChatMessage('Test', [], true, undefined, 'npc', {
+					threatLevel: '',
+					combatRole: ''
+				});
+
+				const systemPrompt = mockMessagesCreate.mock.calls[0][0].system;
+
+				// Should not have any placeholder markers
+				expect(systemPrompt).not.toMatch(/\{value\}|\{threatLevel\}|\{combatRole\}/);
+			});
+		});
+
+		describe('Integration with other parameters', () => {
+			it('should work with typeFieldValues and context entities', async () => {
+				mockBuildContext.mockResolvedValue([
+					{ id: 'entity-1', name: 'Test Entity', type: 'npc' }
+				]);
+				mockFormatContextForPrompt.mockReturnValue('# Campaign Context');
+
+				await sendChatMessage('Test', ['entity-1'], true, undefined, 'npc', {
+					threatLevel: 'elite',
+					combatRole: 'brute'
+				});
+
+				const systemPrompt = mockMessagesCreate.mock.calls[0][0].system;
+
+				expect(systemPrompt).toContain('Campaign Context');
+				expect(systemPrompt.toLowerCase()).toContain('elite');
+				expect(systemPrompt.toLowerCase()).toContain('brute');
+			});
+
+			it('should work with typeFieldValues and streaming', async () => {
+				const onStream = vi.fn();
+
+				await sendChatMessage('Test', [], true, onStream, 'npc', {
+					threatLevel: 'boss',
+					combatRole: 'leader'
+				});
+
+				expect(mockMessagesStream).toHaveBeenCalled();
+				const systemPrompt = mockMessagesStream.mock.calls[0][0].system.toLowerCase();
+
+				expect(systemPrompt).toContain('boss');
+				expect(systemPrompt).toContain('leader');
+			});
+
+			it('should work with all parameters combined', async () => {
+				mockBuildContext.mockResolvedValue([]);
+				mockFormatContextForPrompt.mockReturnValue('');
+
+				const onStream = vi.fn();
+
+				await sendChatMessage(
+					'Generate powerful NPC',
+					['entity-1', 'entity-2'],
+					false,
+					onStream,
+					'npc',
+					{ threatLevel: 'solo', combatRole: 'hexer' }
+				);
+
+				expect(mockMessagesStream).toHaveBeenCalled();
+				const callArgs = mockMessagesStream.mock.calls[0][0];
+				const systemPrompt = callArgs.system.toLowerCase();
+
+				expect(systemPrompt).toContain('solo');
+				expect(systemPrompt).toContain('hexer');
+			});
+		});
+
+		describe('Prompt template substitution', () => {
+			it('should properly format threat level in prompt template', async () => {
+				await sendChatMessage('Test', [], true, undefined, 'npc', {
+					threatLevel: 'elite'
+				});
+
+				const systemPrompt = mockMessagesCreate.mock.calls[0][0].system;
+
+				// Should not have raw template placeholders
+				expect(systemPrompt).not.toContain('{value}');
+				expect(systemPrompt).not.toContain('{threatLevel}');
+
+				// Should have the actual value
+				expect(systemPrompt.toLowerCase()).toContain('elite');
+			});
+
+			it('should properly format combat role in prompt template', async () => {
+				await sendChatMessage('Test', [], true, undefined, 'npc', {
+					combatRole: 'controller'
+				});
+
+				const systemPrompt = mockMessagesCreate.mock.calls[0][0].system;
+
+				// Should not have raw template placeholders
+				expect(systemPrompt).not.toContain('{role}');
+				expect(systemPrompt).not.toContain('{combatRole}');
+
+				// Should have the actual value
+				expect(systemPrompt.toLowerCase()).toContain('controller');
+			});
+
+			it('should append typeField prompts to system prompt', async () => {
+				await sendChatMessage('Test', [], true, undefined, 'npc', {
+					threatLevel: 'boss'
+				});
+
+				const systemPrompt = mockMessagesCreate.mock.calls[0][0].system;
+
+				// Should have base prompt
+				expect(systemPrompt).toContain('TTRPG campaign assistant');
+
+				// Should have NPC type prompt
+				expect(systemPrompt).toContain('NPC');
+
+				// Should have threat level
+				expect(systemPrompt.toLowerCase()).toContain('boss');
+			});
+		});
+
+		describe('Non-NPC types with typeFieldValues', () => {
+			it('should ignore typeFieldValues for custom type', async () => {
+				await sendChatMessage('Test', [], true, undefined, 'custom', {
+					threatLevel: 'elite'
+				});
+
+				const systemPrompt = mockMessagesCreate.mock.calls[0][0].system;
+
+				// Custom type should not process NPC-specific fields
+				// But the call should not fail
+				expect(mockMessagesCreate).toHaveBeenCalled();
+			});
+
+			it('should ignore typeFieldValues for location type', async () => {
+				await sendChatMessage('Test', [], true, undefined, 'location', {
+					combatRole: 'brute'
+				});
+
+				expect(mockMessagesCreate).toHaveBeenCalled();
+			});
+
+			it('should handle typeFieldValues for all non-NPC types gracefully', async () => {
+				const nonNpcTypes: GenerationType[] = [
+					'custom', 'location', 'plot_hook', 'encounter', 'item', 'faction', 'session_prep'
+				];
+
+				for (const type of nonNpcTypes) {
+					mockMessagesCreate.mockClear();
+					await expect(
+						sendChatMessage('Test', [], true, undefined, type, {
+							threatLevel: 'elite',
+							combatRole: 'brute'
+						})
+					).resolves.not.toThrow();
+
+					expect(mockMessagesCreate).toHaveBeenCalled();
+				}
+			});
+		});
+
+		describe('Edge cases', () => {
+			it('should handle undefined typeFieldValues', async () => {
+				await expect(
+					sendChatMessage('Test', [], true, undefined, 'npc', undefined)
+				).resolves.not.toThrow();
+			});
+
+			it('should handle null typeFieldValues', async () => {
+				await expect(
+					sendChatMessage('Test', [], true, undefined, 'npc', null as any)
+				).resolves.not.toThrow();
+			});
+
+			it('should handle unknown field keys', async () => {
+				await expect(
+					sendChatMessage('Test', [], true, undefined, 'npc', {
+						unknownField: 'some-value'
+					} as any)
+				).resolves.not.toThrow();
+			});
+
+			it('should handle very long field values', async () => {
+				await expect(
+					sendChatMessage('Test', [], true, undefined, 'npc', {
+						threatLevel: 'elite'.repeat(100)
+					})
+				).resolves.not.toThrow();
+			});
+
+			it('should handle special characters in field values', async () => {
+				await expect(
+					sendChatMessage('Test', [], true, undefined, 'npc', {
+						threatLevel: 'elite<script>alert("xss")</script>'
+					})
+				).resolves.not.toThrow();
+			});
+		});
+
+		describe('Error handling', () => {
+			it('should handle API errors with typeFieldValues', async () => {
+				mockMessagesCreate.mockRejectedValue(new Error('API error'));
+
+				await expect(
+					sendChatMessage('Test', [], true, undefined, 'npc', {
+						threatLevel: 'boss',
+						combatRole: 'artillery'
+					})
+				).rejects.toThrow('API error');
+			});
+
+			it('should handle missing API key with typeFieldValues', async () => {
+				localStorage.getItem = vi.fn().mockReturnValue(null);
+
+				await expect(
+					sendChatMessage('Test', [], true, undefined, 'npc', {
+						threatLevel: 'elite'
+					})
+				).rejects.toThrow('API key not configured');
+			});
+		});
+
+		describe('Prompt length and structure', () => {
+			it('should increase prompt length when typeFieldValues are included', async () => {
+				await sendChatMessage('Test', [], true, undefined, 'npc', {});
+				const emptyFieldsLength = mockMessagesCreate.mock.calls[0][0].system.length;
+
+				mockMessagesCreate.mockClear();
+
+				await sendChatMessage('Test', [], true, undefined, 'npc', {
+					threatLevel: 'elite',
+					combatRole: 'brute'
+				});
+				const withFieldsLength = mockMessagesCreate.mock.calls[0][0].system.length;
+
+				expect(withFieldsLength).toBeGreaterThan(emptyFieldsLength);
+			});
+
+			it('should maintain proper prompt formatting with typeFieldValues', async () => {
+				await sendChatMessage('Test', [], true, undefined, 'npc', {
+					threatLevel: 'boss',
+					combatRole: 'leader'
+				});
+
+				const systemPrompt = mockMessagesCreate.mock.calls[0][0].system;
+
+				// Should be well-formatted
+				expect(systemPrompt).toBeTruthy();
+				expect(systemPrompt.length).toBeGreaterThan(100);
+
+				// Should have proper sections
+				expect(systemPrompt).toContain('TTRPG campaign assistant');
+				expect(systemPrompt).toContain('NPC');
+			});
 		});
 	});
 });

@@ -1,6 +1,18 @@
 import type { GenerationType } from '$lib/types';
 
 /**
+ * Configuration for a type-specific field (e.g., threat level, combat role).
+ */
+export interface GenerationTypeField {
+	key: string;
+	label: string;
+	type: 'select';
+	options: { value: string; label: string; description?: string }[];
+	defaultValue?: string;
+	promptTemplate: string;
+}
+
+/**
  * Configuration for a generation type including metadata and prompt templates.
  */
 export interface GenerationTypeConfig {
@@ -10,6 +22,7 @@ export interface GenerationTypeConfig {
 	icon: string; // Lucide icon name
 	promptTemplate: string;
 	suggestedStructure?: string;
+	typeFields?: GenerationTypeField[];
 }
 
 /**
@@ -47,7 +60,101 @@ export const GENERATION_TYPES: readonly GenerationTypeConfig[] = [
 - Current situation
 
 ## Relationships
-- Connections to other entities (if any)`
+- Connections to other entities (if any)`,
+		typeFields: [
+			{
+				key: 'threatLevel',
+				label: 'Threat Level',
+				type: 'select',
+				options: [
+					{
+						value: 'minion',
+						label: 'Minion',
+						description: 'Minion enemies appear in groups to threaten heroes through numbers'
+					},
+					{
+						value: 'standard',
+						label: 'Standard',
+						description: 'Standard threat level with balanced combat capabilities'
+					},
+					{
+						value: 'elite',
+						label: 'Elite',
+						description: 'Elite enemies have above-average threat with enhanced abilities'
+					},
+					{
+						value: 'boss',
+						label: 'Boss',
+						description: 'Boss enemies are major threats meant to challenge an entire party'
+					},
+					{
+						value: 'solo',
+						label: 'Solo',
+						description: 'Solo enemies are extremely powerful, designed to fight the entire party alone'
+					}
+				],
+				defaultValue: 'standard',
+				promptTemplate: 'This NPC should be created as a {value} threat level enemy.'
+			},
+			{
+				key: 'combatRole',
+				label: 'Combat Role',
+				type: 'select',
+				options: [
+					{
+						value: 'ambusher',
+						label: 'Ambusher',
+						description: 'Strikes from hiding and gains advantages from surprise'
+					},
+					{
+						value: 'artillery',
+						label: 'Artillery',
+						description: 'Attacks from range with powerful area effects'
+					},
+					{
+						value: 'brute',
+						label: 'Brute',
+						description: 'Deals heavy melee damage through raw power'
+					},
+					{
+						value: 'controller',
+						label: 'Controller',
+						description: 'Manipulates the battlefield and restricts enemy movement'
+					},
+					{
+						value: 'defender',
+						label: 'Defender',
+						description: 'Protects allies and absorbs damage'
+					},
+					{
+						value: 'harrier',
+						label: 'Harrier',
+						description: 'Mobile skirmisher that disrupts enemy positioning'
+					},
+					{
+						value: 'hexer',
+						label: 'Hexer',
+						description: 'Debuffs enemies and inflicts conditions'
+					},
+					{
+						value: 'leader',
+						label: 'Leader',
+						description: 'Enhances allies and coordinates group tactics'
+					},
+					{
+						value: 'mount',
+						label: 'Mount',
+						description: 'Carries riders and provides mobility'
+					},
+					{
+						value: 'support',
+						label: 'Support',
+						description: 'Heals and buffs allies'
+					}
+				],
+				promptTemplate: 'This NPC should fulfill the {value} combat role.'
+			}
+		]
 	},
 	{
 		id: 'location',

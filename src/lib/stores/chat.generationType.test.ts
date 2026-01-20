@@ -202,7 +202,8 @@ describe('Chat Store - Generation Type Extension', () => {
 				expect.any(Array),
 				expect.any(Boolean),
 				expect.any(Function),
-				'npc' // generationType should be passed as 5th argument
+				'npc', // generationType should be passed as 5th argument
+				expect.any(Object) // typeFieldValues should be passed as 6th argument
 			);
 		});
 
@@ -216,7 +217,8 @@ describe('Chat Store - Generation Type Extension', () => {
 				expect.any(Array),
 				expect.any(Boolean),
 				expect.any(Function),
-				'custom'
+				'custom',
+				expect.any(Object) // typeFieldValues
 			);
 		});
 
@@ -243,7 +245,8 @@ describe('Chat Store - Generation Type Extension', () => {
 					expect.any(Array),
 					expect.any(Boolean),
 					expect.any(Function),
-					type
+					type,
+					expect.any(Object) // typeFieldValues
 				);
 			}
 		});
@@ -260,7 +263,8 @@ describe('Chat Store - Generation Type Extension', () => {
 				['entity-1', 'entity-2'],
 				expect.any(Boolean),
 				expect.any(Function),
-				'npc'
+				'npc',
+				expect.any(Object) // typeFieldValues
 			);
 		});
 
@@ -276,7 +280,8 @@ describe('Chat Store - Generation Type Extension', () => {
 				expect.any(Array),
 				false,
 				expect.any(Function),
-				'location'
+				'location',
+				expect.any(Object) // typeFieldValues
 			);
 		});
 
@@ -469,7 +474,8 @@ describe('Chat Store - Generation Type Extension', () => {
 				['entity-1'],
 				expect.any(Boolean),
 				expect.any(Function),
-				'npc'
+				'npc',
+				expect.any(Object) // typeFieldValues
 			);
 
 			// Change generation type
@@ -483,7 +489,8 @@ describe('Chat Store - Generation Type Extension', () => {
 				['entity-1'],
 				expect.any(Boolean),
 				expect.any(Function),
-				'location'
+				'location',
+				expect.any(Object) // typeFieldValues
 			);
 
 			// Clear history shouldn't affect type
@@ -609,6 +616,340 @@ describe('Chat Store - Generation Type Extension', () => {
 			chatStore.setGenerationType('npc');
 			const type: GenerationType = chatStore.generationType;
 			expect(type).toBe('npc');
+		});
+	});
+
+	describe('typeFieldValues state (Issue #155)', () => {
+		beforeEach(async () => {
+			await chatStore.load();
+		});
+
+		describe('Initial State', () => {
+			it('should have typeFieldValues property defined', () => {
+				expect(chatStore).toHaveProperty('typeFieldValues');
+			});
+
+			it('should initialize with empty typeFieldValues object', () => {
+				expect(chatStore.typeFieldValues).toEqual({});
+			});
+
+			it('should have setTypeFieldValue method defined', () => {
+				expect(chatStore).toHaveProperty('setTypeFieldValue');
+				expect(typeof chatStore.setTypeFieldValue).toBe('function');
+			});
+
+			it('should have clearTypeFieldValues method defined', () => {
+				expect(chatStore).toHaveProperty('clearTypeFieldValues');
+				expect(typeof chatStore.clearTypeFieldValues).toBe('function');
+			});
+		});
+
+		describe('setTypeFieldValue() method', () => {
+			it('should set a single field value', () => {
+				chatStore.setTypeFieldValue('threatLevel', 'elite');
+				expect(chatStore.typeFieldValues).toEqual({ threatLevel: 'elite' });
+			});
+
+			it('should set multiple field values independently', () => {
+				chatStore.setTypeFieldValue('threatLevel', 'boss');
+				chatStore.setTypeFieldValue('combatRole', 'brute');
+
+				expect(chatStore.typeFieldValues).toEqual({
+					threatLevel: 'boss',
+					combatRole: 'brute'
+				});
+			});
+
+			it('should update existing field value', () => {
+				chatStore.setTypeFieldValue('threatLevel', 'minion');
+				expect(chatStore.typeFieldValues.threatLevel).toBe('minion');
+
+				chatStore.setTypeFieldValue('threatLevel', 'solo');
+				expect(chatStore.typeFieldValues.threatLevel).toBe('solo');
+			});
+
+			it('should preserve other field values when updating one', () => {
+				chatStore.setTypeFieldValue('threatLevel', 'elite');
+				chatStore.setTypeFieldValue('combatRole', 'defender');
+
+				chatStore.setTypeFieldValue('threatLevel', 'boss');
+
+				expect(chatStore.typeFieldValues).toEqual({
+					threatLevel: 'boss',
+					combatRole: 'defender'
+				});
+			});
+
+			it('should accept all threat level values', () => {
+				const threatLevels = ['minion', 'standard', 'elite', 'boss', 'solo'];
+
+				threatLevels.forEach(level => {
+					chatStore.setTypeFieldValue('threatLevel', level);
+					expect(chatStore.typeFieldValues.threatLevel).toBe(level);
+				});
+			});
+
+			it('should accept all combat role values', () => {
+				const combatRoles = [
+					'ambusher', 'artillery', 'brute', 'controller', 'defender',
+					'harrier', 'hexer', 'leader', 'mount', 'support'
+				];
+
+				combatRoles.forEach(role => {
+					chatStore.setTypeFieldValue('combatRole', role);
+					expect(chatStore.typeFieldValues.combatRole).toBe(role);
+				});
+			});
+
+			it('should handle empty string value', () => {
+				chatStore.setTypeFieldValue('combatRole', '');
+				expect(chatStore.typeFieldValues.combatRole).toBe('');
+			});
+
+			it('should not affect other chat store state', () => {
+				chatStore.setGenerationType('npc');
+				chatStore.setContextEntities(['entity-1']);
+
+				chatStore.setTypeFieldValue('threatLevel', 'elite');
+
+				expect(chatStore.generationType).toBe('npc');
+				expect(chatStore.contextEntityIds).toEqual(['entity-1']);
+				expect(chatStore.isLoading).toBe(false);
+			});
+		});
+
+		describe('clearTypeFieldValues() method', () => {
+			it('should clear all type field values', () => {
+				chatStore.setTypeFieldValue('threatLevel', 'boss');
+				chatStore.setTypeFieldValue('combatRole', 'artillery');
+
+				chatStore.clearTypeFieldValues();
+
+				expect(chatStore.typeFieldValues).toEqual({});
+			});
+
+			it('should work when typeFieldValues is already empty', () => {
+				chatStore.clearTypeFieldValues();
+				expect(chatStore.typeFieldValues).toEqual({});
+			});
+
+			it('should not affect other chat store state', () => {
+				chatStore.setGenerationType('npc');
+				chatStore.setContextEntities(['entity-1']);
+				chatStore.setTypeFieldValue('threatLevel', 'elite');
+
+				chatStore.clearTypeFieldValues();
+
+				expect(chatStore.generationType).toBe('npc');
+				expect(chatStore.contextEntityIds).toEqual(['entity-1']);
+			});
+		});
+
+		describe('setGenerationType() integration', () => {
+			it('should clear typeFieldValues when changing generation type', () => {
+				chatStore.setGenerationType('npc');
+				chatStore.setTypeFieldValue('threatLevel', 'elite');
+				chatStore.setTypeFieldValue('combatRole', 'brute');
+
+				chatStore.setGenerationType('location');
+
+				expect(chatStore.typeFieldValues).toEqual({});
+			});
+
+			it('should clear typeFieldValues when switching to custom', () => {
+				chatStore.setGenerationType('npc');
+				chatStore.setTypeFieldValue('threatLevel', 'boss');
+
+				chatStore.setGenerationType('custom');
+
+				expect(chatStore.typeFieldValues).toEqual({});
+			});
+
+			it('should clear typeFieldValues when switching from custom to NPC', () => {
+				chatStore.setGenerationType('custom');
+
+				chatStore.setGenerationType('npc');
+
+				expect(chatStore.typeFieldValues).toEqual({});
+			});
+
+			it('should clear typeFieldValues between different specialized types', () => {
+				chatStore.setGenerationType('npc');
+				chatStore.setTypeFieldValue('threatLevel', 'elite');
+
+				chatStore.setGenerationType('encounter');
+				expect(chatStore.typeFieldValues).toEqual({});
+			});
+		});
+
+		describe('sendMessage() integration with typeFieldValues', () => {
+			it('should pass typeFieldValues to sendChatMessage', async () => {
+				mockSendChatMessage.mockResolvedValue('Response');
+
+				chatStore.setGenerationType('npc');
+				chatStore.setTypeFieldValue('threatLevel', 'elite');
+				chatStore.setTypeFieldValue('combatRole', 'brute');
+
+				await chatStore.sendMessage('Generate NPC');
+
+				expect(mockSendChatMessage).toHaveBeenCalledWith(
+					'Generate NPC',
+					expect.any(Array),
+					expect.any(Boolean),
+					expect.any(Function),
+					'npc',
+					{ threatLevel: 'elite', combatRole: 'brute' }
+				);
+			});
+
+			it('should pass empty typeFieldValues when none are set', async () => {
+				mockSendChatMessage.mockResolvedValue('Response');
+
+				chatStore.setGenerationType('npc');
+				await chatStore.sendMessage('Generate NPC');
+
+				expect(mockSendChatMessage).toHaveBeenCalledWith(
+					'Generate NPC',
+					expect.any(Array),
+					expect.any(Boolean),
+					expect.any(Function),
+					'npc',
+					{}
+				);
+			});
+
+			it('should pass partial typeFieldValues when only some are set', async () => {
+				mockSendChatMessage.mockResolvedValue('Response');
+
+				chatStore.setGenerationType('npc');
+				chatStore.setTypeFieldValue('threatLevel', 'standard');
+
+				await chatStore.sendMessage('Generate NPC');
+
+				expect(mockSendChatMessage).toHaveBeenCalledWith(
+					'Generate NPC',
+					expect.any(Array),
+					expect.any(Boolean),
+					expect.any(Function),
+					'npc',
+					{ threatLevel: 'standard' }
+				);
+			});
+
+			it('should maintain typeFieldValues after sending message', async () => {
+				mockSendChatMessage.mockResolvedValue('Response');
+
+				chatStore.setGenerationType('npc');
+				chatStore.setTypeFieldValue('threatLevel', 'boss');
+
+				await chatStore.sendMessage('Generate NPC');
+
+				expect(chatStore.typeFieldValues).toEqual({ threatLevel: 'boss' });
+			});
+
+			it('should handle errors without affecting typeFieldValues', async () => {
+				mockSendChatMessage.mockRejectedValue(new Error('API error'));
+
+				chatStore.setGenerationType('npc');
+				chatStore.setTypeFieldValue('combatRole', 'leader');
+
+				await chatStore.sendMessage('Test');
+
+				expect(chatStore.typeFieldValues).toEqual({ combatRole: 'leader' });
+			});
+		});
+
+		describe('State persistence across operations', () => {
+			it('should preserve typeFieldValues when loading messages', async () => {
+				chatStore.setTypeFieldValue('threatLevel', 'elite');
+
+				await chatStore.load();
+
+				expect(chatStore.typeFieldValues).toEqual({ threatLevel: 'elite' });
+			});
+
+			it('should preserve typeFieldValues when clearing history', async () => {
+				chatStore.setTypeFieldValue('combatRole', 'artillery');
+
+				await chatStore.clearHistory();
+
+				expect(chatStore.typeFieldValues).toEqual({ combatRole: 'artillery' });
+			});
+
+			it('should preserve typeFieldValues when modifying context entities', () => {
+				chatStore.setTypeFieldValue('threatLevel', 'boss');
+
+				chatStore.setContextEntities(['entity-1']);
+				chatStore.addContextEntity('entity-2');
+				chatStore.removeContextEntity('entity-1');
+
+				expect(chatStore.typeFieldValues).toEqual({ threatLevel: 'boss' });
+			});
+
+			it('should preserve typeFieldValues when toggling includeLinkedEntities', () => {
+				chatStore.setTypeFieldValue('combatRole', 'defender');
+
+				chatStore.setIncludeLinkedEntities(false);
+				chatStore.setIncludeLinkedEntities(true);
+
+				expect(chatStore.typeFieldValues).toEqual({ combatRole: 'defender' });
+			});
+		});
+
+		describe('Edge cases', () => {
+			it('should handle rapid field value changes', () => {
+				// 51 iterations (0-50) so last iteration i=50 is even -> 'minion'
+				for (let i = 0; i <= 50; i++) {
+					chatStore.setTypeFieldValue('threatLevel', i % 2 === 0 ? 'minion' : 'solo');
+				}
+
+				expect(chatStore.typeFieldValues.threatLevel).toBe('minion');
+			});
+
+			it('should handle setting same value multiple times', () => {
+				chatStore.setTypeFieldValue('threatLevel', 'elite');
+				chatStore.setTypeFieldValue('threatLevel', 'elite');
+				chatStore.setTypeFieldValue('threatLevel', 'elite');
+
+				expect(chatStore.typeFieldValues).toEqual({ threatLevel: 'elite' });
+			});
+
+			it('should handle clearing when already empty', () => {
+				chatStore.clearTypeFieldValues();
+				chatStore.clearTypeFieldValues();
+
+				expect(chatStore.typeFieldValues).toEqual({});
+			});
+
+			it('should return new object reference after modifications', () => {
+				const initial = chatStore.typeFieldValues;
+
+				chatStore.setTypeFieldValue('threatLevel', 'boss');
+
+				// Should be a different object reference for reactivity
+				expect(chatStore.typeFieldValues).not.toBe(initial);
+			});
+		});
+
+		describe('Reactivity', () => {
+			it('should update typeFieldValues reactively', () => {
+				expect(chatStore.typeFieldValues).toEqual({});
+
+				chatStore.setTypeFieldValue('threatLevel', 'elite');
+
+				expect(chatStore.typeFieldValues).toEqual({ threatLevel: 'elite' });
+			});
+
+			it('should be observable in Svelte components', () => {
+				const values1 = chatStore.typeFieldValues;
+				expect(values1).toEqual({});
+
+				chatStore.setTypeFieldValue('combatRole', 'hexer');
+
+				const values2 = chatStore.typeFieldValues;
+				expect(values2).toEqual({ combatRole: 'hexer' });
+				expect(values2).not.toBe(values1);
+			});
 		});
 	});
 });

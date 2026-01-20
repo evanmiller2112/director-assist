@@ -651,4 +651,264 @@ describe('generationTypes configuration', () => {
 			});
 		});
 	});
+
+	describe('GenerationTypeField interface (Issue #155)', () => {
+		it('should define GenerationTypeField interface', () => {
+			// Test that the interface exists and has correct structure
+			const mockField = {
+				key: 'threatLevel',
+				label: 'Threat Level',
+				type: 'select' as const,
+				options: [
+					{ value: 'minion', label: 'Minion' }
+				],
+				defaultValue: 'standard',
+				promptTemplate: 'This NPC is a {value} threat.'
+			};
+
+			// TypeScript should accept this structure
+			expect(mockField.key).toBe('threatLevel');
+			expect(mockField.type).toBe('select');
+			expect(Array.isArray(mockField.options)).toBe(true);
+		});
+
+		it('should allow typeFields to be optional on GenerationTypeConfig', () => {
+			const customConfig = getGenerationTypeConfig('custom');
+			// typeFields should be optional, so undefined is valid
+			expect(customConfig?.typeFields === undefined || Array.isArray(customConfig?.typeFields)).toBe(true);
+		});
+	});
+
+	describe('NPC typeFields configuration (Issue #155)', () => {
+		const npcConfig = GENERATION_TYPES.find((c) => c.id === 'npc');
+
+		it('should have typeFields defined for NPC type', () => {
+			expect(npcConfig?.typeFields).toBeDefined();
+			expect(Array.isArray(npcConfig?.typeFields)).toBe(true);
+		});
+
+		it('should have exactly 2 typeFields (threatLevel and combatRole)', () => {
+			expect(npcConfig?.typeFields).toHaveLength(2);
+		});
+
+		describe('Threat Level field', () => {
+			let threatLevelField: any;
+
+			beforeEach(() => {
+				threatLevelField = npcConfig?.typeFields?.find(f => f.key === 'threatLevel');
+			});
+
+			it('should have threatLevel field defined', () => {
+				expect(threatLevelField).toBeDefined();
+			});
+
+			it('should have correct key', () => {
+				expect(threatLevelField?.key).toBe('threatLevel');
+			});
+
+			it('should have descriptive label', () => {
+				expect(threatLevelField?.label).toBe('Threat Level');
+			});
+
+			it('should be of type select', () => {
+				expect(threatLevelField?.type).toBe('select');
+			});
+
+			it('should have exactly 5 threat level options', () => {
+				expect(threatLevelField?.options).toHaveLength(5);
+			});
+
+			it('should have minion option', () => {
+				const minion = threatLevelField?.options.find((o: any) => o.value === 'minion');
+				expect(minion).toBeDefined();
+				expect(minion?.label).toBe('Minion');
+				expect(minion?.description).toBeTruthy();
+				expect(minion?.description.toLowerCase()).toContain('minion');
+			});
+
+			it('should have standard option', () => {
+				const standard = threatLevelField?.options.find((o: any) => o.value === 'standard');
+				expect(standard).toBeDefined();
+				expect(standard?.label).toBe('Standard');
+				expect(standard?.description).toBeTruthy();
+			});
+
+			it('should have elite option', () => {
+				const elite = threatLevelField?.options.find((o: any) => o.value === 'elite');
+				expect(elite).toBeDefined();
+				expect(elite?.label).toBe('Elite');
+				expect(elite?.description).toBeTruthy();
+				expect(elite?.description.toLowerCase()).toContain('elite');
+			});
+
+			it('should have boss option', () => {
+				const boss = threatLevelField?.options.find((o: any) => o.value === 'boss');
+				expect(boss).toBeDefined();
+				expect(boss?.label).toBe('Boss');
+				expect(boss?.description).toBeTruthy();
+				expect(boss?.description.toLowerCase()).toContain('boss');
+			});
+
+			it('should have solo option', () => {
+				const solo = threatLevelField?.options.find((o: any) => o.value === 'solo');
+				expect(solo).toBeDefined();
+				expect(solo?.label).toBe('Solo');
+				expect(solo?.description).toBeTruthy();
+				expect(solo?.description.toLowerCase()).toContain('solo');
+			});
+
+			it('should have default value of standard', () => {
+				expect(threatLevelField?.defaultValue).toBe('standard');
+			});
+
+			it('should have prompt template with placeholder', () => {
+				expect(threatLevelField?.promptTemplate).toBeTruthy();
+				expect(threatLevelField?.promptTemplate.toLowerCase()).toContain('threat');
+			});
+
+			it('should have all options with value, label, and description', () => {
+				threatLevelField?.options.forEach((option: any) => {
+					expect(option.value).toBeTruthy();
+					expect(option.label).toBeTruthy();
+					expect(option.description).toBeTruthy();
+				});
+			});
+
+			it('should have threat levels in logical order', () => {
+				const values = threatLevelField?.options.map((o: any) => o.value);
+				expect(values).toEqual(['minion', 'standard', 'elite', 'boss', 'solo']);
+			});
+		});
+
+		describe('Combat Role field', () => {
+			let combatRoleField: any;
+
+			beforeEach(() => {
+				combatRoleField = npcConfig?.typeFields?.find(f => f.key === 'combatRole');
+			});
+
+			it('should have combatRole field defined', () => {
+				expect(combatRoleField).toBeDefined();
+			});
+
+			it('should have correct key', () => {
+				expect(combatRoleField?.key).toBe('combatRole');
+			});
+
+			it('should have descriptive label', () => {
+				expect(combatRoleField?.label).toBe('Combat Role');
+			});
+
+			it('should be of type select', () => {
+				expect(combatRoleField?.type).toBe('select');
+			});
+
+			it('should have exactly 10 combat role options', () => {
+				expect(combatRoleField?.options).toHaveLength(10);
+			});
+
+			it('should have ambusher role', () => {
+				const ambusher = combatRoleField?.options.find((o: any) => o.value === 'ambusher');
+				expect(ambusher).toBeDefined();
+				expect(ambusher?.label).toBe('Ambusher');
+				expect(ambusher?.description).toBeTruthy();
+			});
+
+			it('should have artillery role', () => {
+				const artillery = combatRoleField?.options.find((o: any) => o.value === 'artillery');
+				expect(artillery).toBeDefined();
+				expect(artillery?.label).toBe('Artillery');
+				expect(artillery?.description).toBeTruthy();
+			});
+
+			it('should have brute role', () => {
+				const brute = combatRoleField?.options.find((o: any) => o.value === 'brute');
+				expect(brute).toBeDefined();
+				expect(brute?.label).toBe('Brute');
+				expect(brute?.description).toBeTruthy();
+			});
+
+			it('should have controller role', () => {
+				const controller = combatRoleField?.options.find((o: any) => o.value === 'controller');
+				expect(controller).toBeDefined();
+				expect(controller?.label).toBe('Controller');
+				expect(controller?.description).toBeTruthy();
+			});
+
+			it('should have defender role', () => {
+				const defender = combatRoleField?.options.find((o: any) => o.value === 'defender');
+				expect(defender).toBeDefined();
+				expect(defender?.label).toBe('Defender');
+				expect(defender?.description).toBeTruthy();
+			});
+
+			it('should have harrier role', () => {
+				const harrier = combatRoleField?.options.find((o: any) => o.value === 'harrier');
+				expect(harrier).toBeDefined();
+				expect(harrier?.label).toBe('Harrier');
+				expect(harrier?.description).toBeTruthy();
+			});
+
+			it('should have hexer role', () => {
+				const hexer = combatRoleField?.options.find((o: any) => o.value === 'hexer');
+				expect(hexer).toBeDefined();
+				expect(hexer?.label).toBe('Hexer');
+				expect(hexer?.description).toBeTruthy();
+			});
+
+			it('should have leader role', () => {
+				const leader = combatRoleField?.options.find((o: any) => o.value === 'leader');
+				expect(leader).toBeDefined();
+				expect(leader?.label).toBe('Leader');
+				expect(leader?.description).toBeTruthy();
+			});
+
+			it('should have mount role', () => {
+				const mount = combatRoleField?.options.find((o: any) => o.value === 'mount');
+				expect(mount).toBeDefined();
+				expect(mount?.label).toBe('Mount');
+				expect(mount?.description).toBeTruthy();
+			});
+
+			it('should have support role', () => {
+				const support = combatRoleField?.options.find((o: any) => o.value === 'support');
+				expect(support).toBeDefined();
+				expect(support?.label).toBe('Support');
+				expect(support?.description).toBeTruthy();
+			});
+
+			it('should have no default value (optional)', () => {
+				// Combat role is optional, so no default
+				expect(combatRoleField?.defaultValue).toBeUndefined();
+			});
+
+			it('should have prompt template with placeholder', () => {
+				expect(combatRoleField?.promptTemplate).toBeTruthy();
+				expect(combatRoleField?.promptTemplate.toLowerCase()).toMatch(/role|combat/);
+			});
+
+			it('should have all options with value, label, and description', () => {
+				combatRoleField?.options.forEach((option: any) => {
+					expect(option.value).toBeTruthy();
+					expect(option.label).toBeTruthy();
+					expect(option.description).toBeTruthy();
+				});
+			});
+
+			it('should have combat roles in alphabetical order', () => {
+				const values = combatRoleField?.options.map((o: any) => o.value);
+				expect(values).toEqual([
+					'ambusher', 'artillery', 'brute', 'controller', 'defender',
+					'harrier', 'hexer', 'leader', 'mount', 'support'
+				]);
+			});
+		});
+
+		it('should not have typeFields for non-NPC types', () => {
+			const otherTypes = GENERATION_TYPES.filter(c => c.id !== 'npc');
+			otherTypes.forEach(config => {
+				expect(config.typeFields).toBeUndefined();
+			});
+		});
+	});
 });

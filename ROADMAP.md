@@ -73,6 +73,10 @@ These are ideas we're considering for the hosted service. They depend on user de
 
 ### Hosted Service Architecture (Planned)
 
+**Self-hosted is the default.** No environment variables, no configuration, no backend required. Clone, `npm install`, `npm run dev`—it works.
+
+Hosted mode is opt-in via `VITE_HOSTED_MODE=true` and requires external backend services.
+
 ```
 ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
 │   SvelteKit     │────▶│   API Layer     │────▶│   PostgreSQL    │
@@ -86,6 +90,10 @@ These are ideas we're considering for the hosted service. They depend on user de
                         │    billing)     │
                         └─────────────────┘
 ```
+
+Backend services (auth, database, sync, billing) live in separate private repositories.
+
+See [docs/HOSTED_ARCHITECTURE.md](docs/HOSTED_ARCHITECTURE.md) for full technical details.
 
 Key technical decisions to make:
 - [ ] Auth provider (likely OAuth with GitHub/Google)
@@ -104,7 +112,7 @@ The Open Campaign Format will be implemented in phases:
 
 ### Contributing to the Hosted Service
 
-The hosted service code will live in this repository (likely under `src/lib/server/` and `src/routes/api/`). We'll use feature flags to enable/disable hosted features.
+Hosted features live in this repository alongside self-hosted code. The `VITE_HOSTED_MODE` environment variable controls which features are active at runtime.
 
 If you're interested in contributing to the hosted service specifically:
 - Auth and user management

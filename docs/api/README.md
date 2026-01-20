@@ -145,6 +145,7 @@ See the [type definitions file](../../src/lib/types/entities.ts) for complete ty
 - [Architecture Documentation](../ARCHITECTURE.md) - Overall system architecture
 
 ### Developer Documentation
+- [Combat System Documentation](../COMBAT_SYSTEM.md) - Combat tracking system for Draw Steel
 - [Test Documentation](../../TEST_DOCUMENTATION.md) - Testing patterns and examples
 - [Agent Workflow](../AGENT_WORKFLOW.md) - Development workflow
 

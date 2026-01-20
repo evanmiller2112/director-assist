@@ -5,7 +5,8 @@ import type {
 	ChatMessage,
 	Conversation,
 	AISuggestion,
-	RelationshipSummaryCache
+	RelationshipSummaryCache,
+	CombatSession
 } from '$lib/types';
 import { migrateCampaignToEntity } from './migrations/migrateCampaignToEntity';
 import { migrateExistingChatMessages } from './migrations/migrateExistingChatMessages';
@@ -24,6 +25,7 @@ class DMAssistantDB extends Dexie {
 	suggestions!: Table<AISuggestion>;
 	appConfig!: Table<AppConfig>;
 	relationshipSummaryCache!: Table<RelationshipSummaryCache>;
+	combatSessions!: Table<CombatSession>;
 
 	constructor() {
 		super('dm-assistant');
@@ -78,6 +80,18 @@ class DMAssistantDB extends Dexie {
 			suggestions: 'id, type, status, createdAt, expiresAt, *affectedEntityIds',
 			appConfig: 'key',
 			relationshipSummaryCache: 'id, sourceId, targetId, relationship, generatedAt'
+		});
+
+		// Version 6: Add combatSessions table for Draw Steel combat tracking
+		this.version(6).stores({
+			entities: 'id, type, name, *tags, createdAt, updatedAt',
+			campaign: 'id',
+			conversations: 'id, name, updatedAt',
+			chatMessages: 'id, conversationId, timestamp',
+			suggestions: 'id, type, status, createdAt, expiresAt, *affectedEntityIds',
+			appConfig: 'key',
+			relationshipSummaryCache: 'id, sourceId, targetId, relationship, generatedAt',
+			combatSessions: 'id, status, createdAt, updatedAt'
 		});
 	}
 }

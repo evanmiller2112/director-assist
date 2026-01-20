@@ -30,7 +30,7 @@
 	}
 </script>
 
-<div class="flex flex-col h-full border-b border-slate-200 dark:border-slate-700">
+<div class="flex flex-col max-h-48 border-b border-slate-200 dark:border-slate-700">
 	<!-- Header with New Conversation button -->
 	<div class="px-3 py-2 border-b border-slate-200 dark:border-slate-700">
 		<button

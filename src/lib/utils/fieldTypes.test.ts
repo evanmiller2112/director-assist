@@ -837,3 +837,519 @@ describe('fieldTypes - ComputedFieldConfig validation', () => {
 		});
 	});
 });
+
+describe('fieldTypes - Draw Steel computed field examples', () => {
+	describe('Health & Vitality formulas', () => {
+		it('should calculate remaining HP: {maxHP} - {currentDamage}', () => {
+			const config: ComputedFieldConfig = {
+				formula: '{maxHP} - {currentDamage}',
+				dependencies: ['maxHP', 'currentDamage'],
+				outputType: 'number'
+			};
+
+			const fields = { maxHP: 60, currentDamage: 15 };
+			const result = evaluateComputedField(config, fields);
+
+			expect(result).toBe(45);
+			expect(typeof result).toBe('number');
+		});
+
+		it('should calculate HP percentage: ({currentHP} / {maxHP}) * 100', () => {
+			const config: ComputedFieldConfig = {
+				formula: '({currentHP} / {maxHP}) * 100',
+				dependencies: ['currentHP', 'maxHP'],
+				outputType: 'number'
+			};
+
+			const fields = { currentHP: 30, maxHP: 60 };
+			const result = evaluateComputedField(config, fields);
+
+			expect(result).toBe(50);
+		});
+
+		it('should check is bloodied: {currentHP} <= ({maxHP} / 2)', () => {
+			const config: ComputedFieldConfig = {
+				formula: '{currentHP} <= ({maxHP} / 2)',
+				dependencies: ['currentHP', 'maxHP'],
+				outputType: 'boolean'
+			};
+
+			// Test bloodied (true)
+			const fieldsBloodied = { currentHP: 25, maxHP: 60 };
+			const resultBloodied = evaluateComputedField(config, fieldsBloodied);
+			expect(resultBloodied).toBe(true);
+			expect(typeof resultBloodied).toBe('boolean');
+
+			// Test not bloodied (false)
+			const fieldsHealthy = { currentHP: 40, maxHP: 60 };
+			const resultHealthy = evaluateComputedField(config, fieldsHealthy);
+			expect(resultHealthy).toBe(false);
+		});
+
+		it('should check is winded: {currentHP} <= 0', () => {
+			const config: ComputedFieldConfig = {
+				formula: '{currentHP} <= 0',
+				dependencies: ['currentHP'],
+				outputType: 'boolean'
+			};
+
+			// Test winded (true)
+			const fieldsWinded = { currentHP: 0 };
+			const resultWinded = evaluateComputedField(config, fieldsWinded);
+			expect(resultWinded).toBe(true);
+
+			// Test not winded (false)
+			const fieldsAlive = { currentHP: 10 };
+			const resultAlive = evaluateComputedField(config, fieldsAlive);
+			expect(resultAlive).toBe(false);
+		});
+
+		it('should handle edge case: HP exactly at half for bloodied', () => {
+			const config: ComputedFieldConfig = {
+				formula: '{currentHP} <= ({maxHP} / 2)',
+				dependencies: ['currentHP', 'maxHP'],
+				outputType: 'boolean'
+			};
+
+			const fields = { currentHP: 30, maxHP: 60 };
+			const result = evaluateComputedField(config, fields);
+			expect(result).toBe(true);
+		});
+
+		it('should handle edge case: zero HP with remaining HP formula', () => {
+			const config: ComputedFieldConfig = {
+				formula: '{maxHP} - {currentDamage}',
+				dependencies: ['maxHP', 'currentDamage'],
+				outputType: 'number'
+			};
+
+			const fields = { maxHP: 50, currentDamage: 50 };
+			const result = evaluateComputedField(config, fields);
+			expect(result).toBe(0);
+		});
+	});
+
+	describe('Ability Scores formulas', () => {
+		it('should calculate total attributes: {might} + {agility} + {reason} + {intuition} + {presence}', () => {
+			const config: ComputedFieldConfig = {
+				formula: '{might} + {agility} + {reason} + {intuition} + {presence}',
+				dependencies: ['might', 'agility', 'reason', 'intuition', 'presence'],
+				outputType: 'number'
+			};
+
+			const fields = {
+				might: 3,
+				agility: 2,
+				reason: 1,
+				intuition: 2,
+				presence: 2
+			};
+			const result = evaluateComputedField(config, fields);
+
+			expect(result).toBe(10);
+		});
+
+		it('should calculate primary attack bonus: {might} + {level}', () => {
+			const config: ComputedFieldConfig = {
+				formula: '{might} + {level}',
+				dependencies: ['might', 'level'],
+				outputType: 'number'
+			};
+
+			const fields = { might: 3, level: 5 };
+			const result = evaluateComputedField(config, fields);
+
+			expect(result).toBe(8);
+		});
+
+		it('should calculate ranged attack bonus: {agility} + {level}', () => {
+			const config: ComputedFieldConfig = {
+				formula: '{agility} + {level}',
+				dependencies: ['agility', 'level'],
+				outputType: 'number'
+			};
+
+			const fields = { agility: 2, level: 5 };
+			const result = evaluateComputedField(config, fields);
+
+			expect(result).toBe(7);
+		});
+
+		it('should handle edge case: zero attributes in total', () => {
+			const config: ComputedFieldConfig = {
+				formula: '{might} + {agility} + {reason} + {intuition} + {presence}',
+				dependencies: ['might', 'agility', 'reason', 'intuition', 'presence'],
+				outputType: 'number'
+			};
+
+			const fields = {
+				might: 0,
+				agility: 0,
+				reason: 0,
+				intuition: 0,
+				presence: 0
+			};
+			const result = evaluateComputedField(config, fields);
+
+			expect(result).toBe(0);
+		});
+
+		it('should handle edge case: level 1 attack bonus', () => {
+			const config: ComputedFieldConfig = {
+				formula: '{might} + {level}',
+				dependencies: ['might', 'level'],
+				outputType: 'number'
+			};
+
+			const fields = { might: 2, level: 1 };
+			const result = evaluateComputedField(config, fields);
+			expect(result).toBe(3);
+		});
+	});
+
+	describe('Display & Identification formulas', () => {
+		it('should format character title: {name} the {class}', () => {
+			const config: ComputedFieldConfig = {
+				formula: '{name} the {class}',
+				dependencies: ['name', 'class'],
+				outputType: 'text'
+			};
+
+			const fields = { name: 'Aragorn', class: 'Ranger' };
+			const result = evaluateComputedField(config, fields);
+
+			expect(result).toBe('Aragorn the Ranger');
+			expect(typeof result).toBe('string');
+		});
+
+		it('should format full character description: Level {level} {ancestry} {class}', () => {
+			const config: ComputedFieldConfig = {
+				formula: 'Level {level} {ancestry} {class}',
+				dependencies: ['level', 'ancestry', 'class'],
+				outputType: 'text'
+			};
+
+			const fields = { level: 5, ancestry: 'Human', class: 'Conduit' };
+			const result = evaluateComputedField(config, fields);
+
+			expect(result).toBe('Level 5 Human Conduit');
+		});
+
+		it('should format NPC identifier: {name} | {threatLevel} {role}', () => {
+			const config: ComputedFieldConfig = {
+				formula: '{name} | {threatLevel} {role}',
+				dependencies: ['name', 'threatLevel', 'role'],
+				outputType: 'text'
+			};
+
+			const fields = { name: 'Orc Captain', threatLevel: 'Boss', role: 'Leader' };
+			const result = evaluateComputedField(config, fields);
+
+			expect(result).toBe('Orc Captain | Boss Leader');
+		});
+
+		it('should handle edge case: single character name', () => {
+			const config: ComputedFieldConfig = {
+				formula: '{name} the {class}',
+				dependencies: ['name', 'class'],
+				outputType: 'text'
+			};
+
+			const fields = { name: 'X', class: 'Fighter' };
+			const result = evaluateComputedField(config, fields);
+			expect(result).toBe('X the Fighter');
+		});
+
+		it('should handle edge case: level 1 in description', () => {
+			const config: ComputedFieldConfig = {
+				formula: 'Level {level} {ancestry} {class}',
+				dependencies: ['level', 'ancestry', 'class'],
+				outputType: 'text'
+			};
+
+			const fields = { level: 1, ancestry: 'Elf', class: 'Wizard' };
+			const result = evaluateComputedField(config, fields);
+			expect(result).toBe('Level 1 Elf Wizard');
+		});
+	});
+
+	describe('Combat formulas', () => {
+		it('should calculate recovery value: {maxHP} / 3', () => {
+			const config: ComputedFieldConfig = {
+				formula: '{maxHP} / 3',
+				dependencies: ['maxHP'],
+				outputType: 'number'
+			};
+
+			const fields = { maxHP: 60 };
+			const result = evaluateComputedField(config, fields);
+
+			expect(result).toBe(20);
+		});
+
+		it('should check is veteran tier: {level} >= 5', () => {
+			const config: ComputedFieldConfig = {
+				formula: '{level} >= 5',
+				dependencies: ['level'],
+				outputType: 'boolean'
+			};
+
+			// Test veteran (true)
+			const fieldsVeteran = { level: 5 };
+			const resultVeteran = evaluateComputedField(config, fieldsVeteran);
+			expect(resultVeteran).toBe(true);
+			expect(typeof resultVeteran).toBe('boolean');
+
+			// Test not veteran (false)
+			const fieldsNovice = { level: 4 };
+			const resultNovice = evaluateComputedField(config, fieldsNovice);
+			expect(resultNovice).toBe(false);
+		});
+
+		it('should handle edge case: recovery value with non-divisible HP', () => {
+			const config: ComputedFieldConfig = {
+				formula: '{maxHP} / 3',
+				dependencies: ['maxHP'],
+				outputType: 'number'
+			};
+
+			const fields = { maxHP: 50 };
+			const result = evaluateComputedField(config, fields);
+			expect(result).toBeCloseTo(16.67, 2);
+		});
+
+		it('should handle edge case: exactly level 5 for veteran tier', () => {
+			const config: ComputedFieldConfig = {
+				formula: '{level} >= 5',
+				dependencies: ['level'],
+				outputType: 'boolean'
+			};
+
+			const fields = { level: 5 };
+			const result = evaluateComputedField(config, fields);
+			expect(result).toBe(true);
+		});
+
+		it('should handle edge case: high level character (level 10)', () => {
+			const config: ComputedFieldConfig = {
+				formula: '{level} >= 5',
+				dependencies: ['level'],
+				outputType: 'boolean'
+			};
+
+			const fields = { level: 10 };
+			const result = evaluateComputedField(config, fields);
+			expect(result).toBe(true);
+		});
+	});
+
+	describe('Negotiation formulas', () => {
+		it('should format negotiation difficulty: DC {negotiationDC}', () => {
+			const config: ComputedFieldConfig = {
+				formula: 'DC {negotiationDC}',
+				dependencies: ['negotiationDC'],
+				outputType: 'text'
+			};
+
+			const fields = { negotiationDC: 15 };
+			const result = evaluateComputedField(config, fields);
+
+			expect(result).toBe('DC 15');
+			expect(typeof result).toBe('string');
+		});
+
+		it('should handle edge case: DC 0', () => {
+			const config: ComputedFieldConfig = {
+				formula: 'DC {negotiationDC}',
+				dependencies: ['negotiationDC'],
+				outputType: 'text'
+			};
+
+			const fields = { negotiationDC: 0 };
+			const result = evaluateComputedField(config, fields);
+			expect(result).toBe('DC 0');
+		});
+
+		it('should handle edge case: very high DC', () => {
+			const config: ComputedFieldConfig = {
+				formula: 'DC {negotiationDC}',
+				dependencies: ['negotiationDC'],
+				outputType: 'text'
+			};
+
+			const fields = { negotiationDC: 30 };
+			const result = evaluateComputedField(config, fields);
+			expect(result).toBe('DC 30');
+		});
+	});
+
+	describe('Draw Steel examples - Missing field handling', () => {
+		it('should return null when required fields are missing for HP calculation', () => {
+			const config: ComputedFieldConfig = {
+				formula: '{maxHP} - {currentDamage}',
+				dependencies: ['maxHP', 'currentDamage'],
+				outputType: 'number'
+			};
+
+			const result = evaluateComputedField(config, {});
+			expect(result).toBeNull();
+		});
+
+		it('should return null when required fields are missing for character title', () => {
+			const config: ComputedFieldConfig = {
+				formula: '{name} the {class}',
+				dependencies: ['name', 'class'],
+				outputType: 'text'
+			};
+
+			const result = evaluateComputedField(config, {});
+			expect(result).toBeNull();
+		});
+
+		it('should return null when some fields are missing', () => {
+			const config: ComputedFieldConfig = {
+				formula: '{might} + {agility} + {reason} + {intuition} + {presence}',
+				dependencies: ['might', 'agility', 'reason', 'intuition', 'presence'],
+				outputType: 'number'
+			};
+
+			// Only provide some fields
+			const fields = { might: 3, agility: 2 };
+			const result = evaluateComputedField(config, fields);
+			expect(result).toBeNull();
+		});
+	});
+
+	describe('Draw Steel examples - Complex scenarios', () => {
+		it('should handle character progression: level 1 to veteran tier', () => {
+			const config: ComputedFieldConfig = {
+				formula: '{level} >= 5',
+				dependencies: ['level'],
+				outputType: 'boolean'
+			};
+
+			// Test level progression
+			expect(evaluateComputedField(config, { level: 1 })).toBe(false);
+			expect(evaluateComputedField(config, { level: 2 })).toBe(false);
+			expect(evaluateComputedField(config, { level: 3 })).toBe(false);
+			expect(evaluateComputedField(config, { level: 4 })).toBe(false);
+			expect(evaluateComputedField(config, { level: 5 })).toBe(true);
+			expect(evaluateComputedField(config, { level: 6 })).toBe(true);
+		});
+
+		it('should handle combat damage accumulation', () => {
+			const config: ComputedFieldConfig = {
+				formula: '{maxHP} - {currentDamage}',
+				dependencies: ['maxHP', 'currentDamage'],
+				outputType: 'number'
+			};
+
+			const maxHP = 60;
+
+			// Simulate taking damage
+			expect(evaluateComputedField(config, { maxHP, currentDamage: 0 })).toBe(60);
+			expect(evaluateComputedField(config, { maxHP, currentDamage: 10 })).toBe(50);
+			expect(evaluateComputedField(config, { maxHP, currentDamage: 30 })).toBe(30);
+			expect(evaluateComputedField(config, { maxHP, currentDamage: 60 })).toBe(0);
+		});
+
+		it('should handle bloodied state transitions', () => {
+			const config: ComputedFieldConfig = {
+				formula: '{currentHP} <= ({maxHP} / 2)',
+				dependencies: ['currentHP', 'maxHP'],
+				outputType: 'boolean'
+			};
+
+			const maxHP = 60;
+
+			// Just above bloodied
+			expect(evaluateComputedField(config, { currentHP: 31, maxHP })).toBe(false);
+
+			// Exactly bloodied
+			expect(evaluateComputedField(config, { currentHP: 30, maxHP })).toBe(true);
+
+			// Well below bloodied
+			expect(evaluateComputedField(config, { currentHP: 15, maxHP })).toBe(true);
+		});
+
+		it('should handle recovery value calculation for various HP totals', () => {
+			const config: ComputedFieldConfig = {
+				formula: '{maxHP} / 3',
+				dependencies: ['maxHP'],
+				outputType: 'number'
+			};
+
+			// Test various HP values
+			expect(evaluateComputedField(config, { maxHP: 30 })).toBe(10);
+			expect(evaluateComputedField(config, { maxHP: 60 })).toBe(20);
+			expect(evaluateComputedField(config, { maxHP: 45 })).toBe(15);
+			expect(evaluateComputedField(config, { maxHP: 50 })).toBeCloseTo(16.67, 2);
+		});
+
+		it('should combine multiple Draw Steel formulas for complete character', () => {
+			const character = {
+				name: 'Thorgrim',
+				class: 'Fury',
+				ancestry: 'Dwarf',
+				level: 5,
+				maxHP: 60,
+				currentHP: 25,
+				currentDamage: 35,
+				might: 3,
+				agility: 2,
+				reason: 1,
+				intuition: 2,
+				presence: 2,
+				negotiationDC: 15
+			};
+
+			// Character Title
+			const titleConfig: ComputedFieldConfig = {
+				formula: '{name} the {class}',
+				dependencies: ['name', 'class'],
+				outputType: 'text'
+			};
+			expect(evaluateComputedField(titleConfig, character)).toBe('Thorgrim the Fury');
+
+			// Full Description
+			const descConfig: ComputedFieldConfig = {
+				formula: 'Level {level} {ancestry} {class}',
+				dependencies: ['level', 'ancestry', 'class'],
+				outputType: 'text'
+			};
+			expect(evaluateComputedField(descConfig, character)).toBe('Level 5 Dwarf Fury');
+
+			// Is Bloodied
+			const bloodiedConfig: ComputedFieldConfig = {
+				formula: '{currentHP} <= ({maxHP} / 2)',
+				dependencies: ['currentHP', 'maxHP'],
+				outputType: 'boolean'
+			};
+			expect(evaluateComputedField(bloodiedConfig, character)).toBe(true);
+
+			// Is Veteran
+			const veteranConfig: ComputedFieldConfig = {
+				formula: '{level} >= 5',
+				dependencies: ['level'],
+				outputType: 'boolean'
+			};
+			expect(evaluateComputedField(veteranConfig, character)).toBe(true);
+
+			// Total Attributes
+			const totalAttrConfig: ComputedFieldConfig = {
+				formula: '{might} + {agility} + {reason} + {intuition} + {presence}',
+				dependencies: ['might', 'agility', 'reason', 'intuition', 'presence'],
+				outputType: 'number'
+			};
+			expect(evaluateComputedField(totalAttrConfig, character)).toBe(10);
+
+			// Recovery Value
+			const recoveryConfig: ComputedFieldConfig = {
+				formula: '{maxHP} / 3',
+				dependencies: ['maxHP'],
+				outputType: 'number'
+			};
+			expect(evaluateComputedField(recoveryConfig, character)).toBe(20);
+		});
+	});
+});

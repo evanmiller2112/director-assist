@@ -15,6 +15,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Splits multi-entity responses into individual sections
   - Generates summaries and extracts tags from text
   - Foundation for future AI chat entity creation features
+- Entity parser validation and enhanced type detection (Issue #40, Phase A2)
+  - Integrated field-level validation into parsing pipeline with `validateParsedEntity()` function
+  - Added `validationErrors` property to `ParsedEntity` interface for tracking validation issues
+  - Enhanced type detection with explicit `[TYPE]` marker support (e.g., `[NPC]`, `[Location]`)
+  - Added "Entity Type: X" header pattern detection for improved accuracy
+  - Field density analysis boosts confidence when multiple type-specific fields are detected
+  - Improved `preferredType` fallback logic: overrides only when detection confidence is low (< 0.4)
+  - 22 new tests added for validation and enhanced detection (124 total tests)
 
 ## [0.6.1] - 2026-01-19
 

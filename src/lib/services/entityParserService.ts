@@ -1,5 +1,6 @@
 import type { EntityType, EntityTypeDefinition, FieldValue, FieldDefinition } from '$lib/types';
 import { getEntityTypeDefinition } from '$lib/config/entityTypes';
+import { validateDynamicFields } from '$lib/utils/validation';
 
 export interface ParsedEntity {
 	entityType: EntityType;
@@ -10,6 +11,7 @@ export interface ParsedEntity {
 	tags: string[];
 	fields: Record<string, FieldValue>;
 	sourceRange?: { start: number; end: number };
+	validationErrors: Record<string, string>;
 }
 
 export interface ParseResult {
@@ -41,6 +43,30 @@ export function detectEntityType(
 
 	const lowerText = trimmedText.toLowerCase();
 
+	// A2: Check for explicit type markers at start of line [NPC], [Location], etc.
+	const explicitMarkerMatch = trimmedText.match(/^\[(NPC|Location|Faction|Item|Encounter|Deity|Character)\]/i);
+	if (explicitMarkerMatch) {
+		const markerType = explicitMarkerMatch[1].toLowerCase();
+		// Map "character" to "npc" for compatibility
+		const actualType = markerType === 'character' ? 'npc' : markerType;
+		// Check if this type should be excluded
+		if (!options?.excludeTypes || !options.excludeTypes.includes(actualType as EntityType)) {
+			return { type: actualType as EntityType, confidence: 0.7 };
+		}
+	}
+
+	// A2: Check for "Entity Type: <type>" pattern
+	const entityTypeHeaderMatch = trimmedText.match(/Entity Type:\s*(NPC|Location|Faction|Item|Encounter|Deity|Character)/i);
+	if (entityTypeHeaderMatch) {
+		const headerType = entityTypeHeaderMatch[1].toLowerCase();
+		// Map "character" to "npc" for compatibility
+		const actualType = headerType === 'character' ? 'npc' : headerType;
+		// Check if this type should be excluded
+		if (!options?.excludeTypes || !options.excludeTypes.includes(actualType as EntityType)) {
+			return { type: actualType as EntityType, confidence: 0.7 };
+		}
+	}
+
 	// All available types to check (built-in + custom)
 	const allTypes = [
 		'npc',
@@ -59,13 +85,24 @@ export function detectEntityType(
 
 	// Score each type
 	const scores = new Map<string, number>();
+	const fieldMatchCounts = new Map<string, number>();
 
 	for (const type of typesToCheck) {
 		let score = 0;
 		let fieldMatches = 0;
 
-		// Get field definitions for this type
-		const typeDef = getEntityTypeDefinition(type, options?.customTypes || []);
+		// Get field definitions for this type - check custom types first
+		let typeDef: EntityTypeDefinition | undefined;
+		const customTypesArray = options?.customTypes || [];
+
+		// First check if there's a custom type with this exact type
+		typeDef = customTypesArray.find((t) => t.type === type);
+
+		// If not found in custom types, fall back to built-in types
+		if (!typeDef) {
+			typeDef = getEntityTypeDefinition(type, []);
+		}
+
 		if (!typeDef) continue;
 
 		// Check for field section headers
@@ -74,10 +111,16 @@ export function detectEntityType(
 			for (const pattern of patterns) {
 				if (lowerText.includes(pattern.toLowerCase())) {
 					fieldMatches++;
-					score += 0.1;
+					// Give more weight to specific field patterns vs generic ones
+					// Generic "Type" pattern gets less weight than specific ones like "Goals" or "Leadership"
+					const isGenericType = pattern.toLowerCase() === '**type**:';
+					score += isGenericType ? 0.05 : 0.1;
+					break; // Only count each field once
 				}
 			}
 		}
+
+		fieldMatchCounts.set(type, fieldMatches);
 
 		// Type-specific keyword detection
 		score += detectTypeSpecificKeywords(lowerText, type);
@@ -87,20 +130,26 @@ export function detectEntityType(
 			score += 0.3;
 		}
 
-		// Boost confidence if we have field matches
+		// A2: Boost confidence based on field density (more matching fields = higher confidence)
 		if (fieldMatches >= 1) {
-			score += 0.4; // Boost for having at least one field match
+			score += 0.4; // Base boost for having at least one field match
+		}
+		if (fieldMatches >= 3) {
+			score += 0.2; // Additional boost for 3+ field matches (high density)
+		}
+		if (fieldMatches >= 4) {
+			score += 0.1; // Even more boost for 4+ field matches (very high density)
 		}
 
 		scores.set(type, Math.min(score, 1.0)); // Cap at 1.0
 	}
 
-	// Find the highest scoring type
+	// If there's a tie or close scores, prefer the type with more field matches
 	let bestType: string | null = null;
 	let bestScore = 0;
 
 	for (const [type, score] of scores.entries()) {
-		if (score > bestScore) {
+		if (score > bestScore || (score === bestScore && bestType && fieldMatchCounts.get(type)! > fieldMatchCounts.get(bestType)!)) {
 			bestScore = score;
 			bestType = type;
 		}
@@ -113,13 +162,13 @@ export function detectEntityType(
 		bestScore = 0;
 	}
 
-	// Handle preferredType - use it if confidence is low
+	// A2: Handle preferredType - use it if confidence is low (< 0.4), but override if confidence is high
 	if (options?.preferredType) {
-		if (bestScore < 0.6) {
+		if (bestScore < 0.4) {
 			// Low confidence, use preferred type
 			return { type: options.preferredType, confidence: Math.max(bestScore, 0.3) };
 		}
-		// High confidence, ignore preferred type and use detected type
+		// High confidence (>= 0.4), ignore preferred type and use detected type
 	}
 
 	// If no type detected but preferredType is set, use it
@@ -340,7 +389,9 @@ function parseFieldValue(value: string, fieldDef: FieldDefinition, isCustomType:
 	switch (fieldDef.type) {
 		case 'number':
 			const num = parseFloat(value);
-			return isNaN(num) ? undefined : num;
+			// Return the parsed number if valid, otherwise return the string value
+			// This allows validation to catch invalid numbers
+			return isNaN(num) ? value : num;
 
 		case 'boolean':
 			return value.toLowerCase() === 'true';
@@ -353,10 +404,10 @@ function parseFieldValue(value: string, fieldDef: FieldDefinition, isCustomType:
 				if (match) {
 					return match; // Return exact option value (preserves casing)
 				}
-				// For custom types, validate strictly
+				// For custom types with invalid values, return the original value
+				// This allows validation to catch invalid select options
 				if (isCustomType) {
-					// Invalid value for custom type - use default or first option
-					return fieldDef.defaultValue ?? fieldDef.options[0];
+					return value; // Keep original invalid value for validation
 				}
 			}
 			// For built-in types or no options, return value as-is
@@ -581,7 +632,8 @@ function parseSingleEntity(text: string, options?: ParserOptions): ParsedEntity 
 	// Extract tags
 	const tags = extractTags(text, typeDetection.type);
 
-	return {
+	// Create entity without validation errors first
+	const entityWithoutValidation: Omit<ParsedEntity, 'validationErrors'> = {
 		entityType: typeDetection.type,
 		confidence: typeDetection.confidence,
 		name,
@@ -589,6 +641,14 @@ function parseSingleEntity(text: string, options?: ParserOptions): ParsedEntity 
 		summary,
 		tags,
 		fields
+	};
+
+	// Validate the entity
+	const validationErrors = validateParsedEntity(entityWithoutValidation, options?.customTypes);
+
+	return {
+		...entityWithoutValidation,
+		validationErrors
 	};
 }
 
@@ -602,4 +662,35 @@ function extractDescription(text: string): string {
 
 	// Return everything
 	return withoutHeader || text;
+}
+
+/**
+ * Validate a parsed entity against its type definition
+ * Returns a record of validation errors (empty if valid)
+ */
+export function validateParsedEntity(
+	entity: Omit<ParsedEntity, 'validationErrors'> | ParsedEntity,
+	customTypes?: EntityTypeDefinition[] | EntityTypeDefinition
+): Record<string, string> {
+	// Handle both array and single type definition
+	const customTypesArray = Array.isArray(customTypes) ? customTypes : customTypes ? [customTypes] : [];
+
+	// Get type definition - check custom types first (they can override built-in types)
+	let typeDef: EntityTypeDefinition | undefined;
+
+	// First check if there's a custom type with this exact type
+	typeDef = customTypesArray.find((t) => t.type === entity.entityType);
+
+	// If not found in custom types, fall back to built-in types
+	if (!typeDef) {
+		typeDef = getEntityTypeDefinition(entity.entityType, []);
+	}
+
+	if (!typeDef) {
+		return {}; // No validation if type not found
+	}
+
+	// Use the existing validateDynamicFields from validation utils
+	// This already handles required fields, select options, number validation, URL validation, etc.
+	return validateDynamicFields(entity.fields, typeDef.fieldDefinitions);
 }

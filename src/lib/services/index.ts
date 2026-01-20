@@ -105,3 +105,11 @@ export {
 	getNextMilestone,
 	getDaysSinceExport
 } from './backupReminderService';
+
+// AI setup reminder service
+export {
+	isAiSetupDismissed,
+	setAiSetupDismissed,
+	hasAnyApiKey,
+	shouldShowAiSetupBanner
+} from './aiSetupReminderService';

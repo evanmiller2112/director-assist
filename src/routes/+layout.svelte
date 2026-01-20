@@ -5,6 +5,7 @@
 	import { ChatPanel } from '$lib/components/chat';
 	import Toast from '$lib/components/ui/Toast.svelte';
 	import BackupReminderBanner from '$lib/components/ui/BackupReminderBanner.svelte';
+	import AiSetupBanner from '$lib/components/ui/AiSetupBanner.svelte';
 	import { aiSettings, campaignStore, entitiesStore, uiStore } from '$lib/stores';
 	import { initializeDatabase } from '$lib/db';
 	import {
@@ -13,7 +14,11 @@
 		getLastBackupPromptDismissedAt,
 		getLastMilestoneReached,
 		setLastBackupPromptDismissedAt,
-		getDaysSinceExport
+		getDaysSinceExport,
+		isAiSetupDismissed,
+		setAiSetupDismissed,
+		hasAnyApiKey,
+		shouldShowAiSetupBanner
 	} from '$lib/services';
 	import { goto } from '$app/navigation';
 
@@ -49,6 +54,15 @@
 		};
 	});
 
+	// AI setup reminder state
+	const aiSetupReminderState = $derived.by(() => {
+		const isDismissed = isAiSetupDismissed();
+		const hasApiKey = hasAnyApiKey();
+		const show = shouldShowAiSetupBanner(aiSettings.isEnabled, isDismissed, hasApiKey);
+
+		return { show };
+	});
+
 	onMount(async () => {
 		// Initialize database
 		await initializeDatabase();
@@ -81,6 +95,16 @@
 		// Save dismiss time
 		setLastBackupPromptDismissedAt(new Date());
 	}
+
+	function handleAiSetupConfigure() {
+		// Navigate to settings (AI configuration section)
+		goto('/settings');
+	}
+
+	function handleAiSetupDismiss() {
+		// Permanently dismiss AI setup banner
+		setAiSetupDismissed();
+	}
 </script>
 
 <svelte:window onkeydown={handleGlobalKeydown} />
@@ -90,6 +114,16 @@
 	<Sidebar />
 	<main class="dashboard-main">
 		<div class="flex-1 overflow-y-auto p-6">
+			<!-- AI setup reminder banner -->
+			{#if aiSetupReminderState.show}
+				<div class="mb-6">
+					<AiSetupBanner
+						onConfigure={handleAiSetupConfigure}
+						onDismiss={handleAiSetupDismiss}
+					/>
+				</div>
+			{/if}
+
 			<!-- Backup reminder banner -->
 			{#if backupReminderState.show && backupReminderState.reason}
 				<div class="mb-6">

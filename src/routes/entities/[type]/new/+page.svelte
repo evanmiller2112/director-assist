@@ -8,6 +8,8 @@
 	import { createEntity, type FieldValue, type FieldDefinition, type PendingRelationship } from '$lib/types';
 	import { validateEntity, formatContextSummary } from '$lib/utils';
 	import { getSystemAwareEntityType } from '$lib/utils/entityFormUtils';
+	import { deserializePrefillParams } from '$lib/utils/entityPrefillUtils';
+	import PrefillBanner from '$lib/components/ui/PrefillBanner.svelte';
 	import { ArrowLeft, Save, Sparkles, Loader2, ExternalLink, ImagePlus, X as XIcon, Upload, Search, ChevronDown, Eye, EyeOff, Plus, ChevronRight } from 'lucide-svelte';
 	import FieldGenerateButton from '$lib/components/entity/FieldGenerateButton.svelte';
 	import LoadingButton from '$lib/components/ui/LoadingButton.svelte';
@@ -48,6 +50,12 @@
 	let showRelateCommand = $state(false);
 	let relationshipsExpanded = $state(false);
 
+	// Prefill state (from chat entity detection)
+	const prefillParam = $derived($page.url.searchParams.get('prefill'));
+	const prefillData = $derived(prefillParam ? deserializePrefillParams(prefillParam) : null);
+	let prefillApplied = $state(false);
+	let showPrefillBanner = $state(false);
+
 	// Validation
 	function validate(): boolean {
 		const result = validateEntity(
@@ -79,6 +87,25 @@
 			fields = defaultFields;
 		}
 	});
+
+	// Apply prefill data from chat entity detection
+	$effect(() => {
+		if (prefillData && !prefillApplied) {
+			name = prefillData.name || '';
+			description = prefillData.description || '';
+			summary = prefillData.summary || '';
+			tags = prefillData.tags?.join(', ') || '';
+			if (prefillData.fields) {
+				fields = { ...fields, ...prefillData.fields };
+			}
+			prefillApplied = true;
+			showPrefillBanner = true;
+		}
+	});
+
+	function dismissPrefillBanner() {
+		showPrefillBanner = false;
+	}
 
 	async function handleSubmit(e: Event) {
 		e.preventDefault();
@@ -380,6 +407,13 @@
 	<h1 class="text-2xl font-bold text-slate-900 dark:text-white mb-6">
 		New {typeDefinition?.label ?? 'Entity'}
 	</h1>
+
+	{#if showPrefillBanner && prefillData}
+		<PrefillBanner
+			sourceMessageId={prefillData.sourceMessageId}
+			onDismiss={dismissPrefillBanner}
+		/>
+	{/if}
 
 	<form onsubmit={handleSubmit} class="space-y-6">
 		<!-- Name -->

@@ -23,6 +23,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Field density analysis boosts confidence when multiple type-specific fields are detected
   - Improved `preferredType` fallback logic: overrides only when detection confidence is low (< 0.4)
   - 22 new tests added for validation and enhanced detection (124 total tests)
+- Chat UI integration for entity detection and saving (Issue #40, Phase A3)
+  - Automatic entity detection in AI assistant responses with confidence indicators
+  - SaveEntityButton component for one-click entity saving to database
+  - EntityDetectionIndicator displays detected entities with confidence percentages
+  - ChatMessage component parses assistant responses and renders entity detection UI
+  - Support for multiple entities per message with individual save controls
+  - Loading states during save and validation error handling
+  - 72 tests covering chat UI entity detection and saving
+- AI Entity Generation from Chat with save flow options (Issue #40, Phase A4)
+  - Complete AI entity generation feature with instant save and review options
+  - ReviewEditButton component provides "Review & Edit" option alongside instant save
+  - Navigate from chat to entity creation form with prefilled data from AI response
+  - PrefillBanner component shows form was prefilled from chat with link to original message
+  - entityPrefillUtils service for URL serialization/deserialization of prefill data
+  - Entity creation forms auto-populate name, description, tags, and type-specific fields
+  - Dismissible prefill indicator with navigation back to source chat message
+  - Two workflows: instant save in chat OR review/edit in form before saving
+  - 153 total tests covering complete entity generation pipeline
+  - Full integration: AI parsing → detection → save options → form prefill
 - AI Suggestions System - Data Model & Repository (Issue #43, Phase B1)
   - New AISuggestion interface with 5 suggestion types: relationship, plot_thread, inconsistency, enhancement, recommendation
   - SuggestionRepository with full CRUD operations for suggestion management

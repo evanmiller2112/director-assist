@@ -30,6 +30,12 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Create build artifact
+        run: |
+          cd build
+          zip -r ../director-assist-${{ github.ref_name }}-build.zip .
+          cd ..
+
       - name: Create Release Notes
         id: release_notes
         run: |
@@ -55,5 +61,6 @@ jobs:
             ${{ steps.release_notes.outputs.notes }}
           draft: false
           prerelease: ${{ contains(github.ref_name, '-alpha') || contains(github.ref_name, '-beta') || contains(github.ref_name, '-rc') }}
+          files: director-assist-${{ github.ref_name }}-build.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

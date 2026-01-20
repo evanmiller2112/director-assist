@@ -109,10 +109,19 @@ The release workflow consists of 5 stages:
 - Attach release notes from changelog
 - Mark as latest release
 - Link related issues/PRs in release description
+- GitHub Actions automatically builds and attaches `director-assist-[version]-build.zip` to the release
 
 **When to Use:**
 - After tag is pushed
 - To publish the official GitHub release
+
+**Note on Build Artifacts:**
+When a version tag is pushed, the GitHub Actions workflow (`.github/workflows/release.yml`) automatically:
+1. Builds the application (`npm run build`)
+2. Creates a zip file of the build directory
+3. Attaches `director-assist-[version]-build.zip` to the GitHub release
+
+This allows users to download pre-built files without needing Node.js or npm.
 
 ---
 
@@ -150,6 +159,7 @@ Use this workflow when releasing a new version after completing features or fixe
    - Create release from tag
    - Add release notes
    - Publish release
+   - GitHub Actions automatically attaches build artifact
 ```
 
 ### Hotfix Release
@@ -174,6 +184,7 @@ Use this workflow for urgent bug fixes that need immediate release.
 5. GitHub Release (github-project-manager)
    - Create release marked as patch/hotfix
    - Add brief fix description
+   - GitHub Actions automatically attaches build artifact
 ```
 
 ---
@@ -239,9 +250,11 @@ Use this workflow for urgent bug fixes that need immediate release.
 #  ✓ Release v1.2.0 created
 #  ✓ Release notes attached
 #  ✓ Marked as latest release
+#  ✓ Build artifact will be attached automatically by GitHub Actions
 #  ✓ URL: https://github.com/user/repo/releases/tag/v1.2.0
 #
-#  Release complete!"
+#  Release complete! The GitHub Actions workflow will build and attach
+#  director-assist-v1.2.0-build.zip within a few minutes."
 ```
 
 ---

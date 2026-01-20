@@ -20,12 +20,26 @@ Director Assist features a **system-aware architecture** with first-class suppor
 
 ## Quick Start
 
-### Prerequisites
+### Option 1: Download Pre-Built Files (No Node.js Required)
 
+The easiest way to self-host Director Assist is to download the pre-built files from the latest release:
+
+1. Go to [Releases](https://github.com/evanmiller2112/director-assist/releases)
+2. Download `director-assist-[version]-build.zip` from the latest release
+3. Extract the zip file to your web server directory
+4. Configure your web server for SPA routing (see [DEPLOYMENT.md](./docs/DEPLOYMENT.md))
+
+No build process needed - just download, extract, and deploy.
+
+### Option 2: Build from Source
+
+For development or to build from source:
+
+**Prerequisites:**
 - Node.js 18 or higher
 - npm or pnpm
 
-### Installation
+**Installation:**
 
 ```bash
 git clone https://github.com/evanmiller2112/director-assist.git
@@ -38,7 +52,7 @@ Open your browser to `http://localhost:5173`
 
 **After pulling updates**: Always run `npm install` after pulling new changes to ensure any new dependencies are installed.
 
-### Building for Production
+**Building for Production:**
 
 ```bash
 npm run build

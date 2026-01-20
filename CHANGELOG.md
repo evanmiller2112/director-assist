@@ -8,6 +8,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Entity parser service for AI chat responses (Issue #40, Phase A1)
+  - New `entityParserService.ts` extracts structured entity data from AI-generated text
+  - Detects entity types (NPC, Location, Faction, Item, etc.) with confidence scoring
+  - Extracts entity names, descriptions, and type-specific fields
+  - Splits multi-entity responses into individual sections
+  - Generates summaries and extracts tags from text
+  - Foundation for future AI chat entity creation features
+- Entity parser validation and enhanced type detection (Issue #40, Phase A2)
+  - Integrated field-level validation into parsing pipeline with `validateParsedEntity()` function
+  - Added `validationErrors` property to `ParsedEntity` interface for tracking validation issues
+  - Enhanced type detection with explicit `[TYPE]` marker support (e.g., `[NPC]`, `[Location]`)
+  - Added "Entity Type: X" header pattern detection for improved accuracy
+  - Field density analysis boosts confidence when multiple type-specific fields are detected
+  - Improved `preferredType` fallback logic: overrides only when detection confidence is low (< 0.4)
+  - 22 new tests added for validation and enhanced detection (124 total tests)
 - AI Suggestions System - Data Model & Repository (Issue #43, Phase B1)
   - New AISuggestion interface with 5 suggestion types: relationship, plot_thread, inconsistency, enhancement, recommendation
   - SuggestionRepository with full CRUD operations for suggestion management

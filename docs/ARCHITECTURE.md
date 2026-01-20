@@ -5465,6 +5465,112 @@ The backup export implementation has been validated through comprehensive securi
 - Markdown rendering should sanitize HTML (future)
 - URL validation for link fields
 
+### Computed Field Evaluation Security
+
+Director Assist uses `eval()` to evaluate computed field formulas. This is an intentional design decision that enables flexible mathematical expressions in campaign data, but requires careful security considerations.
+
+**Why eval() is Used:**
+
+Computed fields allow campaign owners to create dynamic calculations based on other field values (e.g., calculating total damage: `{baseDamage} + {bonusDamage}`). The `eval()` function provides the mathematical expression evaluation needed for this feature.
+
+**Security Model:**
+
+The computed field evaluation operates under a specific threat model:
+
+1. **Trusted Input**: Formulas are defined by campaign owners who control their local campaign data
+2. **Local Execution**: All code runs exclusively in the user's browser with no server-side execution
+3. **Defense in Depth**: Multiple validation layers prevent code injection even from trusted sources
+
+**Who's Protected:**
+
+- Users are protected from malicious formulas in shared campaigns or imported data
+- Users are protected from accidental code injection through field values
+- The system is protected from arbitrary code execution attempts
+
+**What's Allowed:**
+
+The validation permits only safe mathematical and logical expressions:
+
+- Arithmetic operators: `+`, `-`, `*`, `/`, `%`
+- Comparison operators: `<`, `>`, `<=`, `>=`, `==`, `!=`, `===`, `!==`
+- Logical operators: `&&`, `||`, `!`
+- Parentheses for grouping: `(`, `)`
+- Numeric literals: integers and decimals (e.g., `42`, `3.14`)
+- Quoted strings: `"text"` or `'text'`
+- Field references: `{fieldName}`
+
+**Security Mitigations:**
+
+The `validateFormulaForEval()` function (in `/src/lib/utils/fieldTypes.ts`) implements multiple validation layers:
+
+1. **Structural Validation** - validates formula structure before field substitution
+2. **Field Value Validation** - validates again after field values are inserted
+3. **Pattern Blocking** - blocks dangerous JavaScript patterns:
+   - Function calls: `alert()`, `eval()`, `Math.random()`
+   - Property access: `window.location`, `document.cookie`, `__proto__`
+   - JavaScript keywords: `function`, `return`, `var`, `let`, `const`, `new`, `this`, `import`, `class`, etc.
+   - Constructors: `Function()`, `Array.constructor`
+   - Template literals: backticks and `${}`
+   - Assignment operators: `=`, `+=`, `-=`, `*=`, `/=`
+   - Array/object literals: `[]`, `{}`
+   - Control flow: semicolons, `if`, `for`, `while`, `switch`, `try`
+   - Comments: `//` and `/* */`
+
+**Validation Process:**
+
+1. Formula is validated BEFORE field references are substituted
+2. Field values are safely escaped (strings are quoted, special characters escaped)
+3. Formula is validated AGAIN after field substitution to prevent injection
+4. Only if both validations pass is the formula evaluated with `eval()`
+
+**Example Safe Formulas:**
+
+```javascript
+// Arithmetic
+"{level} * 10"
+
+// String concatenation
+"{firstName} {lastName}"
+
+// Boolean logic
+"{hp} > 0 && {isAlive}"
+
+// Complex calculation
+"(({level} * 8) + ({constitution} * 2)) / 2"
+```
+
+**Example Blocked Patterns:**
+
+```javascript
+// Function calls - BLOCKED
+"alert(1)"
+
+// Property access - BLOCKED
+"window.location"
+
+// Constructor injection - BLOCKED
+"[].constructor.constructor('alert(1)')()"
+
+// Template literals - BLOCKED
+"`${eval('1+1')}`"
+```
+
+**Security Testing:**
+
+Comprehensive security tests validate the protection mechanisms in `/src/lib/utils/fieldTypes.security.test.ts`:
+
+- Tests for safe arithmetic, comparison, and string operations
+- Tests blocking of function calls, property access, and JavaScript keywords
+- Tests preventing prototype pollution and constructor hijacking
+- Tests validating defense against real-world attack vectors
+- Integration tests ensuring malicious formulas throw errors before execution
+
+**Limitations:**
+
+- Users can still write formulas that cause errors (e.g., division by zero)
+- Performance issues from complex formulas are not prevented
+- This security model assumes the campaign owner is not intentionally sabotaging their own data
+
 ## Deployment
 
 ### Build Process

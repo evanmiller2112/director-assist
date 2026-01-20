@@ -37,7 +37,8 @@ export async function sendChatMessage(
 	contextEntityIds: string[],
 	includeLinked: boolean = true,
 	onStream?: (partial: string) => void,
-	generationType: GenerationType = 'custom'
+	generationType: GenerationType = 'custom',
+	typeFieldValues?: Record<string, string>
 ): Promise<string> {
 	// Get API key from localStorage
 	const apiKey = typeof window !== 'undefined' ? localStorage.getItem('dm-assist-api-key') : null;
@@ -76,6 +77,19 @@ export async function sendChatMessage(
 			fullSystemPrompt += '\n\n' + typeConfig.promptTemplate;
 			if (typeConfig.suggestedStructure) {
 				fullSystemPrompt += '\n\n' + typeConfig.suggestedStructure;
+			}
+
+			// Add typeField-specific prompts if values are provided
+			if (typeFieldValues && typeConfig.typeFields) {
+				for (const field of typeConfig.typeFields) {
+					const value = typeFieldValues[field.key];
+					// Only include non-empty values
+					if (value && value.trim() !== '') {
+						// Replace {value} placeholder with actual value
+						const fieldPrompt = field.promptTemplate.replace(/\{value\}/g, value);
+						fullSystemPrompt += '\n\n' + fieldPrompt;
+					}
+				}
 			}
 		}
 	}
@@ -128,7 +142,7 @@ export async function sendChatMessage(
 			throw new Error('Unexpected response format from AI');
 		}
 	} catch (error) {
-		if (error instanceof Anthropic.APIError) {
+		if (Anthropic?.APIError && error instanceof Anthropic.APIError) {
 			if (error.status === 401) {
 				throw new Error('Invalid API key. Please check your API key in Settings.');
 			} else if (error.status === 429) {

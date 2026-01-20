@@ -4676,20 +4676,37 @@ interface GenerationTypeConfig {
   icon: string;                 // Lucide icon name
   promptTemplate: string;       // System prompt instructions
   suggestedStructure?: string;  // Markdown template for structured output
+  typeFields?: GenerationTypeField[];  // Optional type-specific fields
+}
+
+interface GenerationTypeField {
+  key: string;                  // Field identifier (e.g., 'threatLevel')
+  label: string;                // Display label for the field
+  type: 'select';               // Currently only select fields supported
+  options: Array<{              // Available options for the field
+    value: string;              // Option value (e.g., 'minion')
+    label: string;              // Display label (e.g., 'Minion')
+    description?: string;       // Tooltip description
+  }>;
+  defaultValue?: string;        // Default option value
+  promptTemplate: string;       // Template string injected into prompt (e.g., 'This NPC should be created as a {value} threat level enemy.')
 }
 ```
 
 **How It Works:**
 
 1. **User Selection**: User selects a generation type from the dropdown in the chat interface
-2. **Prompt Modification**: The selected type's `promptTemplate` is injected into the system prompt
-3. **Structured Output**: AI follows the `suggestedStructure` to format responses consistently
-4. **State Persistence**: Selection persists within the conversation but can be changed anytime
-5. **Visual Feedback**: Active type is displayed with icon and label
+2. **Type-Specific Fields**: If the generation type has `typeFields`, additional dropdowns appear below the type selector
+3. **Field Values**: User can optionally select values for type-specific fields (e.g., Threat Level: "Elite", Combat Role: "Artillery")
+4. **Prompt Modification**: The selected type's `promptTemplate` is injected into the system prompt
+5. **Field Prompt Injection**: If type-specific field values are selected, their `promptTemplate` strings are interpolated with the selected value and added to the prompt
+6. **Structured Output**: AI follows the `suggestedStructure` to format responses consistently
+7. **State Persistence**: Selection and field values persist within the conversation but can be changed anytime
+8. **Visual Feedback**: Active type is displayed with icon and label
 
 **Example Prompt Templates:**
 
-**NPC Generation:**
+**NPC Generation (without type-specific fields):**
 ```
 When generating an NPC, create a complete character with personality, motivations,
 and background that fits naturally into the campaign world. Format the response
@@ -4704,6 +4721,25 @@ using the suggested structure below.
 - Primary goals and desires
 - Fears and conflicts
 (additional sections...)
+```
+
+**NPC Generation (with type-specific fields selected):**
+
+If user selects:
+- Generation Type: NPC
+- Threat Level: Elite
+- Combat Role: Artillery
+
+The final prompt becomes:
+```
+When generating an NPC, create a complete character with personality, motivations,
+and background that fits naturally into the campaign world. Format the response
+using the suggested structure below.
+
+This NPC should be created as a elite threat level enemy.
+This NPC should fulfill the artillery combat role.
+
+(suggested structure follows...)
 ```
 
 **Session Prep:**
@@ -4752,6 +4788,60 @@ Used in `/src/lib/components/chat/ChatPanel.svelte` to allow users to select gen
 - Reduces need for follow-up prompts
 - Helps AI understand context and expectations
 - Provides consistent formatting across similar requests
+
+#### Type Fields Selector (Chat Interface)
+
+**Location:** `/src/lib/components/chat/TypeFieldsSelector.svelte`
+
+**Purpose:** Companion component to GenerationTypeSelector that dynamically displays type-specific field inputs when a generation type with `typeFields` is selected. Currently used for NPC generation to allow users to specify threat levels and combat roles.
+
+**How It Works:**
+
+1. Receives the currently selected generation type
+2. Checks if the type has `typeFields` defined in its configuration
+3. If type-specific fields exist, renders a dropdown for each field
+4. User selections are stored in `typeFieldValues` state
+5. Selected values are used to modify the AI prompt via field `promptTemplate` strings
+
+**Component Props:**
+
+```typescript
+interface Props {
+  generationType?: GenerationType;  // Current generation type
+  typeFieldValues: Record<string, string>;  // Field values keyed by field.key
+  onFieldChange: (key: string, value: string) => void;  // Field change callback
+}
+```
+
+**Example Usage (in ChatPanel.svelte):**
+
+```svelte
+<TypeFieldsSelector
+  generationType={selectedGenerationType}
+  typeFieldValues={chat.typeFieldValues}
+  onFieldChange={(key, value) => {
+    chat.setTypeFieldValue(key, value);
+  }}
+/>
+```
+
+**Current Implementation:**
+
+Only NPC generation type has type-specific fields:
+- **Threat Level**: 5 options (Minion, Standard, Elite, Boss, Solo)
+- **Combat Role**: 10 options (Ambusher, Artillery, Brute, Controller, Defender, Harrier, Hexer, Leader, Mount, Support)
+
+Each option includes:
+- Display label
+- Descriptive tooltip explaining the option's purpose
+- Value used in prompt template interpolation
+
+**Future Extensions:**
+
+The type-specific fields system is designed to be extensible. Future generation types can add their own fields by including a `typeFields` array in their configuration. For example:
+- Location type could add "Location Type" (tavern, dungeon, city, wilderness)
+- Encounter type could add "Encounter Difficulty" (easy, moderate, hard, deadly)
+- Item type could add "Rarity" (common, uncommon, rare, legendary)
 
 #### Relationship Context Fields Utility
 

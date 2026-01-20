@@ -12,6 +12,7 @@ function createChatStore() {
 	let streamingContent = $state<string>('');
 	let includeLinkedEntities = $state(true);
 	let generationType = $state<GenerationType>('custom');
+	let typeFieldValues = $state<Record<string, string>>({});
 
 	return {
 		get messages() {
@@ -34,6 +35,9 @@ function createChatStore() {
 		},
 		get generationType() {
 			return generationType;
+		},
+		get typeFieldValues() {
+			return typeFieldValues;
 		},
 
 		async load() {
@@ -102,7 +106,8 @@ function createChatStore() {
 					(partial) => {
 						streamingContent = partial;
 					},
-					generationType
+					generationType,
+					typeFieldValues
 				);
 
 				// Add assistant message with same conversationId
@@ -189,6 +194,15 @@ function createChatStore() {
 
 		setGenerationType(type: GenerationType) {
 			generationType = type;
+			typeFieldValues = {};
+		},
+
+		setTypeFieldValue(key: string, value: string) {
+			typeFieldValues = { ...typeFieldValues, [key]: value };
+		},
+
+		clearTypeFieldValues() {
+			typeFieldValues = {};
 		}
 	};
 }

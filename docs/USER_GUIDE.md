@@ -1667,6 +1667,11 @@ The chat interface includes a Generation Type Selector that helps you get more f
 - Generate non-player characters with personality and background
 - Output includes: Name, Role, Personality traits, Motivations, Background, and Relationships
 - Perfect for quickly creating quest-givers, villains, or supporting characters
+- **Type-specific fields available**:
+  - **Threat Level**: Choose Minion, Standard, Elite, Boss, or Solo to set combat difficulty
+  - **Combat Role**: Select from Ambusher, Artillery, Brute, Controller, Defender, Harrier, Hexer, Leader, Mount, or Support to define tactical role
+  - Both fields include "Any" option if you want the AI to decide
+  - These selections modify the AI prompt to generate NPCs matching your specifications
 
 **Location**
 - Create locations, places, and settings with atmosphere
@@ -1706,6 +1711,17 @@ When you select a generation type:
 3. Responses are formatted with consistent sections for easier reading
 4. The selection persists for the entire conversation (or until you change it)
 5. You can switch types at any time to generate different content
+
+**Type-Specific Fields:**
+
+Some generation types include additional fields that let you further customize what the AI generates:
+
+- **NPC generation** includes Threat Level and Combat Role dropdowns
+- When you select values from these dropdowns, they modify the AI prompt
+- For example, selecting "Elite" threat level and "Artillery" combat role tells the AI to generate an elite-tier NPC designed for ranged combat
+- These fields are optional - you can leave them on "Any" to let the AI decide
+- Each option includes a tooltip describing what it means
+- Currently only NPC has type-specific fields, but more may be added to other types in the future
 
 **Tips for Best Results:**
 

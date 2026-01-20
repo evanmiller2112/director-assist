@@ -7,6 +7,72 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-01-20
+
+### Added
+
+**Combat System (Issues #1, #17, PR #194)**
+- Complete combat and encounter management system with Draw Steel mechanics
+- CombatantCard component for displaying combatant stats, HP, conditions, and actions
+- HpTracker component with temporary HP, damage, and healing management
+- ConditionManager for tracking Draw Steel conditions (bleeding, dazed, grabbed, prone, slowed, taunted, weakened)
+- InitiativeTracker for managing turn order with automatic sorting
+- TurnControls for advancing turns, ending rounds, and managing combat flow
+- Combat repository with full CRUD operations for combat sessions
+- Combat store for reactive state management with Svelte 5 runes
+- CombatSession data model with combatants, round tracking, and encounter metadata
+- Comprehensive test suite: 1535 repository tests, 934 store tests, 3505 component tests
+- Database schema version 6 with combatSessions table
+- Documentation: comprehensive COMBAT_SYSTEM.md guide
+
+**Custom Entity Templates (PR #191)**
+- Draw Steel entity type templates with pre-configured fields
+- EntityTypeTemplateGallery component for browsing and applying templates
+- 7 template types: Character, NPC, Location, Item, Faction, Encounter, Session
+- Templates include computed fields with Draw Steel formulas (AC calculation, Speed with Stability bonus, etc.)
+- ComputedFieldEditor enhancements with example library and validation
+- Documentation: computed-fields-draw-steel.md with Draw Steel examples
+- Security documentation and mitigation for eval() usage in computed fields
+- 699 tests for computed field examples, 878 tests for templates
+
+**AI Integration Setup Prompt (Issue #195, PR #197)**
+- Blue-themed AiSetupBanner component appears when AI enabled but no API key configured
+- "Get Started" button navigates to settings page for API key configuration
+- "Not Now" button permanently dismisses banner
+- Banner never shows if AI is explicitly disabled
+- aiSetupReminderService manages banner dismissal state in localStorage
+- 61 component tests and 68 service tests for comprehensive coverage
+
+**Chat Window Enhancements (Issues #193, PRs #196, #198)**
+- Resizable chat window with horizontal and vertical resize support
+- Size constraints: width 320-800px, height 200px-90vh
+- ResizeObserver for detecting user-driven size changes
+- localStorage persistence for width and height preferences
+- Graceful handling of invalid saved values with fallback to defaults
+- Fixed ConversationSidebar height constraint (max-h-48) to prevent dominating panel space
+- Chat messages area now properly expands to use available space
+- 42 comprehensive resize tests covering persistence, responsive design, and edge cases
+
+**NPC Generation Enhancements (Issue #155, PR #192)**
+- Type-specific fields system for generation types
+- Threat Level selector: Any, Minion, Standard, Elite, Boss, Solo
+- Combat Role selector: Any, Ambusher, Artillery, Brute, Controller, Defender, Harrier, Hexer, Leader, Mount, Support
+- Descriptive tooltips for each threat level and combat role option
+- Selected values automatically modify AI prompts for focused NPC generation
+- Foundation for adding type-specific fields to other generation types
+
+**GitHub Release Automation (Issue #182, PR #190)**
+- GitHub Action workflow for automatically attaching built artifacts to releases
+- Builds SvelteKit app on release creation
+- Uploads build artifacts as release assets
+- Streamlines deployment process for users downloading releases
+
+### Documentation
+- Updated ARCHITECTURE.md with combat system components and database schema v6
+- Added comprehensive COMBAT_SYSTEM.md documentation
+- Added computed-fields-draw-steel.md with Draw Steel-specific examples
+- Added security documentation for computed field evaluation
+
 ## [0.7.0] - 2026-01-20
 
 ### Added

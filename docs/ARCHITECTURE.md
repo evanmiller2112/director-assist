@@ -84,6 +84,11 @@ src/
 │   │   ├── chat/            # Chat interface components
 │   │   │   ├── ChatPanel.svelte
 │   │   │   └── GenerationTypeSelector.svelte  # Type selector for focused generation
+│   │   ├── suggestions/     # AI suggestions UI components
+│   │   │   ├── SuggestionsPanel.svelte        # Main suggestions panel
+│   │   │   ├── SuggestionCard.svelte          # Individual suggestion card
+│   │   │   ├── SuggestionFilters.svelte       # Filter controls
+│   │   │   └── index.ts                       # Barrel export
 │   │   ├── ui/              # UI components
 │   │   │   ├── LoadingSpinner.svelte
 │   │   │   ├── LoadingSkeleton.svelte
@@ -136,6 +141,7 @@ src/
 │   ├── stores/              # Application state
 │   │   ├── campaign.svelte.ts
 │   │   ├── entities.svelte.ts
+│   │   ├── suggestions.svelte.ts  # AI suggestions state management
 │   │   └── ui.svelte.ts
 │   └── types/               # TypeScript definitions
 │       ├── entities.ts      # Entity type system

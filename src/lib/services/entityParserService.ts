@@ -317,6 +317,17 @@ export function extractFields(
 		}
 	}
 
+	// Apply default values for fields that weren't found in text
+	// This ensures entities with required fields that have defaults can be saved
+	for (const fieldDef of typeDef.fieldDefinitions) {
+		if (
+			fieldDef.defaultValue !== undefined &&
+			fields[fieldDef.key] === undefined
+		) {
+			fields[fieldDef.key] = fieldDef.defaultValue;
+		}
+	}
+
 	// Also check for common fields that might not be in type definition
 	// e.g., "inhabitants" for locations, "leadership" for factions, "tags" for all
 	if (entityType === 'location') {

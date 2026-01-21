@@ -110,7 +110,7 @@ export async function sendChatMessage(
 				id: e.id,
 				type: e.type,
 				name: e.name,
-				summaryLength: (e.content || e.summary || '').length
+				summaryLength: (e.summary || '').length
 			})),
 			totalCharacters: context.totalCharacters,
 			truncated: context.truncated || false,

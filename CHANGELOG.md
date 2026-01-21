@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+**Debug Console for AI Request/Response Inspection (Issue #118)**
+- Advanced debug console for inspecting all AI request and response data
+- Settings toggle in Advanced section to enable/disable debug console
+- Collapsible panel at bottom of chat interface showing up to 50 recent entries
+- Request inspection shows user message, system prompt, model, context entities, conversation history, and truncation status
+- Response inspection shows full content, token usage (prompt/completion/total), and duration in milliseconds
+- Error tracking captures API errors with status codes and detailed messages
+- Color-coded entries (blue for requests, green for responses, red for errors)
+- Expandable entry details for deep inspection of each AI interaction
+- Context analysis shows which entities were included, character counts, and whether context was truncated
+- Clear button to remove all entries and free memory
+- FIFO queue automatically removes oldest entries when limit reached
+- Memory-only storage (entries cleared on page refresh)
+- New debug types in `/src/lib/types/debug.ts`
+- debugSettingsService for settings persistence in localStorage
+- Debug store with Svelte 5 runes for reactive state management
+- DebugConsole.svelte component with collapsible UI
+- Integration in ChatPanel.svelte and chatService.ts
+- Documentation in USER_GUIDE.md covering setup, features, use cases, and troubleshooting
+
 ## [0.9.0] - 2026-01-21
 
 ### Added

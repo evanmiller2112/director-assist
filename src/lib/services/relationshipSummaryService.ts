@@ -3,6 +3,8 @@ import type { BaseEntity, EntityId, EntityLink } from '$lib/types';
 import { getEntityTypeDefinition } from '$lib/config/entityTypes';
 import { getSelectedModel } from './modelService';
 import { buildPrivacySafeSummary } from './relationshipContextBuilder';
+import { debugStore } from '$lib/stores/debug.svelte';
+import type { DebugEntry } from '$lib/types/debug';
 
 /**
  * Result from generating a single relationship summary.
@@ -184,12 +186,51 @@ export async function generateRelationshipSummary(
 	}
 
 	const prompt = buildRelationshipSummaryPrompt(sourceEntity, targetEntity, relationship, context);
+	const model = getSelectedModel();
+	const startTime = Date.now();
+
+	// Debug: capture request
+	if (debugStore.enabled) {
+		const requestEntry: DebugEntry = {
+			id: `rel-summary-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+			timestamp: new Date(),
+			type: 'request',
+			request: {
+				userMessage: `[Relationship Summary] ${sourceEntity.name} → ${targetEntity.name} (${relationship.relationship})`,
+				systemPrompt: prompt,
+				contextData: {
+					entityCount: 2,
+					entities: [
+						{
+							id: sourceEntity.id,
+							type: sourceEntity.type,
+							name: sourceEntity.name,
+							summaryLength: sourceEntity.summary?.length || 0
+						},
+						{
+							id: targetEntity.id,
+							type: targetEntity.type,
+							name: targetEntity.name,
+							summaryLength: targetEntity.summary?.length || 0
+						}
+					],
+					totalCharacters: prompt.length,
+					truncated: false,
+					generationType: 'relationship-summary'
+				},
+				model,
+				maxTokens: 300,
+				conversationHistory: []
+			}
+		};
+		debugStore.addEntry(requestEntry);
+	}
 
 	try {
 		const client = new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
 
 		const response = await client.messages.create({
-			model: getSelectedModel(),
+			model,
 			max_tokens: 300, // Relationship summaries should be concise (between 256-512 as per tests)
 			messages: [
 				{
@@ -206,6 +247,25 @@ export async function generateRelationshipSummary(
 
 		const summary = textContent.text.trim();
 
+		// Debug: capture response
+		if (debugStore.enabled) {
+			const responseEntry: DebugEntry = {
+				id: `rel-summary-resp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+				timestamp: new Date(),
+				type: 'response',
+				response: {
+					content: summary,
+					tokenUsage: response.usage ? {
+						promptTokens: response.usage.input_tokens,
+						completionTokens: response.usage.output_tokens,
+						totalTokens: response.usage.input_tokens + response.usage.output_tokens
+					} : undefined,
+					durationMs: Date.now() - startTime
+				}
+			};
+			debugStore.addEntry(responseEntry);
+		}
+
 		// Validate that we got a non-empty summary
 		if (!summary || summary.length === 0) {
 			return { success: false, error: 'AI returned an empty summary' };
@@ -213,6 +273,20 @@ export async function generateRelationshipSummary(
 
 		return { success: true, summary };
 	} catch (error) {
+		// Debug: capture error
+		if (debugStore.enabled) {
+			const errorEntry: DebugEntry = {
+				id: `rel-summary-err-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+				timestamp: new Date(),
+				type: 'error',
+				error: {
+					message: error instanceof Error ? error.message : 'Unknown error',
+					status: error instanceof Anthropic.APIError ? error.status : undefined
+				}
+			};
+			debugStore.addEntry(errorEntry);
+		}
+
 		if (error instanceof Anthropic.APIError) {
 			if (error.status === 401) {
 				return { success: false, error: 'Invalid API key. Please check your API key in Settings.' };

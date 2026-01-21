@@ -1372,6 +1372,80 @@ When generating content with AI, Director Assist can include information about r
 - Settings persist across browser sessions
 - Not included in backups (local preference only)
 
+### Advanced Settings
+
+The Advanced section in Settings contains tools for developers and troubleshooting.
+
+**Debug Console**
+
+The debug console captures detailed information about all AI requests and responses. This feature is designed for troubleshooting AI issues, understanding what context is being sent to the AI, and diagnosing unexpected behavior.
+
+**How to Enable:**
+
+1. Open Settings (gear icon in header or `/settings` command)
+2. Scroll to the "Advanced" section at the bottom
+3. Toggle "Enable Debug Console" to ON
+4. The debug console appears at the bottom of the chat interface
+
+**What It Shows:**
+
+When enabled, the debug console displays:
+
+- **Request Details**:
+  - User message sent to AI
+  - System prompt used
+  - Model being used
+  - Context entities included (which entities, how much text)
+  - Conversation history
+  - Whether context was truncated
+- **Response Details**:
+  - Full AI response content
+  - Token usage (prompt tokens, completion tokens, total)
+  - Response duration in milliseconds
+- **Error Details**:
+  - Error messages
+  - HTTP status codes
+  - API errors
+
+**How to Use:**
+
+1. Enable the debug console in Settings
+2. Perform an AI generation (field generation or chat message)
+3. Click the debug console at the bottom of the chat interface to expand it
+4. Click on any entry to see full details
+5. Use the trash icon to clear all entries
+
+**Features:**
+
+- Keeps the last 50 entries (oldest automatically removed)
+- Collapsible interface to save screen space
+- Color-coded entries (blue for requests, green for responses, red for errors)
+- Shows timestamp for each entry
+- Expandable details for deep inspection
+
+**When to Use:**
+
+- AI is generating unexpected or incorrect content
+- You want to understand what context is being sent
+- You're hitting token limits and need to see what's consuming tokens
+- You're troubleshooting API errors or timeouts
+- You want to verify which entities are included in context
+- You're diagnosing why certain entities aren't being considered
+
+**Privacy and Performance:**
+
+- Debug entries are stored only in browser memory (not saved to disk)
+- Entries are cleared when you refresh the page
+- Has minimal performance impact
+- Only captures data when enabled
+
+**Technical Details:**
+
+- Maximum 50 entries stored (FIFO queue)
+- Entries show character counts for context analysis
+- Token usage helps estimate API costs
+- System prompts reveal how Director Assist instructs the AI
+
 ## AI Features
 
 Director Assist supports multiple AI providers to help generate content for your campaign. All AI features can be completely disabled with a single toggle, allowing you to use Director Assist as a pure campaign management tool without any AI elements.
@@ -2250,6 +2324,7 @@ Several things could cause this.
 - Ensure you have API credits available
 - Check your internet connection
 - Try refreshing the page
+- Enable the debug console (Settings > Advanced) to see detailed error messages and diagnose the issue
 
 **Issue: I don't see generate buttons or AI features**
 
@@ -2260,6 +2335,44 @@ AI features may be disabled.
 - If you just added an API key, the toggle should enable automatically on page refresh
 - Try manually toggling the switch on
 - Refresh the page after toggling
+
+**Issue: AI is generating unexpected or incorrect content**
+
+The AI might not have the right context or the prompt might need adjustment.
+
+**Solutions**:
+- Enable the debug console (Settings > Advanced > Enable Debug Console)
+- Perform a generation and check the debug console at the bottom of the chat interface
+- Expand the request entry to see:
+  - Which entities were included in context (check if relevant entities are missing)
+  - How much of each entity was included (check if important details were truncated)
+  - What system prompt was used (verify it matches your expectations)
+  - Total character count (high counts might indicate too much irrelevant context)
+- Adjust relationship context settings if needed (Settings > Relationship Context):
+  - Reduce "Maximum Related Entities" if too much context is being sent
+  - Increase "Context Budget" if important relationships are being excluded
+  - Enable "Automatically Generate Entity Summaries" for more focused context
+- Try providing more specific information in the entity's basic fields before generating
+- Consider creating or updating relationships to relevant entities
+- Review the AI's response in the debug console to understand what it received
+
+**Issue: AI requests are timing out or failing**
+
+Network issues or API limits might be causing failures.
+
+**Solutions**:
+- Enable the debug console to see the exact error message and status code
+- Check error entries in the debug console for:
+  - Status 401: Invalid API key (verify in your provider's console)
+  - Status 429: Rate limit exceeded (wait and try again, or upgrade your API plan)
+  - Status 500: Server error (provider issue, try again later)
+  - Timeout errors: Request took too long (reduce context or try a smaller model)
+- If seeing "context too large" errors:
+  - Reduce "Maximum Related Entities" in Settings > Relationship Context
+  - Decrease "Maximum Characters per Entity"
+  - Lower "Context Budget for Relationships"
+- Check your internet connection
+- Verify your API provider's status page for outages
 
 **Issue: The app is running slowly**
 

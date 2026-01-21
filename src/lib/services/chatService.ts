@@ -2,8 +2,10 @@ import Anthropic from '@anthropic-ai/sdk';
 import { buildContext, formatContextForPrompt } from './contextBuilder';
 import { getSelectedModel } from './modelService';
 import type { ChatMessage, GenerationType } from '$lib/types';
+import type { DebugEntry, ContextSummary } from '$lib/types/debug';
 import { chatRepository } from '$lib/db/repositories';
 import { getGenerationTypeConfig } from '$lib/config/generationTypes';
+import { debugStore } from '$lib/stores/debug.svelte';
 
 const SYSTEM_PROMPT = `You are a TTRPG campaign assistant for Director Assist, helping Directors (Game Masters) with campaign preparation, content generation, and world-building.
 
@@ -94,6 +96,45 @@ export async function sendChatMessage(
 		}
 	}
 
+	// Capture debug request data if debug is enabled
+	const requestStartTime = Date.now();
+	let requestEntryId: string | undefined;
+
+	if (debugStore.enabled) {
+		requestEntryId = `debug-req-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+		// Build context summary for debug
+		const contextSummary: ContextSummary = {
+			entityCount: context.entities.length,
+			entities: context.entities.map(e => ({
+				id: e.id,
+				type: e.type,
+				name: e.name,
+				summaryLength: (e.content || e.summary || '').length
+			})),
+			totalCharacters: context.totalCharacters,
+			truncated: context.truncated || false,
+			generationType,
+			typeFieldValues
+		};
+
+		const requestEntry: DebugEntry = {
+			id: requestEntryId,
+			timestamp: new Date(),
+			type: 'request',
+			request: {
+				userMessage,
+				systemPrompt: fullSystemPrompt,
+				contextData: contextSummary,
+				model: getSelectedModel(),
+				maxTokens: 4096,
+				conversationHistory
+			}
+		};
+
+		debugStore.addEntry(requestEntry);
+	}
+
 	try {
 		const client = new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
 
@@ -124,6 +165,32 @@ export async function sendChatMessage(
 				}
 			}
 
+			// Capture debug response data if debug is enabled
+			if (debugStore.enabled) {
+				const duration = Date.now() - requestStartTime;
+				const responseEntryId = `debug-res-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+				// Get final message for token usage
+				const finalMessage = await stream.finalMessage();
+
+				const responseEntry: DebugEntry = {
+					id: responseEntryId,
+					timestamp: new Date(),
+					type: 'response',
+					response: {
+						content: fullContent,
+						tokenUsage: finalMessage.usage ? {
+							promptTokens: finalMessage.usage.input_tokens,
+							completionTokens: finalMessage.usage.output_tokens,
+							totalTokens: finalMessage.usage.input_tokens + finalMessage.usage.output_tokens
+						} : undefined,
+						durationMs: duration
+					}
+				};
+
+				debugStore.addEntry(responseEntry);
+			}
+
 			return fullContent;
 		} else {
 			// Non-streaming response
@@ -136,12 +203,62 @@ export async function sendChatMessage(
 
 			const textContent = response.content.find((c) => c.type === 'text');
 			if (textContent && textContent.type === 'text') {
+				// Capture debug response data if debug is enabled
+				if (debugStore.enabled) {
+					const duration = Date.now() - requestStartTime;
+					const responseEntryId = `debug-res-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+					const responseEntry: DebugEntry = {
+						id: responseEntryId,
+						timestamp: new Date(),
+						type: 'response',
+						response: {
+							content: textContent.text,
+							tokenUsage: response.usage ? {
+								promptTokens: response.usage.input_tokens,
+								completionTokens: response.usage.output_tokens,
+								totalTokens: response.usage.input_tokens + response.usage.output_tokens
+							} : undefined,
+							durationMs: duration
+						}
+					};
+
+					debugStore.addEntry(responseEntry);
+				}
+
 				return textContent.text;
 			}
 
 			throw new Error('Unexpected response format from AI');
 		}
 	} catch (error) {
+		// Capture debug error data if debug is enabled
+		if (debugStore.enabled) {
+			const errorEntryId = `debug-err-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+			let errorMessage = 'Unknown error';
+			let statusCode: number | undefined;
+
+			if (Anthropic?.APIError && error instanceof Anthropic.APIError) {
+				errorMessage = error.message;
+				statusCode = error.status;
+			} else if (error instanceof Error) {
+				errorMessage = error.message;
+			}
+
+			const errorEntry: DebugEntry = {
+				id: errorEntryId,
+				timestamp: new Date(),
+				type: 'error',
+				error: {
+					message: errorMessage,
+					status: statusCode
+				}
+			};
+
+			debugStore.addEntry(errorEntry);
+		}
+
 		if (Anthropic?.APIError && error instanceof Anthropic.APIError) {
 			if (error.status === 401) {
 				throw new Error('Invalid API key. Please check your API key in Settings.');

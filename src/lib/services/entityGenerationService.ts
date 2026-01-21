@@ -1,6 +1,8 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { getSelectedModel } from './modelService';
+import { debugStore } from '$lib/stores/debug.svelte';
 import type { EntityTypeDefinition, FieldDefinition, FieldValue } from '$lib/types';
+import type { DebugEntry } from '$lib/types/debug';
 
 export interface GenerationContext {
 	name?: string;
@@ -224,12 +226,43 @@ export async function generateEntity(
 	}
 
 	const prompt = buildGenerationPrompt(typeDefinition, context, campaignContext);
+	const model = getSelectedModel();
+	const startTime = Date.now();
+
+	// Debug: capture request
+	if (debugStore.enabled) {
+		const requestEntry: DebugEntry = {
+			id: `entity-gen-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+			timestamp: new Date(),
+			type: 'request',
+			request: {
+				userMessage: `[Entity Generation] ${typeDefinition.label}: ${context.name || 'New Entity'}`,
+				systemPrompt: prompt,
+				contextData: {
+					entityCount: 1,
+					entities: [{
+						id: 'entity-generation',
+						type: typeDefinition.type,
+						name: context.name || 'New Entity',
+						summaryLength: prompt.length
+					}],
+					totalCharacters: prompt.length,
+					truncated: false,
+					generationType: 'entity'
+				},
+				model,
+				maxTokens: 2048,
+				conversationHistory: []
+			}
+		};
+		debugStore.addEntry(requestEntry);
+	}
 
 	try {
 		const client = new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
 
 		const response = await client.messages.create({
-			model: getSelectedModel(),
+			model,
 			max_tokens: 2048,
 			messages: [
 				{
@@ -245,12 +278,46 @@ export async function generateEntity(
 		}
 
 		const entity = parseGenerationResponse(textContent.text, typeDefinition);
+
+		// Debug: capture response
+		if (debugStore.enabled) {
+			const responseEntry: DebugEntry = {
+				id: `entity-gen-resp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+				timestamp: new Date(),
+				type: 'response',
+				response: {
+					content: textContent.text,
+					tokenUsage: response.usage ? {
+						promptTokens: response.usage.input_tokens,
+						completionTokens: response.usage.output_tokens,
+						totalTokens: response.usage.input_tokens + response.usage.output_tokens
+					} : undefined,
+					durationMs: Date.now() - startTime
+				}
+			};
+			debugStore.addEntry(responseEntry);
+		}
+
 		if (!entity) {
 			return { success: false, error: 'Failed to parse AI response. Please try again.' };
 		}
 
 		return { success: true, entity };
 	} catch (error) {
+		// Debug: capture error
+		if (debugStore.enabled) {
+			const errorEntry: DebugEntry = {
+				id: `entity-gen-err-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+				timestamp: new Date(),
+				type: 'error',
+				error: {
+					message: error instanceof Error ? error.message : 'Unknown error',
+					status: error instanceof Anthropic.APIError ? error.status : undefined
+				}
+			};
+			debugStore.addEntry(errorEntry);
+		}
+
 		if (error instanceof Anthropic.APIError) {
 			if (error.status === 401) {
 				return { success: false, error: 'Invalid API key. Please check your API key in Settings.' };

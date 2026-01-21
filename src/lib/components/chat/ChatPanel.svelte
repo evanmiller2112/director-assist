@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { X, Send, Trash2, Loader2, Settings, Minimize2, ChevronDown } from 'lucide-svelte';
-	import { chatStore, uiStore, conversationStore } from '$lib/stores';
+	import { chatStore, debugStore, uiStore, conversationStore } from '$lib/stores';
 	import { hasChatApiKey } from '$lib/services/chatService';
 	import ChatMessage from './ChatMessage.svelte';
 	import ContextSelector from './ContextSelector.svelte';
@@ -9,6 +9,7 @@
 	import GenerationTypeSelector from './GenerationTypeSelector.svelte';
 	import TypeFieldsSelector from './TypeFieldsSelector.svelte';
 	import ChatFloatingButton from './ChatFloatingButton.svelte';
+	import DebugConsole from '$lib/components/debug/DebugConsole.svelte';
 	import type { GenerationType } from '$lib/types';
 
 	let inputValue = $state('');
@@ -33,6 +34,7 @@
 	onMount(() => {
 		conversationStore.load();
 		chatStore.load();
+		debugStore.load();
 		loadMinimizedState();
 		loadContextCollapsedState();
 	});
@@ -313,5 +315,10 @@
 				</button>
 			</div>
 		</form>
+
+		<!-- Debug Console (conditionally rendered when enabled) -->
+		{#if debugStore.enabled}
+			<DebugConsole />
+		{/if}
 	{/if}
 </aside>

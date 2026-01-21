@@ -15,7 +15,9 @@
 
 import Anthropic from '@anthropic-ai/sdk';
 import { getSelectedModel } from './modelService';
+import { debugStore } from '$lib/stores/debug.svelte';
 import type { EntityType, EntityTypeDefinition, FieldDefinition, FieldValue, FieldType } from '$lib/types';
+import type { DebugEntry } from '$lib/types/debug';
 
 /**
  * Context information for field generation.
@@ -245,13 +247,44 @@ export async function generateField(context: FieldGenerationContext): Promise<Fi
 
 	// Build the prompt
 	const prompt = buildFieldPrompt(context);
+	const model = getSelectedModel();
+	const startTime = Date.now();
+
+	// Debug: capture request
+	if (debugStore.enabled) {
+		const requestEntry: DebugEntry = {
+			id: `field-gen-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+			timestamp: new Date(),
+			type: 'request',
+			request: {
+				userMessage: `[Field Generation] ${context.targetField.label} for ${context.typeDefinition.label}`,
+				systemPrompt: prompt,
+				contextData: {
+					entityCount: 1,
+					entities: [{
+						id: 'field-generation',
+						type: context.entityType,
+						name: context.currentValues.name || 'New Entity',
+						summaryLength: prompt.length
+					}],
+					totalCharacters: prompt.length,
+					truncated: false,
+					generationType: 'field'
+				},
+				model,
+				maxTokens: 1024,
+				conversationHistory: []
+			}
+		};
+		debugStore.addEntry(requestEntry);
+	}
 
 	try {
 		// Call Anthropic API
 		const client = new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
 
 		const response = await client.messages.create({
-			model: getSelectedModel(),
+			model,
 			max_tokens: 1024,
 			messages: [
 				{
@@ -273,6 +306,25 @@ export async function generateField(context: FieldGenerationContext): Promise<Fi
 		// Return the generated value
 		const value = textContent.text.trim();
 
+		// Debug: capture response
+		if (debugStore.enabled) {
+			const responseEntry: DebugEntry = {
+				id: `field-gen-resp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+				timestamp: new Date(),
+				type: 'response',
+				response: {
+					content: value,
+					tokenUsage: response.usage ? {
+						promptTokens: response.usage.input_tokens,
+						completionTokens: response.usage.output_tokens,
+						totalTokens: response.usage.input_tokens + response.usage.output_tokens
+					} : undefined,
+					durationMs: Date.now() - startTime
+				}
+			};
+			debugStore.addEntry(responseEntry);
+		}
+
 		if (!value) {
 			return {
 				success: false,
@@ -285,6 +337,22 @@ export async function generateField(context: FieldGenerationContext): Promise<Fi
 			value
 		};
 	} catch (error) {
+		// Debug: capture error
+		if (debugStore.enabled) {
+			const errorEntry: DebugEntry = {
+				id: `field-gen-err-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+				timestamp: new Date(),
+				type: 'error',
+				error: {
+					message: error instanceof Error ? error.message : 'Unknown error',
+					status: error && typeof error === 'object' && 'status' in error
+						? (error as { status: number }).status
+						: undefined
+				}
+			};
+			debugStore.addEntry(errorEntry);
+		}
+
 		// Handle API errors gracefully
 		// Check for error status codes (works with or without instanceof check)
 		if (error && typeof error === 'object' && 'status' in error) {
@@ -537,13 +605,44 @@ export async function generateSummaryContent(
 
 	// Build the prompt
 	const prompt = buildSummaryPrompt(context);
+	const model = getSelectedModel();
+	const startTime = Date.now();
+
+	// Debug: capture request
+	if (debugStore.enabled) {
+		const requestEntry: DebugEntry = {
+			id: `summary-gen-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+			timestamp: new Date(),
+			type: 'request',
+			request: {
+				userMessage: `[Summary Generation] ${context.typeDefinition.label}: ${context.currentValues.name || 'New Entity'}`,
+				systemPrompt: prompt,
+				contextData: {
+					entityCount: 1,
+					entities: [{
+						id: 'summary-generation',
+						type: context.entityType,
+						name: context.currentValues.name || 'New Entity',
+						summaryLength: prompt.length
+					}],
+					totalCharacters: prompt.length,
+					truncated: false,
+					generationType: 'summary'
+				},
+				model,
+				maxTokens: 512,
+				conversationHistory: []
+			}
+		};
+		debugStore.addEntry(requestEntry);
+	}
 
 	try {
 		// Call Anthropic API
 		const client = new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
 
 		const response = await client.messages.create({
-			model: getSelectedModel(),
+			model,
 			max_tokens: 512,
 			messages: [
 				{
@@ -565,6 +664,25 @@ export async function generateSummaryContent(
 		// Return the generated value
 		const value = textContent.text.trim();
 
+		// Debug: capture response
+		if (debugStore.enabled) {
+			const responseEntry: DebugEntry = {
+				id: `summary-gen-resp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+				timestamp: new Date(),
+				type: 'response',
+				response: {
+					content: value,
+					tokenUsage: response.usage ? {
+						promptTokens: response.usage.input_tokens,
+						completionTokens: response.usage.output_tokens,
+						totalTokens: response.usage.input_tokens + response.usage.output_tokens
+					} : undefined,
+					durationMs: Date.now() - startTime
+				}
+			};
+			debugStore.addEntry(responseEntry);
+		}
+
 		if (!value) {
 			return {
 				success: false,
@@ -577,6 +695,22 @@ export async function generateSummaryContent(
 			value
 		};
 	} catch (error) {
+		// Debug: capture error
+		if (debugStore.enabled) {
+			const errorEntry: DebugEntry = {
+				id: `summary-gen-err-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+				timestamp: new Date(),
+				type: 'error',
+				error: {
+					message: error instanceof Error ? error.message : 'Unknown error',
+					status: error && typeof error === 'object' && 'status' in error
+						? (error as { status: number }).status
+						: undefined
+				}
+			};
+			debugStore.addEntry(errorEntry);
+		}
+
 		// Handle API errors gracefully
 		if (error && typeof error === 'object' && 'status' in error) {
 			const status = (error as { status: number }).status;
@@ -643,13 +777,44 @@ export async function generateDescriptionContent(
 
 	// Build the prompt
 	const prompt = buildDescriptionPrompt(context);
+	const model = getSelectedModel();
+	const startTime = Date.now();
+
+	// Debug: capture request
+	if (debugStore.enabled) {
+		const requestEntry: DebugEntry = {
+			id: `desc-gen-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+			timestamp: new Date(),
+			type: 'request',
+			request: {
+				userMessage: `[Description Generation] ${context.typeDefinition.label}: ${context.currentValues.name || 'New Entity'}`,
+				systemPrompt: prompt,
+				contextData: {
+					entityCount: 1,
+					entities: [{
+						id: 'description-generation',
+						type: context.entityType,
+						name: context.currentValues.name || 'New Entity',
+						summaryLength: prompt.length
+					}],
+					totalCharacters: prompt.length,
+					truncated: false,
+					generationType: 'description'
+				},
+				model,
+				maxTokens: 1024,
+				conversationHistory: []
+			}
+		};
+		debugStore.addEntry(requestEntry);
+	}
 
 	try {
 		// Call Anthropic API
 		const client = new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
 
 		const response = await client.messages.create({
-			model: getSelectedModel(),
+			model,
 			max_tokens: 1024,
 			messages: [
 				{
@@ -671,6 +836,25 @@ export async function generateDescriptionContent(
 		// Return the generated value
 		const value = textContent.text.trim();
 
+		// Debug: capture response
+		if (debugStore.enabled) {
+			const responseEntry: DebugEntry = {
+				id: `desc-gen-resp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+				timestamp: new Date(),
+				type: 'response',
+				response: {
+					content: value,
+					tokenUsage: response.usage ? {
+						promptTokens: response.usage.input_tokens,
+						completionTokens: response.usage.output_tokens,
+						totalTokens: response.usage.input_tokens + response.usage.output_tokens
+					} : undefined,
+					durationMs: Date.now() - startTime
+				}
+			};
+			debugStore.addEntry(responseEntry);
+		}
+
 		if (!value) {
 			return {
 				success: false,
@@ -683,6 +867,22 @@ export async function generateDescriptionContent(
 			value
 		};
 	} catch (error) {
+		// Debug: capture error
+		if (debugStore.enabled) {
+			const errorEntry: DebugEntry = {
+				id: `desc-gen-err-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+				timestamp: new Date(),
+				type: 'error',
+				error: {
+					message: error instanceof Error ? error.message : 'Unknown error',
+					status: error && typeof error === 'object' && 'status' in error
+						? (error as { status: number }).status
+						: undefined
+				}
+			};
+			debugStore.addEntry(errorEntry);
+		}
+
 		// Handle API errors gracefully
 		if (error && typeof error === 'object' && 'status' in error) {
 			const status = (error as { status: number }).status;

@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+### Changed
+
+### Fixed
+
+## [1.1.0] - 2026-01-21
+
+### Added
+
 **Import from Forge Steel Button on Character List (Issue #249)**
 - "Import from Forge Steel" button added to character list page for easier access
 - Button appears next to "Add Character" and opens the existing Forge Steel import modal
@@ -36,11 +44,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+**Simplified Combat Tracker (Issue #233)**
+- Combat tracker now features quick-add combatants functionality
+- Maximum HP is now optional for combatants
+- Streamlined interface for faster combat setup and management
+
 **Markdown Editor UX Improvement (Issue #236)**
 - Markdown editor now defaults to full-width edit mode instead of split view
 - Added Preview/Edit toggle button to toolbar for switching between editing and preview modes
 - Provides more editing space while maintaining easy access to markdown preview
 - Split view mode still available programmatically for components that need it
+
+### Fixed
+
+**Entity Parser Default Values (Issue #245)**
+- Fixed entity parser to properly apply default values for entity fields
+- Ensures newly created entities have correct initial field values
 
 ## [1.0.0] - 2026-01-21
 

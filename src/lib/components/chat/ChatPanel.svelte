@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { X, Send, Trash2, Loader2, Settings } from 'lucide-svelte';
+	import { X, Send, Trash2, Loader2, Settings, Minimize2, ChevronDown } from 'lucide-svelte';
 	import { chatStore, uiStore, conversationStore } from '$lib/stores';
 	import { hasChatApiKey } from '$lib/services/chatService';
 	import ChatMessage from './ChatMessage.svelte';
@@ -8,13 +8,12 @@
 	import ConversationSidebar from './ConversationSidebar.svelte';
 	import GenerationTypeSelector from './GenerationTypeSelector.svelte';
 	import TypeFieldsSelector from './TypeFieldsSelector.svelte';
+	import ChatFloatingButton from './ChatFloatingButton.svelte';
 	import type { GenerationType } from '$lib/types';
 
 	let inputValue = $state('');
 	let messagesContainer: HTMLDivElement | undefined = $state();
 	let chatPanelElement: HTMLElement | undefined = $state();
-	let panelWidth = $state('384px'); // Default width (w-96)
-	let panelHeight = $state('100%'); // Default height
 
 	const messages = $derived(chatStore.messages);
 	const isLoading = $derived(chatStore.isLoading);
@@ -25,144 +24,71 @@
 	const conversations = $derived(conversationStore.conversations);
 	const conversationsLoading = $derived(conversationStore.isLoading);
 
-	const STORAGE_KEY = 'chat-panel-width';
-	const HEIGHT_STORAGE_KEY = 'chat-panel-height';
+	const MINIMIZED_STORAGE_KEY = 'chat-minimized';
+	const CONTEXT_COLLAPSED_STORAGE_KEY = 'chat-context-collapsed';
+
+	let isMinimized = $state(false);
+	let isContextCollapsed = $state(false);
 
 	onMount(() => {
 		conversationStore.load();
 		chatStore.load();
-		loadSavedWidth();
-		loadSavedHeight();
-
-		if (chatPanelElement) {
-			// Set up resize observer to detect when user resizes the panel
-			const resizeObserver = new ResizeObserver((entries) => {
-				for (const entry of entries) {
-					const width = entry.contentRect.width;
-					const height = entry.contentRect.height;
-
-					if (width > 0) {
-						const widthPx = `${width}px`;
-						if (widthPx !== panelWidth) {
-							panelWidth = widthPx;
-							saveWidth(widthPx);
-						}
-					}
-
-					if (height > 0) {
-						const heightPx = `${height}px`;
-						if (heightPx !== panelHeight) {
-							panelHeight = heightPx;
-							saveHeight(heightPx);
-						}
-					}
-				}
-			});
-
-			resizeObserver.observe(chatPanelElement);
-
-			// Also listen for the 'resize' event for test compatibility
-			const handleResizeEvent = () => {
-				const currentWidth = chatPanelElement?.style.width;
-				const currentHeight = chatPanelElement?.style.height;
-
-				if (currentWidth && currentWidth !== panelWidth) {
-					panelWidth = currentWidth;
-					saveWidth(currentWidth);
-				}
-
-				if (currentHeight && currentHeight !== panelHeight) {
-					panelHeight = currentHeight;
-					saveHeight(currentHeight);
-				}
-			};
-
-			chatPanelElement.addEventListener('resize', handleResizeEvent);
-
-			return () => {
-				resizeObserver.disconnect();
-				chatPanelElement?.removeEventListener('resize', handleResizeEvent);
-			};
-		}
+		loadMinimizedState();
+		loadContextCollapsedState();
 	});
 
-	function loadSavedWidth() {
+	function loadMinimizedState() {
 		try {
-			const saved = localStorage.getItem(STORAGE_KEY);
-			if (saved) {
-				// Validate the saved value - ensure it's valid CSS width
-				const parsed = parseInt(saved, 10);
-
-				// Enforce minimum and maximum constraints
-				const MIN_WIDTH = 320;
-				const MAX_WIDTH = 800;
-
-				// Only use valid positive numbers
-				if (!isNaN(parsed) && parsed > 0) {
-					// Enforce minimum and cap at maximum width
-					const constrainedWidth = Math.max(MIN_WIDTH, Math.min(parsed, MAX_WIDTH));
-					panelWidth = `${constrainedWidth}px`;
-				} else if (saved.includes('%')) {
-					// Handle percentage values (validate they're positive)
-					const percentValue = parseInt(saved, 10);
-					if (!isNaN(percentValue) && percentValue > 0) {
-						panelWidth = saved;
-					}
-				}
-				// If validation fails, keep default panelWidth (384px)
+			const saved = localStorage.getItem(MINIMIZED_STORAGE_KEY);
+			if (saved === 'true') {
+				isMinimized = true;
+			} else if (saved === 'false') {
+				isMinimized = false;
 			}
+			// else default to false (not minimized)
 		} catch (e) {
-			// localStorage might not be available, use default
-			console.warn('Failed to load saved chat panel width:', e);
+			console.warn('Failed to load minimized state:', e);
 		}
 	}
 
-	function saveWidth(width: string) {
+	function loadContextCollapsedState() {
 		try {
-			localStorage.setItem(STORAGE_KEY, width);
-		} catch (e) {
-			// localStorage might not be available, fail silently
-			console.warn('Failed to save chat panel width:', e);
-		}
-	}
-
-	function loadSavedHeight() {
-		try {
-			const saved = localStorage.getItem(HEIGHT_STORAGE_KEY);
-			if (saved) {
-				// Validate the saved value - ensure it's valid CSS height
-				const parsed = parseInt(saved, 10);
-
-				// Enforce minimum and maximum constraints
-				const MIN_HEIGHT = 200;
-				const MAX_HEIGHT_VH = 90; // 90vh
-
-				// Only use valid positive numbers
-				if (!isNaN(parsed) && parsed > 0) {
-					// Enforce minimum
-					const constrainedHeight = Math.max(MIN_HEIGHT, parsed);
-					panelHeight = `${constrainedHeight}px`;
-				} else if (saved.includes('%')) {
-					// Handle percentage values (validate they're positive)
-					const percentValue = parseInt(saved, 10);
-					if (!isNaN(percentValue) && percentValue > 0) {
-						panelHeight = saved;
-					}
-				}
-				// If validation fails, keep default panelHeight (100%)
+			const saved = localStorage.getItem(CONTEXT_COLLAPSED_STORAGE_KEY);
+			if (saved === 'true') {
+				isContextCollapsed = true;
+			} else if (saved === 'false') {
+				isContextCollapsed = false;
 			}
+			// else default to false (expanded)
 		} catch (e) {
-			// localStorage might not be available, use default
-			console.warn('Failed to load saved chat panel height:', e);
+			console.warn('Failed to load context collapsed state:', e);
 		}
 	}
 
-	function saveHeight(height: string) {
+	function handleMinimize() {
+		isMinimized = true;
 		try {
-			localStorage.setItem(HEIGHT_STORAGE_KEY, height);
+			localStorage.setItem(MINIMIZED_STORAGE_KEY, 'true');
 		} catch (e) {
-			// localStorage might not be available, fail silently
-			console.warn('Failed to save chat panel height:', e);
+			console.warn('Failed to save minimized state:', e);
+		}
+	}
+
+	function handleExpand() {
+		isMinimized = false;
+		try {
+			localStorage.setItem(MINIMIZED_STORAGE_KEY, 'false');
+		} catch (e) {
+			console.warn('Failed to save minimized state:', e);
+		}
+	}
+
+	function toggleContextCollapsed() {
+		isContextCollapsed = !isContextCollapsed;
+		try {
+			localStorage.setItem(CONTEXT_COLLAPSED_STORAGE_KEY, String(isContextCollapsed));
+		} catch (e) {
+			console.warn('Failed to save context collapsed state:', e);
 		}
 	}
 
@@ -209,9 +135,11 @@
 	}
 </script>
 
+<ChatFloatingButton isMinimized={isMinimized} onclick={handleExpand} />
+
 <aside
 	bind:this={chatPanelElement}
-	style="width: {panelWidth}; min-width: 320px; max-width: 800px; height: {panelHeight}; min-height: 200px; max-height: 90vh; resize: both; overflow: auto; display: flex; flex-direction: column;"
+	style="width: 448px; display: {isMinimized ? 'none' : 'flex'}; flex-direction: column; resize: none;"
 	class="border-l border-slate-200 dark:border-slate-700 bg-white dark:bg-surface-dark"
 >
 	<!-- Header -->
@@ -231,6 +159,15 @@
 			<button
 				type="button"
 				class="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded"
+				onclick={handleMinimize}
+				title="Minimize"
+				aria-label="Minimize chat"
+			>
+				<Minimize2 class="w-4 h-4" />
+			</button>
+			<button
+				type="button"
+				class="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded"
 				onclick={() => uiStore.closeChatPanel()}
 				title="Close"
 			>
@@ -242,23 +179,42 @@
 	<!-- Conversation Sidebar -->
 	<ConversationSidebar />
 
-	<!-- Context selector -->
-	<ContextSelector />
+	<!-- Collapsible Context Section -->
+	<div class="border-b border-slate-200 dark:border-slate-700">
+		<div class="px-3 py-2 flex items-center justify-between">
+			<h3 class="text-sm font-medium text-slate-700 dark:text-slate-300" data-testid="context-header">Context</h3>
+			<button
+				type="button"
+				onclick={toggleContextCollapsed}
+				class="p-1 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 rounded transition-transform duration-200"
+				aria-label={isContextCollapsed ? 'Expand context' : 'toggle context'}
+				aria-expanded={!isContextCollapsed}
+				title={isContextCollapsed ? 'Expand context' : 'toggle context'}
+			>
+				<ChevronDown class="w-5 h-5 transition-transform duration-200" style="transform: rotate({isContextCollapsed ? -90 : 0}deg);" />
+			</button>
+		</div>
 
-	<!-- Generation type selector -->
-	<GenerationTypeSelector
-		value={chatStore.generationType}
-		onchange={(type) => chatStore.setGenerationType(type)}
-		disabled={isLoading}
-	/>
+		<div data-section="context-content" style="display: {isContextCollapsed ? 'none' : 'block'};">
+			<!-- Context selector -->
+			<ContextSelector />
 
-	<!-- Type-specific fields (e.g., Threat Level, Combat Role for NPCs) -->
-	<TypeFieldsSelector
-		generationType={chatStore.generationType}
-		values={chatStore.typeFieldValues}
-		onchange={(key, value) => chatStore.setTypeFieldValue(key, value)}
-		disabled={isLoading}
-	/>
+			<!-- Generation type selector -->
+			<GenerationTypeSelector
+				value={chatStore.generationType}
+				onchange={(type) => chatStore.setGenerationType(type)}
+				disabled={isLoading}
+			/>
+
+			<!-- Type-specific fields (e.g., Threat Level, Combat Role for NPCs) -->
+			<TypeFieldsSelector
+				generationType={chatStore.generationType}
+				values={chatStore.typeFieldValues}
+				onchange={(key, value) => chatStore.setTypeFieldValue(key, value)}
+				disabled={isLoading}
+			/>
+		</div>
+	</div>
 
 	{#if !hasApiKey}
 		<!-- No API key state -->
@@ -287,7 +243,7 @@
 						Start a conversation with your AI campaign assistant.
 					</p>
 					<p class="text-xs mt-2">
-						Select entities above to provide campaign context.
+						Select entities above to provide relevant information.
 					</p>
 				</div>
 			{/if}

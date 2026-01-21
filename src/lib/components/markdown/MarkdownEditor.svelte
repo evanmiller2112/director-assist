@@ -8,7 +8,7 @@
 	 * including a toolbar for formatting, live preview, and multiple editing modes.
 	 */
 
-	import { Bold, Italic, Heading, Code, Link, List } from 'lucide-svelte';
+	import { Bold, Italic, Heading, Code, Link, List, Eye, Pencil } from 'lucide-svelte';
 	import MarkdownViewer from './MarkdownViewer.svelte';
 
 	// Props
@@ -31,7 +31,7 @@
 		placeholder = '',
 		disabled = false,
 		readonly = false,
-		mode = 'split',
+		mode = 'edit',
 		minHeight = '150px',
 		maxHeight = '400px',
 		class: className = '',
@@ -41,6 +41,22 @@
 	}: Props = $props();
 
 	let textareaRef: HTMLTextAreaElement;
+	// Initialize internal mode based on the mode prop, defaulting to 'edit' for non-split modes
+	let internalMode = $state<'edit' | 'preview'>(mode === 'preview' ? 'preview' : 'edit');
+
+	// Track previous mode to detect when it changes
+	let previousMode = $state<'edit' | 'preview' | 'split'>(mode);
+
+	// Update internal mode when mode prop changes (for non-split modes)
+	$effect(() => {
+		// Only update if the mode prop actually changed
+		if (mode !== previousMode && mode !== 'split') {
+			internalMode = mode;
+			previousMode = mode;
+		} else if (mode !== previousMode) {
+			previousMode = mode;
+		}
+	});
 
 	// Handle input changes
 	function handleInput(event: Event) {
@@ -50,6 +66,11 @@
 		const target = event.target as HTMLTextAreaElement;
 		value = target.value;
 		onchange?.(value);
+	}
+
+	// Toggle between edit and preview modes
+	function togglePreview() {
+		internalMode = internalMode === 'edit' ? 'preview' : 'edit';
 	}
 
 	// Toolbar formatting functions
@@ -197,15 +218,16 @@
 	}
 
 	// Determine if we should show the textarea
-	const showTextarea = $derived(mode === 'edit' || mode === 'split');
-	const showPreview = $derived(mode === 'preview' || mode === 'split');
+	const effectiveMode = $derived(mode === 'split' ? 'split' : internalMode);
+	const showTextarea = $derived(effectiveMode === 'edit' || effectiveMode === 'split');
+	const showPreview = $derived(effectiveMode === 'preview' || effectiveMode === 'split');
 
 	// Error ID for aria-describedby
 	const errorId = `error-${Math.random().toString(36).substring(2, 9)}`;
 </script>
 
 <div class="markdown-editor {className}">
-	{#if showToolbar && showTextarea}
+	{#if showToolbar}
 		<div
 			class="toolbar flex gap-1 p-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-t"
 			role="toolbar"
@@ -215,7 +237,7 @@
 				type="button"
 				class="p-2 hover:bg-slate-200 dark:hover:bg-slate-700 rounded disabled:opacity-50 disabled:cursor-not-allowed"
 				onclick={makeBold}
-				disabled={disabled || readonly}
+				disabled={disabled || readonly || !showTextarea}
 				aria-label="Bold"
 				title="Bold (Ctrl+B)"
 			>
@@ -225,7 +247,7 @@
 				type="button"
 				class="p-2 hover:bg-slate-200 dark:hover:bg-slate-700 rounded disabled:opacity-50 disabled:cursor-not-allowed"
 				onclick={makeItalic}
-				disabled={disabled || readonly}
+				disabled={disabled || readonly || !showTextarea}
 				aria-label="Italic"
 				title="Italic (Ctrl+I)"
 			>
@@ -235,7 +257,7 @@
 				type="button"
 				class="p-2 hover:bg-slate-200 dark:hover:bg-slate-700 rounded disabled:opacity-50 disabled:cursor-not-allowed"
 				onclick={makeHeading}
-				disabled={disabled || readonly}
+				disabled={disabled || readonly || !showTextarea}
 				aria-label="Heading"
 				title="Heading"
 			>
@@ -245,7 +267,7 @@
 				type="button"
 				class="p-2 hover:bg-slate-200 dark:hover:bg-slate-700 rounded disabled:opacity-50 disabled:cursor-not-allowed"
 				onclick={makeCode}
-				disabled={disabled || readonly}
+				disabled={disabled || readonly || !showTextarea}
 				aria-label="Code"
 				title="Code"
 			>
@@ -255,7 +277,7 @@
 				type="button"
 				class="p-2 hover:bg-slate-200 dark:hover:bg-slate-700 rounded disabled:opacity-50 disabled:cursor-not-allowed"
 				onclick={insertLink}
-				disabled={disabled || readonly}
+				disabled={disabled || readonly || !showTextarea}
 				aria-label="Link"
 				title="Link"
 			>
@@ -265,11 +287,30 @@
 				type="button"
 				class="p-2 hover:bg-slate-200 dark:hover:bg-slate-700 rounded disabled:opacity-50 disabled:cursor-not-allowed"
 				onclick={makeList}
-				disabled={disabled || readonly}
+				disabled={disabled || readonly || !showTextarea}
 				aria-label="List"
 				title="List"
 			>
 				<List size={18} />
+			</button>
+
+			<!-- Spacer to push toggle to the right -->
+			<div class="flex-grow"></div>
+
+			<!-- Preview/Edit toggle button -->
+			<button
+				type="button"
+				class="p-2 hover:bg-slate-200 dark:hover:bg-slate-700 rounded"
+				onclick={togglePreview}
+				aria-label={internalMode === 'edit' ? 'Preview' : 'Edit'}
+				title={internalMode === 'edit' ? 'Preview' : 'Edit'}
+				data-testid="preview-toggle"
+			>
+				{#if internalMode === 'edit'}
+					<Eye size={18} />
+				{:else}
+					<Pencil size={18} />
+				{/if}
 			</button>
 		</div>
 	{/if}

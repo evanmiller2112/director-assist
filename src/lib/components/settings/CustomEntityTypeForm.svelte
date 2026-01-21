@@ -1,10 +1,12 @@
 <script lang="ts">
-	import { Save, ArrowLeft } from 'lucide-svelte';
+	import { Save, ArrowLeft, Users, MapPin, Shield, Clock } from 'lucide-svelte';
 	import type { EntityTypeDefinition, FieldDefinition } from '$lib/types';
 	import IconPicker from './IconPicker.svelte';
 	import ColorPicker from './ColorPicker.svelte';
 	import FieldDefinitionEditor from './FieldDefinitionEditor.svelte';
+	import DrawSteelTipsPanel from './DrawSteelTipsPanel.svelte';
 	import { DEFAULT_RELATIONSHIPS } from '$lib/config/entityTypes';
+	import { RELATIONSHIP_GROUPS } from '$lib/config/relationshipGroups';
 
 	interface Props {
 		initialValue?: EntityTypeDefinition;
@@ -28,6 +30,7 @@
 	let isSaving = $state(false);
 	let errors = $state<Record<string, string>>({});
 	let submitError = $state<string | null>(null);
+	let tipsPanelDismissed = $state(false);
 
 	// Known entity types (built-in) for duplicate checking
 	const KNOWN_TYPES = ['character', 'npc', 'location', 'faction', 'item', 'encounter', 'session', 'deity', 'timeline_event', 'world_rule', 'player_profile'];
@@ -114,9 +117,22 @@
 			selectedRelationships = [...selectedRelationships, rel];
 		}
 	}
+
+	function getGroupIcon(groupId: string) {
+		switch(groupId) {
+			case 'character': return Users;
+			case 'location': return MapPin;
+			case 'authority': return Shield;
+			case 'causality': return Clock;
+			default: return Users;
+		}
+	}
 </script>
 
 <form onsubmit={(e) => { e.preventDefault(); handleSubmit(); }} class="space-y-8">
+	<!-- Tips Panel -->
+	<DrawSteelTipsPanel dismissed={tipsPanelDismissed} onDismiss={() => (tipsPanelDismissed = true)} />
+
 	<!-- Basic Info -->
 	<section>
 		<h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">Basic Information</h2>
@@ -223,26 +239,35 @@
 		<p class="text-sm text-slate-500 dark:text-slate-400 mb-4">
 			Select the relationship types that will be suggested when linking entities of this type.
 		</p>
-		<div class="flex flex-wrap gap-2">
-			{#each DEFAULT_RELATIONSHIPS as rel}
-				<button
-					type="button"
-					class="px-3 py-1.5 text-sm rounded-full border transition-colors
-						{selectedRelationships.includes(rel)
-						? 'bg-blue-100 border-blue-300 text-blue-700 dark:bg-blue-900 dark:border-blue-700 dark:text-blue-300'
-						: 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-700'}"
-					onclick={() => toggleRelationship(rel)}
-					onkeydown={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') {
-							e.preventDefault();
-							toggleRelationship(rel);
-						}
-					}}
-					aria-pressed={selectedRelationships.includes(rel)}
-					aria-label={`${selectedRelationships.includes(rel) ? 'Remove' : 'Add'} relationship: ${rel.replace(/_/g, ' ')}`}
-				>
-					{rel.replace(/_/g, ' ')}
-				</button>
+		<div class="space-y-6">
+			{#each RELATIONSHIP_GROUPS as group}
+				{@const Icon = getGroupIcon(group.id)}
+				<div role="group" aria-label={group.label} class="space-y-3">
+					<div class="flex items-center gap-2">
+						<Icon class="w-5 h-5 text-slate-600 dark:text-slate-400" />
+						<h3 class="text-sm font-medium text-slate-900 dark:text-white">{group.label}</h3>
+					</div>
+					<p class="text-xs text-gray-500 dark:text-gray-400 opacity-80">
+						{group.description}
+					</p>
+					<div class="flex flex-wrap gap-2">
+						{#each group.relationships as rel}
+							<label for="rel-{rel}" class="inline-flex items-center cursor-pointer">
+								<input
+									id="rel-{rel}"
+									type="checkbox"
+									checked={selectedRelationships.includes(rel)}
+									onchange={() => toggleRelationship(rel)}
+									class="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-blue-600 focus:ring-blue-500 cursor-pointer"
+									aria-label={rel.replace(/_/g, ' ')}
+								/>
+								<span class="ml-2 text-sm text-slate-700 dark:text-slate-300">
+									{rel.replace(/_/g, ' ')}
+								</span>
+							</label>
+						{/each}
+					</div>
+				</div>
 			{/each}
 		</div>
 	</section>

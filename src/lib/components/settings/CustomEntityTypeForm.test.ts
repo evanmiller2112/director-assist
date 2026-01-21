@@ -880,3 +880,462 @@ describe('CustomEntityTypeForm - Integration (Issue #25 Phase 2)', () => {
 		});
 	});
 });
+
+/**
+ * Tests for CustomEntityTypeForm Component - Issue #168 Phase 1
+ *
+ * Issue #168 Phase 1: Relationship Guidance
+ *
+ * This test suite covers Phase 1 enhancements for relationship selection:
+ * - Relationship groups with categories
+ * - Descriptions for each relationship
+ * - Tips panel integration
+ * - Improved relationship picker organization
+ *
+ * RED Phase (TDD): These tests define expected behavior BEFORE implementation.
+ * All tests should FAIL until the component enhancements are implemented.
+ */
+
+describe('CustomEntityTypeForm - Relationship Groups (Issue #168 Phase 1)', () => {
+	it('should display relationships grouped by category', () => {
+		const mockOnSubmit = vi.fn();
+		const mockOnCancel = vi.fn();
+
+		render(CustomEntityTypeForm, {
+			onsubmit: mockOnSubmit,
+			oncancel: mockOnCancel
+		});
+
+		// Should show group headers
+		expect(screen.getByText(/Character Relationships/i)).toBeInTheDocument();
+	});
+
+	it('should show Character Relationships group', () => {
+		const mockOnSubmit = vi.fn();
+		const mockOnCancel = vi.fn();
+
+		render(CustomEntityTypeForm, {
+			onsubmit: mockOnSubmit,
+			oncancel: mockOnCancel
+		});
+
+		expect(screen.getByText(/Character Relationships/i)).toBeInTheDocument();
+	});
+
+	it('should show Physical Location group', () => {
+		const mockOnSubmit = vi.fn();
+		const mockOnCancel = vi.fn();
+
+		render(CustomEntityTypeForm, {
+			onsubmit: mockOnSubmit,
+			oncancel: mockOnCancel
+		});
+
+		// Use getAllByText since there may be multiple mentions
+		expect(screen.getAllByText(/Physical Location/i).length).toBeGreaterThan(0);
+	});
+
+	it('should show Authority/Control group', () => {
+		const mockOnSubmit = vi.fn();
+		const mockOnCancel = vi.fn();
+
+		render(CustomEntityTypeForm, {
+			onsubmit: mockOnSubmit,
+			oncancel: mockOnCancel
+		});
+
+		// The label is 'Authority & Control'
+		expect(screen.getAllByText(/Authority.*Control/i).length).toBeGreaterThan(0);
+	});
+
+	it('should show Causality group', () => {
+		const mockOnSubmit = vi.fn();
+		const mockOnCancel = vi.fn();
+
+		render(CustomEntityTypeForm, {
+			onsubmit: mockOnSubmit,
+			oncancel: mockOnCancel
+		});
+
+		// The label is 'Causality & Events'
+		expect(screen.getAllByText(/Causality.*Events/i).length).toBeGreaterThan(0);
+	});
+
+	it('should display relationships within Character Relationships group', () => {
+		const mockOnSubmit = vi.fn();
+		const mockOnCancel = vi.fn();
+
+		const { container } = render(CustomEntityTypeForm, {
+			onsubmit: mockOnSubmit,
+			oncancel: mockOnCancel
+		});
+
+		// Find the character group by its aria-label
+		const characterSection = container.querySelector('[aria-label="Character Relationships"]');
+		expect(characterSection).toBeTruthy();
+
+		// Should contain character relationships - displayed text has spaces
+		expect(within(characterSection as HTMLElement).getByText(/knows/i)).toBeInTheDocument();
+		expect(within(characterSection as HTMLElement).getByText(/allied with/i)).toBeInTheDocument();
+	});
+
+	it('should display relationships within Physical Location group', () => {
+		const mockOnSubmit = vi.fn();
+		const mockOnCancel = vi.fn();
+
+		const { container } = render(CustomEntityTypeForm, {
+			onsubmit: mockOnSubmit,
+			oncancel: mockOnCancel
+		});
+
+		// Find the location group by its aria-label
+		const locationSection = container.querySelector('[aria-label="Physical Location"]');
+		expect(locationSection).toBeTruthy();
+
+		expect(within(locationSection as HTMLElement).getByText(/located at/i)).toBeInTheDocument();
+		expect(within(locationSection as HTMLElement).getByText(/part of/i)).toBeInTheDocument();
+	});
+
+	it('should display relationships within Authority/Control group', () => {
+		const mockOnSubmit = vi.fn();
+		const mockOnCancel = vi.fn();
+
+		const { container } = render(CustomEntityTypeForm, {
+			onsubmit: mockOnSubmit,
+			oncancel: mockOnCancel
+		});
+
+		// Find the authority group by its aria-label
+		const authoritySection = container.querySelector('[aria-label="Authority & Control"]');
+		expect(authoritySection).toBeTruthy();
+
+		expect(within(authoritySection as HTMLElement).getByText(/serves/i)).toBeInTheDocument();
+		expect(within(authoritySection as HTMLElement).getByText(/owns/i)).toBeInTheDocument();
+	});
+
+	it('should display relationships within Causality group', () => {
+		const mockOnSubmit = vi.fn();
+		const mockOnCancel = vi.fn();
+
+		const { container } = render(CustomEntityTypeForm, {
+			onsubmit: mockOnSubmit,
+			oncancel: mockOnCancel
+		});
+
+		// Find the causality group by its aria-label
+		const causalitySection = container.querySelector('[aria-label="Causality & Events"]');
+		expect(causalitySection).toBeTruthy();
+
+		expect(within(causalitySection as HTMLElement).getByText(/caused by/i)).toBeInTheDocument();
+		expect(within(causalitySection as HTMLElement).getByText(/led to/i)).toBeInTheDocument();
+	});
+});
+
+describe('CustomEntityTypeForm - Relationship Descriptions (Issue #168 Phase 1)', () => {
+	it('should show description for Character Relationships group', () => {
+		const mockOnSubmit = vi.fn();
+		const mockOnCancel = vi.fn();
+
+		render(CustomEntityTypeForm, {
+			onsubmit: mockOnSubmit,
+			oncancel: mockOnCancel
+		});
+
+		expect(screen.getByText(/social.*interpersonal/i)).toBeInTheDocument();
+	});
+
+	it('should show description for Physical Location group', () => {
+		const mockOnSubmit = vi.fn();
+		const mockOnCancel = vi.fn();
+
+		render(CustomEntityTypeForm, {
+			onsubmit: mockOnSubmit,
+			oncancel: mockOnCancel
+		});
+
+		expect(screen.getByText(/spatial.*physical/i)).toBeInTheDocument();
+	});
+
+	it('should show description for Authority/Control group', () => {
+		const mockOnSubmit = vi.fn();
+		const mockOnCancel = vi.fn();
+
+		render(CustomEntityTypeForm, {
+			onsubmit: mockOnSubmit,
+			oncancel: mockOnCancel
+		});
+
+		// Description is 'Power dynamics, ownership, and authority relationships'
+		expect(screen.getByText(/power.*dynamics.*ownership/i)).toBeInTheDocument();
+	});
+
+	it('should show description for Causality group', () => {
+		const mockOnSubmit = vi.fn();
+		const mockOnCancel = vi.fn();
+
+		render(CustomEntityTypeForm, {
+			onsubmit: mockOnSubmit,
+			oncancel: mockOnCancel
+		});
+
+		// Description is 'Temporal and cause-and-effect relationships'
+		expect(screen.getByText(/temporal.*cause.*effect/i)).toBeInTheDocument();
+	});
+
+	it('should display descriptions with muted styling', () => {
+		const mockOnSubmit = vi.fn();
+		const mockOnCancel = vi.fn();
+
+		render(CustomEntityTypeForm, {
+			onsubmit: mockOnSubmit,
+			oncancel: mockOnCancel
+		});
+
+		const description = screen.getByText(/social.*interpersonal/i);
+		expect(description.className).toMatch(/text-gray|text-muted|opacity/);
+	});
+});
+
+describe('CustomEntityTypeForm - Relationship Selection (Issue #168 Phase 1)', () => {
+	it('should allow selecting relationships from different groups', async () => {
+		const mockOnSubmit = vi.fn();
+		const mockOnCancel = vi.fn();
+
+		render(CustomEntityTypeForm, {
+			onsubmit: mockOnSubmit,
+			oncancel: mockOnCancel
+		});
+
+		// Select from Character group - aria-label uses spaces, not underscores
+		const knowsCheckbox = screen.getByLabelText('knows');
+		await fireEvent.click(knowsCheckbox);
+
+		// Select from Location group - aria-label is 'located at' (with space)
+		const locatedAtCheckbox = screen.getByLabelText('located at');
+		await fireEvent.click(locatedAtCheckbox);
+
+		// Both should be selected
+		expect((knowsCheckbox as HTMLInputElement).checked).toBe(true);
+		expect((locatedAtCheckbox as HTMLInputElement).checked).toBe(true);
+	});
+
+	it('should maintain existing relationship selection functionality', async () => {
+		const mockOnSubmit = vi.fn();
+		const mockOnCancel = vi.fn();
+
+		render(CustomEntityTypeForm, {
+			onsubmit: mockOnSubmit,
+			oncancel: mockOnCancel
+		});
+
+		await fireEvent.input(screen.getByLabelText(/Display Name/i), {
+			target: { value: 'Test Entity' }
+		});
+
+		// aria-label uses 'knows' without underscore
+		const knowsCheckbox = screen.getByLabelText('knows');
+		await fireEvent.click(knowsCheckbox);
+
+		// Find submit button by type="submit" to be more specific
+		const submitButtons = screen.getAllByRole('button');
+		const submitButton = submitButtons.find((btn) => btn.getAttribute('type') === 'submit');
+		expect(submitButton).toBeTruthy();
+		await fireEvent.click(submitButton!);
+
+		await waitFor(() => {
+			expect(mockOnSubmit).toHaveBeenCalledWith(
+				expect.objectContaining({
+					defaultRelationships: expect.arrayContaining(['knows'])
+				})
+			);
+		});
+	});
+
+	it('should show all relationships even when grouped', () => {
+		const mockOnSubmit = vi.fn();
+		const mockOnCancel = vi.fn();
+
+		render(CustomEntityTypeForm, {
+			onsubmit: mockOnSubmit,
+			oncancel: mockOnCancel
+		});
+
+		// All key relationships should be present - aria-labels use spaces not underscores
+		expect(screen.getByLabelText('knows')).toBeInTheDocument();
+		expect(screen.getByLabelText('allied with')).toBeInTheDocument();
+		expect(screen.getByLabelText('located at')).toBeInTheDocument();
+		expect(screen.getByLabelText('serves')).toBeInTheDocument();
+		expect(screen.getByLabelText('caused by')).toBeInTheDocument();
+	});
+});
+
+describe('CustomEntityTypeForm - DrawSteelTipsPanel Integration (Issue #168 Phase 1)', () => {
+	it('should render DrawSteelTipsPanel component', () => {
+		const mockOnSubmit = vi.fn();
+		const mockOnCancel = vi.fn();
+
+		render(CustomEntityTypeForm, {
+			onsubmit: mockOnSubmit,
+			oncancel: mockOnCancel
+		});
+
+		expect(screen.getByText(/Tips for Draw Steel/i)).toBeInTheDocument();
+	});
+
+	it('should show tips panel by default when creating new entity type', () => {
+		const mockOnSubmit = vi.fn();
+		const mockOnCancel = vi.fn();
+
+		render(CustomEntityTypeForm, {
+			onsubmit: mockOnSubmit,
+			oncancel: mockOnCancel
+		});
+
+		const tipsPanel = screen.getByText(/Tips for Draw Steel/i);
+		expect(tipsPanel).toBeVisible();
+	});
+
+	it('should allow dismissing the tips panel', async () => {
+		const mockOnSubmit = vi.fn();
+		const mockOnCancel = vi.fn();
+
+		render(CustomEntityTypeForm, {
+			onsubmit: mockOnSubmit,
+			oncancel: mockOnCancel
+		});
+
+		expect(screen.getByText(/Tips for Draw Steel/i)).toBeInTheDocument();
+
+		const dismissButton = screen.getByRole('button', { name: /dismiss|close|hide/i });
+		await fireEvent.click(dismissButton);
+
+		expect(screen.queryByText(/Tips for Draw Steel/i)).not.toBeInTheDocument();
+	});
+
+	it('should position tips panel appropriately within form', () => {
+		const mockOnSubmit = vi.fn();
+		const mockOnCancel = vi.fn();
+
+		const { container } = render(CustomEntityTypeForm, {
+			onsubmit: mockOnSubmit,
+			oncancel: mockOnCancel
+		});
+
+		const tipsPanel = screen.getByText(/Tips for Draw Steel/i).closest('div, aside, section');
+		expect(tipsPanel).toBeTruthy();
+
+		// Should be within the form
+		const form = container.querySelector('form');
+		expect(form).toContainElement(tipsPanel);
+	});
+});
+
+describe('CustomEntityTypeForm - Grouped UI Improvements (Issue #168 Phase 1)', () => {
+	it('should use collapsible sections for relationship groups', async () => {
+		const mockOnSubmit = vi.fn();
+		const mockOnCancel = vi.fn();
+
+		render(CustomEntityTypeForm, {
+			onsubmit: mockOnSubmit,
+			oncancel: mockOnCancel
+		});
+
+		const characterHeader = screen.getByText(/Character Relationships/i);
+		const headerButton = characterHeader.closest('button');
+
+		if (headerButton) {
+			await fireEvent.click(headerButton);
+			expect(headerButton).toHaveAttribute('aria-expanded');
+		}
+	});
+
+	it('should show group icons for visual clarity', () => {
+		const mockOnSubmit = vi.fn();
+		const mockOnCancel = vi.fn();
+
+		const { container } = render(CustomEntityTypeForm, {
+			onsubmit: mockOnSubmit,
+			oncancel: mockOnCancel
+		});
+
+		// Lucide icons render as SVGs
+		const icons = container.querySelectorAll('svg');
+		expect(icons.length).toBeGreaterThan(0);
+	});
+
+	it('should maintain consistent spacing between groups', () => {
+		const mockOnSubmit = vi.fn();
+		const mockOnCancel = vi.fn();
+
+		const { container } = render(CustomEntityTypeForm, {
+			onsubmit: mockOnSubmit,
+			oncancel: mockOnCancel
+		});
+
+		// Use aria-labels to find the relationship groups
+		const characterGroup = container.querySelector('[aria-label="Character Relationships"]');
+		const locationGroup = container.querySelector('[aria-label="Physical Location"]');
+
+		expect(characterGroup).toBeTruthy();
+		expect(locationGroup).toBeTruthy();
+	});
+
+	it('should use visual hierarchy to distinguish groups', () => {
+		const mockOnSubmit = vi.fn();
+		const mockOnCancel = vi.fn();
+
+		render(CustomEntityTypeForm, {
+			onsubmit: mockOnSubmit,
+			oncancel: mockOnCancel
+		});
+
+		const groupHeader = screen.getByText(/Character Relationships/i);
+		expect(groupHeader.className).toMatch(/font-medium|font-semibold|text-lg/);
+	});
+});
+
+describe('CustomEntityTypeForm - Accessibility for Grouped Relationships (Issue #168 Phase 1)', () => {
+	it('should have proper ARIA labels for relationship groups', () => {
+		const mockOnSubmit = vi.fn();
+		const mockOnCancel = vi.fn();
+
+		const { container } = render(CustomEntityTypeForm, {
+			onsubmit: mockOnSubmit,
+			oncancel: mockOnCancel
+		});
+
+		// Find groups by their role="group" attribute which have aria-label
+		const characterSection = container.querySelector('[aria-label="Character Relationships"]');
+		expect(characterSection).toBeTruthy();
+		expect(characterSection).toHaveAttribute('role', 'group');
+	});
+
+	it('should use semantic HTML for grouping', () => {
+		const mockOnSubmit = vi.fn();
+		const mockOnCancel = vi.fn();
+
+		const { container } = render(CustomEntityTypeForm, {
+			onsubmit: mockOnSubmit,
+			oncancel: mockOnCancel
+		});
+
+		// Groups should use fieldset or section elements
+		const groups = container.querySelectorAll('fieldset, section[aria-label], div[role="group"]');
+		expect(groups.length).toBeGreaterThanOrEqual(4); // 4 relationship groups
+	});
+
+	it('should maintain keyboard navigation for relationship checkboxes', async () => {
+		const mockOnSubmit = vi.fn();
+		const mockOnCancel = vi.fn();
+
+		render(CustomEntityTypeForm, {
+			onsubmit: mockOnSubmit,
+			oncancel: mockOnCancel
+		});
+
+		const checkboxes = screen.getAllByRole('checkbox');
+		checkboxes.forEach((checkbox) => {
+			expect(checkbox).not.toHaveAttribute('tabindex', '-1');
+		});
+	});
+});

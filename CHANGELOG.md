@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+**Custom Entity Creation UX Improvements (Issue #168, Phase 1)**
+- DrawSteelTipsPanel component provides contextual guidance when creating custom entity types
+- Field types grouped into categories: Text & Content, Numeric, Selection, Links & References, Specialized
+- "Draw Steel Recommended" badges highlight field types commonly used in Draw Steel campaigns
+- Field type descriptions and example use cases for each type
+- Relationship types grouped into semantic categories: Character Relationships, Physical Location, Authority & Control, Causality & Events
+- Category descriptions help users understand when to use each relationship type
+- Collapsible tips sections for field types and examples with real-world use cases
+- Improved discoverability for complex features like computed fields and entity references
+
 ## [0.8.0] - 2026-01-20
 
 ### Added

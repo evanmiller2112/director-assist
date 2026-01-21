@@ -1110,3 +1110,675 @@ describe('FieldDefinitionEditor - Integration Tests (Issue #25 Phase 2)', () => 
 		expect(characterCheckbox2.checked).toBe(true);
 	});
 });
+
+/**
+ * Tests for FieldDefinitionEditor Component - Issue #168 Phase 1
+ *
+ * Issue #168 Phase 1: Field Type Recommendations
+ *
+ * This test suite covers Phase 1 enhancements for field type guidance:
+ * - Field types grouped by category with headers
+ * - "Recommended for Draw Steel" badges on select field types
+ * - Descriptions/help text for each field type
+ * - Visual organization improvements
+ *
+ * RED Phase (TDD): These tests define expected behavior BEFORE implementation.
+ * All tests should FAIL until the component enhancements are implemented.
+ */
+
+describe('FieldDefinitionEditor - Field Type Categories (Issue #168 Phase 1)', () => {
+	it('should display field type selector with categories', async () => {
+		const fields: FieldDefinition[] = [
+			{
+				key: 'test_field',
+				label: 'Test Field',
+				type: 'text',
+				required: false,
+				order: 1
+			}
+		];
+
+		render(FieldDefinitionEditor, { fields });
+
+		const fieldHeader = screen.getByText('Test Field');
+		await fireEvent.click(fieldHeader);
+
+		// Should show grouped field types
+		const typeSelector = screen.getByLabelText(/Field Type/i);
+		expect(typeSelector).toBeInTheDocument();
+	});
+
+	it('should show "Text & Content" category header', async () => {
+		const fields: FieldDefinition[] = [
+			{
+				key: 'test',
+				label: 'Test',
+				type: 'text',
+				required: false,
+				order: 1
+			}
+		];
+
+		const { container } = render(FieldDefinitionEditor, { fields });
+
+		const fieldHeader = screen.getByText('Test');
+		await fireEvent.click(fieldHeader);
+
+		// optgroup labels are in the label attribute, not text content
+		const textOptgroup = container.querySelector('optgroup[label*="Text"]');
+		expect(textOptgroup).toBeTruthy();
+	});
+
+	it('should show "Numeric" category header', async () => {
+		const fields: FieldDefinition[] = [
+			{
+				key: 'test',
+				label: 'Test',
+				type: 'number',
+				required: false,
+				order: 1
+			}
+		];
+
+		render(FieldDefinitionEditor, { fields });
+
+		const fieldHeader = screen.getByText('Test');
+		await fireEvent.click(fieldHeader);
+
+		expect(screen.getByText(/Numeric/i)).toBeInTheDocument();
+	});
+
+	it('should show "Selection" category header', async () => {
+		const fields: FieldDefinition[] = [
+			{
+				key: 'test',
+				label: 'Test',
+				type: 'select',
+				required: false,
+				order: 1
+			}
+		];
+
+		const { container } = render(FieldDefinitionEditor, { fields });
+
+		const fieldHeader = screen.getByText('Test');
+		await fireEvent.click(fieldHeader);
+
+		// optgroup labels are in the label attribute, not text content
+		const selectionOptgroup = container.querySelector('optgroup[label="Selection"]');
+		expect(selectionOptgroup).toBeTruthy();
+	});
+
+	it('should show "Links & References" category header', async () => {
+		const fields: FieldDefinition[] = [
+			{
+				key: 'test',
+				label: 'Test',
+				type: 'entity-ref',
+				required: false,
+				order: 1
+			}
+		];
+
+		const { container } = render(FieldDefinitionEditor, { fields });
+
+		const fieldHeader = screen.getByText('Test');
+		await fireEvent.click(fieldHeader);
+
+		// optgroup labels are in the label attribute, not text content
+		const linksOptgroup = container.querySelector('optgroup[label*="Links"]');
+		expect(linksOptgroup).toBeTruthy();
+	});
+
+	it('should show "Specialized" category header', async () => {
+		const fields: FieldDefinition[] = [
+			{
+				key: 'test',
+				label: 'Test',
+				type: 'date',
+				required: false,
+				order: 1
+			}
+		];
+
+		const { container } = render(FieldDefinitionEditor, { fields });
+
+		const fieldHeader = screen.getByText('Test');
+		await fireEvent.click(fieldHeader);
+
+		// optgroup labels are in the label attribute, not text content
+		const specializedOptgroup = container.querySelector('optgroup[label="Specialized"]');
+		expect(specializedOptgroup).toBeTruthy();
+	});
+
+	it('should group text, textarea, and richtext in Text & Content', async () => {
+		const fields: FieldDefinition[] = [
+			{
+				key: 'test',
+				label: 'Test',
+				type: 'text',
+				required: false,
+				order: 1
+			}
+		];
+
+		const { container } = render(FieldDefinitionEditor, { fields });
+
+		const fieldHeader = screen.getByText('Test');
+		await fireEvent.click(fieldHeader);
+
+		const textOptgroup = container.querySelector('optgroup[label*="Text"]');
+		expect(textOptgroup).toBeTruthy();
+		// Verify text types are in this group
+		const options = textOptgroup?.querySelectorAll('option');
+		const optionValues = Array.from(options || []).map((o) => o.getAttribute('value'));
+		expect(optionValues).toContain('text');
+		expect(optionValues).toContain('textarea');
+		expect(optionValues).toContain('richtext');
+	});
+
+	it('should group select, multi-select, and tags in Selection', async () => {
+		const fields: FieldDefinition[] = [
+			{
+				key: 'test',
+				label: 'Test',
+				type: 'select',
+				required: false,
+				order: 1
+			}
+		];
+
+		const { container } = render(FieldDefinitionEditor, { fields });
+
+		const fieldHeader = screen.getByText('Test');
+		await fireEvent.click(fieldHeader);
+
+		const selectionOptgroup = container.querySelector('optgroup[label="Selection"]');
+		expect(selectionOptgroup).toBeTruthy();
+		// Verify selection types are in this group
+		const options = selectionOptgroup?.querySelectorAll('option');
+		const optionValues = Array.from(options || []).map((o) => o.getAttribute('value'));
+		expect(optionValues).toContain('select');
+		expect(optionValues).toContain('multi-select');
+		expect(optionValues).toContain('tags');
+	});
+
+	it('should group entity-ref and entity-refs in Links & References', async () => {
+		const fields: FieldDefinition[] = [
+			{
+				key: 'test',
+				label: 'Test',
+				type: 'entity-ref',
+				required: false,
+				order: 1
+			}
+		];
+
+		const { container } = render(FieldDefinitionEditor, { fields });
+
+		const fieldHeader = screen.getByText('Test');
+		await fireEvent.click(fieldHeader);
+
+		const linksOptgroup = container.querySelector('optgroup[label*="Links"]');
+		expect(linksOptgroup).toBeTruthy();
+		// Verify reference types are in this group
+		const options = linksOptgroup?.querySelectorAll('option');
+		const optionValues = Array.from(options || []).map((o) => o.getAttribute('value'));
+		expect(optionValues).toContain('entity-ref');
+		expect(optionValues).toContain('entity-refs');
+	});
+
+	it('should group date, url, image, computed in Specialized', async () => {
+		const fields: FieldDefinition[] = [
+			{
+				key: 'test',
+				label: 'Test',
+				type: 'computed',
+				required: false,
+				order: 1
+			}
+		];
+
+		const { container } = render(FieldDefinitionEditor, { fields });
+
+		const fieldHeader = screen.getByText('Test');
+		await fireEvent.click(fieldHeader);
+
+		const specializedOptgroup = container.querySelector('optgroup[label="Specialized"]');
+		expect(specializedOptgroup).toBeTruthy();
+		// Verify specialized types are in this group
+		const options = specializedOptgroup?.querySelectorAll('option');
+		const optionValues = Array.from(options || []).map((o) => o.getAttribute('value'));
+		expect(optionValues).toContain('date');
+		expect(optionValues).toContain('url');
+		expect(optionValues).toContain('image');
+		expect(optionValues).toContain('computed');
+	});
+});
+
+describe('FieldDefinitionEditor - Draw Steel Badges (Issue #168 Phase 1)', () => {
+	it('should show "Recommended for Draw Steel" badge on text field type', async () => {
+		const fields: FieldDefinition[] = [
+			{
+				key: 'test',
+				label: 'Test',
+				type: 'text',
+				required: false,
+				order: 1
+			}
+		];
+
+		render(FieldDefinitionEditor, { fields });
+
+		const fieldHeader = screen.getByText('Test');
+		await fireEvent.click(fieldHeader);
+
+		// Badge should appear near or within the text field type option
+		expect(screen.getByText(/Recommended.*Draw Steel/i)).toBeInTheDocument();
+	});
+
+	it('should show badge on number field type', async () => {
+		const fields: FieldDefinition[] = [
+			{
+				key: 'test',
+				label: 'Test',
+				type: 'number',
+				required: false,
+				order: 1
+			}
+		];
+
+		render(FieldDefinitionEditor, { fields });
+
+		const fieldHeader = screen.getByText('Test');
+		await fireEvent.click(fieldHeader);
+
+		expect(screen.getByText(/Recommended.*Draw Steel/i)).toBeInTheDocument();
+	});
+
+	it('should show badge on select field type', async () => {
+		const fields: FieldDefinition[] = [
+			{
+				key: 'test',
+				label: 'Test',
+				type: 'select',
+				required: false,
+				order: 1
+			}
+		];
+
+		render(FieldDefinitionEditor, { fields });
+
+		const fieldHeader = screen.getByText('Test');
+		await fireEvent.click(fieldHeader);
+
+		expect(screen.getByText(/Recommended.*Draw Steel/i)).toBeInTheDocument();
+	});
+
+	it('should show badge on computed field type', async () => {
+		const fields: FieldDefinition[] = [
+			{
+				key: 'test',
+				label: 'Test',
+				type: 'computed',
+				required: false,
+				order: 1
+			}
+		];
+
+		render(FieldDefinitionEditor, { fields });
+
+		const fieldHeader = screen.getByText('Test');
+		await fireEvent.click(fieldHeader);
+
+		expect(screen.getByText(/Recommended.*Draw Steel/i)).toBeInTheDocument();
+	});
+
+	it('should show badge on entity-ref field type', async () => {
+		const fields: FieldDefinition[] = [
+			{
+				key: 'test',
+				label: 'Test',
+				type: 'entity-ref',
+				required: false,
+				order: 1
+			}
+		];
+
+		render(FieldDefinitionEditor, { fields });
+
+		const fieldHeader = screen.getByText('Test');
+		await fireEvent.click(fieldHeader);
+
+		expect(screen.getByText(/Recommended.*Draw Steel/i)).toBeInTheDocument();
+	});
+
+	it('should show badge on textarea field type', async () => {
+		const fields: FieldDefinition[] = [
+			{
+				key: 'test',
+				label: 'Test',
+				type: 'textarea',
+				required: false,
+				order: 1
+			}
+		];
+
+		render(FieldDefinitionEditor, { fields });
+
+		const fieldHeader = screen.getByText('Test');
+		await fireEvent.click(fieldHeader);
+
+		expect(screen.getByText(/Recommended.*Draw Steel/i)).toBeInTheDocument();
+	});
+
+	it('should show badge on richtext field type', async () => {
+		const fields: FieldDefinition[] = [
+			{
+				key: 'test',
+				label: 'Test',
+				type: 'richtext',
+				required: false,
+				order: 1
+			}
+		];
+
+		render(FieldDefinitionEditor, { fields });
+
+		const fieldHeader = screen.getByText('Test');
+		await fireEvent.click(fieldHeader);
+
+		expect(screen.getByText(/Recommended.*Draw Steel/i)).toBeInTheDocument();
+	});
+
+	it('should NOT show badge on url field type', async () => {
+		const fields: FieldDefinition[] = [
+			{
+				key: 'test',
+				label: 'Test',
+				type: 'url',
+				required: false,
+				order: 1
+			}
+		];
+
+		render(FieldDefinitionEditor, { fields });
+
+		const fieldHeader = screen.getByText('Test');
+		await fireEvent.click(fieldHeader);
+
+		// URL field type should not have the badge
+		const badges = screen.queryAllByText(/Recommended.*Draw Steel/i);
+		// It's possible other field types show badges, but not this one
+		expect(badges.length).toBe(0);
+	});
+
+	it('should use distinct styling for badge', async () => {
+		const fields: FieldDefinition[] = [
+			{
+				key: 'test',
+				label: 'Test',
+				type: 'text',
+				required: false,
+				order: 1
+			}
+		];
+
+		render(FieldDefinitionEditor, { fields });
+
+		const fieldHeader = screen.getByText('Test');
+		await fireEvent.click(fieldHeader);
+
+		const badge = screen.getByText(/Recommended.*Draw Steel/i);
+		// Badge uses font-medium styling and amber color for visual distinction
+		expect(badge.className).toMatch(/font-medium/);
+	});
+});
+
+describe('FieldDefinitionEditor - Field Type Descriptions (Issue #168 Phase 1)', () => {
+	it('should show description for text field type', async () => {
+		const fields: FieldDefinition[] = [
+			{
+				key: 'test',
+				label: 'Test',
+				type: 'text',
+				required: false,
+				order: 1
+			}
+		];
+
+		render(FieldDefinitionEditor, { fields });
+
+		const fieldHeader = screen.getByText('Test');
+		await fireEvent.click(fieldHeader);
+
+		expect(screen.getByText(/often used for.*names/i)).toBeInTheDocument();
+	});
+
+	it('should show description for number field type', async () => {
+		const fields: FieldDefinition[] = [
+			{
+				key: 'test',
+				label: 'Test',
+				type: 'number',
+				required: false,
+				order: 1
+			}
+		];
+
+		render(FieldDefinitionEditor, { fields });
+
+		const fieldHeader = screen.getByText('Test');
+		await fireEvent.click(fieldHeader);
+
+		expect(screen.getByText(/AC.*HP.*bonuses/i)).toBeInTheDocument();
+	});
+
+	it('should show description for select field type', async () => {
+		const fields: FieldDefinition[] = [
+			{
+				key: 'test',
+				label: 'Test',
+				type: 'select',
+				required: false,
+				order: 1
+			}
+		];
+
+		render(FieldDefinitionEditor, { fields });
+
+		const fieldHeader = screen.getByText('Test');
+		await fireEvent.click(fieldHeader);
+
+		expect(screen.getByText(/threat.*role.*school/i)).toBeInTheDocument();
+	});
+
+	it('should show description for computed field type', async () => {
+		const fields: FieldDefinition[] = [
+			{
+				key: 'test',
+				label: 'Test',
+				type: 'computed',
+				required: false,
+				order: 1
+			}
+		];
+
+		render(FieldDefinitionEditor, { fields });
+
+		const fieldHeader = screen.getByText('Test');
+		await fireEvent.click(fieldHeader);
+
+		expect(screen.getByText(/calculated values/i)).toBeInTheDocument();
+	});
+
+	it('should show description for entity-ref field type', async () => {
+		const fields: FieldDefinition[] = [
+			{
+				key: 'test',
+				label: 'Test',
+				type: 'entity-ref',
+				required: false,
+				order: 1
+			}
+		];
+
+		render(FieldDefinitionEditor, { fields });
+
+		const fieldHeader = screen.getByText('Test');
+		await fireEvent.click(fieldHeader);
+
+		expect(screen.getByText(/link.*other entities/i)).toBeInTheDocument();
+	});
+
+	it('should show example for computed field type', async () => {
+		const fields: FieldDefinition[] = [
+			{
+				key: 'test',
+				label: 'Test',
+				type: 'computed',
+				required: false,
+				order: 1
+			}
+		];
+
+		render(FieldDefinitionEditor, { fields });
+
+		const fieldHeader = screen.getByText('Test');
+		await fireEvent.click(fieldHeader);
+
+		// Example like: total_hp = level * 3 + con
+		expect(screen.getByText(/total_hp.*level/i)).toBeInTheDocument();
+	});
+
+	it('should show help text as a separate section below field type', async () => {
+		const fields: FieldDefinition[] = [
+			{
+				key: 'test',
+				label: 'Test',
+				type: 'text',
+				required: false,
+				order: 1
+			}
+		];
+
+		render(FieldDefinitionEditor, { fields });
+
+		const fieldHeader = screen.getByText('Test');
+		await fireEvent.click(fieldHeader);
+
+		// Help text should be styled differently (perhaps muted text)
+		const helpText = screen.getByText(/often used for.*names/i);
+		expect(helpText.className).toMatch(/text-gray|text-muted|help/);
+	});
+});
+
+describe('FieldDefinitionEditor - Visual Organization (Issue #168 Phase 1)', () => {
+	it('should use icons for field type categories', async () => {
+		const fields: FieldDefinition[] = [
+			{
+				key: 'test',
+				label: 'Test',
+				type: 'text',
+				required: false,
+				order: 1
+			}
+		];
+
+		const { container } = render(FieldDefinitionEditor, { fields });
+
+		const fieldHeader = screen.getByText('Test');
+		await fireEvent.click(fieldHeader);
+
+		// Category headers should have icons
+		const icons = container.querySelectorAll('svg');
+		expect(icons.length).toBeGreaterThan(0);
+	});
+
+	it('should display field types in a dropdown/select', async () => {
+		const fields: FieldDefinition[] = [
+			{
+				key: 'test',
+				label: 'Test',
+				type: 'text',
+				required: false,
+				order: 1
+			}
+		];
+
+		render(FieldDefinitionEditor, { fields });
+
+		const fieldHeader = screen.getByText('Test');
+		await fireEvent.click(fieldHeader);
+
+		const typeSelector = screen.getByLabelText(/Field Type/i);
+		expect(typeSelector.tagName).toMatch(/SELECT|INPUT/);
+	});
+
+	it('should maintain current functionality while adding categories', async () => {
+		const mockOnChange = vi.fn();
+		const fields: FieldDefinition[] = [
+			{
+				key: 'test',
+				label: 'Test',
+				type: 'text',
+				required: false,
+				order: 1
+			}
+		];
+
+		render(FieldDefinitionEditor, { fields, onchange: mockOnChange });
+
+		const fieldHeader = screen.getByText('Test');
+		await fireEvent.click(fieldHeader);
+
+		const typeSelector = screen.getByLabelText(/Field Type/i);
+		await fireEvent.change(typeSelector, { target: { value: 'number' } });
+
+		// Should still call onchange
+		expect(mockOnChange).toHaveBeenCalled();
+	});
+});
+
+describe('FieldDefinitionEditor - Integration with DrawSteelTipsPanel (Issue #168 Phase 1)', () => {
+	it('should work well alongside DrawSteelTipsPanel', async () => {
+		const fields: FieldDefinition[] = [
+			{
+				key: 'test',
+				label: 'Test',
+				type: 'text',
+				required: false,
+				order: 1
+			}
+		];
+
+		render(FieldDefinitionEditor, { fields });
+
+		const fieldHeader = screen.getByText('Test');
+		await fireEvent.click(fieldHeader);
+
+		// Component should render its own guidance without conflicting with tips panel
+		expect(screen.getByText(/often used for.*names/i)).toBeInTheDocument();
+	});
+
+	it('should not duplicate guidance already in DrawSteelTipsPanel', async () => {
+		const fields: FieldDefinition[] = [
+			{
+				key: 'test',
+				label: 'Test',
+				type: 'text',
+				required: false,
+				order: 1
+			}
+		];
+
+		render(FieldDefinitionEditor, { fields });
+
+		const fieldHeader = screen.getByText('Test');
+		await fireEvent.click(fieldHeader);
+
+		// Should show concise guidance specific to field type
+		const helpTexts = screen.getAllByText(/often used for/i);
+		expect(helpTexts.length).toBe(1); // Not duplicated
+	});
+});

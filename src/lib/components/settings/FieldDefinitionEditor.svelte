@@ -13,21 +13,122 @@
 	let expandedIndex = $state<number | null>(null);
 	let previewIndex = $state<number | null>(null);
 
-	const FIELD_TYPES: { value: FieldType; label: string }[] = [
-		{ value: 'text', label: 'Short Text' },
-		{ value: 'textarea', label: 'Long Text' },
-		{ value: 'richtext', label: 'Rich Text (Markdown)' },
-		{ value: 'number', label: 'Number' },
-		{ value: 'boolean', label: 'Checkbox' },
-		{ value: 'select', label: 'Dropdown' },
-		{ value: 'multi-select', label: 'Multi-Select' },
-		{ value: 'tags', label: 'Tags' },
-		{ value: 'date', label: 'Date' },
-		{ value: 'url', label: 'URL' },
-		{ value: 'image', label: 'Image' },
-		{ value: 'entity-ref', label: 'Entity Reference' },
-		{ value: 'entity-refs', label: 'Multiple Entity References' },
-		{ value: 'computed', label: 'Computed Field' }
+	// Field type categories
+	const FIELD_TYPE_CATEGORIES = {
+		text: 'Text & Content',
+		numeric: 'Numeric',
+		selection: 'Selection',
+		reference: 'Links & References',
+		specialized: 'Specialized'
+	};
+
+	const FIELD_TYPES: {
+		value: FieldType;
+		label: string;
+		category: string;
+		description: string;
+		drawSteelRecommended: boolean;
+		exampleUse?: string;
+	}[] = [
+		{
+			value: 'text',
+			label: 'Short Text',
+			category: 'text',
+			description: 'Often used for names, titles, and brief descriptions',
+			drawSteelRecommended: true
+		},
+		{
+			value: 'textarea',
+			label: 'Long Text',
+			category: 'text',
+			description: 'For longer descriptions and multi-line content',
+			drawSteelRecommended: true
+		},
+		{
+			value: 'richtext',
+			label: 'Rich Text (Markdown)',
+			category: 'text',
+			description: 'Supports formatted text with markdown',
+			drawSteelRecommended: true
+		},
+		{
+			value: 'number',
+			label: 'Number',
+			category: 'numeric',
+			description: 'For AC, HP, damage bonuses, and other numeric stats',
+			drawSteelRecommended: true
+		},
+		{
+			value: 'boolean',
+			label: 'Checkbox',
+			category: 'numeric',
+			description: 'For yes/no or true/false values',
+			drawSteelRecommended: false
+		},
+		{
+			value: 'select',
+			label: 'Dropdown',
+			category: 'selection',
+			description: 'Choose from predefined options like threat_level, role, or school of magic',
+			drawSteelRecommended: true
+		},
+		{
+			value: 'multi-select',
+			label: 'Multi-Select',
+			category: 'selection',
+			description: 'Select multiple options from a list',
+			drawSteelRecommended: false
+		},
+		{
+			value: 'tags',
+			label: 'Tags',
+			category: 'selection',
+			description: 'Free-form tags for categorization',
+			drawSteelRecommended: false
+		},
+		{
+			value: 'date',
+			label: 'Date',
+			category: 'specialized',
+			description: 'For tracking dates and timelines',
+			drawSteelRecommended: false
+		},
+		{
+			value: 'url',
+			label: 'URL',
+			category: 'specialized',
+			description: 'For external links and references',
+			drawSteelRecommended: false
+		},
+		{
+			value: 'image',
+			label: 'Image',
+			category: 'specialized',
+			description: 'For image URLs',
+			drawSteelRecommended: false
+		},
+		{
+			value: 'entity-ref',
+			label: 'Entity Reference',
+			category: 'reference',
+			description: 'Link to other entities in your campaign',
+			drawSteelRecommended: true
+		},
+		{
+			value: 'entity-refs',
+			label: 'Multiple Entity References',
+			category: 'reference',
+			description: 'Link to multiple entities',
+			drawSteelRecommended: false
+		},
+		{
+			value: 'computed',
+			label: 'Computed Field',
+			category: 'specialized',
+			description: 'For calculated values based on other fields',
+			drawSteelRecommended: true,
+			exampleUse: 'Example: total_hp = level * 3 + con'
+		}
 	];
 
 	// Built-in entity types for reference fields
@@ -202,17 +303,44 @@
 							/>
 						</div>
 						<div>
-							<label for="field-type-{index}" class="label">Type</label>
+							<label for="field-type-{index}" class="label">Field Type</label>
 							<select
 								id="field-type-{index}"
 								class="input"
 								value={field.type}
 								onchange={(e) => updateField(index, { type: e.currentTarget.value as FieldType })}
 							>
-								{#each FIELD_TYPES as type}
-									<option value={type.value}>{type.label}</option>
+								{#each Object.entries(FIELD_TYPE_CATEGORIES) as [categoryId, categoryLabel]}
+									<optgroup label={categoryLabel}>
+										{#each FIELD_TYPES.filter(t => t.category === categoryId) as type}
+											<option value={type.value}>
+												{type.label}{type.drawSteelRecommended ? ' ⭐' : ''}
+											</option>
+										{/each}
+									</optgroup>
 								{/each}
 							</select>
+							{#if field.type}
+								{@const typeInfo = FIELD_TYPES.find(t => t.value === field.type)}
+								{#if typeInfo}
+									<div class="mt-2 space-y-1">
+										{#if typeInfo.drawSteelRecommended}
+											<p class="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
+												<span class="inline-block w-3 h-3 bg-amber-500 rounded-full flex items-center justify-center text-white text-[8px] font-bold">⭐</span>
+												<span class="font-medium">Recommended for Draw Steel</span>
+											</p>
+										{/if}
+										<p class="text-xs text-gray-600 dark:text-gray-400">
+											{typeInfo.description}
+										</p>
+										{#if typeInfo.exampleUse}
+											<p class="text-xs text-gray-500 dark:text-gray-500 italic">
+												{typeInfo.exampleUse}
+											</p>
+										{/if}
+									</div>
+								{/if}
+							{/if}
 						</div>
 					</div>
 

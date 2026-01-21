@@ -197,7 +197,7 @@ describe('InitiativeTracker Component - Combatant Display', () => {
 	it('should show bloodied status when HP <= 50%', () => {
 		const combat = createActiveCombatSession();
 		const combatant = combat.combatants[0];
-		combatant.hp = Math.floor(combatant.maxHp / 2);
+		combatant.hp = Math.floor(combatant.maxHp! / 2);
 
 		render(InitiativeTracker, {
 			props: { combat }

@@ -91,11 +91,11 @@ interface BaseCombatant {
   id: string;
   type: CombatantType;             // 'hero' | 'creature'
   name: string;
-  entityId: string;                // Links to entity in entities table
+  entityId?: string;               // Links to entity in entities table (optional for ad-hoc combatants)
   initiative: number;
   initiativeRoll: [number, number]; // Draw Steel uses 2d10
   hp: number;
-  maxHp: number;
+  maxHp?: number;                  // Optional - allows tracking current HP without a cap
   tempHp: number;
   ac?: number;
   conditions: CombatCondition[];
@@ -106,7 +106,7 @@ interface BaseCombatant {
 ```typescript
 interface HeroCombatant extends BaseCombatant {
   type: 'hero';
-  heroicResource: HeroicResource;   // Victories, Focus, Fury, etc.
+  heroicResource?: HeroicResource; // Optional for quick-add heroes
 }
 
 interface HeroicResource {
@@ -121,6 +121,7 @@ interface HeroicResource {
 interface CreatureCombatant extends BaseCombatant {
   type: 'creature';
   threat: number;                   // 1=minion/standard, 2=elite, 3=boss/solo
+  isAdHoc?: boolean;                // True for quick-added creatures without entity links
 }
 ```
 
@@ -200,17 +201,28 @@ interface CreateCombatInput {
 interface AddHeroCombatantInput {
   name: string;
   entityId: string;
-  maxHp: number;
+  hp?: number;                      // Current HP (defaults to maxHp if not provided)
+  maxHp?: number;                   // Optional - allows tracking HP without a cap
   ac?: number;
-  heroicResource: HeroicResource;
+  heroicResource?: HeroicResource;  // Optional for simplified entry
 }
 
 interface AddCreatureCombatantInput {
   name: string;
-  entityId: string;
-  maxHp: number;
+  entityId?: string;                // Optional - allows ad-hoc creatures
+  hp?: number;                      // Current HP (defaults to maxHp if not provided)
+  maxHp?: number;                   // Optional - allows tracking HP without a cap
   ac?: number;
-  threat: number;
+  threat?: number;                  // Defaults to 1 if not provided
+}
+
+// Quick-add combatant (Issue #233)
+interface AddQuickCombatantInput {
+  name: string;                     // Auto-numbered if duplicates exist
+  type: 'hero' | 'creature';
+  hp: number;                       // Only HP is required
+  ac?: number;
+  threat?: number;                  // For creatures, defaults to 1
 }
 
 // Update combatant
@@ -337,6 +349,11 @@ addHeroCombatant(combatId: string, input: AddHeroCombatantInput): Promise<Combat
 // Add creature
 addCreatureCombatant(combatId: string, input: AddCreatureCombatantInput): Promise<CombatSession>
 
+// Quick-add combatant (Issue #233)
+// Simplified entry with only name and HP required
+// Auto-numbers duplicates: "Goblin", "Goblin 1", "Goblin 2"
+addQuickCombatant(combatId: string, input: AddQuickCombatantInput): Promise<CombatSession>
+
 // Update combatant
 updateCombatant(combatId: string, combatantId: string, input: UpdateCombatantInput): Promise<CombatSession>
 
@@ -414,9 +431,10 @@ addTemporaryHp(combatId: string, combatantId: string, tempHp: number): Promise<C
 
 **Healing rules:**
 1. Adds healing to current HP
-2. Cannot exceed maxHp
-3. Does not affect temporary HP
-4. Logs healing to combat log
+2. Cannot exceed maxHp (if maxHp is defined)
+3. No cap if maxHp is undefined
+4. Does not affect temporary HP
+5. Logs healing to combat log
 
 **Temporary HP rules:**
 1. Replaces existing temp HP if new value is higher
@@ -614,6 +632,7 @@ endCombat(id: string): Promise<CombatSession>
 // Combatants
 addHero(combatId: string, input: AddHeroCombatantInput): Promise<CombatSession>
 addCreature(combatId: string, input: AddCreatureCombatantInput): Promise<CombatSession>
+addQuickCombatant(combatId: string, input: AddQuickCombatantInput): Promise<CombatSession>
 updateCombatant(combatId: string, combatantId: string, input: UpdateCombatantInput): Promise<CombatSession>
 removeCombatant(combatId: string, combatantId: string): Promise<CombatSession>
 rollInitiative(combatId: string, combatantId: string, modifier?: number): Promise<CombatSession>
@@ -1036,6 +1055,89 @@ npm test combat
 # Run with coverage
 npm test -- --coverage
 ```
+
+## Quick-Add Combatants
+
+Issue #233 introduced simplified combatant entry for faster combat setup.
+
+### Quick-Add Mode
+
+Allows adding combatants with minimal information:
+- **Required:** Name and current HP only
+- **Optional:** AC and threat level (for creatures)
+- **Auto-numbering:** Duplicate names get numbered automatically
+
+**Usage:**
+```typescript
+// Add a quick creature
+await combatStore.addQuickCombatant(combatId, {
+  name: 'Goblin',
+  type: 'creature',
+  hp: 12,
+  ac: 14,
+  threat: 1
+});
+
+// Add another - automatically becomes "Goblin 1"
+await combatStore.addQuickCombatant(combatId, {
+  name: 'Goblin',
+  type: 'creature',
+  hp: 12
+});
+```
+
+**Auto-numbering:**
+- First combatant: "Goblin"
+- Second combatant: "Goblin 1"
+- Third combatant: "Goblin 2"
+- Pattern recognition handles existing numbers correctly
+
+**Ad-hoc flag:**
+- Quick-added creatures have `isAdHoc: true`
+- Indicates no linked entity in the database
+- Useful for temporary combatants or mooks
+
+### Optional Max HP
+
+Both quick-add and standard entry now support optional maxHp.
+
+**Behavior when maxHp is undefined:**
+- Current HP can be tracked without a maximum cap
+- Healing has no upper limit
+- HP bar and bloodied indicators hidden in UI
+- Useful for tracking abstract "health" or temporary combatants
+
+**Behavior when maxHp is defined:**
+- Standard healing cap at maxHp
+- HP bar shows percentage
+- Bloodied indicator appears at 50% HP
+- Full combat tracking with limits
+
+**Usage:**
+```typescript
+// Hero with maxHp
+await combatStore.addHero(combatId, {
+  name: 'Aragorn',
+  entityId: 'hero-1',
+  hp: 45,
+  maxHp: 45,
+  heroicResource: { current: 0, max: 5, name: 'Victories' }
+});
+
+// Hero without maxHp (simplified tracking)
+await combatStore.addHero(combatId, {
+  name: 'Gandalf',
+  entityId: 'hero-2',
+  hp: 50
+});
+```
+
+### Simplified Hero Entry
+
+Heroes can now be added with minimal information:
+- **Required:** Name, entityId, and current HP
+- **Optional:** maxHp, heroicResource, AC
+- Allows quick setup for casual games or temporary heroes
 
 ## Draw Steel Mechanics
 

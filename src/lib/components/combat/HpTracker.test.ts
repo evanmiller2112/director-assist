@@ -771,3 +771,208 @@ describe('HpTracker Component - Edge Cases', () => {
 		expect(screen.getByText(/will be 40/i)).toBeInTheDocument();
 	});
 });
+
+describe('HpTracker Component - Optional Max HP (Issue #233)', () => {
+	it('should display only current HP when maxHp is undefined', () => {
+		const combatant = createMockHeroCombatant({ hp: 30, maxHp: undefined });
+
+		render(HpTracker, {
+			props: {
+				combatant,
+				onApplyDamage: vi.fn(),
+				onApplyHealing: vi.fn(),
+				onSetTempHp: vi.fn()
+			}
+		});
+
+		// Should show "30" not "30/40" format
+		expect(screen.getByText(/^30$/)).toBeInTheDocument();
+		expect(screen.queryByText(/\//)).not.toBeInTheDocument();
+	});
+
+	it('should display HP with slash format when maxHp is defined', () => {
+		const combatant = createMockHeroCombatant({ hp: 25, maxHp: 40 });
+
+		render(HpTracker, {
+			props: {
+				combatant,
+				onApplyDamage: vi.fn(),
+				onApplyHealing: vi.fn(),
+				onSetTempHp: vi.fn()
+			}
+		});
+
+		// Should show "25/40" format
+		expect(screen.getByText(/25.*\/.*40/)).toBeInTheDocument();
+	});
+
+	it('should not show "At max HP" message when maxHp is undefined', () => {
+		const combatant = createMockHeroCombatant({ hp: 50, maxHp: undefined });
+
+		render(HpTracker, {
+			props: {
+				combatant,
+				onApplyDamage: vi.fn(),
+				onApplyHealing: vi.fn(),
+				onSetTempHp: vi.fn()
+			}
+		});
+
+		// Should allow healing even at high HP
+		const healInput = screen.getByLabelText(/^healing$/i);
+		expect(healInput).toBeInTheDocument();
+		expect(screen.queryByText(/max.*hp/i)).not.toBeInTheDocument();
+	});
+
+	it('should show healing controls when maxHp is undefined', () => {
+		const combatant = createMockHeroCombatant({ hp: 100, maxHp: undefined });
+
+		render(HpTracker, {
+			props: {
+				combatant,
+				onApplyDamage: vi.fn(),
+				onApplyHealing: vi.fn(),
+				onSetTempHp: vi.fn()
+			}
+		});
+
+		// Healing should always be available when no max
+		expect(screen.getByLabelText(/^healing$/i)).toBeInTheDocument();
+		expect(screen.getByRole('button', { name: /apply.*heal/i })).toBeInTheDocument();
+	});
+
+	it('should not show bloodied indicator when maxHp is undefined', () => {
+		const combatant = createMockHeroCombatant({ hp: 20, maxHp: undefined });
+
+		render(HpTracker, {
+			props: {
+				combatant,
+				onApplyDamage: vi.fn(),
+				onApplyHealing: vi.fn(),
+				onSetTempHp: vi.fn()
+			}
+		});
+
+		// Cannot calculate bloodied without maxHp
+		expect(screen.queryByText(/bloodied/i)).not.toBeInTheDocument();
+	});
+
+	it('should not show HP percentage bar when maxHp is undefined', () => {
+		const combatant = createMockHeroCombatant({ hp: 30, maxHp: undefined });
+
+		render(HpTracker, {
+			props: {
+				combatant,
+				onApplyDamage: vi.fn(),
+				onApplyHealing: vi.fn(),
+				onSetTempHp: vi.fn()
+			}
+		});
+
+		// HP bar requires maxHp to calculate percentage
+		const hpBar = screen.queryByTestId('hp-bar');
+		expect(hpBar).not.toBeInTheDocument();
+	});
+
+	it('should show HP bar when maxHp is defined', () => {
+		const combatant = createMockHeroCombatant({ hp: 25, maxHp: 40 });
+
+		render(HpTracker, {
+			props: {
+				combatant,
+				onApplyDamage: vi.fn(),
+				onApplyHealing: vi.fn(),
+				onSetTempHp: vi.fn()
+			}
+		});
+
+		const hpBar = screen.getByTestId('hp-bar');
+		expect(hpBar).toBeInTheDocument();
+	});
+
+	it('should show bloodied indicator when maxHp is defined and HP <= 50%', () => {
+		const combatant = createMockHeroCombatant({ hp: 20, maxHp: 40 });
+
+		render(HpTracker, {
+			props: {
+				combatant,
+				onApplyDamage: vi.fn(),
+				onApplyHealing: vi.fn(),
+				onSetTempHp: vi.fn()
+			}
+		});
+
+		expect(screen.getByText(/bloodied/i)).toBeInTheDocument();
+	});
+
+	it('should allow healing input with any value when maxHp is undefined', async () => {
+		const onApplyHealing = vi.fn();
+		const combatant = createMockHeroCombatant({ hp: 30, maxHp: undefined });
+
+		render(HpTracker, {
+			props: {
+				combatant,
+				onApplyDamage: vi.fn(),
+				onApplyHealing,
+				onSetTempHp: vi.fn()
+			}
+		});
+
+		const healInput = screen.getByLabelText(/^healing$/i);
+		await fireEvent.input(healInput, { target: { value: '100' } });
+
+		const applyButton = screen.getByRole('button', { name: /apply.*heal/i });
+		await fireEvent.click(applyButton);
+
+		// Should accept and call with large healing amount
+		expect(onApplyHealing).toHaveBeenCalledWith(100);
+	});
+
+	it('should not show "will cap" preview when maxHp is undefined', async () => {
+		const combatant = createMockHeroCombatant({ hp: 30, maxHp: undefined });
+
+		render(HpTracker, {
+			props: {
+				combatant,
+				onApplyDamage: vi.fn(),
+				onApplyHealing: vi.fn(),
+				onSetTempHp: vi.fn(),
+				showPreview: true
+			}
+		});
+
+		const healInput = screen.getByLabelText(/^healing$/i);
+		await fireEvent.input(healInput, { target: { value: '50' } });
+
+		// Should NOT show cap message since there's no max
+		expect(screen.queryByText(/will be/i)).not.toBeInTheDocument();
+	});
+
+	it('should handle transition from undefined to defined maxHp', () => {
+		const combatant = createMockHeroCombatant({ hp: 30, maxHp: undefined });
+
+		const { rerender } = render(HpTracker, {
+			props: {
+				combatant,
+				onApplyDamage: vi.fn(),
+				onApplyHealing: vi.fn(),
+				onSetTempHp: vi.fn()
+			}
+		});
+
+		// Initially no max HP display
+		expect(screen.queryByText(/\//)).not.toBeInTheDocument();
+
+		// Update combatant with maxHp
+		const updatedCombatant = createMockHeroCombatant({ hp: 30, maxHp: 40 });
+		rerender({
+			combatant: updatedCombatant,
+			onApplyDamage: vi.fn(),
+			onApplyHealing: vi.fn(),
+			onSetTempHp: vi.fn()
+		});
+
+		// Now should show max HP
+		expect(screen.getByText(/30.*\/.*40/)).toBeInTheDocument();
+	});
+});

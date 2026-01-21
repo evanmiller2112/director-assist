@@ -67,14 +67,15 @@ interface BaseCombatant {
 	id: string;
 	type: CombatantType;
 	name: string;
-	entityId: string; // Reference to entity in entities table
+	entityId?: string; // Reference to entity in entities table (optional for ad-hoc combatants)
 	initiative: number;
 	initiativeRoll: [number, number]; // Draw Steel uses 2d10
 	hp: number;
-	maxHp: number;
+	maxHp?: number; // Optional for ad-hoc combatants and uncapped healing
 	tempHp: number;
 	ac?: number;
 	conditions: CombatCondition[];
+	isAdHoc?: boolean; // Flag for ad-hoc combatants added without entity template
 }
 
 /**
@@ -82,7 +83,7 @@ interface BaseCombatant {
  */
 export interface HeroCombatant extends BaseCombatant {
 	type: 'hero';
-	heroicResource: HeroicResource;
+	heroicResource?: HeroicResource; // Optional for ad-hoc heroes
 }
 
 /**
@@ -212,10 +213,11 @@ export interface UpdateCombatInput {
  */
 export interface AddHeroCombatantInput {
 	name: string;
-	entityId: string;
-	maxHp: number;
+	entityId?: string; // Optional for ad-hoc combatants
+	hp?: number; // Starting HP (defaults to maxHp if not provided)
+	maxHp?: number; // Optional for ad-hoc combatants and uncapped healing
 	ac?: number;
-	heroicResource: HeroicResource;
+	heroicResource?: HeroicResource; // Optional for simplified heroes
 }
 
 /**
@@ -223,10 +225,23 @@ export interface AddHeroCombatantInput {
  */
 export interface AddCreatureCombatantInput {
 	name: string;
-	entityId: string;
-	maxHp: number;
+	entityId?: string; // Optional for ad-hoc combatants
+	hp?: number; // Starting HP (defaults to maxHp if not provided)
+	maxHp?: number; // Optional for ad-hoc combatants
 	ac?: number;
-	threat: number;
+	threat?: number; // Optional for ad-hoc combatants (defaults to 1)
+}
+
+/**
+ * Input for quick-adding an ad-hoc combatant (Issue #233).
+ * Simplified interface requiring only name, HP, and type.
+ */
+export interface AddQuickCombatantInput {
+	name: string;
+	hp: number;
+	type: CombatantType;
+	ac?: number;
+	threat?: number; // For creatures, defaults to 1
 }
 
 /**

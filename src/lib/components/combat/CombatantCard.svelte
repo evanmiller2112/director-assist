@@ -15,11 +15,11 @@
 
 	const isHero = $derived(isHeroCombatant(combatant));
 	const isCreature = $derived(isCreatureCombatant(combatant));
-	const isBloodied = $derived(combatant.hp <= combatant.maxHp / 2);
+	const isBloodied = $derived(combatant.maxHp ? combatant.hp <= combatant.maxHp / 2 : false);
 	const isDefeated = $derived(combatant.hp <= 0);
-	const isCritical = $derived(combatant.hp <= combatant.maxHp * 0.25);
+	const isCritical = $derived(combatant.maxHp ? combatant.hp <= combatant.maxHp * 0.25 : false);
 	const hpPercentage = $derived(
-		combatant.maxHp > 0 ? (Math.max(0, combatant.hp) / combatant.maxHp) * 100 : 0
+		combatant.maxHp && combatant.maxHp > 0 ? (Math.max(0, combatant.hp) / combatant.maxHp) * 100 : 0
 	);
 	const isClickable = $derived(onClick !== undefined);
 

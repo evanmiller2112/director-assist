@@ -711,3 +711,425 @@ describe('AddCombatantModal - Edge Cases', () => {
 		expect(screen.getByText(/This Is A Very Long/)).toBeInTheDocument();
 	});
 });
+
+describe('AddCombatantModal - Quick-Add Mode (Issue #233)', () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+		mockEntities = [
+			createMockEntity({ id: 'char-1', name: 'Hero', type: 'character' }),
+			createMockEntity({ id: 'npc-1', name: 'Monster', type: 'npc' })
+		];
+	});
+
+	describe('Mode Toggle', () => {
+		it('should have Quick Add button', () => {
+			render(AddCombatantModal, { props: { open: true } });
+
+			expect(screen.getByRole('button', { name: /quick.*add/i })).toBeInTheDocument();
+		});
+
+		it('should have From Entity button', () => {
+			render(AddCombatantModal, { props: { open: true } });
+
+			expect(screen.getByRole('button', { name: /from.*entity/i })).toBeInTheDocument();
+		});
+
+		it('should default to From Entity mode', () => {
+			render(AddCombatantModal, { props: { open: true } });
+
+			const fromEntityButton = screen.getByRole('button', { name: /from.*entity/i });
+			expect(fromEntityButton).toHaveClass(/active|selected/);
+
+			// Entity search should be visible in From Entity mode
+			expect(screen.getByRole('textbox', { name: /search.*entity/i })).toBeInTheDocument();
+		});
+
+		it('should switch to Quick Add mode when Quick Add button is clicked', async () => {
+			render(AddCombatantModal, { props: { open: true } });
+
+			const quickAddButton = screen.getByRole('button', { name: /quick.*add/i });
+			await fireEvent.click(quickAddButton);
+
+			expect(quickAddButton).toHaveClass(/active|selected/);
+		});
+
+		it('should switch back to From Entity mode when From Entity button is clicked', async () => {
+			render(AddCombatantModal, { props: { open: true } });
+
+			const quickAddButton = screen.getByRole('button', { name: /quick.*add/i });
+			const fromEntityButton = screen.getByRole('button', { name: /from.*entity/i });
+
+			await fireEvent.click(quickAddButton);
+			await fireEvent.click(fromEntityButton);
+
+			expect(fromEntityButton).toHaveClass(/active|selected/);
+		});
+	});
+
+	describe('Quick Add Form Fields', () => {
+		it('should show simplified form in Quick Add mode', async () => {
+			render(AddCombatantModal, { props: { open: true } });
+
+			const quickAddButton = screen.getByRole('button', { name: /quick.*add/i });
+			await fireEvent.click(quickAddButton);
+
+			await waitFor(() => {
+				// Should have name input
+				expect(screen.getByLabelText(/^name$/i)).toBeInTheDocument();
+				// Should have HP input
+				expect(screen.getByLabelText(/^hp/i)).toBeInTheDocument();
+				// Should have type selector
+				expect(screen.getByLabelText(/type/i)).toBeInTheDocument();
+			});
+		});
+
+		it('should not show entity search in Quick Add mode', async () => {
+			render(AddCombatantModal, { props: { open: true } });
+
+			const quickAddButton = screen.getByRole('button', { name: /quick.*add/i });
+			await fireEvent.click(quickAddButton);
+
+			await waitFor(() => {
+				expect(screen.queryByRole('textbox', { name: /search.*entity/i })).not.toBeInTheDocument();
+			});
+		});
+
+		it('should have name input field in Quick Add mode', async () => {
+			render(AddCombatantModal, { props: { open: true } });
+
+			const quickAddButton = screen.getByRole('button', { name: /quick.*add/i });
+			await fireEvent.click(quickAddButton);
+
+			await waitFor(() => {
+				expect(screen.getByLabelText(/^name$/i)).toBeInTheDocument();
+			});
+		});
+
+		it('should allow entering name in Quick Add mode', async () => {
+			render(AddCombatantModal, { props: { open: true } });
+
+			const quickAddButton = screen.getByRole('button', { name: /quick.*add/i });
+			await fireEvent.click(quickAddButton);
+
+			await waitFor(async () => {
+				const nameInput = screen.getByLabelText(/^name$/i) as HTMLInputElement;
+				await fireEvent.input(nameInput, { target: { value: 'Goblin Scout' } });
+				expect(nameInput.value).toBe('Goblin Scout');
+			});
+		});
+
+		it('should have HP input in Quick Add mode', async () => {
+			render(AddCombatantModal, { props: { open: true } });
+
+			const quickAddButton = screen.getByRole('button', { name: /quick.*add/i });
+			await fireEvent.click(quickAddButton);
+
+			await waitFor(() => {
+				expect(screen.getByLabelText(/^hp/i)).toBeInTheDocument();
+			});
+		});
+
+		it('should not require Max HP in Quick Add mode', async () => {
+			render(AddCombatantModal, { props: { open: true } });
+
+			const quickAddButton = screen.getByRole('button', { name: /quick.*add/i });
+			await fireEvent.click(quickAddButton);
+
+			await waitFor(() => {
+				// Max HP field should not be present or not required
+				const maxHpInput = screen.queryByLabelText(/max.*hp/i);
+				if (maxHpInput) {
+					expect(maxHpInput).not.toHaveAttribute('required');
+				}
+			});
+		});
+
+		it('should have type selector in Quick Add mode', async () => {
+			render(AddCombatantModal, { props: { open: true } });
+
+			const quickAddButton = screen.getByRole('button', { name: /quick.*add/i });
+			await fireEvent.click(quickAddButton);
+
+			await waitFor(() => {
+				expect(screen.getByLabelText(/type/i)).toBeInTheDocument();
+			});
+		});
+
+		it('should allow selecting Hero or Creature type in Quick Add mode', async () => {
+			render(AddCombatantModal, { props: { open: true } });
+
+			const quickAddButton = screen.getByRole('button', { name: /quick.*add/i });
+			await fireEvent.click(quickAddButton);
+
+			await waitFor(() => {
+				const typeSelect = screen.getByLabelText(/type/i) as HTMLSelectElement;
+				expect(typeSelect.options).toHaveLength(2);
+			});
+		});
+
+		it('should have optional AC field in Quick Add mode', async () => {
+			render(AddCombatantModal, { props: { open: true } });
+
+			const quickAddButton = screen.getByRole('button', { name: /quick.*add/i });
+			await fireEvent.click(quickAddButton);
+
+			await waitFor(() => {
+				const acInput = screen.queryByLabelText(/^ac/i);
+				if (acInput) {
+					expect(acInput).not.toHaveAttribute('required');
+				}
+			});
+		});
+	});
+
+	describe('Quick Add Form Submission', () => {
+		it('should submit with isAdHoc: true in Quick Add mode', async () => {
+			const onAdd = vi.fn();
+			render(AddCombatantModal, { props: { open: true, onAdd } });
+
+			const quickAddButton = screen.getByRole('button', { name: /quick.*add/i });
+			await fireEvent.click(quickAddButton);
+
+			await waitFor(async () => {
+				const nameInput = screen.getByLabelText(/^name$/i);
+				const hpInput = screen.getByLabelText(/^hp/i);
+				const typeSelect = screen.getByLabelText(/type/i);
+
+				await fireEvent.input(nameInput, { target: { value: 'Goblin' } });
+				await fireEvent.input(hpInput, { target: { value: '15' } });
+				await fireEvent.change(typeSelect, { target: { value: 'creature' } });
+
+				const addButton = screen.getByRole('button', { name: /^add$/i });
+				await fireEvent.click(addButton);
+			});
+
+			expect(onAdd).toHaveBeenCalledWith(
+				expect.objectContaining({
+					name: 'Goblin',
+					hp: 15,
+					type: 'creature',
+					isAdHoc: true
+				})
+			);
+		});
+
+		it('should not include entityId in Quick Add submission', async () => {
+			const onAdd = vi.fn();
+			render(AddCombatantModal, { props: { open: true, onAdd } });
+
+			const quickAddButton = screen.getByRole('button', { name: /quick.*add/i });
+			await fireEvent.click(quickAddButton);
+
+			await waitFor(async () => {
+				const nameInput = screen.getByLabelText(/^name$/i);
+				const hpInput = screen.getByLabelText(/^hp/i);
+
+				await fireEvent.input(nameInput, { target: { value: 'Orc' } });
+				await fireEvent.input(hpInput, { target: { value: '20' } });
+
+				const addButton = screen.getByRole('button', { name: /^add$/i });
+				await fireEvent.click(addButton);
+			});
+
+			expect(onAdd).toHaveBeenCalledWith(
+				expect.not.objectContaining({
+					entityId: expect.anything()
+				})
+			);
+		});
+
+		it('should include optional AC in Quick Add submission', async () => {
+			const onAdd = vi.fn();
+			render(AddCombatantModal, { props: { open: true, onAdd } });
+
+			const quickAddButton = screen.getByRole('button', { name: /quick.*add/i });
+			await fireEvent.click(quickAddButton);
+
+			await waitFor(async () => {
+				const nameInput = screen.getByLabelText(/^name$/i);
+				const hpInput = screen.getByLabelText(/^hp/i);
+				const acInput = screen.getByLabelText(/^ac/i);
+
+				await fireEvent.input(nameInput, { target: { value: 'Knight' } });
+				await fireEvent.input(hpInput, { target: { value: '35' } });
+				await fireEvent.input(acInput, { target: { value: '18' } });
+
+				const addButton = screen.getByRole('button', { name: /^add$/i });
+				await fireEvent.click(addButton);
+			});
+
+			expect(onAdd).toHaveBeenCalledWith(
+				expect.objectContaining({
+					ac: 18
+				})
+			);
+		});
+
+		it('should enable Add button when name and HP are provided in Quick Add mode', async () => {
+			render(AddCombatantModal, { props: { open: true } });
+
+			const quickAddButton = screen.getByRole('button', { name: /quick.*add/i });
+			await fireEvent.click(quickAddButton);
+
+			await waitFor(async () => {
+				const nameInput = screen.getByLabelText(/^name$/i);
+				const hpInput = screen.getByLabelText(/^hp/i);
+
+				await fireEvent.input(nameInput, { target: { value: 'Minion' } });
+				await fireEvent.input(hpInput, { target: { value: '10' } });
+			});
+
+			const addButton = screen.getByRole('button', { name: /^add$/i });
+			expect(addButton).not.toBeDisabled();
+		});
+	});
+});
+
+describe('AddCombatantModal - Optional Fields in Entity Mode (Issue #233)', () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+		mockEntities = [
+			createMockEntity({ id: 'char-1', name: 'Hero', type: 'character' })
+		];
+	});
+
+	describe('Optional Max HP', () => {
+		it('should not require Max HP for heroes in entity mode', async () => {
+			render(AddCombatantModal, { props: { open: true } });
+
+			// Entity mode is default, select a hero
+			const entityButton = screen.getByText('Hero').closest('button');
+			await fireEvent.click(entityButton!);
+
+			await fireEvent.input(screen.getByLabelText(/^hp/i), { target: { value: '30' } });
+
+			// Max HP should be optional
+			const maxHpInput = screen.queryByLabelText(/max.*hp/i);
+			if (maxHpInput) {
+				expect(maxHpInput).not.toHaveAttribute('required');
+			}
+		});
+
+		it('should not require heroicResource for heroes in entity mode', async () => {
+			render(AddCombatantModal, { props: { open: true } });
+
+			const entityButton = screen.getByText('Hero').closest('button');
+			await fireEvent.click(entityButton!);
+
+			await fireEvent.input(screen.getByLabelText(/^hp/i), { target: { value: '30' } });
+
+			// Should be able to submit without heroic resource
+			const resourceNameInput = screen.queryByLabelText(/resource.*name/i);
+			if (resourceNameInput) {
+				expect(resourceNameInput).not.toHaveAttribute('required');
+			}
+		});
+
+		it('should enable Add button for hero with only HP in entity mode', async () => {
+			render(AddCombatantModal, { props: { open: true } });
+
+			const entityButton = screen.getByText('Hero').closest('button');
+			await fireEvent.click(entityButton!);
+
+			await fireEvent.input(screen.getByLabelText(/^hp/i), { target: { value: '30' } });
+
+			await waitFor(() => {
+				const addButton = screen.getByRole('button', { name: /^add$/i });
+				expect(addButton).not.toBeDisabled();
+			});
+		});
+
+		it('should not show "HP cannot exceed Max HP" validation when maxHp not provided', async () => {
+			render(AddCombatantModal, { props: { open: true } });
+
+			const entityButton = screen.getByText('Hero').closest('button');
+			await fireEvent.click(entityButton!);
+
+			await fireEvent.input(screen.getByLabelText(/^hp/i), { target: { value: '100' } });
+
+			// Should not show max HP validation error
+			await waitFor(() => {
+				expect(screen.queryByText(/hp.*cannot.*exceed.*max/i)).not.toBeInTheDocument();
+			});
+		});
+
+		it('should call onAdd with hero data without maxHp when not provided', async () => {
+			const onAdd = vi.fn();
+			render(AddCombatantModal, { props: { open: true, onAdd } });
+
+			const entityButton = screen.getByText('Hero').closest('button');
+			await fireEvent.click(entityButton!);
+
+			await fireEvent.input(screen.getByLabelText(/^hp/i), { target: { value: '30' } });
+
+			const addButton = screen.getByRole('button', { name: /^add$/i });
+			await fireEvent.click(addButton);
+
+			await waitFor(() => {
+				expect(onAdd).toHaveBeenCalledWith(
+					expect.objectContaining({
+						type: 'hero',
+						hp: 30
+					})
+				);
+				expect(onAdd).toHaveBeenCalledWith(
+					expect.not.objectContaining({
+						maxHp: expect.anything()
+					})
+				);
+			});
+		});
+
+		it('should call onAdd with hero data without heroicResource when not provided', async () => {
+			const onAdd = vi.fn();
+			render(AddCombatantModal, { props: { open: true, onAdd } });
+
+			const entityButton = screen.getByText('Hero').closest('button');
+			await fireEvent.click(entityButton!);
+
+			await fireEvent.input(screen.getByLabelText(/^hp/i), { target: { value: '30' } });
+
+			const addButton = screen.getByRole('button', { name: /^add$/i });
+			await fireEvent.click(addButton);
+
+			await waitFor(() => {
+				expect(onAdd).toHaveBeenCalledWith(
+					expect.not.objectContaining({
+						heroicResource: expect.anything()
+					})
+				);
+			});
+		});
+
+		it('should still validate HP is positive in entity mode', async () => {
+			render(AddCombatantModal, { props: { open: true } });
+
+			const entityButton = screen.getByText('Hero').closest('button');
+			await fireEvent.click(entityButton!);
+
+			await fireEvent.input(screen.getByLabelText(/^hp/i), { target: { value: '-10' } });
+
+			await waitFor(() => {
+				expect(screen.getByText(/hp.*must be.*positive/i)).toBeInTheDocument();
+			});
+		});
+
+		it('should still validate HP when both HP and Max HP provided', async () => {
+			render(AddCombatantModal, { props: { open: true } });
+
+			const entityButton = screen.getByText('Hero').closest('button');
+			await fireEvent.click(entityButton!);
+
+			await fireEvent.input(screen.getByLabelText(/^hp/i), { target: { value: '50' } });
+
+			const maxHpInput = screen.queryByLabelText(/max.*hp/i);
+			if (maxHpInput) {
+				await fireEvent.input(maxHpInput, { target: { value: '40' } });
+
+				await waitFor(() => {
+					expect(screen.getByText(/hp.*cannot.*exceed.*max/i)).toBeInTheDocument();
+				});
+			}
+		});
+	});
+});

@@ -130,10 +130,18 @@
 	async function handleAddCombatant(data: any) {
 		if (!combat) return;
 
-		if (data.type === 'hero') {
+		// Handle quick-add (ad-hoc) combatants
+		if (data.isAdHoc) {
+			await combatStore.addQuickCombatant(combat.id, {
+				name: data.name,
+				hp: data.hp,
+				type: data.type
+			});
+		} else if (data.type === 'hero') {
 			await combatStore.addHero(combat.id, {
 				name: data.name,
 				entityId: data.entityId,
+				hp: data.hp,
 				maxHp: data.maxHp,
 				ac: data.ac,
 				heroicResource: data.heroicResource
@@ -142,6 +150,7 @@
 			await combatStore.addCreature(combat.id, {
 				name: data.name,
 				entityId: data.entityId,
+				hp: data.hp,
 				maxHp: data.maxHp,
 				ac: data.ac,
 				threat: data.threat

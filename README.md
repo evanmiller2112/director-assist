@@ -16,6 +16,7 @@ Director Assist features a **system-aware architecture** with first-class suppor
 - **System-Aware**: First-class support for Draw Steel and System Agnostic modes with game-specific fields and terminology
 - **AI-Powered Content Generation**: Generate content using Claude AI with campaign context awareness
 - **Conversation Management**: Organize AI chats into separate conversations—create, switch, rename, and delete as needed
+- **Forge Steel Integration**: Import character data directly from Forge Steel character builder
 - **Responsive Loading States**: Polished loading feedback with skeleton screens, spinners, and loading buttons
 
 ## Quick Start

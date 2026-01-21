@@ -2360,6 +2360,64 @@ This means you can safely share backups with other Directors or store them in cl
 
 After importing, you'll need to re-enter your API key in Settings if you want to use AI features. Your AI provider and model preferences will be restored automatically from the backup.
 
+### Importing from Forge Steel
+
+Director Assist can import character data directly from Forge Steel, the official Draw Steel character builder. This allows you to bring player characters or NPCs created in Forge Steel into your Director Assist campaign.
+
+**What Gets Imported**:
+- Character name
+- Ancestry and Class (combined into the "concept" field)
+- Character notes (imported as "background")
+- Defeated status (becomes "active" or "deceased")
+
+**How to Import**:
+
+1. Export your character from Forge Steel as a `.ds-hero` or `.json` file
+2. Open Settings in Director Assist (gear icon)
+3. Scroll to the "Import from Forge Steel" section
+4. Click "Import Character"
+5. Select your `.ds-hero` or `.json` file
+6. Review the import preview:
+   - Character name
+   - Concept (Ancestry + Class)
+   - Background (notes)
+   - Status (active or deceased)
+7. Click "Import Character" to save
+
+**Validation and Warnings**:
+
+Director Assist validates the file before importing and shows:
+- **Errors** (red): Issues that prevent import
+  - Invalid file format or structure
+  - Missing required fields (name, id, state)
+  - Duplicate character name (a character with this name already exists)
+- **Warnings** (yellow): Non-critical issues that won't block import
+  - Missing ancestry (concept field will be incomplete)
+  - Missing class (concept field will be incomplete)
+
+**What Happens After Import**:
+
+When you import a character from Forge Steel:
+- A new character entity is created in Director Assist
+- The entity is automatically tagged with "forge-steel-import" for easy filtering
+- A success notification confirms the import
+- The character appears in your Characters list
+
+**Limitations**:
+
+- Only character data from Forge Steel can be imported (not monsters, items, or other content)
+- Full character sheet details (stats, abilities, equipment) are not imported—only the basic narrative information
+- You'll need to manually add any additional details or relationships after import
+- The character must have a unique name (no duplicates with existing characters)
+
+**Tips**:
+
+- Use the import feature to quickly add player characters to your campaign
+- Import recurring NPCs you've built in Forge Steel
+- After importing, you can add relationships, notes, and other Director Assist-specific data
+- Filter your character list by the "forge-steel-import" tag to see all imported characters
+- Edit the imported character to add more detail beyond what Forge Steel provides
+
 ### Backup Best Practices
 
 **How Often to Backup**:

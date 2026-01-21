@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { FileQuestion } from 'lucide-svelte';
+	import { FileQuestion, Copy } from 'lucide-svelte';
 	import { DRAW_STEEL_ENTITY_TEMPLATES, type EntityTypeTemplate } from '$lib/config/drawSteelEntityTemplates';
 	import type { EntityTypeDefinition } from '$lib/types';
 	import { getIconComponent } from '$lib/utils/icons';
@@ -7,9 +7,10 @@
 	interface Props {
 		onSelectTemplate: (template: EntityTypeDefinition) => void;
 		onStartFromScratch: () => void;
+		onCloneExisting?: () => void;
 	}
 
-	let { onSelectTemplate, onStartFromScratch }: Props = $props();
+	let { onSelectTemplate, onStartFromScratch, onCloneExisting }: Props = $props();
 
 	function handleTemplateClick(template: EntityTypeTemplate) {
 		onSelectTemplate(template.template);
@@ -50,6 +51,36 @@
 
 	<!-- Templates Grid -->
 	<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+		<!-- Clone Existing Type Option -->
+		{#if onCloneExisting}
+			<button
+				type="button"
+				class="template-card text-left border-2 rounded-lg p-4 transition-all duration-200 border-blue-200 hover:border-blue-300 bg-blue-50 dark:bg-blue-900/10 dark:border-blue-800 dark:hover:border-blue-700"
+				onclick={onCloneExisting}
+				onkeydown={(e) => {
+					if (e.key === 'Enter' || e.key === ' ') {
+						e.preventDefault();
+						onCloneExisting?.();
+					}
+				}}
+				aria-label="Clone an existing entity type"
+			>
+				<div class="flex items-start gap-3">
+					<div class="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-lg bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400">
+						<Copy class="w-6 h-6" />
+					</div>
+					<div class="flex-1 min-w-0">
+						<h3 class="font-semibold text-slate-900 dark:text-white mb-1">
+							Clone Existing Type
+						</h3>
+						<p class="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+							Start with an existing entity type as a template and customize it.
+						</p>
+					</div>
+				</div>
+			</button>
+		{/if}
+
 		{#each DRAW_STEEL_ENTITY_TEMPLATES as template}
 			{@const Icon = getIconComponent(template.template.icon)}
 			<button

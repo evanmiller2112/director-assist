@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+**Import from Forge Steel Button on Character List (Issue #249)**
+- "Import from Forge Steel" button added to character list page for easier access
+- Button appears next to "Add Character" and opens the existing Forge Steel import modal
+- Provides convenient character import without navigating to Settings
+
 **Forge Steel Character Import (Issue #238)**
 - Import character data from Forge Steel character builder into Director Assist
 - ForgeSteelImportModal component accessible from Settings page

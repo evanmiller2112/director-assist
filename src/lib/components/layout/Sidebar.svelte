@@ -1,11 +1,10 @@
 <script lang="ts">
-	import { Plus, Home, GripVertical, Pencil } from 'lucide-svelte';
+	import { Plus, Home, ChevronUp, ChevronDown, Pencil } from 'lucide-svelte';
 	import { page } from '$app/stores';
-	import { getAllEntityTypes, getOrderedEntityTypes } from '$lib/config/entityTypes';
+	import { getOrderedEntityTypes } from '$lib/config/entityTypes';
 	import { entitiesStore, campaignStore } from '$lib/stores';
 	import { getIconComponent } from '$lib/utils/icons';
 	import QuickAddModal from './QuickAddModal.svelte';
-	import { dndzone, type DndEvent } from 'svelte-dnd-action';
 	import {
 		getSidebarEntityTypeOrder,
 		setSidebarEntityTypeOrder,
@@ -17,10 +16,6 @@
 	let quickAddOpen = $state(false);
 	let editMode = $state(false);
 	let orderedTypes = $state<EntityTypeDefinition[]>([]);
-	const flipDurationMs = 200;
-
-	// Transform orderedTypes to include id property for dndzone
-	let orderedTypesWithId = $derived(orderedTypes.map(t => ({ ...t, id: t.type })));
 
 	// Initialize ordered types on mount
 	onMount(() => {
@@ -53,17 +48,20 @@
 		return $page.url.pathname === href || $page.url.pathname.startsWith(href + '/');
 	}
 
-	function handleDndConsider(e: CustomEvent<DndEvent<EntityTypeDefinition & { id: string }>>) {
-		// Extract items and map back to original structure without id
-		orderedTypes = e.detail.items.map(({ id, ...rest }) => rest);
+	function moveUp(index: number) {
+		if (index <= 0) return;
+		const newOrder = [...orderedTypes];
+		[newOrder[index - 1], newOrder[index]] = [newOrder[index], newOrder[index - 1]];
+		orderedTypes = newOrder;
+		setSidebarEntityTypeOrder(newOrder.map((t) => t.type));
 	}
 
-	function handleDndFinalize(e: CustomEvent<DndEvent<EntityTypeDefinition & { id: string }>>) {
-		// Extract items and map back to original structure without id
-		orderedTypes = e.detail.items.map(({ id, ...rest }) => rest);
-		// Save the new order
-		const newOrder = orderedTypes.map((t) => t.type);
-		setSidebarEntityTypeOrder(newOrder);
+	function moveDown(index: number) {
+		if (index >= orderedTypes.length - 1) return;
+		const newOrder = [...orderedTypes];
+		[newOrder[index], newOrder[index + 1]] = [newOrder[index + 1], newOrder[index]];
+		orderedTypes = newOrder;
+		setSidebarEntityTypeOrder(newOrder.map((t) => t.type));
 	}
 
 	function toggleEditMode() {
@@ -136,19 +134,30 @@
 
 		<!-- Entity type links -->
 		{#if editMode}
-			<section
-				use:dndzone={{ items: orderedTypesWithId, flipDurationMs, type: 'entityTypes' }}
-				onconsider={handleDndConsider}
-				onfinalize={handleDndFinalize}
-			>
-				{#each orderedTypesWithId as entityType (entityType.id)}
+			<div>
+				{#each orderedTypes as entityType, index (entityType.type)}
 					{@const Icon = getIconComponent(entityType.icon)}
 					{@const count = getEntityCount(entityType.type)}
 					<div
-						class="flex items-center gap-2 px-3 py-2 rounded-lg mb-1 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 cursor-move"
+						class="flex items-center gap-2 px-3 py-2 rounded-lg mb-1 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300"
 					>
-						<div class="drag-handle" aria-label="Drag to reorder">
-							<GripVertical class="w-5 h-5 text-slate-400" />
+						<div class="flex flex-col">
+							<button
+								onclick={() => moveUp(index)}
+								disabled={index === 0}
+								class="p-0.5 rounded hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed"
+								aria-label="Move up"
+							>
+								<ChevronUp class="w-4 h-4 text-slate-500" />
+							</button>
+							<button
+								onclick={() => moveDown(index)}
+								disabled={index === orderedTypes.length - 1}
+								class="p-0.5 rounded hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed"
+								aria-label="Move down"
+							>
+								<ChevronDown class="w-4 h-4 text-slate-500" />
+							</button>
 						</div>
 						<Icon class="w-5 h-5" style="color: var(--color-{entityType.color}, currentColor)" />
 						<span class="flex-1">{entityType.labelPlural}</span>
@@ -159,7 +168,7 @@
 						{/if}
 					</div>
 				{/each}
-			</section>
+			</div>
 		{:else}
 			{#each orderedTypes as entityType}
 				{@const Icon = getIconComponent(entityType.icon)}

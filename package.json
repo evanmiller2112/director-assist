@@ -48,6 +48,7 @@
     "@anthropic-ai/sdk": "^0.32.0",
     "ai": "^6.0.39",
     "carta-md": "^4.11.1",
+    "date-fns": "^4.1.0",
     "dexie": "^4.0.10",
     "isomorphic-dompurify": "^2.35.0",
     "lucide-svelte": "^0.469.0",

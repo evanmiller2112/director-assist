@@ -32,7 +32,7 @@
 
 	// Get entities based on type
 	const availableEntities = $derived.by(() => {
-		const entities = entitiesStore.getAll();
+		const entities = entitiesStore.entities;
 		const filtered =
 			combatantType === 'hero'
 				? entities.filter((e) => e.type === 'character')

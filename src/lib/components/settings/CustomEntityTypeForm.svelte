@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Save, ArrowLeft, Users, MapPin, Shield, Clock } from 'lucide-svelte';
+	import { Save, ArrowLeft, Users, MapPin, Shield, Clock, FileText } from 'lucide-svelte';
 	import type { EntityTypeDefinition, FieldDefinition } from '$lib/types';
 	import IconPicker from './IconPicker.svelte';
 	import ColorPicker from './ColorPicker.svelte';
@@ -11,11 +11,14 @@
 	interface Props {
 		initialValue?: EntityTypeDefinition;
 		isEditing?: boolean;
+		templateName?: string;
+		onChangeTemplate?: () => void;
+		onDirtyChange?: (dirty: boolean) => void;
 		onsubmit: (entityType: EntityTypeDefinition) => void;
 		oncancel: () => void;
 	}
 
-	let { initialValue, isEditing = false, onsubmit, oncancel }: Props = $props();
+	let { initialValue, isEditing = false, templateName, onChangeTemplate, onDirtyChange, onsubmit, oncancel }: Props = $props();
 
 	// Form state
 	let typeKey = $state(initialValue?.type ?? '');
@@ -31,6 +34,8 @@
 	let errors = $state<Record<string, string>>({});
 	let submitError = $state<string | null>(null);
 	let tipsPanelDismissed = $state(false);
+	let initialFormState = $state<string>('');
+	let currentFormState = $derived(JSON.stringify({ label, labelPlural, description, typeKey, icon, color, fieldDefinitions, selectedRelationships }));
 
 	// Known entity types (built-in) for duplicate checking
 	const KNOWN_TYPES = ['character', 'npc', 'location', 'faction', 'item', 'encounter', 'session', 'deity', 'timeline_event', 'world_rule', 'player_profile'];
@@ -38,17 +43,33 @@
 	// Track if user has manually edited the plural
 	let userEditedPlural = $state(false);
 
+	// Initialize form state snapshot on mount
+	$effect(() => {
+		if (!initialFormState) {
+			initialFormState = JSON.stringify({ label, labelPlural, description, typeKey, icon, color, fieldDefinitions, selectedRelationships });
+		}
+	});
+
+	// Track dirty state and notify parent
+	$effect(() => {
+		const isDirty = initialFormState !== currentFormState;
+		if (onDirtyChange) {
+			onDirtyChange(isDirty);
+		}
+	});
+
 	// Auto-generate type key and plural from label
 	function updateFromLabel(newLabel: string) {
 		label = newLabel;
-		if (!isEditing) {
+		// Only auto-generate type key if not editing AND no initial value (not from template)
+		if (!isEditing && !initialValue) {
 			typeKey = newLabel
 				.toLowerCase()
 				.replace(/[^a-z0-9]+/g, '_')
 				.replace(/^_|_$/g, '');
 		}
-		// Simple pluralization - just add "s" unless user manually edited
-		if (!userEditedPlural) {
+		// Simple pluralization - just add "s" unless user manually edited or using template
+		if (!userEditedPlural && !initialValue) {
 			labelPlural = newLabel + 's';
 		}
 	}
@@ -62,11 +83,11 @@
 
 		if (!typeKey.trim()) {
 			errors.typeKey = 'Type key is required';
-		} else if (!/^[a-z][a-z0-9_]*$/.test(typeKey)) {
+		} else if (!/^[a-z][a-z0-9_-]*$/.test(typeKey)) {
 			if (/^[0-9]/.test(typeKey)) {
 				errors.typeKey = 'Type key must start with a letter';
 			} else {
-				errors.typeKey = 'Type key must contain only lowercase letters, numbers, and underscores';
+				errors.typeKey = 'Type key must contain only lowercase letters, numbers, underscores, and hyphens';
 			}
 		} else if (!isEditing && KNOWN_TYPES.includes(typeKey)) {
 			errors.typeKey = `Type key "${typeKey}" already exists`;
@@ -133,6 +154,34 @@
 	<!-- Tips Panel -->
 	<DrawSteelTipsPanel dismissed={tipsPanelDismissed} onDismiss={() => (tipsPanelDismissed = true)} />
 
+	<!-- Template Indicator Banner -->
+	{#if templateName && !isEditing}
+		<div class="flex items-center justify-between p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+			<div class="flex items-center gap-3">
+				<div class="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400">
+					<FileText class="w-5 h-5" />
+				</div>
+				<div>
+					<p class="text-sm text-blue-900 dark:text-blue-100 inline-flex items-center gap-1">
+						<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200 badge">
+							Template: {templateName}
+						</span>
+					</p>
+				</div>
+			</div>
+			{#if onChangeTemplate}
+				<button
+					type="button"
+					class="text-sm font-medium text-blue-700 dark:text-blue-300 hover:text-blue-800 dark:hover:text-blue-200 underline transition-colors"
+					onclick={onChangeTemplate}
+					aria-label="Change template"
+				>
+					Change template
+				</button>
+			{/if}
+		</div>
+	{/if}
+
 	<!-- Basic Info -->
 	<section>
 		<h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">Basic Information</h2>
@@ -156,13 +205,14 @@
 			</div>
 
 			<div>
-				<label for="description" class="label">Description</label>
+				<label for="description" class="label" id="entity-description-label">Description (optional)</label>
 				<textarea
 					id="description"
 					class="input min-h-[80px]"
 					value={description}
 					oninput={(e) => (description = e.currentTarget.value)}
 					placeholder="Brief description of this entity type (optional)"
+					aria-labelledby="entity-description-label"
 				></textarea>
 				<p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
 					Describe this entity type to help users understand its purpose
@@ -329,7 +379,7 @@
 				type="submit"
 				class="btn btn-primary"
 				disabled={isSaving}
-				aria-label={isSaving ? 'Saving...' : isEditing ? 'Save changes to entity type' : 'Create new entity type'}
+				aria-label={isSaving ? 'Saving...' : isEditing ? 'Save changes to entity type' : 'Create entity type'}
 			>
 				<Save class="w-4 h-4" />
 				{isSaving ? 'Saving...' : isEditing ? 'Save Changes' : 'Create Entity Type'}

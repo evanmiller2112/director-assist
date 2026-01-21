@@ -2,12 +2,9 @@
 	import { goto } from '$app/navigation';
 	import { ArrowLeft } from 'lucide-svelte';
 	import { campaignStore, notificationStore } from '$lib/stores';
-	import { CustomEntityTypeForm, EntityTypeTemplateGallery } from '$lib/components/settings';
+	import { EntityTemplateSelector } from '$lib/components/settings';
 	import { BUILT_IN_ENTITY_TYPES } from '$lib/config/entityTypes';
 	import type { EntityTypeDefinition } from '$lib/types';
-
-	let showGallery = $state(true);
-	let selectedTemplate = $state<EntityTypeDefinition | undefined>(undefined);
 
 	async function handleSubmit(entityType: EntityTypeDefinition) {
 		// Check if type key conflicts with built-in types
@@ -26,25 +23,8 @@
 		}
 	}
 
-	function handleSelectTemplate(template: EntityTypeDefinition) {
-		selectedTemplate = template;
-		showGallery = false;
-	}
-
-	function handleStartFromScratch() {
-		selectedTemplate = undefined;
-		showGallery = false;
-	}
-
 	function handleCancel() {
-		if (!showGallery) {
-			// Return to gallery
-			showGallery = true;
-			selectedTemplate = undefined;
-		} else {
-			// Exit to settings
-			goto('/settings/custom-entities');
-		}
+		goto('/settings/custom-entities');
 	}
 </script>
 
@@ -55,29 +35,19 @@
 <div class="max-w-2xl mx-auto">
 	<div class="flex items-center justify-between mb-8">
 		<h1 class="text-2xl font-bold text-slate-900 dark:text-white">Create Custom Entity Type</h1>
-		{#if showGallery}
-			<button
-				type="button"
-				class="btn btn-secondary"
-				onclick={() => goto('/settings/custom-entities')}
-				aria-label="Back to custom entity types"
-			>
-				<ArrowLeft class="w-4 h-4" />
-				Back
-			</button>
-		{/if}
+		<button
+			type="button"
+			class="btn btn-secondary"
+			onclick={() => goto('/settings/custom-entities')}
+			aria-label="Back to custom entity types"
+		>
+			<ArrowLeft class="w-4 h-4" />
+			Back
+		</button>
 	</div>
 
-	{#if showGallery}
-		<EntityTypeTemplateGallery
-			onSelectTemplate={handleSelectTemplate}
-			onStartFromScratch={handleStartFromScratch}
-		/>
-	{:else}
-		<CustomEntityTypeForm
-			initialValue={selectedTemplate}
-			onsubmit={handleSubmit}
-			oncancel={handleCancel}
-		/>
-	{/if}
+	<EntityTemplateSelector
+		onsubmit={handleSubmit}
+		oncancel={handleCancel}
+	/>
 </div>

@@ -24,12 +24,21 @@
 	let healingValue = $state('');
 	let tempHpValue = $state('');
 
-	const isBloodied = $derived(combatant.hp <= combatant.maxHp / 2);
+	// Only calculate bloodied/critical if maxHp is defined
+	const isBloodied = $derived(
+		combatant.maxHp !== undefined && combatant.hp <= combatant.maxHp / 2
+	);
 	const isDefeated = $derived(combatant.hp <= 0);
-	const isCritical = $derived(combatant.hp <= combatant.maxHp * 0.25);
-	const isAtMaxHp = $derived(combatant.hp >= combatant.maxHp);
+	const isCritical = $derived(
+		combatant.maxHp !== undefined && combatant.hp <= combatant.maxHp * 0.25
+	);
+	const isAtMaxHp = $derived(
+		combatant.maxHp !== undefined && combatant.hp >= combatant.maxHp
+	);
 	const hpPercentage = $derived(
-		combatant.maxHp > 0 ? (Math.max(0, combatant.hp) / combatant.maxHp) * 100 : 0
+		combatant.maxHp !== undefined && combatant.maxHp > 0
+			? (Math.max(0, combatant.hp) / combatant.maxHp) * 100
+			: 0
 	);
 
 	function getHpBarClass(): string {
@@ -76,7 +85,7 @@
 	const tempHpButtonDisabled = $derived(tempHpValue === '');
 
 	const previewHealedHp = $derived(() => {
-		if (!showPreview || !healingValue) return null;
+		if (!showPreview || !healingValue || combatant.maxHp === undefined) return null;
 		const amount = parseInt(healingValue, 10);
 		return Math.min(combatant.hp + amount, combatant.maxHp);
 	});
@@ -88,14 +97,19 @@
 		class="hp-display-section"
 		data-testid="hp-display"
 		aria-live="polite"
-		aria-label={`${Math.max(0, combatant.hp)} out of ${combatant.maxHp} hit points`}
+		aria-label={combatant.maxHp !== undefined
+			? `${Math.max(0, combatant.hp)} out of ${combatant.maxHp} hit points`
+			: `${Math.max(0, combatant.hp)} hit points`}
 	>
 		<div class="flex items-center justify-between mb-2">
 			<div class="text-lg font-semibold text-slate-900 dark:text-white">
-				<span>{Math.max(0, combatant.hp)}</span>
-				<span class="text-slate-500 dark:text-slate-400">/</span>
-				<span class="text-slate-700 dark:text-slate-300">{combatant.maxHp}</span>
-				<span class="text-xs text-slate-500 dark:text-slate-400 ml-2">HP</span>
+				{#if combatant.maxHp !== undefined}
+					<span>{Math.max(0, combatant.hp)} / {combatant.maxHp}</span>
+					<span class="text-xs text-slate-500 dark:text-slate-400 ml-2">HP</span>
+				{:else}
+					<span>{Math.max(0, combatant.hp)}</span>
+					<span class="text-xs text-slate-500 dark:text-slate-400 ml-2">HP</span>
+				{/if}
 			</div>
 			{#if isBloodied && !isDefeated}
 				<span class="text-xs font-medium text-yellow-600 dark:text-yellow-400">Bloodied</span>
@@ -105,14 +119,16 @@
 			{/if}
 		</div>
 
-		<!-- HP Bar -->
-		<div class="relative h-4 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-			<div
-				data-testid="hp-bar"
-				class={`h-full transition-all duration-300 ${getHpBarClass()}`}
-				style={`width: ${hpPercentage}%`}
-			></div>
-		</div>
+		<!-- HP Bar (only show when maxHp is defined) -->
+		{#if combatant.maxHp !== undefined}
+			<div class="relative h-4 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+				<div
+					data-testid="hp-bar"
+					class={`h-full transition-all duration-300 ${getHpBarClass()}`}
+					style={`width: ${hpPercentage}%`}
+				></div>
+			</div>
+		{/if}
 
 		<!-- Temp HP -->
 		{#if combatant.tempHp > 0}

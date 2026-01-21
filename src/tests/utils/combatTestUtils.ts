@@ -235,7 +235,7 @@ export function getCurrentCombatant(combat: CombatSession): Combatant | undefine
  * Helper to check if a combatant is bloodied (HP <= 50% of max)
  */
 export function isBloodied(combatant: Combatant): boolean {
-	return combatant.hp <= combatant.maxHp / 2;
+	return combatant.maxHp ? combatant.hp <= combatant.maxHp / 2 : false;
 }
 
 /**

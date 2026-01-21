@@ -257,7 +257,7 @@ describe('Combat Runner Page - HP Tracker', () => {
 
 		await waitFor(() => {
 			const hpTracker = screen.getByTestId('hp-tracker');
-			expect(within(hpTracker).getByText(new RegExp(combatant.maxHp.toString()))).toBeInTheDocument();
+			expect(within(hpTracker).getByText(new RegExp(combatant.maxHp!.toString()))).toBeInTheDocument();
 		});
 	});
 

@@ -24,6 +24,7 @@ import type {
 	UpdateCombatInput,
 	AddHeroCombatantInput,
 	AddCreatureCombatantInput,
+	AddQuickCombatantInput,
 	UpdateCombatantInput,
 	HeroCombatant,
 	CreatureCombatant,
@@ -347,6 +348,11 @@ export const combatRepository = {
 			throw new Error(`Combat session ${combatId} not found`);
 		}
 
+		// Validate that at least one of hp or maxHp is provided
+		if (input.hp === undefined && input.maxHp === undefined) {
+			throw new Error('Either hp or maxHp must be provided');
+		}
+
 		const hero: HeroCombatant = {
 			id: nanoid(),
 			type: 'hero',
@@ -354,7 +360,7 @@ export const combatRepository = {
 			entityId: input.entityId,
 			initiative: 0,
 			initiativeRoll: [0, 0],
-			hp: input.maxHp,
+			hp: input.hp ?? input.maxHp!,
 			maxHp: input.maxHp,
 			tempHp: 0,
 			ac: input.ac,
@@ -390,6 +396,11 @@ export const combatRepository = {
 			throw new Error(`Combat session ${combatId} not found`);
 		}
 
+		// Validate that at least one of hp or maxHp is provided
+		if (input.hp === undefined && input.maxHp === undefined) {
+			throw new Error('Either hp or maxHp must be provided');
+		}
+
 		const creature: CreatureCombatant = {
 			id: nanoid(),
 			type: 'creature',
@@ -397,12 +408,13 @@ export const combatRepository = {
 			entityId: input.entityId,
 			initiative: 0,
 			initiativeRoll: [0, 0],
-			hp: input.maxHp,
+			hp: input.hp ?? input.maxHp!,
 			maxHp: input.maxHp,
 			tempHp: 0,
 			ac: input.ac,
 			conditions: [],
-			threat: input.threat
+			threat: input.threat ?? 1,
+			isAdHoc: !input.entityId // Mark as ad-hoc when no entityId provided
 		};
 
 		const updated: CombatSession = {
@@ -411,6 +423,104 @@ export const combatRepository = {
 			log: [
 				...combat.log,
 				createLogEntry(combat, `${creature.name} joined the combat`, 'system')
+			],
+			updatedAt: new Date()
+		};
+
+		await db.combatSessions.put(updated);
+		return updated;
+	},
+
+	/**
+	 * Add quick ad-hoc combatant to combat (Issue #233).
+	 *
+	 * Simplified combatant entry requiring only name and HP.
+	 *
+	 * Features:
+	 * - Auto-numbers duplicate names ("Goblin" → "Goblin 1" → "Goblin 2")
+	 * - Sets isAdHoc flag to indicate no entity link
+	 * - No maxHp required - tracks current HP only
+	 *
+	 * @param combatId - ID of the combat session
+	 * @param input - Quick combatant input (name, type, hp required)
+	 * @returns Updated combat session with new combatant added
+	 *
+	 * @example
+	 * ```typescript
+	 * await combatRepository.addQuickCombatant('combat-123', {
+	 *   name: 'Goblin',
+	 *   type: 'creature',
+	 *   hp: 12,
+	 *   ac: 14,
+	 *   threat: 1
+	 * });
+	 * ```
+	 */
+	async addQuickCombatant(
+		combatId: string,
+		input: AddQuickCombatantInput
+	): Promise<CombatSession> {
+		await ensureDbReady();
+
+		const combat = await db.combatSessions.get(combatId);
+		if (!combat) {
+			throw new Error(`Combat session ${combatId} not found`);
+		}
+
+		// Auto-number duplicate names
+		let finalName = input.name;
+		const baseNamePattern = new RegExp(`^${input.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}( \\d+)?$`);
+		const existingWithSameName = combat.combatants.filter(c => baseNamePattern.test(c.name));
+
+		if (existingWithSameName.length > 0) {
+			// Find the highest number already used
+			let highestNumber = 0;
+			existingWithSameName.forEach(c => {
+				const match = c.name.match(/ (\d+)$/);
+				if (match) {
+					const num = parseInt(match[1], 10);
+					if (num > highestNumber) {
+						highestNumber = num;
+					}
+				}
+			});
+			finalName = `${input.name} ${highestNumber + 1}`;
+		}
+
+		// Create the combatant based on type
+		const baseCombatant = {
+			id: nanoid(),
+			name: finalName,
+			initiative: 0,
+			initiativeRoll: [0, 0] as [number, number],
+			hp: input.hp,
+			maxHp: undefined as number | undefined,
+			tempHp: 0,
+			ac: input.ac,
+			conditions: [],
+			isAdHoc: true
+		};
+
+		let newCombatant: Combatant;
+		if (input.type === 'hero') {
+			newCombatant = {
+				...baseCombatant,
+				type: 'hero'
+			} as HeroCombatant;
+		} else {
+			newCombatant = {
+				...baseCombatant,
+				type: 'creature',
+				threat: input.threat ?? 1
+			} as CreatureCombatant;
+		}
+
+		const updated: CombatSession = {
+			...combat,
+			combatants: [...combat.combatants, newCombatant],
+			log: [
+				...combat.log,
+				createLogEntry(combat, `${newCombatant.name} joined the combat`, 'system')
 			],
 			updatedAt: new Date()
 		};
@@ -743,7 +853,7 @@ export const combatRepository = {
 	},
 
 	/**
-	 * Apply healing to combatant (cannot exceed max HP).
+	 * Apply healing to combatant (caps at max HP if maxHp is defined, no cap if undefined).
 	 */
 	async applyHealing(
 		combatId: string,
@@ -764,7 +874,10 @@ export const combatRepository = {
 		}
 
 		const combatant = combat.combatants[combatantIndex];
-		const newHp = Math.min(combatant.hp + healing, combatant.maxHp);
+		// Only cap at maxHp if maxHp is defined
+		const newHp = combatant.maxHp !== undefined
+			? Math.min(combatant.hp + healing, combatant.maxHp)
+			: combatant.hp + healing;
 
 		const updatedCombatants = [...combat.combatants];
 		updatedCombatants[combatantIndex] = {

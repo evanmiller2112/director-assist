@@ -18,6 +18,7 @@ import type {
 	UpdateCombatInput,
 	AddHeroCombatantInput,
 	AddCreatureCombatantInput,
+	AddQuickCombatantInput,
 	UpdateCombatantInput,
 	Combatant,
 	AddConditionInput,
@@ -261,6 +262,31 @@ function createCombatStore() {
 		try {
 			error = null;
 			const updated = await combatRepository.addCreatureCombatant(combatId, input);
+			updateActiveCombatIfMatch(updated);
+			return updated;
+		} catch (err: any) {
+			error = err.message;
+			throw err;
+		}
+	}
+
+	/**
+	 * Add quick combatant with minimal information (Issue #233).
+	 *
+	 * Simplified entry requiring only name and HP.
+	 * Auto-numbers duplicates and sets isAdHoc flag.
+	 *
+	 * @param combatId - Combat session ID
+	 * @param input - Quick combatant data (name, type, hp required)
+	 * @returns Updated combat session
+	 */
+	async function addQuickCombatant(
+		combatId: string,
+		input: AddQuickCombatantInput
+	): Promise<CombatSession> {
+		try {
+			error = null;
+			const updated = await combatRepository.addQuickCombatant(combatId, input);
 			updateActiveCombatIfMatch(updated);
 			return updated;
 		} catch (err: any) {
@@ -611,6 +637,7 @@ function createCombatStore() {
 		// Combatants
 		addHero,
 		addCreature,
+		addQuickCombatant,
 		updateCombatant,
 		removeCombatant,
 		rollInitiative,

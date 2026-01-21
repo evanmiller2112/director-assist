@@ -1533,3 +1533,323 @@ describe('CombatRepository - Power Roll Integration', () => {
 		});
 	});
 });
+
+describe('CombatRepository - Quick-Add Combatants (Issue #233)', () => {
+	let combatId: string;
+
+	beforeEach(async () => {
+		await db.combatSessions.clear();
+		const combat = await combatRepository.create({ name: 'Quick Add Test' });
+		combatId = combat.id;
+	});
+
+	afterEach(async () => {
+		await db.combatSessions.clear();
+	});
+
+	describe('addQuickCombatant', () => {
+		it('should add ad-hoc combatant with just name and HP', async () => {
+			const combat = await combatRepository.addQuickCombatant(combatId, {
+				name: 'Goblin',
+				hp: 15,
+				type: 'creature'
+			});
+
+			expect(combat.combatants).toHaveLength(1);
+			const combatant = combat.combatants[0];
+			expect(combatant.name).toBe('Goblin');
+			expect(combatant.hp).toBe(15);
+			expect(combatant.type).toBe('creature');
+		});
+
+		it('should create combatant with isAdHoc flag set to true', async () => {
+			const combat = await combatRepository.addQuickCombatant(combatId, {
+				name: 'Guard',
+				hp: 20,
+				type: 'creature'
+			});
+
+			const combatant = combat.combatants[0] as any;
+			expect(combatant.isAdHoc).toBe(true);
+		});
+
+		it('should not require entityId for ad-hoc combatant', async () => {
+			const combat = await combatRepository.addQuickCombatant(combatId, {
+				name: 'Bandit',
+				hp: 18,
+				type: 'creature'
+			});
+
+			const combatant = combat.combatants[0];
+			expect(combatant.entityId).toBeUndefined();
+		});
+
+		it('should auto-number duplicate names', async () => {
+			await combatRepository.addQuickCombatant(combatId, {
+				name: 'Goblin',
+				hp: 15,
+				type: 'creature'
+			});
+
+			const combat = await combatRepository.addQuickCombatant(combatId, {
+				name: 'Goblin',
+				hp: 15,
+				type: 'creature'
+			});
+
+			expect(combat.combatants).toHaveLength(2);
+			expect(combat.combatants[0].name).toBe('Goblin');
+			expect(combat.combatants[1].name).toBe('Goblin 1');
+		});
+
+		it('should auto-number multiple duplicates sequentially', async () => {
+			await combatRepository.addQuickCombatant(combatId, {
+				name: 'Orc',
+				hp: 20,
+				type: 'creature'
+			});
+
+			await combatRepository.addQuickCombatant(combatId, {
+				name: 'Orc',
+				hp: 20,
+				type: 'creature'
+			});
+
+			const combat = await combatRepository.addQuickCombatant(combatId, {
+				name: 'Orc',
+				hp: 20,
+				type: 'creature'
+			});
+
+			expect(combat.combatants).toHaveLength(3);
+			expect(combat.combatants[0].name).toBe('Orc');
+			expect(combat.combatants[1].name).toBe('Orc 1');
+			expect(combat.combatants[2].name).toBe('Orc 2');
+		});
+
+		it('should allow optional AC for ad-hoc combatant', async () => {
+			const combat = await combatRepository.addQuickCombatant(combatId, {
+				name: 'Armored Guard',
+				hp: 25,
+				type: 'creature',
+				ac: 16
+			});
+
+			const combatant = combat.combatants[0];
+			expect(combatant.ac).toBe(16);
+		});
+
+		it('should support hero type for ad-hoc combatants', async () => {
+			const combat = await combatRepository.addQuickCombatant(combatId, {
+				name: 'Ally NPC',
+				hp: 30,
+				type: 'hero'
+			});
+
+			const combatant = combat.combatants[0];
+			expect(combatant.type).toBe('hero');
+		});
+
+		it('should initialize combatant with default values', async () => {
+			const combat = await combatRepository.addQuickCombatant(combatId, {
+				name: 'Simple Minion',
+				hp: 10,
+				type: 'creature'
+			});
+
+			const combatant = combat.combatants[0];
+			expect(combatant.initiative).toBe(0);
+			expect(combatant.initiativeRoll).toEqual([0, 0]);
+			expect(combatant.tempHp).toBe(0);
+			expect(combatant.conditions).toEqual([]);
+		});
+
+		it('should create log entry for quick-add combatant', async () => {
+			const combat = await combatRepository.addQuickCombatant(combatId, {
+				name: 'Surprise Enemy',
+				hp: 15,
+				type: 'creature'
+			});
+
+			const addLog = combat.log.find(l => l.message.includes('Surprise Enemy joined'));
+			expect(addLog).toBeDefined();
+		});
+	});
+});
+
+describe('CombatRepository - Optional Hero Fields (Issue #233)', () => {
+	let combatId: string;
+
+	beforeEach(async () => {
+		await db.combatSessions.clear();
+		const combat = await combatRepository.create({ name: 'Optional Fields Test' });
+		combatId = combat.id;
+	});
+
+	afterEach(async () => {
+		await db.combatSessions.clear();
+	});
+
+	describe('addHeroCombatant - optional maxHp', () => {
+		it('should allow adding hero without maxHp', async () => {
+			const combat = await combatRepository.addHeroCombatant(combatId, {
+				name: 'Flexible Hero',
+				entityId: 'entity-1',
+				hp: 25,
+				heroicResource: { current: 2, max: 3, name: 'Focus' }
+			});
+
+			expect(combat.combatants).toHaveLength(1);
+			const hero = combat.combatants[0] as HeroCombatant;
+			expect(hero.hp).toBe(25);
+			expect(hero.maxHp).toBeUndefined();
+		});
+
+		it('should still accept maxHp when provided', async () => {
+			const combat = await combatRepository.addHeroCombatant(combatId, {
+				name: 'Standard Hero',
+				entityId: 'entity-2',
+				hp: 30,
+				maxHp: 40,
+				heroicResource: { current: 2, max: 3, name: 'Focus' }
+			});
+
+			const hero = combat.combatants[0] as HeroCombatant;
+			expect(hero.hp).toBe(30);
+			expect(hero.maxHp).toBe(40);
+		});
+	});
+
+	describe('addHeroCombatant - optional heroicResource', () => {
+		it('should allow adding hero without heroicResource', async () => {
+			const combat = await combatRepository.addHeroCombatant(combatId, {
+				name: 'Resourceless Hero',
+				entityId: 'entity-3',
+				hp: 35
+			});
+
+			expect(combat.combatants).toHaveLength(1);
+			const hero = combat.combatants[0] as HeroCombatant;
+			expect(hero.name).toBe('Resourceless Hero');
+			expect(hero.heroicResource).toBeUndefined();
+		});
+
+		it('should still accept heroicResource when provided', async () => {
+			const combat = await combatRepository.addHeroCombatant(combatId, {
+				name: 'Resourceful Hero',
+				entityId: 'entity-4',
+				hp: 35,
+				heroicResource: { current: 3, max: 5, name: 'Victories' }
+			});
+
+			const hero = combat.combatants[0] as HeroCombatant;
+			expect(hero.heroicResource).toBeDefined();
+			expect(hero.heroicResource?.name).toBe('Victories');
+		});
+	});
+
+	describe('addCreatureCombatant - optional entityId', () => {
+		it('should allow adding creature without entityId (ad-hoc)', async () => {
+			const combat = await combatRepository.addCreatureCombatant(combatId, {
+				name: 'Random Creature',
+				hp: 20,
+				threat: 1
+			});
+
+			expect(combat.combatants).toHaveLength(1);
+			const creature = combat.combatants[0] as CreatureCombatant;
+			expect(creature.name).toBe('Random Creature');
+			expect(creature.entityId).toBeUndefined();
+		});
+
+		it('should mark creature as ad-hoc when no entityId provided', async () => {
+			const combat = await combatRepository.addCreatureCombatant(combatId, {
+				name: 'Ad-hoc Monster',
+				hp: 25,
+				threat: 2
+			});
+
+			const creature = combat.combatants[0] as any;
+			expect(creature.isAdHoc).toBe(true);
+		});
+
+		it('should still accept entityId when provided', async () => {
+			const combat = await combatRepository.addCreatureCombatant(combatId, {
+				name: 'Templated Creature',
+				entityId: 'entity-5',
+				hp: 30,
+				threat: 2
+			});
+
+			const creature = combat.combatants[0] as CreatureCombatant;
+			expect(creature.entityId).toBe('entity-5');
+		});
+	});
+});
+
+describe('CombatRepository - Optional Max HP Healing (Issue #233)', () => {
+	let combatId: string;
+	let heroId: string;
+
+	beforeEach(async () => {
+		await db.combatSessions.clear();
+		const combat = await combatRepository.create({ name: 'Uncapped Healing Test' });
+		combatId = combat.id;
+
+		const withHero = await combatRepository.addHeroCombatant(combatId, {
+			name: 'No Max Hero',
+			entityId: 'entity-1',
+			hp: 30
+		});
+		heroId = withHero.combatants[0].id;
+	});
+
+	afterEach(async () => {
+		await db.combatSessions.clear();
+	});
+
+	describe('applyHealing - no cap when maxHp undefined', () => {
+		it('should allow healing beyond original HP when maxHp is undefined', async () => {
+			// Start at 30 HP
+			const healed = await combatRepository.applyHealing(combatId, heroId, 20);
+
+			const hero = healed.combatants.find(c => c.id === heroId);
+			expect(hero?.hp).toBe(50); // 30 + 20, not capped
+		});
+
+		it('should allow multiple healings to stack when no maxHp', async () => {
+			await combatRepository.applyHealing(combatId, heroId, 10);
+			const healed = await combatRepository.applyHealing(combatId, heroId, 15);
+
+			const hero = healed.combatants.find(c => c.id === heroId);
+			expect(hero?.hp).toBe(55); // 30 + 10 + 15
+		});
+
+		it('should still cap healing when maxHp is defined', async () => {
+			// Add a hero WITH maxHp
+			const withMaxHp = await combatRepository.addHeroCombatant(combatId, {
+				name: 'Capped Hero',
+				entityId: 'entity-2',
+				hp: 35,
+				maxHp: 40,
+				heroicResource: { current: 2, max: 3, name: 'Focus' }
+			});
+			const cappedHeroId = withMaxHp.combatants[1].id;
+
+			const healed = await combatRepository.applyHealing(combatId, cappedHeroId, 20);
+
+			const hero = healed.combatants.find(c => c.id === cappedHeroId);
+			expect(hero?.hp).toBe(40); // Capped at maxHp
+		});
+
+		it('should heal from damaged state when no maxHp', async () => {
+			// Damage first
+			await combatRepository.applyDamage(combatId, heroId, 15);
+
+			const healed = await combatRepository.applyHealing(combatId, heroId, 20);
+
+			const hero = healed.combatants.find(c => c.id === heroId);
+			expect(hero?.hp).toBe(35); // (30 - 15) + 20 = 35
+		});
+	});
+});

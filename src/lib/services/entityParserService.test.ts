@@ -662,15 +662,21 @@ Some description`;
 		});
 
 		describe('Missing Fields', () => {
-			it('should return empty object when no fields found', () => {
+			it('should apply default values when no fields found in text', () => {
 				const text = `Just some text without any field markers`;
 
 				const fields = extractFields(text, npcType);
 
-				expect(fields).toEqual({});
+				// Should have default values for fields with defaultValue defined
+				// NPC has: status (default: 'alive') and importance (default: 'minor')
+				expect(fields.status).toBe('alive');
+				expect(fields.importance).toBe('minor');
+				// But no extracted fields
+				expect(fields.role).toBeUndefined();
+				expect(fields.personality).toBeUndefined();
 			});
 
-			it('should handle partial field extraction', () => {
+			it('should handle partial field extraction with defaults', () => {
 				const text = `## Character
 
 **Role**: Warrior
@@ -678,8 +684,11 @@ Some description`;
 
 				const fields = extractFields(text, npcType);
 
+				// Extracted field
 				expect(fields.role).toBe('Warrior');
-				expect(Object.keys(fields)).toHaveLength(1);
+				// Default values are also applied
+				expect(fields.status).toBe('alive');
+				expect(fields.importance).toBe('minor');
 			});
 		});
 
@@ -2023,6 +2032,70 @@ Some content that does not match any known type.`;
 			const errors = validateParsedEntity(entity, customType);
 
 			expect(errors).toEqual({});
+		});
+	});
+
+	describe('Default Value Application', () => {
+		it('should apply default values for fields not found in text', () => {
+			// NPC text without status field - parser should apply default 'alive'
+			const text = `## Mira Aldwin
+
+**Role/Occupation**: Barmaid at the Cracked Anchor
+**Personality**: Quick wit and sharp tongue`;
+
+			const fields = extractFields(text, 'npc');
+
+			// Status has defaultValue: 'alive' in NPC type definition
+			expect(fields.status).toBe('alive');
+		});
+
+		it('should apply default values for required select fields', () => {
+			const text = `## Test Faction
+
+**Goals**: Control the trade routes`;
+
+			const fields = extractFields(text, 'faction');
+
+			// Faction status has defaultValue: 'active'
+			expect(fields.status).toBe('active');
+		});
+
+		it('should not override extracted values with defaults', () => {
+			const text = `## The Stranger
+
+**Role**: Mysterious wanderer
+**Status**: deceased`;
+
+			const fields = extractFields(text, 'npc');
+
+			// Should use extracted value, not default
+			expect(fields.status).toBe('deceased');
+		});
+
+		it('should allow parsed entities with defaults to pass validation', () => {
+			// This tests the full flow: parsing applies defaults, validation passes
+			const text = `## Mira Aldwin
+
+**Role/Occupation**: Barmaid
+**Personality**: Flirtatious and clever`;
+
+			const result = parseAIResponse(text, { minConfidence: 0.2 });
+
+			expect(result.entities.length).toBe(1);
+			const entity = result.entities[0];
+			expect(entity.fields.status).toBe('alive');
+			expect(entity.validationErrors).toEqual({});
+		});
+
+		it('should apply defaults for optional fields with defaultValue', () => {
+			const text = `## Random NPC
+
+**Personality**: Grumpy`;
+
+			const fields = extractFields(text, 'npc');
+
+			// importance has defaultValue: 'minor'
+			expect(fields.importance).toBe('minor');
 		});
 	});
 });

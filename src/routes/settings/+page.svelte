@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { aiSettings, campaignStore, notificationStore, uiStore } from '$lib/stores';
+	import { aiSettings, campaignStore, debugStore, notificationStore, uiStore } from '$lib/stores';
 	import { db } from '$lib/db';
 	import { entityRepository, chatRepository, appConfigRepository } from '$lib/db/repositories';
 	import { convertOldCampaignToEntity } from '$lib/db/migrations/migrateCampaignToEntity';
@@ -66,6 +66,8 @@
 
 	// Handle action parameter (e.g., ?action=export)
 	onMount(() => {
+		debugStore.load();
+
 		const actionParam = $page.url.searchParams.get('action');
 		if (actionParam === 'export') {
 			// Trigger export
@@ -719,6 +721,36 @@
 			<Users class="w-4 h-4" />
 			Export for Players
 		</button>
+	</section>
+
+	<!-- Advanced -->
+	<section class="mb-8">
+		<h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">Advanced</h2>
+		<div class="space-y-4">
+			<!-- Debug Console Toggle -->
+			<div class="flex items-start gap-3 p-4 bg-slate-50 dark:bg-slate-800 rounded-lg">
+				<div class="flex-1">
+					<label for="debugToggle" class="label mb-1 cursor-pointer">Enable Debug Console</label>
+					<p class="text-sm text-slate-500 dark:text-slate-400">
+						Show detailed information about AI requests and responses for troubleshooting.
+					</p>
+				</div>
+				<label class="relative inline-flex items-center cursor-pointer">
+					<input
+						id="debugToggle"
+						type="checkbox"
+						class="sr-only peer"
+						checked={debugStore.enabled}
+						onchange={() => debugStore.setEnabled(!debugStore.enabled)}
+						role="switch"
+						aria-label="Enable Debug Console"
+					/>
+					<div
+						class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-blue-600"
+					></div>
+				</label>
+			</div>
+		</div>
 	</section>
 
 	<!-- Danger Zone -->

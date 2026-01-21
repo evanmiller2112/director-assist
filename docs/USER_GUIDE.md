@@ -237,15 +237,34 @@ Add support for game systems beyond Draw Steel:
 1. Open Settings (gear icon or `/settings` command)
 2. Scroll to "Custom Entity Types"
 3. Click "Create Custom Entity Type"
-4. Fill in the basic information:
+4. Choose a starting point:
+   - **Use a Template**: Select from pre-configured Draw Steel templates (Monster/Threat, Ability/Power, Condition, Negotiation Outcome, Spell/Ritual)
+   - **Start from Scratch**: Create a completely blank entity type with no predefined fields
+5. Fill in the basic information:
    - **Type Key**: Unique identifier (lowercase, letters/numbers/hyphens/underscores)
    - **Label**: Singular display name (e.g., "Spell")
    - **Label Plural**: Plural display name (e.g., "Spells")
    - **Icon**: Lucide icon name (e.g., "wand-sparkles")
    - **Color**: Hex color code for UI theming (e.g., "#9C27B0")
    - **Description**: Brief explanation of this entity type
-5. Add field definitions (see below)
-6. Click "Save Custom Entity Type"
+6. Add, modify, or remove field definitions (see below)
+7. Click "Save Custom Entity Type"
+
+**Using Templates:**
+
+Templates provide pre-configured fields for common Draw Steel mechanics. When you select a template:
+- A blue banner at the top shows which template you're using
+- All fields are pre-filled but fully customizable
+- Click "Change Template" to switch to a different template or start from scratch
+- The app warns you before switching if you have unsaved changes
+
+**Available Templates:**
+
+- **Monster/Threat**: Track enemies with threat level, role, AC, HP, movement, and abilities
+- **Ability/Power**: Class abilities and kit powers with action cost, range, keywords, and effects
+- **Condition**: Status effects with duration, severity, and mechanical effects
+- **Negotiation Outcome**: Negotiation results with tier, benefit/consequence, and requirements
+- **Spell/Ritual**: Magic spells with tier, tradition, cost, distance, target, and effects
 
 **Type Key Rules:**
 - Must start with a letter

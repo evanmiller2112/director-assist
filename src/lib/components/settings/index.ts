@@ -5,3 +5,4 @@ export { default as ColorPicker } from './ColorPicker.svelte';
 export { default as SystemSelector } from './SystemSelector.svelte';
 export { default as EntityTypeTemplateGallery } from './EntityTypeTemplateGallery.svelte';
 export { default as DrawSteelTipsPanel } from './DrawSteelTipsPanel.svelte';
+export { default as EntityTemplateSelector } from './EntityTemplateSelector.svelte';

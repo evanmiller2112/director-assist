@@ -882,6 +882,419 @@ describe('CustomEntityTypeForm - Integration (Issue #25 Phase 2)', () => {
 });
 
 /**
+ * Tests for CustomEntityTypeForm Component - Issue #209
+ *
+ * Issue #209: Add template selection flow for custom entity creation
+ *
+ * This test suite covers the new template indicator props added to CustomEntityTypeForm:
+ * - templateName prop for displaying which template was selected
+ * - onChangeTemplate callback for switching templates
+ * - Template badge display
+ * - "Change template" button behavior
+ *
+ * RED Phase (TDD): These tests define expected behavior BEFORE implementation.
+ * All tests should FAIL until the component enhancements are implemented.
+ */
+
+describe('CustomEntityTypeForm - Template Name Badge (Issue #209)', () => {
+	it('should show template name badge when templateName prop is provided', () => {
+		const mockOnSubmit = vi.fn();
+		const mockOnCancel = vi.fn();
+
+		render(CustomEntityTypeForm, {
+			templateName: 'Monster/Threat',
+			onsubmit: mockOnSubmit,
+			oncancel: mockOnCancel
+		});
+
+		expect(screen.getByText(/Template: Monster\/Threat/i)).toBeInTheDocument();
+	});
+
+	it('should not show template badge when templateName is undefined', () => {
+		const mockOnSubmit = vi.fn();
+		const mockOnCancel = vi.fn();
+
+		render(CustomEntityTypeForm, {
+			onsubmit: mockOnSubmit,
+			oncancel: mockOnCancel
+		});
+
+		expect(screen.queryByText(/Template:/i)).not.toBeInTheDocument();
+	});
+
+	it('should display correct template name for different templates', () => {
+		const mockOnSubmit = vi.fn();
+		const mockOnCancel = vi.fn();
+
+		const { rerender } = render(CustomEntityTypeForm, {
+			templateName: 'Ability/Power',
+			onsubmit: mockOnSubmit,
+			oncancel: mockOnCancel
+		});
+
+		expect(screen.getByText(/Template: Ability\/Power/i)).toBeInTheDocument();
+
+		// Change to different template
+		rerender({
+			templateName: 'Spell/Ritual',
+			onsubmit: mockOnSubmit,
+			oncancel: mockOnCancel
+		});
+
+		expect(screen.getByText(/Template: Spell\/Ritual/i)).toBeInTheDocument();
+	});
+
+	it('should style template badge distinctly from other form elements', () => {
+		const mockOnSubmit = vi.fn();
+		const mockOnCancel = vi.fn();
+
+		render(CustomEntityTypeForm, {
+			templateName: 'Condition',
+			onsubmit: mockOnSubmit,
+			oncancel: mockOnCancel
+		});
+
+		const badge = screen.getByText(/Template: Condition/i);
+		// Badge should have distinct styling (badge, pill, or tag appearance)
+		expect(badge.className).toMatch(/badge|pill|tag|inline-flex/);
+	});
+
+	it('should position template badge prominently in the form', () => {
+		const mockOnSubmit = vi.fn();
+		const mockOnCancel = vi.fn();
+
+		render(CustomEntityTypeForm, {
+			templateName: 'Negotiation Outcome',
+			onsubmit: mockOnSubmit,
+			oncancel: mockOnCancel
+		});
+
+		const badge = screen.getByText(/Template: Negotiation Outcome/i);
+		expect(badge).toBeInTheDocument();
+		// Badge should be visible and near the top of the form
+		expect(badge).toBeVisible();
+	});
+});
+
+describe('CustomEntityTypeForm - Change Template Button (Issue #209)', () => {
+	it('should show "Change template" button when onChangeTemplate callback is provided', () => {
+		const mockOnSubmit = vi.fn();
+		const mockOnCancel = vi.fn();
+		const mockOnChangeTemplate = vi.fn();
+
+		render(CustomEntityTypeForm, {
+			templateName: 'Monster/Threat',
+			onChangeTemplate: mockOnChangeTemplate,
+			onsubmit: mockOnSubmit,
+			oncancel: mockOnCancel
+		});
+
+		expect(screen.getByRole('button', { name: /Change template/i })).toBeInTheDocument();
+	});
+
+	it('should not show "Change template" button when onChangeTemplate is undefined', () => {
+		const mockOnSubmit = vi.fn();
+		const mockOnCancel = vi.fn();
+
+		render(CustomEntityTypeForm, {
+			templateName: 'Condition',
+			onsubmit: mockOnSubmit,
+			oncancel: mockOnCancel
+		});
+
+		expect(screen.queryByRole('button', { name: /Change template/i })).not.toBeInTheDocument();
+	});
+
+	it('should call onChangeTemplate when "Change template" button is clicked', async () => {
+		const mockOnSubmit = vi.fn();
+		const mockOnCancel = vi.fn();
+		const mockOnChangeTemplate = vi.fn();
+
+		render(CustomEntityTypeForm, {
+			templateName: 'Ability/Power',
+			onChangeTemplate: mockOnChangeTemplate,
+			onsubmit: mockOnSubmit,
+			oncancel: mockOnCancel
+		});
+
+		const changeTemplateButton = screen.getByRole('button', { name: /Change template/i });
+		await fireEvent.click(changeTemplateButton);
+
+		expect(mockOnChangeTemplate).toHaveBeenCalledTimes(1);
+	});
+
+	it('should not show "Change template" button in edit mode', () => {
+		const mockOnSubmit = vi.fn();
+		const mockOnCancel = vi.fn();
+		const mockOnChangeTemplate = vi.fn();
+		const initialValue: EntityTypeDefinition = {
+			type: 'monster',
+			label: 'Monster',
+			labelPlural: 'Monsters',
+			icon: 'skull',
+			color: 'red',
+			isBuiltIn: false,
+			fieldDefinitions: [],
+			defaultRelationships: []
+		};
+
+		render(CustomEntityTypeForm, {
+			initialValue,
+			isEditing: true,
+			templateName: 'Monster/Threat',
+			onChangeTemplate: mockOnChangeTemplate,
+			onsubmit: mockOnSubmit,
+			oncancel: mockOnCancel
+		});
+
+		expect(screen.queryByRole('button', { name: /Change template/i })).not.toBeInTheDocument();
+	});
+
+	it('should position "Change template" button near template badge', () => {
+		const mockOnSubmit = vi.fn();
+		const mockOnCancel = vi.fn();
+		const mockOnChangeTemplate = vi.fn();
+
+		const { container } = render(CustomEntityTypeForm, {
+			templateName: 'Spell/Ritual',
+			onChangeTemplate: mockOnChangeTemplate,
+			onsubmit: mockOnSubmit,
+			oncancel: mockOnCancel
+		});
+
+		const badge = screen.getByText(/Template: Spell\/Ritual/i);
+		const changeButton = screen.getByRole('button', { name: /Change template/i });
+
+		// Both should be in the same container/section
+		expect(badge).toBeInTheDocument();
+		expect(changeButton).toBeInTheDocument();
+	});
+
+	it('should style "Change template" button as a secondary action', () => {
+		const mockOnSubmit = vi.fn();
+		const mockOnCancel = vi.fn();
+		const mockOnChangeTemplate = vi.fn();
+
+		render(CustomEntityTypeForm, {
+			templateName: 'Negotiation Outcome',
+			onChangeTemplate: mockOnChangeTemplate,
+			onsubmit: mockOnSubmit,
+			oncancel: mockOnCancel
+		});
+
+		const changeButton = screen.getByRole('button', { name: /Change template/i });
+		// Button should have secondary or link styling, not primary
+		expect(changeButton.className).toMatch(/secondary|link|ghost|text/);
+	});
+
+	it('should be keyboard accessible', async () => {
+		const mockOnSubmit = vi.fn();
+		const mockOnCancel = vi.fn();
+		const mockOnChangeTemplate = vi.fn();
+
+		render(CustomEntityTypeForm, {
+			templateName: 'Condition',
+			onChangeTemplate: mockOnChangeTemplate,
+			onsubmit: mockOnSubmit,
+			oncancel: mockOnCancel
+		});
+
+		const changeButton = screen.getByRole('button', { name: /Change template/i });
+
+		// Button should be focusable (keyboard accessible)
+		changeButton.focus();
+		expect(document.activeElement).toBe(changeButton);
+
+		// Native buttons handle Enter/Space via click, so test click behavior
+		await fireEvent.click(changeButton);
+
+		expect(mockOnChangeTemplate).toHaveBeenCalled();
+	});
+});
+
+describe('CustomEntityTypeForm - Template Props Integration (Issue #209)', () => {
+	it('should work with both templateName and onChangeTemplate together', async () => {
+		const mockOnSubmit = vi.fn();
+		const mockOnCancel = vi.fn();
+		const mockOnChangeTemplate = vi.fn();
+
+		render(CustomEntityTypeForm, {
+			templateName: 'Monster/Threat',
+			onChangeTemplate: mockOnChangeTemplate,
+			onsubmit: mockOnSubmit,
+			oncancel: mockOnCancel
+		});
+
+		// Both badge and button should be visible
+		expect(screen.getByText(/Template: Monster\/Threat/i)).toBeInTheDocument();
+		expect(screen.getByRole('button', { name: /Change template/i })).toBeInTheDocument();
+
+		// Button should work
+		const changeButton = screen.getByRole('button', { name: /Change template/i });
+		await fireEvent.click(changeButton);
+
+		expect(mockOnChangeTemplate).toHaveBeenCalled();
+	});
+
+	it('should work without template props (backward compatibility)', async () => {
+		const mockOnSubmit = vi.fn();
+		const mockOnCancel = vi.fn();
+
+		render(CustomEntityTypeForm, {
+			onsubmit: mockOnSubmit,
+			oncancel: mockOnCancel
+		});
+
+		// Should render normally without template features
+		expect(screen.getByLabelText(/Display Name/i)).toBeInTheDocument();
+		expect(screen.queryByText(/Template:/i)).not.toBeInTheDocument();
+		expect(screen.queryByRole('button', { name: /Change template/i })).not.toBeInTheDocument();
+	});
+
+	it('should populate form with template data from initialValue', () => {
+		const mockOnSubmit = vi.fn();
+		const mockOnCancel = vi.fn();
+		const mockOnChangeTemplate = vi.fn();
+
+		const templateData: EntityTypeDefinition = {
+			type: 'ds-monster-threat',
+			label: 'Monster/Threat',
+			labelPlural: 'Monsters/Threats',
+			icon: 'skull',
+			color: 'red',
+			isBuiltIn: false,
+			fieldDefinitions: [
+				{ key: 'threat_level', label: 'Threat Level', type: 'select', required: false, order: 1 }
+			],
+			defaultRelationships: []
+		};
+
+		render(CustomEntityTypeForm, {
+			initialValue: templateData,
+			templateName: 'Monster/Threat',
+			onChangeTemplate: mockOnChangeTemplate,
+			onsubmit: mockOnSubmit,
+			oncancel: mockOnCancel
+		});
+
+		// Form should be populated with template data
+		const displayNameInput = screen.getByLabelText(/Display Name/i) as HTMLInputElement;
+		expect(displayNameInput.value).toBe('Monster/Threat');
+
+		// Template badge should show
+		expect(screen.getByText(/Template: Monster\/Threat/i)).toBeInTheDocument();
+	});
+
+	it('should not show template features when creating from scratch', () => {
+		const mockOnSubmit = vi.fn();
+		const mockOnCancel = vi.fn();
+
+		// No templateName or onChangeTemplate provided
+		render(CustomEntityTypeForm, {
+			onsubmit: mockOnSubmit,
+			oncancel: mockOnCancel
+		});
+
+		// No template indicators should be present
+		expect(screen.queryByText(/Template:/i)).not.toBeInTheDocument();
+		expect(screen.queryByRole('button', { name: /Change template/i })).not.toBeInTheDocument();
+
+		// Form should work normally
+		expect(screen.getByLabelText(/Display Name/i)).toBeInTheDocument();
+	});
+});
+
+describe('CustomEntityTypeForm - Template Props with Existing Features (Issue #209)', () => {
+	it('should show template badge alongside form validation', async () => {
+		const mockOnSubmit = vi.fn();
+		const mockOnCancel = vi.fn();
+		const mockOnChangeTemplate = vi.fn();
+
+		render(CustomEntityTypeForm, {
+			templateName: 'Ability/Power',
+			onChangeTemplate: mockOnChangeTemplate,
+			onsubmit: mockOnSubmit,
+			oncancel: mockOnCancel
+		});
+
+		// Clear display name to trigger validation
+		const displayNameInput = screen.getByLabelText(/Display Name/i);
+		await fireEvent.input(displayNameInput, { target: { value: '' } });
+
+		// Submit to trigger validation
+		const submitButton = screen.getByRole('button', { name: /Create Entity Type/i });
+		await fireEvent.click(submitButton);
+
+		// Both template badge and validation error should be visible
+		expect(screen.getByText(/Template: Ability\/Power/i)).toBeInTheDocument();
+		expect(screen.getByText(/Display name is required/i)).toBeInTheDocument();
+	});
+
+	it('should maintain template badge in preview section', async () => {
+		const mockOnSubmit = vi.fn();
+		const mockOnCancel = vi.fn();
+		const mockOnChangeTemplate = vi.fn();
+
+		render(CustomEntityTypeForm, {
+			templateName: 'Spell/Ritual',
+			onChangeTemplate: mockOnChangeTemplate,
+			onsubmit: mockOnSubmit,
+			oncancel: mockOnCancel
+		});
+
+		// Template badge should be visible
+		expect(screen.getByText(/Template: Spell\/Ritual/i)).toBeInTheDocument();
+
+		// Preview should also be present
+		expect(screen.getByText(/Preview/i)).toBeInTheDocument();
+	});
+
+	it('should include template information in form submission', async () => {
+		const mockOnSubmit = vi.fn();
+		const mockOnCancel = vi.fn();
+		const mockOnChangeTemplate = vi.fn();
+
+		const templateData: EntityTypeDefinition = {
+			type: 'ds-condition',
+			label: 'Condition',
+			labelPlural: 'Conditions',
+			icon: 'flame',
+			color: 'orange',
+			isBuiltIn: false,
+			fieldDefinitions: [
+				{ key: 'duration', label: 'Duration', type: 'text', required: false, order: 1 }
+			],
+			defaultRelationships: []
+		};
+
+		render(CustomEntityTypeForm, {
+			initialValue: templateData,
+			templateName: 'Condition',
+			onChangeTemplate: mockOnChangeTemplate,
+			onsubmit: mockOnSubmit,
+			oncancel: mockOnCancel
+		});
+
+		// Submit the form
+		const submitButton = screen.getByRole('button', { name: /Create Entity Type/i });
+		await fireEvent.click(submitButton);
+
+		// Should submit with template field definitions
+		await waitFor(() => {
+			expect(mockOnSubmit).toHaveBeenCalledWith(
+				expect.objectContaining({
+					type: 'ds-condition',
+					label: 'Condition',
+					fieldDefinitions: expect.arrayContaining([
+						expect.objectContaining({ key: 'duration' })
+					])
+				})
+			);
+		});
+	});
+});
+
+/**
  * Tests for CustomEntityTypeForm Component - Issue #168 Phase 1
  *
  * Issue #168 Phase 1: Relationship Guidance

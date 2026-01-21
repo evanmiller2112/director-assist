@@ -38,6 +38,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Collapsible tips sections for field types and examples with real-world use cases
 - Improved discoverability for complex features like computed fields and entity references
 
+**Template Selection Flow for Custom Entities (Issue #209, PR #213)**
+- EntityTemplateSelector component provides template gallery before custom entity creation
+- Five Draw Steel templates available: Monster/Threat, Ability/Power, Condition, Negotiation Outcome, Spell/Ritual
+- "Start from Scratch" option for creating blank custom entity types
+- Template indicator banner shows which template was used during creation
+- "Change Template" button allows switching templates mid-creation
+- Confirmation dialog warns when changing templates with unsaved form changes
+- Dirty form tracking protects against accidental data loss
+- Pre-configured fields based on Draw Steel game mechanics for faster setup
+
 ### Fixed
 
 **Entity List Reordering (Issue #205, PR #208)**

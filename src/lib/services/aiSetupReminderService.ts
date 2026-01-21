@@ -114,12 +114,15 @@ export function hasAnyApiKey(): boolean {
  * Determine if the AI setup banner should be shown.
  *
  * Logic (checked in priority order):
- * 1. Never show if AI is explicitly disabled
- * 2. Never show if any API key exists (legacy, provider-specific, or Ollama)
- * 3. Never show if permanently dismissed
- * 4. Show if AI enabled, no API keys, and not dismissed
+ * 1. Never show if any API key exists (legacy, provider-specific, or Ollama)
+ * 2. Never show if permanently dismissed
+ * 3. Show if no API keys and not dismissed (regardless of aiEnabled state)
  *
- * @param aiEnabled Whether AI features are enabled
+ * ISSUE #214 FIX: Removed the aiEnabled check to fix catch-22 for new users.
+ * New users have aiEnabled=false by default, but they need to see the banner
+ * to configure AI. The banner now shows regardless of aiEnabled state.
+ *
+ * @param aiEnabled Whether AI features are enabled (not used, kept for compatibility)
  * @param isDismissed Whether the banner has been permanently dismissed
  * @param hasApiKey Whether any API key is configured
  * @returns True if the banner should be shown
@@ -129,11 +132,6 @@ export function shouldShowAiSetupBanner(
 	isDismissed: boolean,
 	hasApiKey: boolean
 ): boolean {
-	// Never show if AI is disabled
-	if (!aiEnabled) {
-		return false;
-	}
-
 	// Never show if any API key exists
 	if (hasApiKey) {
 		return false;
@@ -144,6 +142,6 @@ export function shouldShowAiSetupBanner(
 		return false;
 	}
 
-	// Show if AI enabled, no API keys, and not dismissed
+	// Show if no API keys and not dismissed (regardless of aiEnabled state)
 	return true;
 }

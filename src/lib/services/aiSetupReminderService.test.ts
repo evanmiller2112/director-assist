@@ -441,15 +441,16 @@ describe('aiSetupReminderService', () => {
 
 	describe('shouldShowAiSetupBanner', () => {
 		describe('Never Show Conditions', () => {
-			it('should not show when AI is explicitly disabled', () => {
-				// No API keys, not dismissed, but AI is disabled
-				const result = shouldShowAiSetupBanner(false, false, false);
+			it('should not show when AI is explicitly disabled AND user has dismissed', () => {
+				// AI disabled and dismissed - don't show
+				const result = shouldShowAiSetupBanner(false, true, false);
 
 				expect(result).toBe(false);
 			});
 
-			it('should not show when AI is disabled even if not dismissed', () => {
-				const result = shouldShowAiSetupBanner(false, false, false);
+			it('should not show when AI is disabled AND has API key', () => {
+				// AI disabled with API key configured - don't show
+				const result = shouldShowAiSetupBanner(false, false, true);
 
 				expect(result).toBe(false);
 			});
@@ -489,14 +490,24 @@ describe('aiSetupReminderService', () => {
 		});
 
 		describe('Show Conditions', () => {
+			// ISSUE #214: NEW USER SCENARIO - This test will FAIL until bug is fixed
+			it('should show banner for NEW USER with no setup (aiEnabled=false, hasApiKey=false, isDismissed=false)', () => {
+				// This is the catch-22 bug: new users have aiEnabled=false by default,
+				// but the function currently rejects them at the !aiEnabled check.
+				// The banner SHOULD show to help them get started with AI setup.
+				const result = shouldShowAiSetupBanner(false, false, false);
+
+				expect(result).toBe(true);
+			});
+
 			it('should show when AI enabled, not dismissed, and no API keys', () => {
 				const result = shouldShowAiSetupBanner(true, false, false);
 
 				expect(result).toBe(true);
 			});
 
-			it('should show when all conditions are met (default state)', () => {
-				// New user: AI enabled (default), no keys, not dismissed
+			it('should show when all conditions are met for existing users (AI enabled, no keys, not dismissed)', () => {
+				// Existing user who enabled AI but hasn't configured keys
 				const result = shouldShowAiSetupBanner(true, false, false);
 
 				expect(result).toBe(true);
@@ -506,22 +517,15 @@ describe('aiSetupReminderService', () => {
 				// Other dismissal keys should not affect AI setup banner
 				mockStore['dm-assist-last-backup-prompt-dismissed-at'] = new Date().toISOString();
 
-				const result = shouldShowAiSetupBanner(true, false, false);
+				const result = shouldShowAiSetupBanner(false, false, false);
 
 				expect(result).toBe(true);
 			});
 		});
 
 		describe('Priority Logic', () => {
-			it('should prioritize AI disabled over all other conditions', () => {
-				// AI disabled should prevent showing even if not dismissed and no keys
-				const result = shouldShowAiSetupBanner(false, false, false);
-
-				expect(result).toBe(false);
-			});
-
-			it('should prioritize API key existence over dismissal state', () => {
-				// If API key exists, shouldn't show even if not dismissed
+			it('should prioritize API key existence first - never show if keys exist', () => {
+				// If API key exists, shouldn't show regardless of other states
 				mockStore['ai-provider-anthropic-apikey'] = 'sk-ant-key';
 
 				const result = shouldShowAiSetupBanner(true, false, true);
@@ -529,17 +533,36 @@ describe('aiSetupReminderService', () => {
 				expect(result).toBe(false);
 			});
 
-			it('should not show if AI disabled even with no keys and not dismissed', () => {
-				const result = shouldShowAiSetupBanner(false, false, false);
+			it('should prioritize API key existence even if AI disabled', () => {
+				// If API key exists, don't show even if AI is disabled
+				mockStore['ai-provider-anthropic-apikey'] = 'sk-ant-key';
+
+				const result = shouldShowAiSetupBanner(false, false, true);
 
 				expect(result).toBe(false);
 			});
 
-			it('should check dismissal after API key check', () => {
-				// No API keys but dismissed
+			it('should check dismissal state second - never show if dismissed', () => {
+				// No API keys but dismissed - should not show
 				const result = shouldShowAiSetupBanner(true, true, false);
 
 				expect(result).toBe(false);
+			});
+
+			it('should respect dismissal even for new users', () => {
+				// New user scenario but already dismissed - don't show
+				const result = shouldShowAiSetupBanner(false, true, false);
+
+				expect(result).toBe(false);
+			});
+
+			it('should show banner only after checking keys and dismissal', () => {
+				// No keys, not dismissed - should show (aiEnabled state doesn't matter)
+				const resultDisabled = shouldShowAiSetupBanner(false, false, false);
+				const resultEnabled = shouldShowAiSetupBanner(true, false, false);
+
+				expect(resultDisabled).toBe(true);
+				expect(resultEnabled).toBe(true);
 			});
 		});
 
@@ -582,34 +605,45 @@ describe('aiSetupReminderService', () => {
 		});
 
 		describe('Integration Scenarios', () => {
-			it('should handle new user flow (no setup yet)', () => {
-				// Fresh user: AI enabled (default), no keys, not dismissed
+			// ISSUE #214: Critical test for new user experience
+			it('should handle fresh new user flow (aiEnabled=false by default, no keys, not dismissed)', () => {
+				// Fresh user: aiEnabled starts as false, no keys, not dismissed
+				// Banner MUST show to help them get started - this is the bug fix
+				const result = shouldShowAiSetupBanner(false, false, false);
+
+				expect(result).toBe(true);
+			});
+
+			it('should handle existing user with AI enabled but no keys', () => {
+				// User who enabled AI but hasn't configured keys yet
 				const result = shouldShowAiSetupBanner(true, false, false);
 
 				expect(result).toBe(true);
 			});
 
-			it('should handle user who dismisses banner', () => {
-				// User dismisses the banner
+			it('should handle user who dismisses banner permanently', () => {
+				// User dismisses the banner - should not show again
 				mockStore['dm-assist-ai-setup-dismissed'] = 'true';
 
-				const result = shouldShowAiSetupBanner(true, true, false);
+				const result = shouldShowAiSetupBanner(false, true, false);
+
+				expect(result).toBe(false);
+			});
+
+			it('should handle user who clicks "I\'m a Player" (dismisses without disabling AI)', () => {
+				// User indicates they're a player, not DM - dismiss banner
+				mockStore['dm-assist-ai-setup-dismissed'] = 'true';
+
+				const result = shouldShowAiSetupBanner(false, true, false);
 
 				expect(result).toBe(false);
 			});
 
 			it('should handle user who configures API key', () => {
-				// User configures API key
+				// User configures API key - banner should not show
 				mockStore['ai-provider-anthropic-apikey'] = 'sk-ant-key';
 
-				const result = shouldShowAiSetupBanner(true, false, true);
-
-				expect(result).toBe(false);
-			});
-
-			it('should handle user who disables AI', () => {
-				// User disables AI entirely
-				const result = shouldShowAiSetupBanner(false, false, false);
+				const result = shouldShowAiSetupBanner(false, false, true);
 
 				expect(result).toBe(false);
 			});
@@ -618,7 +652,7 @@ describe('aiSetupReminderService', () => {
 				// User configures Ollama instead of API key
 				mockStore['ai-provider-ollama-baseurl'] = 'http://localhost:11434';
 
-				const result = shouldShowAiSetupBanner(true, false, true);
+				const result = shouldShowAiSetupBanner(false, false, true);
 
 				expect(result).toBe(false);
 			});
@@ -627,9 +661,19 @@ describe('aiSetupReminderService', () => {
 				// User had dismissed and configured key, then removed key and dismissal
 				mockStore = {}; // Clear everything
 
-				const result = shouldShowAiSetupBanner(true, false, false);
+				const result = shouldShowAiSetupBanner(false, false, false);
 
 				expect(result).toBe(true);
+			});
+
+			it('should not show if user has API key even if they dismissed before', () => {
+				// User configured key after dismissing - still don't show
+				mockStore['ai-provider-anthropic-apikey'] = 'sk-ant-key';
+				mockStore['dm-assist-ai-setup-dismissed'] = 'true';
+
+				const result = shouldShowAiSetupBanner(false, true, true);
+
+				expect(result).toBe(false);
 			});
 		});
 	});

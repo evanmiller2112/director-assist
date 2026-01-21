@@ -5,3 +5,4 @@ export * from './ai';
 export * from './cache';
 export * from './systems';
 export * from './combat';
+export * from './playerExport';

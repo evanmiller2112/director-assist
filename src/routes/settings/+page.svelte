@@ -19,7 +19,8 @@
 		getDaysSinceExport,
 		type RelationshipContextSettings
 	} from '$lib/services';
-	import { Download, Upload, Moon, Sun, Monitor, Trash2, Key, RefreshCw, Layers, ChevronRight } from 'lucide-svelte';
+	import { Download, Upload, Moon, Sun, Monitor, Trash2, Key, RefreshCw, Layers, ChevronRight, Users } from 'lucide-svelte';
+	import PlayerExportModal from '$lib/components/settings/PlayerExportModal.svelte';
 	import LoadingButton from '$lib/components/ui/LoadingButton.svelte';
 	import { SystemSelector } from '$lib/components/settings';
 	import { page } from '$app/stores';
@@ -28,6 +29,7 @@
 	let apiKey = $state('');
 	let isExporting = $state(false);
 	let isImporting = $state(false);
+	let showPlayerExportModal = $state(false);
 
 	// Model selection state
 	let models = $state<ModelInfo[]>([]);
@@ -704,6 +706,21 @@
 		</div>
 	</section>
 
+	<!-- Player Export -->
+	<section class="mb-8">
+		<h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">Player Export</h2>
+		<p class="text-sm text-slate-500 mb-4">
+			Create a player-safe export that filters out DM-only content like private notes, secrets, and hidden entities.
+		</p>
+		<button
+			class="btn btn-secondary inline-flex items-center gap-2"
+			onclick={() => showPlayerExportModal = true}
+		>
+			<Users class="w-4 h-4" />
+			Export for Players
+		</button>
+	</section>
+
 	<!-- Danger Zone -->
 	<section class="border-t border-red-200 dark:border-red-900 pt-8">
 		<h2 class="text-lg font-semibold text-red-600 dark:text-red-400 mb-4">Danger Zone</h2>
@@ -716,3 +733,6 @@
 		</button>
 	</section>
 </div>
+
+<!-- Player Export Modal -->
+<PlayerExportModal bind:open={showPlayerExportModal} onclose={() => showPlayerExportModal = false} />

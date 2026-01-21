@@ -1,0 +1,1556 @@
+/**
+ * Tests for Player Export Filter Service (TDD RED Phase)
+ *
+ * This service filters campaign data to create player-safe exports by:
+ * 1. Filtering out entire entities based on visibility rules
+ * 2. Removing sensitive fields (notes, hidden section fields, preparation)
+ * 3. Filtering entity links (removing DM-only links and sensitive link properties)
+ *
+ * Covers:
+ * - Entity visibility rules (playerVisible, player_profile, timeline_event knownBy)
+ * - Field filtering (notes, hidden section, preparation for sessions)
+ * - Link filtering (playerVisible, notes, metadata removal)
+ * - Integration scenarios with mixed visibility
+ * - Edge cases and boundary conditions
+ *
+ * NOTE: These tests are expected to FAIL initially (RED phase).
+ * Implementation will be added in the GREEN phase to make them pass.
+ */
+import { describe, it, expect, beforeEach } from 'vitest';
+import {
+	isEntityPlayerVisible,
+	filterEntityForPlayer,
+	getHiddenFieldKeys,
+	filterFieldsForPlayer,
+	filterLinksForPlayer,
+	filterEntitiesForPlayer
+} from './playerExportFilterService';
+import type { BaseEntity, EntityLink, FieldDefinition, EntityTypeDefinition } from '$lib/types/entities';
+import type { PlayerEntity, PlayerEntityLink } from '$lib/types/playerExport';
+
+describe('playerExportFilterService', () => {
+	// Test fixtures
+	let baseEntity: BaseEntity;
+	let entityTypeDefinition: EntityTypeDefinition;
+
+	beforeEach(() => {
+		// Standard test entity
+		baseEntity = {
+			id: 'entity-1',
+			type: 'npc',
+			name: 'Test NPC',
+			description: 'A test non-player character',
+			summary: 'Brief summary',
+			tags: ['friendly', 'merchant'],
+			imageUrl: 'https://example.com/npc.png',
+			fields: {
+				alignment: 'neutral good',
+				occupation: 'shopkeeper',
+				secret_motivation: 'Actually a spy'
+			},
+			links: [],
+			notes: 'DM notes about this character',
+			playerVisible: true,
+			createdAt: new Date('2025-01-01'),
+			updatedAt: new Date('2025-01-10'),
+			metadata: { customField: 'value' }
+		};
+
+		// Standard entity type definition
+		entityTypeDefinition = {
+			type: 'npc',
+			label: 'NPC',
+			labelPlural: 'NPCs',
+			description: 'Non-player characters',
+			icon: 'users',
+			color: 'blue',
+			isBuiltIn: true,
+			fieldDefinitions: [
+				{
+					key: 'alignment',
+					label: 'Alignment',
+					type: 'text',
+					required: false,
+					section: 'public',
+					order: 1
+				},
+				{
+					key: 'occupation',
+					label: 'Occupation',
+					type: 'text',
+					required: false,
+					section: 'public',
+					order: 2
+				},
+				{
+					key: 'secret_motivation',
+					label: 'Secret Motivation',
+					type: 'textarea',
+					required: false,
+					section: 'hidden',
+					order: 3
+				}
+			],
+			defaultRelationships: ['member_of', 'located_at']
+		};
+	});
+
+	describe('isEntityPlayerVisible', () => {
+		describe('playerVisible flag', () => {
+			it('should return false for playerVisible: false', () => {
+				const entity: BaseEntity = { ...baseEntity, playerVisible: false };
+				const result = isEntityPlayerVisible(entity);
+				expect(result).toBe(false);
+			});
+
+			it('should return true for playerVisible: true', () => {
+				const entity: BaseEntity = { ...baseEntity, playerVisible: true };
+				const result = isEntityPlayerVisible(entity);
+				expect(result).toBe(true);
+			});
+
+			it('should return true for playerVisible: undefined (default visible)', () => {
+				const entity: BaseEntity = { ...baseEntity };
+				delete entity.playerVisible;
+				const result = isEntityPlayerVisible(entity);
+				expect(result).toBe(true);
+			});
+		});
+
+		describe('player_profile type filtering', () => {
+			it('should return false for player_profile type', () => {
+				const entity: BaseEntity = {
+					...baseEntity,
+					type: 'player_profile',
+					playerVisible: true
+				};
+				const result = isEntityPlayerVisible(entity);
+				expect(result).toBe(false);
+			});
+
+			it('should return false for player_profile even when playerVisible is undefined', () => {
+				const entity: BaseEntity = { ...baseEntity, type: 'player_profile' };
+				delete entity.playerVisible;
+				const result = isEntityPlayerVisible(entity);
+				expect(result).toBe(false);
+			});
+		});
+
+		describe('timeline_event knownBy filtering', () => {
+			it('should return false for timeline_event with knownBy: secret', () => {
+				const entity: BaseEntity = {
+					...baseEntity,
+					type: 'timeline_event',
+					fields: { knownBy: 'secret' },
+					playerVisible: true
+				};
+				const result = isEntityPlayerVisible(entity);
+				expect(result).toBe(false);
+			});
+
+			it('should return false for timeline_event with knownBy: lost', () => {
+				const entity: BaseEntity = {
+					...baseEntity,
+					type: 'timeline_event',
+					fields: { knownBy: 'lost' },
+					playerVisible: true
+				};
+				const result = isEntityPlayerVisible(entity);
+				expect(result).toBe(false);
+			});
+
+			it('should return true for timeline_event with knownBy: common_knowledge', () => {
+				const entity: BaseEntity = {
+					...baseEntity,
+					type: 'timeline_event',
+					fields: { knownBy: 'common_knowledge' },
+					playerVisible: true
+				};
+				const result = isEntityPlayerVisible(entity);
+				expect(result).toBe(true);
+			});
+
+			it('should return true for timeline_event with knownBy: scholarly', () => {
+				const entity: BaseEntity = {
+					...baseEntity,
+					type: 'timeline_event',
+					fields: { knownBy: 'scholarly' },
+					playerVisible: true
+				};
+				const result = isEntityPlayerVisible(entity);
+				expect(result).toBe(true);
+			});
+
+			it('should return true for timeline_event without knownBy field', () => {
+				const entity: BaseEntity = {
+					...baseEntity,
+					type: 'timeline_event',
+					fields: { otherField: 'value' },
+					playerVisible: true
+				};
+				const result = isEntityPlayerVisible(entity);
+				expect(result).toBe(true);
+			});
+
+			it('should return true for timeline_event with empty knownBy field', () => {
+				const entity: BaseEntity = {
+					...baseEntity,
+					type: 'timeline_event',
+					fields: { knownBy: '' },
+					playerVisible: true
+				};
+				const result = isEntityPlayerVisible(entity);
+				expect(result).toBe(true);
+			});
+
+			it('should respect playerVisible: false even with knownBy: common_knowledge', () => {
+				const entity: BaseEntity = {
+					...baseEntity,
+					type: 'timeline_event',
+					fields: { knownBy: 'common_knowledge' },
+					playerVisible: false
+				};
+				const result = isEntityPlayerVisible(entity);
+				expect(result).toBe(false);
+			});
+		});
+
+		describe('other entity types', () => {
+			it('should return true for character with playerVisible: true', () => {
+				const entity: BaseEntity = { ...baseEntity, type: 'character' };
+				const result = isEntityPlayerVisible(entity);
+				expect(result).toBe(true);
+			});
+
+			it('should return true for location with playerVisible: undefined', () => {
+				const entity: BaseEntity = { ...baseEntity, type: 'location' };
+				delete entity.playerVisible;
+				const result = isEntityPlayerVisible(entity);
+				expect(result).toBe(true);
+			});
+
+			it('should return true for session with playerVisible: true', () => {
+				const entity: BaseEntity = { ...baseEntity, type: 'session' };
+				const result = isEntityPlayerVisible(entity);
+				expect(result).toBe(true);
+			});
+
+			it('should return true for custom entity type', () => {
+				const entity: BaseEntity = { ...baseEntity, type: 'custom_type' };
+				const result = isEntityPlayerVisible(entity);
+				expect(result).toBe(true);
+			});
+		});
+
+		describe('edge cases', () => {
+			it('should handle timeline_event with knownBy as number (type coercion)', () => {
+				const entity: BaseEntity = {
+					...baseEntity,
+					type: 'timeline_event',
+					fields: { knownBy: 123 },
+					playerVisible: true
+				};
+				const result = isEntityPlayerVisible(entity);
+				expect(result).toBe(true); // Non-string knownBy treated as not secret/lost
+			});
+
+			it('should handle timeline_event with knownBy: null', () => {
+				const entity: BaseEntity = {
+					...baseEntity,
+					type: 'timeline_event',
+					fields: { knownBy: null },
+					playerVisible: true
+				};
+				const result = isEntityPlayerVisible(entity);
+				expect(result).toBe(true);
+			});
+
+			it('should be case-sensitive for knownBy values', () => {
+				const entity: BaseEntity = {
+					...baseEntity,
+					type: 'timeline_event',
+					fields: { knownBy: 'SECRET' }, // Uppercase
+					playerVisible: true
+				};
+				const result = isEntityPlayerVisible(entity);
+				expect(result).toBe(true); // 'SECRET' !== 'secret'
+			});
+		});
+	});
+
+	describe('getHiddenFieldKeys', () => {
+		it('should return empty array when no field definitions provided', () => {
+			const result = getHiddenFieldKeys([]);
+			expect(result).toEqual([]);
+		});
+
+		it('should return keys of fields with section: hidden', () => {
+			const fieldDefs: FieldDefinition[] = [
+				{
+					key: 'public_field',
+					label: 'Public Field',
+					type: 'text',
+					required: false,
+					section: 'public',
+					order: 1
+				},
+				{
+					key: 'secret_field',
+					label: 'Secret Field',
+					type: 'text',
+					required: false,
+					section: 'hidden',
+					order: 2
+				},
+				{
+					key: 'another_secret',
+					label: 'Another Secret',
+					type: 'textarea',
+					required: false,
+					section: 'hidden',
+					order: 3
+				}
+			];
+			const result = getHiddenFieldKeys(fieldDefs);
+			expect(result).toEqual(['secret_field', 'another_secret']);
+		});
+
+		it('should return empty array when no hidden fields exist', () => {
+			const fieldDefs: FieldDefinition[] = [
+				{
+					key: 'field1',
+					label: 'Field 1',
+					type: 'text',
+					required: false,
+					section: 'public',
+					order: 1
+				},
+				{
+					key: 'field2',
+					label: 'Field 2',
+					type: 'text',
+					required: false,
+					section: 'details',
+					order: 2
+				}
+			];
+			const result = getHiddenFieldKeys(fieldDefs);
+			expect(result).toEqual([]);
+		});
+
+		it('should handle fields without section property', () => {
+			const fieldDefs: FieldDefinition[] = [
+				{
+					key: 'field_no_section',
+					label: 'Field No Section',
+					type: 'text',
+					required: false,
+					order: 1
+				},
+				{
+					key: 'hidden_field',
+					label: 'Hidden Field',
+					type: 'text',
+					required: false,
+					section: 'hidden',
+					order: 2
+				}
+			];
+			const result = getHiddenFieldKeys(fieldDefs);
+			expect(result).toEqual(['hidden_field']);
+		});
+
+		it('should preserve order of hidden field keys', () => {
+			const fieldDefs: FieldDefinition[] = [
+				{
+					key: 'secret_c',
+					label: 'Secret C',
+					type: 'text',
+					required: false,
+					section: 'hidden',
+					order: 3
+				},
+				{
+					key: 'secret_a',
+					label: 'Secret A',
+					type: 'text',
+					required: false,
+					section: 'hidden',
+					order: 1
+				},
+				{
+					key: 'secret_b',
+					label: 'Secret B',
+					type: 'text',
+					required: false,
+					section: 'hidden',
+					order: 2
+				}
+			];
+			const result = getHiddenFieldKeys(fieldDefs);
+			expect(result).toEqual(['secret_c', 'secret_a', 'secret_b']);
+		});
+	});
+
+	describe('filterFieldsForPlayer', () => {
+		describe('notes field removal', () => {
+			it('should remove notes field even if not marked hidden', () => {
+				const fields = {
+					name: 'Test',
+					notes: 'Secret DM notes',
+					description: 'Public description'
+				};
+				const result = filterFieldsForPlayer(fields, [], false);
+				expect(result).not.toHaveProperty('notes');
+				expect(result).toHaveProperty('name');
+				expect(result).toHaveProperty('description');
+			});
+
+			it('should handle fields without notes property', () => {
+				const fields = {
+					name: 'Test',
+					description: 'Public description'
+				};
+				const result = filterFieldsForPlayer(fields, [], false);
+				expect(result).toEqual(fields);
+			});
+		});
+
+		describe('hidden field removal', () => {
+			it('should remove fields marked as hidden', () => {
+				const fields = {
+					public_field: 'visible',
+					secret_field: 'hidden data',
+					another_secret: 'more hidden data',
+					normal_field: 'visible too'
+				};
+				const hiddenKeys = ['secret_field', 'another_secret'];
+				const result = filterFieldsForPlayer(fields, hiddenKeys, false);
+				expect(result).toEqual({
+					public_field: 'visible',
+					normal_field: 'visible too'
+				});
+			});
+
+			it('should handle empty hidden keys array', () => {
+				const fields = {
+					field1: 'value1',
+					field2: 'value2'
+				};
+				const result = filterFieldsForPlayer(fields, [], false);
+				expect(result).toEqual(fields);
+			});
+
+			it('should handle hidden keys that do not exist in fields', () => {
+				const fields = {
+					existing_field: 'value'
+				};
+				const hiddenKeys = ['non_existent_field', 'another_missing'];
+				const result = filterFieldsForPlayer(fields, hiddenKeys, false);
+				expect(result).toEqual(fields);
+			});
+		});
+
+		describe('session preparation field removal', () => {
+			it('should remove preparation field for session entities', () => {
+				const fields = {
+					title: 'Session 1',
+					date: '2025-01-15',
+					preparation: 'DM prep notes for this session',
+					summary: 'Session summary'
+				};
+				const result = filterFieldsForPlayer(fields, [], true);
+				expect(result).not.toHaveProperty('preparation');
+				expect(result).toHaveProperty('title');
+				expect(result).toHaveProperty('date');
+				expect(result).toHaveProperty('summary');
+			});
+
+			it('should not remove preparation field for non-session entities', () => {
+				const fields = {
+					name: 'Test',
+					preparation: 'Some preparation field'
+				};
+				const result = filterFieldsForPlayer(fields, [], false);
+				expect(result).toHaveProperty('preparation');
+			});
+
+			it('should handle session without preparation field', () => {
+				const fields = {
+					title: 'Session 1',
+					date: '2025-01-15'
+				};
+				const result = filterFieldsForPlayer(fields, [], true);
+				expect(result).toEqual(fields);
+			});
+		});
+
+		describe('combined filtering', () => {
+			it('should remove notes, hidden fields, and preparation together', () => {
+				const fields = {
+					public_field: 'visible',
+					notes: 'DM notes',
+					secret_motivation: 'hidden',
+					preparation: 'prep notes',
+					description: 'visible description'
+				};
+				const hiddenKeys = ['secret_motivation'];
+				const result = filterFieldsForPlayer(fields, hiddenKeys, true);
+				expect(result).toEqual({
+					public_field: 'visible',
+					description: 'visible description'
+				});
+			});
+
+			it('should preserve field values of different types', () => {
+				const fields = {
+					name: 'Test',
+					age: 25,
+					active: true,
+					tags: ['tag1', 'tag2'],
+					empty: null,
+					undefined_field: undefined
+				};
+				const result = filterFieldsForPlayer(fields, [], false);
+				expect(result).toEqual(fields);
+			});
+		});
+
+		describe('edge cases', () => {
+			it('should handle empty fields object', () => {
+				const result = filterFieldsForPlayer({}, [], false);
+				expect(result).toEqual({});
+			});
+
+			it('should handle fields with only filtered keys', () => {
+				const fields = {
+					notes: 'notes',
+					secret: 'secret',
+					preparation: 'prep'
+				};
+				const result = filterFieldsForPlayer(fields, ['secret'], true);
+				expect(result).toEqual({});
+			});
+
+			it('should not mutate original fields object', () => {
+				const fields = {
+					keep: 'value',
+					notes: 'remove',
+					secret: 'remove'
+				};
+				const original = { ...fields };
+				filterFieldsForPlayer(fields, ['secret'], false);
+				expect(fields).toEqual(original);
+			});
+
+			it('should handle fields with numeric keys', () => {
+				const fields = {
+					'0': 'value0',
+					'1': 'value1',
+					notes: 'remove'
+				};
+				const result = filterFieldsForPlayer(fields, [], false);
+				expect(result).toEqual({
+					'0': 'value0',
+					'1': 'value1'
+				});
+			});
+
+			it('should handle fields with special characters in keys', () => {
+				const fields = {
+					'field-with-dash': 'value1',
+					'field_with_underscore': 'value2',
+					'field.with.dot': 'value3',
+					notes: 'remove'
+				};
+				const result = filterFieldsForPlayer(fields, [], false);
+				expect(result).toHaveProperty('field-with-dash');
+				expect(result).toHaveProperty('field_with_underscore');
+				expect(result).toHaveProperty('field.with.dot');
+				expect(result).not.toHaveProperty('notes');
+			});
+		});
+	});
+
+	describe('filterLinksForPlayer', () => {
+		let testLinks: EntityLink[];
+
+		beforeEach(() => {
+			testLinks = [
+				{
+					id: 'link-1',
+					sourceId: 'entity-1',
+					targetId: 'entity-2',
+					targetType: 'npc',
+					relationship: 'knows',
+					bidirectional: true,
+					notes: 'They met at a tavern',
+					strength: 'strong',
+					playerVisible: true,
+					createdAt: new Date('2025-01-01'),
+					updatedAt: new Date('2025-01-10'),
+					metadata: { tension: 5 }
+				},
+				{
+					id: 'link-2',
+					sourceId: 'entity-1',
+					targetId: 'entity-3',
+					targetType: 'location',
+					relationship: 'located_at',
+					bidirectional: false,
+					notes: 'Secret hideout',
+					strength: 'moderate',
+					playerVisible: false,
+					createdAt: new Date('2025-01-05'),
+					updatedAt: new Date('2025-01-12')
+				}
+			];
+		});
+
+		describe('playerVisible filtering', () => {
+			it('should remove links with playerVisible: false', () => {
+				const result = filterLinksForPlayer(testLinks);
+				expect(result).toHaveLength(1);
+				expect(result[0].id).toBe('link-1');
+			});
+
+			it('should keep links with playerVisible: true', () => {
+				const links: EntityLink[] = [
+					{
+						id: 'link-1',
+						targetId: 'target-1',
+						targetType: 'npc',
+						relationship: 'knows',
+						bidirectional: true,
+						playerVisible: true
+					}
+				];
+				const result = filterLinksForPlayer(links);
+				expect(result).toHaveLength(1);
+			});
+
+			it('should keep links with playerVisible: undefined (default visible)', () => {
+				const links: EntityLink[] = [
+					{
+						id: 'link-1',
+						targetId: 'target-1',
+						targetType: 'npc',
+						relationship: 'knows',
+						bidirectional: true
+					}
+				];
+				const result = filterLinksForPlayer(links);
+				expect(result).toHaveLength(1);
+			});
+
+			it('should handle empty links array', () => {
+				const result = filterLinksForPlayer([]);
+				expect(result).toEqual([]);
+			});
+
+			it('should filter multiple hidden links', () => {
+				const links: EntityLink[] = [
+					{
+						id: 'link-1',
+						targetId: 'target-1',
+						targetType: 'npc',
+						relationship: 'knows',
+						bidirectional: true,
+						playerVisible: true
+					},
+					{
+						id: 'link-2',
+						targetId: 'target-2',
+						targetType: 'faction',
+						relationship: 'secret_member',
+						bidirectional: false,
+						playerVisible: false
+					},
+					{
+						id: 'link-3',
+						targetId: 'target-3',
+						targetType: 'item',
+						relationship: 'hidden_item',
+						bidirectional: false,
+						playerVisible: false
+					}
+				];
+				const result = filterLinksForPlayer(links);
+				expect(result).toHaveLength(1);
+				expect(result[0].id).toBe('link-1');
+			});
+		});
+
+		describe('property removal', () => {
+			it('should remove notes property from links', () => {
+				const result = filterLinksForPlayer(testLinks);
+				expect(result[0]).not.toHaveProperty('notes');
+			});
+
+			it('should remove metadata property from links', () => {
+				const result = filterLinksForPlayer(testLinks);
+				expect(result[0]).not.toHaveProperty('metadata');
+			});
+
+			it('should remove playerVisible property from output', () => {
+				const result = filterLinksForPlayer(testLinks);
+				expect(result[0]).not.toHaveProperty('playerVisible');
+			});
+
+			it('should remove createdAt property from output', () => {
+				const result = filterLinksForPlayer(testLinks);
+				expect(result[0]).not.toHaveProperty('createdAt');
+			});
+
+			it('should remove updatedAt property from output', () => {
+				const result = filterLinksForPlayer(testLinks);
+				expect(result[0]).not.toHaveProperty('updatedAt');
+			});
+
+			it('should remove sourceId property from output', () => {
+				const result = filterLinksForPlayer(testLinks);
+				expect(result[0]).not.toHaveProperty('sourceId');
+			});
+		});
+
+		describe('property preservation', () => {
+			it('should preserve id property', () => {
+				const result = filterLinksForPlayer(testLinks);
+				expect(result[0]).toHaveProperty('id');
+				expect(result[0].id).toBe('link-1');
+			});
+
+			it('should preserve targetId property', () => {
+				const result = filterLinksForPlayer(testLinks);
+				expect(result[0]).toHaveProperty('targetId');
+				expect(result[0].targetId).toBe('entity-2');
+			});
+
+			it('should preserve targetType property', () => {
+				const result = filterLinksForPlayer(testLinks);
+				expect(result[0]).toHaveProperty('targetType');
+				expect(result[0].targetType).toBe('npc');
+			});
+
+			it('should preserve relationship property', () => {
+				const result = filterLinksForPlayer(testLinks);
+				expect(result[0]).toHaveProperty('relationship');
+				expect(result[0].relationship).toBe('knows');
+			});
+
+			it('should preserve bidirectional property', () => {
+				const result = filterLinksForPlayer(testLinks);
+				expect(result[0]).toHaveProperty('bidirectional');
+				expect(result[0].bidirectional).toBe(true);
+			});
+
+			it('should preserve reverseRelationship property', () => {
+				const links: EntityLink[] = [
+					{
+						id: 'link-1',
+						targetId: 'target-1',
+						targetType: 'npc',
+						relationship: 'patron_of',
+						bidirectional: true,
+						reverseRelationship: 'client_of',
+						playerVisible: true
+					}
+				];
+				const result = filterLinksForPlayer(links);
+				expect(result[0]).toHaveProperty('reverseRelationship');
+				expect(result[0].reverseRelationship).toBe('client_of');
+			});
+
+			it('should preserve strength property', () => {
+				const result = filterLinksForPlayer(testLinks);
+				expect(result[0]).toHaveProperty('strength');
+				expect(result[0].strength).toBe('strong');
+			});
+		});
+
+		describe('optional properties', () => {
+			it('should handle links without reverseRelationship', () => {
+				const links: EntityLink[] = [
+					{
+						id: 'link-1',
+						targetId: 'target-1',
+						targetType: 'npc',
+						relationship: 'knows',
+						bidirectional: true,
+						playerVisible: true
+					}
+				];
+				const result = filterLinksForPlayer(links);
+				expect(result[0]).not.toHaveProperty('reverseRelationship');
+			});
+
+			it('should handle links without strength', () => {
+				const links: EntityLink[] = [
+					{
+						id: 'link-1',
+						targetId: 'target-1',
+						targetType: 'npc',
+						relationship: 'knows',
+						bidirectional: true,
+						playerVisible: true
+					}
+				];
+				const result = filterLinksForPlayer(links);
+				expect(result[0]).not.toHaveProperty('strength');
+			});
+
+			it('should handle links without notes', () => {
+				const links: EntityLink[] = [
+					{
+						id: 'link-1',
+						targetId: 'target-1',
+						targetType: 'npc',
+						relationship: 'knows',
+						bidirectional: true,
+						playerVisible: true
+					}
+				];
+				const result = filterLinksForPlayer(links);
+				expect(result).toHaveLength(1);
+			});
+
+			it('should handle links without metadata', () => {
+				const links: EntityLink[] = [
+					{
+						id: 'link-1',
+						targetId: 'target-1',
+						targetType: 'npc',
+						relationship: 'knows',
+						bidirectional: true,
+						playerVisible: true
+					}
+				];
+				const result = filterLinksForPlayer(links);
+				expect(result).toHaveLength(1);
+			});
+		});
+
+		describe('edge cases', () => {
+			it('should not mutate original links array', () => {
+				const originalLength = testLinks.length;
+				const originalFirstLink = { ...testLinks[0] };
+				filterLinksForPlayer(testLinks);
+				expect(testLinks.length).toBe(originalLength);
+				expect(testLinks[0].id).toBe(originalFirstLink.id);
+				expect(testLinks[0].targetId).toBe(originalFirstLink.targetId);
+				expect(testLinks[0].playerVisible).toBe(originalFirstLink.playerVisible);
+			});
+
+			it('should handle all links being filtered out', () => {
+				const links: EntityLink[] = [
+					{
+						id: 'link-1',
+						targetId: 'target-1',
+						targetType: 'npc',
+						relationship: 'secret',
+						bidirectional: false,
+						playerVisible: false
+					},
+					{
+						id: 'link-2',
+						targetId: 'target-2',
+						targetType: 'faction',
+						relationship: 'hidden',
+						bidirectional: false,
+						playerVisible: false
+					}
+				];
+				const result = filterLinksForPlayer(links);
+				expect(result).toEqual([]);
+			});
+
+			it('should handle links with undefined reverseRelationship correctly', () => {
+				const links: EntityLink[] = [
+					{
+						id: 'link-1',
+						targetId: 'target-1',
+						targetType: 'npc',
+						relationship: 'knows',
+						bidirectional: true,
+						reverseRelationship: undefined,
+						playerVisible: true
+					}
+				];
+				const result = filterLinksForPlayer(links);
+				expect(result[0]).toHaveProperty('reverseRelationship');
+				expect(result[0].reverseRelationship).toBeUndefined();
+			});
+
+			it('should handle links with all strength types', () => {
+				const links: EntityLink[] = [
+					{
+						id: 'link-1',
+						targetId: 'target-1',
+						targetType: 'npc',
+						relationship: 'knows',
+						bidirectional: true,
+						strength: 'strong',
+						playerVisible: true
+					},
+					{
+						id: 'link-2',
+						targetId: 'target-2',
+						targetType: 'npc',
+						relationship: 'acquaintance',
+						bidirectional: true,
+						strength: 'moderate',
+						playerVisible: true
+					},
+					{
+						id: 'link-3',
+						targetId: 'target-3',
+						targetType: 'npc',
+						relationship: 'seen_once',
+						bidirectional: true,
+						strength: 'weak',
+						playerVisible: true
+					}
+				];
+				const result = filterLinksForPlayer(links);
+				expect(result).toHaveLength(3);
+				expect(result[0].strength).toBe('strong');
+				expect(result[1].strength).toBe('moderate');
+				expect(result[2].strength).toBe('weak');
+			});
+		});
+	});
+
+	describe('filterEntityForPlayer', () => {
+		describe('entity visibility', () => {
+			it('should return null when entity is not player visible', () => {
+				const entity: BaseEntity = { ...baseEntity, playerVisible: false };
+				const result = filterEntityForPlayer(entity, entityTypeDefinition);
+				expect(result).toBeNull();
+			});
+
+			it('should return null for player_profile type', () => {
+				const entity: BaseEntity = { ...baseEntity, type: 'player_profile' };
+				const result = filterEntityForPlayer(entity, entityTypeDefinition);
+				expect(result).toBeNull();
+			});
+
+			it('should return null for timeline_event with knownBy: secret', () => {
+				const entity: BaseEntity = {
+					...baseEntity,
+					type: 'timeline_event',
+					fields: { knownBy: 'secret' }
+				};
+				const result = filterEntityForPlayer(entity, entityTypeDefinition);
+				expect(result).toBeNull();
+			});
+
+			it('should filter visible entity', () => {
+				const entity: BaseEntity = { ...baseEntity, playerVisible: true };
+				const result = filterEntityForPlayer(entity, entityTypeDefinition);
+				expect(result).not.toBeNull();
+			});
+		});
+
+		describe('field filtering', () => {
+			it('should remove notes field', () => {
+				const entity: BaseEntity = { ...baseEntity, notes: 'Secret DM notes' };
+				const result = filterEntityForPlayer(entity, entityTypeDefinition);
+				expect(result).not.toBeNull();
+				expect(result).not.toHaveProperty('notes');
+			});
+
+			it('should remove fields with section: hidden', () => {
+				const entity: BaseEntity = {
+					...baseEntity,
+					fields: {
+						alignment: 'neutral good',
+						occupation: 'shopkeeper',
+						secret_motivation: 'Actually a spy'
+					}
+				};
+				const result = filterEntityForPlayer(entity, entityTypeDefinition);
+				expect(result).not.toBeNull();
+				expect(result!.fields).toHaveProperty('alignment');
+				expect(result!.fields).toHaveProperty('occupation');
+				expect(result!.fields).not.toHaveProperty('secret_motivation');
+			});
+
+			it('should remove preparation field for session type', () => {
+				const sessionTypeDef: EntityTypeDefinition = {
+					...entityTypeDefinition,
+					type: 'session'
+				};
+				const entity: BaseEntity = {
+					...baseEntity,
+					type: 'session',
+					fields: {
+						title: 'Session 1',
+						preparation: 'DM prep notes',
+						summary: 'Session summary'
+					}
+				};
+				const result = filterEntityForPlayer(entity, sessionTypeDef);
+				expect(result).not.toBeNull();
+				expect(result!.fields).toHaveProperty('title');
+				expect(result!.fields).toHaveProperty('summary');
+				expect(result!.fields).not.toHaveProperty('preparation');
+			});
+
+			it('should preserve public fields', () => {
+				const entity: BaseEntity = {
+					...baseEntity,
+					fields: {
+						alignment: 'neutral good',
+						occupation: 'shopkeeper'
+					}
+				};
+				const result = filterEntityForPlayer(entity, entityTypeDefinition);
+				expect(result).not.toBeNull();
+				expect(result!.fields).toEqual({
+					alignment: 'neutral good',
+					occupation: 'shopkeeper'
+				});
+			});
+		});
+
+		describe('link filtering', () => {
+			it('should filter links correctly', () => {
+				const entity: BaseEntity = {
+					...baseEntity,
+					links: [
+						{
+							id: 'link-1',
+							targetId: 'target-1',
+							targetType: 'npc',
+							relationship: 'knows',
+							bidirectional: true,
+							notes: 'Link notes',
+							playerVisible: true,
+							metadata: { tension: 5 }
+						},
+						{
+							id: 'link-2',
+							targetId: 'target-2',
+							targetType: 'faction',
+							relationship: 'secret_member',
+							bidirectional: false,
+							playerVisible: false
+						}
+					]
+				};
+				const result = filterEntityForPlayer(entity, entityTypeDefinition);
+				expect(result).not.toBeNull();
+				expect(result!.links).toHaveLength(1);
+				expect(result!.links[0].id).toBe('link-1');
+				expect(result!.links[0]).not.toHaveProperty('notes');
+				expect(result!.links[0]).not.toHaveProperty('metadata');
+			});
+
+			it('should handle entity with no links', () => {
+				const entity: BaseEntity = { ...baseEntity, links: [] };
+				const result = filterEntityForPlayer(entity, entityTypeDefinition);
+				expect(result).not.toBeNull();
+				expect(result!.links).toEqual([]);
+			});
+		});
+
+		describe('property preservation', () => {
+			it('should preserve core entity properties', () => {
+				const entity: BaseEntity = { ...baseEntity };
+				const result = filterEntityForPlayer(entity, entityTypeDefinition);
+				expect(result).not.toBeNull();
+				expect(result!.id).toBe(entity.id);
+				expect(result!.type).toBe(entity.type);
+				expect(result!.name).toBe(entity.name);
+				expect(result!.description).toBe(entity.description);
+				expect(result!.summary).toBe(entity.summary);
+				expect(result!.tags).toEqual(entity.tags);
+				expect(result!.imageUrl).toBe(entity.imageUrl);
+				expect(result!.createdAt).toEqual(entity.createdAt);
+				expect(result!.updatedAt).toEqual(entity.updatedAt);
+			});
+
+			it('should not include metadata property', () => {
+				const entity: BaseEntity = { ...baseEntity, metadata: { custom: 'data' } };
+				const result = filterEntityForPlayer(entity, entityTypeDefinition);
+				expect(result).not.toBeNull();
+				expect(result).not.toHaveProperty('metadata');
+			});
+
+			it('should not include playerVisible property', () => {
+				const entity: BaseEntity = { ...baseEntity, playerVisible: true };
+				const result = filterEntityForPlayer(entity, entityTypeDefinition);
+				expect(result).not.toBeNull();
+				expect(result).not.toHaveProperty('playerVisible');
+			});
+
+			it('should handle entity with optional fields missing', () => {
+				const entity: BaseEntity = {
+					...baseEntity,
+					summary: undefined,
+					imageUrl: undefined
+				};
+				const result = filterEntityForPlayer(entity, entityTypeDefinition);
+				expect(result).not.toBeNull();
+				expect(result!.summary).toBeUndefined();
+				expect(result!.imageUrl).toBeUndefined();
+			});
+		});
+
+		describe('undefined type definition', () => {
+			it('should handle entity with no type definition', () => {
+				const entity: BaseEntity = { ...baseEntity };
+				const result = filterEntityForPlayer(entity, undefined);
+				expect(result).not.toBeNull();
+				// Should still filter notes but not field-specific filtering
+				expect(result).not.toHaveProperty('notes');
+			});
+
+			it('should not filter hidden fields when type definition is undefined', () => {
+				const entity: BaseEntity = {
+					...baseEntity,
+					fields: {
+						public_field: 'value',
+						secret_field: 'secret'
+					}
+				};
+				const result = filterEntityForPlayer(entity, undefined);
+				expect(result).not.toBeNull();
+				expect(result!.fields).toHaveProperty('public_field');
+				expect(result!.fields).toHaveProperty('secret_field');
+			});
+		});
+
+		describe('edge cases', () => {
+			it('should handle entity with empty fields object', () => {
+				const entity: BaseEntity = { ...baseEntity, fields: {} };
+				const result = filterEntityForPlayer(entity, entityTypeDefinition);
+				expect(result).not.toBeNull();
+				expect(result!.fields).toEqual({});
+			});
+
+			it('should handle entity with empty tags array', () => {
+				const entity: BaseEntity = { ...baseEntity, tags: [] };
+				const result = filterEntityForPlayer(entity, entityTypeDefinition);
+				expect(result).not.toBeNull();
+				expect(result!.tags).toEqual([]);
+			});
+
+			it('should not mutate original entity', () => {
+				const entity: BaseEntity = { ...baseEntity };
+				const originalId = entity.id;
+				const originalName = entity.name;
+				const originalNotes = entity.notes;
+				const originalLinks = entity.links;
+				filterEntityForPlayer(entity, entityTypeDefinition);
+				expect(entity.id).toBe(originalId);
+				expect(entity.name).toBe(originalName);
+				expect(entity.notes).toBe(originalNotes);
+				expect(entity.links).toBe(originalLinks);
+			});
+
+			it('should handle entity with all fields being filtered out', () => {
+				const entity: BaseEntity = {
+					...baseEntity,
+					fields: {
+						secret1: 'hidden',
+						secret2: 'also hidden'
+					}
+				};
+				const typeDef: EntityTypeDefinition = {
+					...entityTypeDefinition,
+					fieldDefinitions: [
+						{
+							key: 'secret1',
+							label: 'Secret 1',
+							type: 'text',
+							required: false,
+							section: 'hidden',
+							order: 1
+						},
+						{
+							key: 'secret2',
+							label: 'Secret 2',
+							type: 'text',
+							required: false,
+							section: 'hidden',
+							order: 2
+						}
+					]
+				};
+				const result = filterEntityForPlayer(entity, typeDef);
+				expect(result).not.toBeNull();
+				expect(result!.fields).toEqual({});
+			});
+		});
+	});
+
+	describe('filterEntitiesForPlayer (integration)', () => {
+		let testEntities: BaseEntity[];
+		let typeDefinitions: EntityTypeDefinition[];
+
+		beforeEach(() => {
+			testEntities = [
+				{
+					id: 'entity-1',
+					type: 'npc',
+					name: 'Visible NPC',
+					description: 'A visible character',
+					tags: ['friendly'],
+					fields: { alignment: 'good' },
+					links: [],
+					notes: 'DM notes',
+					playerVisible: true,
+					createdAt: new Date('2025-01-01'),
+					updatedAt: new Date('2025-01-10'),
+					metadata: {}
+				},
+				{
+					id: 'entity-2',
+					type: 'npc',
+					name: 'Hidden NPC',
+					description: 'A hidden character',
+					tags: ['secret'],
+					fields: { alignment: 'evil' },
+					links: [],
+					notes: 'Secret villain',
+					playerVisible: false,
+					createdAt: new Date('2025-01-01'),
+					updatedAt: new Date('2025-01-10'),
+					metadata: {}
+				},
+				{
+					id: 'entity-3',
+					type: 'player_profile',
+					name: 'Player Profile',
+					description: 'Should be filtered',
+					tags: [],
+					fields: {},
+					links: [],
+					notes: 'Player data',
+					playerVisible: true,
+					createdAt: new Date('2025-01-01'),
+					updatedAt: new Date('2025-01-10'),
+					metadata: {}
+				},
+				{
+					id: 'entity-4',
+					type: 'location',
+					name: 'Visible Location',
+					description: 'A public location',
+					tags: ['city'],
+					fields: { population: 10000 },
+					links: [],
+					notes: 'Location notes',
+					createdAt: new Date('2025-01-01'),
+					updatedAt: new Date('2025-01-10'),
+					metadata: {}
+				}
+			];
+
+			typeDefinitions = [
+				{
+					type: 'npc',
+					label: 'NPC',
+					labelPlural: 'NPCs',
+					icon: 'users',
+					color: 'blue',
+					isBuiltIn: true,
+					fieldDefinitions: [
+						{
+							key: 'alignment',
+							label: 'Alignment',
+							type: 'text',
+							required: false,
+							section: 'public',
+							order: 1
+						}
+					],
+					defaultRelationships: []
+				},
+				{
+					type: 'location',
+					label: 'Location',
+					labelPlural: 'Locations',
+					icon: 'map-pin',
+					color: 'green',
+					isBuiltIn: true,
+					fieldDefinitions: [
+						{
+							key: 'population',
+							label: 'Population',
+							type: 'number',
+							required: false,
+							section: 'public',
+							order: 1
+						}
+					],
+					defaultRelationships: []
+				}
+			];
+		});
+
+		describe('filtering multiple entities', () => {
+			it('should filter out DM-only entities', () => {
+				const result = filterEntitiesForPlayer(testEntities, typeDefinitions);
+				expect(result).toHaveLength(2);
+				expect(result.map((e) => e.id)).toContain('entity-1');
+				expect(result.map((e) => e.id)).toContain('entity-4');
+				expect(result.map((e) => e.id)).not.toContain('entity-2');
+				expect(result.map((e) => e.id)).not.toContain('entity-3');
+			});
+
+			it('should return empty array for empty input', () => {
+				const result = filterEntitiesForPlayer([], typeDefinitions);
+				expect(result).toEqual([]);
+			});
+
+			it('should handle all entities being filtered out', () => {
+				const allHidden: BaseEntity[] = [
+					{ ...testEntities[0], playerVisible: false },
+					{ ...testEntities[1], playerVisible: false }
+				];
+				const result = filterEntitiesForPlayer(allHidden, typeDefinitions);
+				expect(result).toEqual([]);
+			});
+
+			it('should handle all entities being visible', () => {
+				const allVisible: BaseEntity[] = [
+					{ ...testEntities[0] },
+					{ ...testEntities[3] }
+				];
+				const result = filterEntitiesForPlayer(allVisible, typeDefinitions);
+				expect(result).toHaveLength(2);
+			});
+		});
+
+		describe('field and link filtering in bulk', () => {
+			it('should filter fields and links for all entities', () => {
+				const entitiesWithSecrets: BaseEntity[] = [
+					{
+						...testEntities[0],
+						fields: {
+							public_field: 'visible',
+							secret_field: 'hidden'
+						},
+						links: [
+							{
+								id: 'link-1',
+								targetId: 'target-1',
+								targetType: 'npc',
+								relationship: 'knows',
+								bidirectional: true,
+								notes: 'Link notes',
+								playerVisible: true
+							}
+						]
+					}
+				];
+				const typeDef: EntityTypeDefinition[] = [
+					{
+						...typeDefinitions[0],
+						fieldDefinitions: [
+							{
+								key: 'public_field',
+								label: 'Public',
+								type: 'text',
+								required: false,
+								section: 'public',
+								order: 1
+							},
+							{
+								key: 'secret_field',
+								label: 'Secret',
+								type: 'text',
+								required: false,
+								section: 'hidden',
+								order: 2
+							}
+						]
+					}
+				];
+				const result = filterEntitiesForPlayer(entitiesWithSecrets, typeDef);
+				expect(result).toHaveLength(1);
+				expect(result[0].fields).toHaveProperty('public_field');
+				expect(result[0].fields).not.toHaveProperty('secret_field');
+				expect(result[0].links).toHaveLength(1);
+				expect(result[0].links[0]).not.toHaveProperty('notes');
+			});
+
+			it('should handle entities with missing type definitions', () => {
+				const mixedEntities: BaseEntity[] = [
+					testEntities[0],
+					{ ...testEntities[0], type: 'custom_type', id: 'custom-1' }
+				];
+				const result = filterEntitiesForPlayer(mixedEntities, typeDefinitions);
+				expect(result).toHaveLength(2);
+			});
+		});
+
+		describe('timeline events filtering', () => {
+			it('should filter timeline events by knownBy field', () => {
+				const events: BaseEntity[] = [
+					{
+						id: 'event-1',
+						type: 'timeline_event',
+						name: 'Public Event',
+						description: 'Everyone knows',
+						tags: [],
+						fields: { knownBy: 'common_knowledge' },
+						links: [],
+						notes: '',
+						createdAt: new Date(),
+						updatedAt: new Date(),
+						metadata: {}
+					},
+					{
+						id: 'event-2',
+						type: 'timeline_event',
+						name: 'Secret Event',
+						description: 'Hidden from players',
+						tags: [],
+						fields: { knownBy: 'secret' },
+						links: [],
+						notes: '',
+						createdAt: new Date(),
+						updatedAt: new Date(),
+						metadata: {}
+					},
+					{
+						id: 'event-3',
+						type: 'timeline_event',
+						name: 'Lost Event',
+						description: 'Forgotten knowledge',
+						tags: [],
+						fields: { knownBy: 'lost' },
+						links: [],
+						notes: '',
+						createdAt: new Date(),
+						updatedAt: new Date(),
+						metadata: {}
+					},
+					{
+						id: 'event-4',
+						type: 'timeline_event',
+						name: 'Scholarly Event',
+						description: 'In books',
+						tags: [],
+						fields: { knownBy: 'scholarly' },
+						links: [],
+						notes: '',
+						createdAt: new Date(),
+						updatedAt: new Date(),
+						metadata: {}
+					}
+				];
+				const result = filterEntitiesForPlayer(events, typeDefinitions);
+				expect(result).toHaveLength(2);
+				expect(result.map((e) => e.id)).toContain('event-1');
+				expect(result.map((e) => e.id)).toContain('event-4');
+			});
+		});
+
+		describe('edge cases', () => {
+			it('should not mutate original entities array', () => {
+				const originalLength = testEntities.length;
+				const originalFirstId = testEntities[0].id;
+				const originalFirstNotes = testEntities[0].notes;
+				filterEntitiesForPlayer(testEntities, typeDefinitions);
+				expect(testEntities.length).toBe(originalLength);
+				expect(testEntities[0].id).toBe(originalFirstId);
+				expect(testEntities[0].notes).toBe(originalFirstNotes);
+			});
+
+			it('should handle empty type definitions array', () => {
+				const result = filterEntitiesForPlayer(testEntities, []);
+				expect(result.length).toBeGreaterThan(0);
+			});
+
+			it('should preserve entity order after filtering', () => {
+				const orderedEntities: BaseEntity[] = [
+					{ ...testEntities[0], id: 'a', name: 'A' },
+					{ ...testEntities[0], id: 'b', name: 'B' },
+					{ ...testEntities[0], id: 'c', name: 'C' }
+				];
+				const result = filterEntitiesForPlayer(orderedEntities, typeDefinitions);
+				expect(result[0].id).toBe('a');
+				expect(result[1].id).toBe('b');
+				expect(result[2].id).toBe('c');
+			});
+
+			it('should handle large number of entities efficiently', () => {
+				const manyEntities: BaseEntity[] = [];
+				for (let i = 0; i < 1000; i++) {
+					manyEntities.push({
+						...testEntities[0],
+						id: `entity-${i}`,
+						name: `Entity ${i}`
+					});
+				}
+				const result = filterEntitiesForPlayer(manyEntities, typeDefinitions);
+				expect(result).toHaveLength(1000);
+			});
+		});
+
+		describe('session type filtering', () => {
+			it('should remove preparation field from session entities', () => {
+				const sessions: BaseEntity[] = [
+					{
+						id: 'session-1',
+						type: 'session',
+						name: 'Session 1',
+						description: 'First session',
+						tags: [],
+						fields: {
+							date: '2025-01-15',
+							preparation: 'DM prep notes',
+							summary: 'Session summary'
+						},
+						links: [],
+						notes: 'Session notes',
+						createdAt: new Date(),
+						updatedAt: new Date(),
+						metadata: {}
+					}
+				];
+				const sessionTypeDef: EntityTypeDefinition = {
+					type: 'session',
+					label: 'Session',
+					labelPlural: 'Sessions',
+					icon: 'calendar',
+					color: 'purple',
+					isBuiltIn: true,
+					fieldDefinitions: [
+						{
+							key: 'date',
+							label: 'Date',
+							type: 'date',
+							required: false,
+							order: 1
+						},
+						{
+							key: 'preparation',
+							label: 'Preparation',
+							type: 'textarea',
+							required: false,
+							order: 2
+						},
+						{
+							key: 'summary',
+							label: 'Summary',
+							type: 'textarea',
+							required: false,
+							order: 3
+						}
+					],
+					defaultRelationships: []
+				};
+				const result = filterEntitiesForPlayer(sessions, [sessionTypeDef]);
+				expect(result).toHaveLength(1);
+				expect(result[0].fields).toHaveProperty('date');
+				expect(result[0].fields).toHaveProperty('summary');
+				expect(result[0].fields).not.toHaveProperty('preparation');
+			});
+		});
+	});
+});

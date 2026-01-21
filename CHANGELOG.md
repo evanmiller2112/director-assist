@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+**Markdown Editor UX Improvement (Issue #236)**
+- Markdown editor now defaults to full-width edit mode instead of split view
+- Added Preview/Edit toggle button to toolbar for switching between editing and preview modes
+- Provides more editing space while maintaining easy access to markdown preview
+- Split view mode still available programmatically for components that need it
+
 ## [1.0.0] - 2026-01-21
 
 ### Added

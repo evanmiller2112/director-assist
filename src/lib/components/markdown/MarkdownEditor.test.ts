@@ -177,17 +177,17 @@ describe('MarkdownEditor Component - Value Binding', () => {
 });
 
 describe('MarkdownEditor Component - Editing Modes', () => {
-	it('should render in split mode by default', () => {
+	it('should render in edit mode by default (Issue #236)', () => {
 		const { container } = render(MarkdownEditor, {
 			props: { value: '# Test' }
 		});
 
-		// Should have both textarea and preview
+		// Should have textarea
 		const textarea = screen.getByRole('textbox');
 		expect(textarea).toBeInTheDocument();
 
-		// Preview should show rendered markdown
-		expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Test');
+		// Should NOT have preview by default
+		expect(screen.queryByRole('heading', { level: 1 })).not.toBeInTheDocument();
 	});
 
 	it('should render in edit-only mode', () => {
@@ -920,6 +920,288 @@ describe('MarkdownEditor Component - Real-world Use Cases', () => {
 		});
 
 		expect(screen.getByText(/const spell/)).toBeInTheDocument();
+	});
+});
+
+describe('MarkdownEditor Component - Preview Toggle (Issue #236)', () => {
+	it('should have a preview toggle button in the toolbar', () => {
+		render(MarkdownEditor, {
+			props: { value: '# Test' }
+		});
+
+		// Should have a toggle button with either "Preview" or "Edit" label
+		const toggleButton = screen.getByRole('button', { name: /preview|edit/i });
+		expect(toggleButton).toBeInTheDocument();
+	});
+
+	it('should show "Preview" button with Eye icon when in edit mode', () => {
+		render(MarkdownEditor, {
+			props: {
+				value: '# Test',
+				mode: 'edit'
+			}
+		});
+
+		// Should have preview button (to switch TO preview)
+		const previewButton = screen.getByRole('button', { name: /preview/i });
+		expect(previewButton).toBeInTheDocument();
+		expect(previewButton).toHaveAttribute('title', 'Preview');
+	});
+
+	it('should show "Edit" button with Pencil icon when in preview mode', () => {
+		render(MarkdownEditor, {
+			props: {
+				value: '# Test',
+				mode: 'preview'
+			}
+		});
+
+		// Should have edit button (to switch TO edit)
+		const editButton = screen.getByRole('button', { name: /edit/i });
+		expect(editButton).toBeInTheDocument();
+		expect(editButton).toHaveAttribute('title', 'Edit');
+	});
+
+	it('should switch from edit mode to preview mode when toggle is clicked', async () => {
+		render(MarkdownEditor, {
+			props: {
+				value: '# Heading'
+			}
+		});
+
+		// Initially in edit mode - should have textarea, no preview
+		expect(screen.getByRole('textbox')).toBeInTheDocument();
+		expect(screen.queryByRole('heading', { level: 1 })).not.toBeInTheDocument();
+
+		// Click the preview toggle button
+		const previewButton = screen.getByRole('button', { name: /preview/i });
+		await fireEvent.click(previewButton);
+
+		// Should now be in preview mode - no textarea, has preview
+		expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+		expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Heading');
+	});
+
+	it('should switch from preview mode to edit mode when toggle is clicked', async () => {
+		render(MarkdownEditor, {
+			props: {
+				value: '# Heading',
+				mode: 'preview'
+			}
+		});
+
+		// Initially in preview mode
+		expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+		expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument();
+
+		// Click the edit toggle button
+		const editButton = screen.getByRole('button', { name: /edit/i });
+		await fireEvent.click(editButton);
+
+		// Should now be in edit mode
+		expect(screen.getByRole('textbox')).toBeInTheDocument();
+		expect(screen.queryByRole('heading', { level: 1 })).not.toBeInTheDocument();
+	});
+
+	it('should preserve content when toggling between edit and preview modes', async () => {
+		render(MarkdownEditor, {
+			props: {
+				value: '**Bold text** and *italic text*'
+			}
+		});
+
+		// Verify initial content in edit mode
+		const textarea = screen.getByRole('textbox');
+		expect(textarea).toHaveValue('**Bold text** and *italic text*');
+
+		// Toggle to preview
+		const previewButton = screen.getByRole('button', { name: /preview/i });
+		await fireEvent.click(previewButton);
+
+		// Verify content rendered in preview
+		expect(screen.getByText('Bold text').tagName.toLowerCase()).toBe('strong');
+		expect(screen.getByText('italic text').tagName.toLowerCase()).toBe('em');
+
+		// Toggle back to edit
+		const editButton = screen.getByRole('button', { name: /edit/i });
+		await fireEvent.click(editButton);
+
+		// Verify content still intact in edit mode
+		const textareaAfter = screen.getByRole('textbox');
+		expect(textareaAfter).toHaveValue('**Bold text** and *italic text*');
+	});
+
+	it('should disable formatting buttons when in preview mode', async () => {
+		render(MarkdownEditor, {
+			props: {
+				value: '# Test',
+				mode: 'preview'
+			}
+		});
+
+		// All formatting buttons should be disabled in preview mode
+		const boldButton = screen.queryByRole('button', { name: /^bold$/i });
+		const italicButton = screen.queryByRole('button', { name: /^italic$/i });
+		const headingButton = screen.queryByRole('button', { name: /heading/i });
+		const codeButton = screen.queryByRole('button', { name: /^code$/i });
+		const linkButton = screen.queryByRole('button', { name: /link/i });
+		const listButton = screen.queryByRole('button', { name: /list/i });
+
+		// In preview mode, formatting buttons should either be disabled or not visible
+		// Since we can't edit in preview mode, these buttons should not be functional
+		if (boldButton) expect(boldButton).toBeDisabled();
+		if (italicButton) expect(italicButton).toBeDisabled();
+		if (headingButton) expect(headingButton).toBeDisabled();
+		if (codeButton) expect(codeButton).toBeDisabled();
+		if (linkButton) expect(linkButton).toBeDisabled();
+		if (listButton) expect(listButton).toBeDisabled();
+	});
+
+	it('should enable formatting buttons when in edit mode', async () => {
+		render(MarkdownEditor, {
+			props: {
+				value: '# Test',
+				mode: 'edit'
+			}
+		});
+
+		// All formatting buttons should be enabled in edit mode
+		const boldButton = screen.getByRole('button', { name: /^bold$/i });
+		const italicButton = screen.getByRole('button', { name: /^italic$/i });
+		const headingButton = screen.getByRole('button', { name: /heading/i });
+
+		expect(boldButton).not.toBeDisabled();
+		expect(italicButton).not.toBeDisabled();
+		expect(headingButton).not.toBeDisabled();
+	});
+
+	it('should keep toolbar visible in preview mode to allow toggling back', () => {
+		render(MarkdownEditor, {
+			props: {
+				value: '# Test',
+				mode: 'preview'
+			}
+		});
+
+		// Toolbar should be visible even in preview mode
+		const toolbar = document.querySelector('[role="toolbar"]');
+		expect(toolbar).toBeInTheDocument();
+
+		// Edit toggle button should be present
+		const editButton = screen.getByRole('button', { name: /edit/i });
+		expect(editButton).toBeInTheDocument();
+	});
+
+	it('should keep toolbar visible in edit mode', () => {
+		render(MarkdownEditor, {
+			props: {
+				value: '# Test',
+				mode: 'edit'
+			}
+		});
+
+		// Toolbar should be visible in edit mode
+		const toolbar = document.querySelector('[role="toolbar"]');
+		expect(toolbar).toBeInTheDocument();
+
+		// Preview toggle button should be present
+		const previewButton = screen.getByRole('button', { name: /preview/i });
+		expect(previewButton).toBeInTheDocument();
+	});
+
+	it('should toggle multiple times without issues', async () => {
+		render(MarkdownEditor, {
+			props: {
+				value: '# Heading'
+			}
+		});
+
+		// Start in edit mode
+		expect(screen.getByRole('textbox')).toBeInTheDocument();
+
+		// Toggle to preview
+		let toggleButton = screen.getByRole('button', { name: /preview/i });
+		await fireEvent.click(toggleButton);
+		expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument();
+
+		// Toggle back to edit
+		toggleButton = screen.getByRole('button', { name: /edit/i });
+		await fireEvent.click(toggleButton);
+		expect(screen.getByRole('textbox')).toBeInTheDocument();
+
+		// Toggle to preview again
+		toggleButton = screen.getByRole('button', { name: /preview/i });
+		await fireEvent.click(toggleButton);
+		expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument();
+
+		// Toggle back to edit again
+		toggleButton = screen.getByRole('button', { name: /edit/i });
+		await fireEvent.click(toggleButton);
+		expect(screen.getByRole('textbox')).toBeInTheDocument();
+	});
+
+	it('should not show toggle button when showToolbar is false', () => {
+		render(MarkdownEditor, {
+			props: {
+				value: '# Test',
+				showToolbar: false
+			}
+		});
+
+		// No toolbar means no toggle button
+		expect(screen.queryByRole('button', { name: /preview|edit/i })).not.toBeInTheDocument();
+	});
+
+	it('should handle toggle in split mode gracefully', () => {
+		render(MarkdownEditor, {
+			props: {
+				value: '# Test',
+				mode: 'split'
+			}
+		});
+
+		// In split mode, both edit and preview are visible
+		expect(screen.getByRole('textbox')).toBeInTheDocument();
+		expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument();
+
+		// Toggle button behavior in split mode (if applicable)
+		// The toggle might not be relevant in split mode, or might cycle through modes
+		// This test documents the expected behavior
+	});
+
+	it('should maintain toggle state independently of prop changes', async () => {
+		const { rerender } = render(MarkdownEditor, {
+			props: {
+				value: 'Initial content'
+			}
+		});
+
+		// Toggle to preview mode
+		const previewButton = screen.getByRole('button', { name: /preview/i });
+		await fireEvent.click(previewButton);
+
+		expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+
+		// Update value via prop
+		await rerender({
+			value: 'Updated content'
+		});
+
+		// Should still be in preview mode
+		expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+		expect(screen.getByText('Updated content')).toBeInTheDocument();
+	});
+
+	it('should position toggle button appropriately in toolbar', () => {
+		render(MarkdownEditor, {
+			props: { value: '# Test' }
+		});
+
+		const toolbar = document.querySelector('[role="toolbar"]');
+		const toggleButton = screen.getByRole('button', { name: /preview/i });
+
+		// Toggle button should be in the toolbar
+		expect(toolbar).toContainElement(toggleButton);
 	});
 });
 

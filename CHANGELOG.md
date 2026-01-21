@@ -9,6 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+**Forge Steel Character Import (Issue #238)**
+- Import character data from Forge Steel character builder into Director Assist
+- ForgeSteelImportModal component accessible from Settings page
+- Accepts .json or .ds-hero files exported from Forge Steel
+- File validation with detailed error messages and warnings
+- Preview imported character before saving
+- Automatic field mapping: name, concept (ancestry + class), background (notes), status (defeated state)
+- Duplicate name detection to prevent conflicts with existing characters
+- Creates character entity with "forge-steel-import" tag for easy filtering
+- Real-time validation feedback during file selection
+- Accessibility features: ARIA labels, keyboard navigation, backdrop click to close
+
 **Debug Console for AI Request/Response Inspection (Issue #118)**
 - Advanced debug console for inspecting all AI request and response data
 - Settings toggle in Advanced section to enable/disable debug console

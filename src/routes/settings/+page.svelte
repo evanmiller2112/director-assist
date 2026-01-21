@@ -21,6 +21,7 @@
 	} from '$lib/services';
 	import { Download, Upload, Moon, Sun, Monitor, Trash2, Key, RefreshCw, Layers, ChevronRight, Users } from 'lucide-svelte';
 	import PlayerExportModal from '$lib/components/settings/PlayerExportModal.svelte';
+	import ForgeSteelImportModal from '$lib/components/settings/ForgeSteelImportModal.svelte';
 	import LoadingButton from '$lib/components/ui/LoadingButton.svelte';
 	import { SystemSelector, CampaignLinkingSettings } from '$lib/components/settings';
 	import { page } from '$app/stores';
@@ -30,6 +31,7 @@
 	let isExporting = $state(false);
 	let isImporting = $state(false);
 	let showPlayerExportModal = $state(false);
+	let showForgeSteelImportModal = $state(false);
 
 	// Model selection state
 	let models = $state<ModelInfo[]>([]);
@@ -728,6 +730,21 @@
 		</button>
 	</section>
 
+	<!-- Forge Steel Import -->
+	<section class="mb-8">
+		<h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">Import from Forge Steel</h2>
+		<p class="text-sm text-slate-500 mb-4">
+			Import character data from Forge Steel character builder. Accepts .json or .ds-hero files.
+		</p>
+		<button
+			class="btn btn-secondary inline-flex items-center gap-2"
+			onclick={() => showForgeSteelImportModal = true}
+		>
+			<Upload class="w-4 h-4" />
+			Import Character
+		</button>
+	</section>
+
 	<!-- Advanced -->
 	<section class="mb-8">
 		<h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">Advanced</h2>
@@ -773,3 +790,10 @@
 
 <!-- Player Export Modal -->
 <PlayerExportModal bind:open={showPlayerExportModal} onclose={() => showPlayerExportModal = false} />
+
+<!-- Forge Steel Import Modal -->
+<ForgeSteelImportModal
+	bind:open={showForgeSteelImportModal}
+	onimport={() => showForgeSteelImportModal = false}
+	oncancel={() => showForgeSteelImportModal = false}
+/>

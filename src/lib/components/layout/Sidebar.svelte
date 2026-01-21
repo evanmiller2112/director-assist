@@ -19,6 +19,9 @@
 	let orderedTypes = $state<EntityTypeDefinition[]>([]);
 	const flipDurationMs = 200;
 
+	// Transform orderedTypes to include id property for dndzone
+	let orderedTypesWithId = $derived(orderedTypes.map(t => ({ ...t, id: t.type })));
+
 	// Initialize ordered types on mount
 	onMount(() => {
 		const savedOrder = getSidebarEntityTypeOrder();
@@ -50,12 +53,14 @@
 		return $page.url.pathname === href || $page.url.pathname.startsWith(href + '/');
 	}
 
-	function handleDndConsider(e: CustomEvent<DndEvent<EntityTypeDefinition>>) {
-		orderedTypes = e.detail.items;
+	function handleDndConsider(e: CustomEvent<DndEvent<EntityTypeDefinition & { id: string }>>) {
+		// Extract items and map back to original structure without id
+		orderedTypes = e.detail.items.map(({ id, ...rest }) => rest);
 	}
 
-	function handleDndFinalize(e: CustomEvent<DndEvent<EntityTypeDefinition>>) {
-		orderedTypes = e.detail.items;
+	function handleDndFinalize(e: CustomEvent<DndEvent<EntityTypeDefinition & { id: string }>>) {
+		// Extract items and map back to original structure without id
+		orderedTypes = e.detail.items.map(({ id, ...rest }) => rest);
 		// Save the new order
 		const newOrder = orderedTypes.map((t) => t.type);
 		setSidebarEntityTypeOrder(newOrder);
@@ -132,11 +137,11 @@
 		<!-- Entity type links -->
 		{#if editMode}
 			<section
-				use:dndzone={{ items: orderedTypes, flipDurationMs, type: 'entityTypes' }}
+				use:dndzone={{ items: orderedTypesWithId, flipDurationMs, type: 'entityTypes' }}
 				onconsider={handleDndConsider}
 				onfinalize={handleDndFinalize}
 			>
-				{#each orderedTypes as entityType (entityType.type)}
+				{#each orderedTypesWithId as entityType (entityType.id)}
 					{@const Icon = getIconComponent(entityType.icon)}
 					{@const count = getEntityCount(entityType.type)}
 					<div

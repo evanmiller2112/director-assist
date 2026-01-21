@@ -6,3 +6,4 @@ export * from './cache';
 export * from './systems';
 export * from './combat';
 export * from './playerExport';
+export * from './entityTypeExport';

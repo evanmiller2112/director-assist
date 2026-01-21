@@ -532,6 +532,201 @@ If you want to temporarily disable a custom type without deleting it:
 2. Toggle "Hidden from Sidebar"
 3. The type won't appear in navigation but existing entities remain accessible
 
+**Cloning Entity Types**
+
+Create a new custom entity type based on an existing one:
+
+1. Go to Settings > Custom Entity Types
+2. Click "New Entity Type"
+3. In the creation form, click the "Clone Existing Type" option
+4. A dropdown appears showing all available types (built-in and custom)
+5. Select the type you want to clone
+6. The form auto-fills with all fields from the selected type
+7. **Important:** Change the type key to a unique value (the original key is cleared)
+8. Modify the singular label, plural label, and description as needed
+9. Add, remove, or modify fields as desired
+10. Save the new entity type
+
+Cloning creates a complete deep copy of all field definitions, relationships, and settings. The clone is fully independent - changes to it don't affect the original.
+
+**Use Cases for Cloning:**
+- Create variants of built-in types (e.g., clone NPC to create "Monster")
+- Adapt existing custom types for new purposes
+- Save time when creating similar entity types
+- Preserve complex field configurations while making minor changes
+
+**UI Features:**
+- Cloning is available during entity type creation (not from the list page)
+- All built-in types (NPC, Location, Faction, etc.) can be cloned
+- Custom types you've created can also be cloned
+- The "(Copy)" suffix is added to labels to indicate cloned origin
+
+### Field Template Library
+
+Field templates let you save and reuse collections of field definitions across multiple entity types. This feature is particularly useful for common field patterns.
+
+**Accessing the Template Library**
+
+1. Go to Settings
+2. Find the "Field Template Library" section
+3. Click "Manage Field Templates" to open the dedicated page at `/settings/field-templates`
+
+**Creating Field Templates**
+
+Save a reusable set of fields:
+
+1. On the Field Templates page, click "Create Field Template"
+2. Fill in template information:
+   - **Name:** Display name (e.g., "Combat Stats")
+   - **Description:** What this template contains (optional)
+   - **Category:** Organization category - select "draw-steel" for Draw Steel-specific templates or "user" for custom templates
+3. Add field definitions using the field editor (same interface as entity type creation)
+4. Configure each field: key, label, type, default value, etc.
+5. Click "Save Template"
+
+**Using Field Templates**
+
+Apply a template when creating or editing entity types:
+
+1. Open an entity type in edit mode (or create a new one)
+2. In the Fields section, locate the "Add from Template" button
+3. Click the button to open the template selector
+4. Browse available templates (organized by category)
+5. Select a template from the list
+6. The template's fields are added to your current field list
+7. Customize individual fields as needed
+8. Save the entity type
+
+**Managing Field Templates**
+
+From the Field Templates page (`/settings/field-templates`):
+
+- **Edit:** Click any template to modify its fields and metadata
+- **Delete:** Remove templates no longer needed
+- **Export:** Download templates as JSON files to share with others
+- **Import:** Upload JSON files to add templates from other campaigns
+- **View Details:** See field count and category for each template
+
+**UI Features:**
+- Templates are displayed in a grid or list view
+- Category badges help organize templates visually
+- Field count is shown for each template
+- Search/filter to find specific templates quickly
+
+**Example Templates:**
+
+**Combat Stats Template**
+```
+Fields:
+- ac (number): Armor Class
+- hp (number): Hit Points
+- currentHP (number): Current HP
+- speed (number): Speed in feet
+- initiative (number): Initiative bonus
+```
+
+**Draw Steel Threat Template**
+```
+Fields:
+- threatLevel (select): Minion, Standard, Elite, Boss, Solo
+- combatRole (select): Ambusher, Artillery, Brute, Controller, Defender, Harrier, Hexer, Leader, Mount, Support
+- size (select): Tiny, Small, Medium, Large, Huge, Gargantuan
+- ac (number): Armor Class
+- stamina (number): Stamina
+- stability (number): Stability
+- speed (number): Speed
+- immunities (tags): Damage immunities
+- weaknesses (tags): Damage weaknesses
+```
+
+**Benefits of Field Templates:**
+- Consistency across related entity types
+- Faster entity type creation
+- Share common field patterns with other campaigns
+- Maintain standardized field definitions
+- Reduce repetitive configuration
+
+### Export and Import
+
+Share custom entity types and field templates with other campaigns or users via JSON export/import.
+
+**Exporting Entity Types**
+
+1. Go to Settings > Custom Entity Types
+2. Find the entity type you want to export in the list
+3. Click the "Export" button (download icon) next to the entity type
+4. An export dialog appears with optional metadata fields:
+   - **Author:** Your name or attribution
+   - **License:** License type (e.g., CC-BY-4.0, MIT)
+   - **Source URL:** Link to original source or documentation
+5. Fill in metadata (optional but recommended for sharing)
+6. Click "Export"
+7. A JSON file downloads with the filename format: `entityType-[typeKey].json`
+
+The exported file contains the complete entity type definition with all field configurations.
+
+**Exporting Field Templates**
+
+1. Go to Settings > Field Template Library (`/settings/field-templates`)
+2. Find the template you want to export
+3. Click the "Export" button next to the template
+4. Add optional metadata (author, license, source URL)
+5. Click "Export"
+6. A JSON file downloads with the filename format: `fieldTemplate-[templateName].json`
+
+**Importing Entity Types**
+
+1. Go to Settings > Custom Entity Types
+2. Click the "Import" button at the top of the page
+3. Select a JSON file from your computer
+4. The import preview appears showing:
+   - Entity type name and key
+   - Number of fields included
+   - Potential conflicts with existing types (if type key already exists)
+   - Version compatibility status
+5. If conflicts exist:
+   - The UI highlights the conflict
+   - You can choose to rename the imported type key
+   - Or cancel and resolve the conflict manually
+6. Review all details carefully
+7. Click "Import" to confirm
+
+**Importing Field Templates**
+
+1. Go to Settings > Field Template Library
+2. Click the "Import Template" button
+3. Select a JSON file
+4. Review the import preview (name, field count, conflicts)
+5. Resolve any naming conflicts
+6. Click "Import" to add the template
+
+**UI Features:**
+- Export buttons appear as download icons next to each item
+- Import buttons are prominently placed at the top of list pages
+- Preview dialogs show all details before committing import
+- Conflict warnings are highlighted in red
+- Metadata fields are optional but encouraged for community sharing
+- Success/error notifications appear after import/export operations
+
+**Export Format:**
+- Version: 1.0.0 (standardized format)
+- Generator: Application name and version
+- Metadata: Author, license, source URL (optional)
+- Data: Complete entity type or field template
+
+**Import Validation:**
+- Version compatibility checking
+- Data structure validation
+- Conflict detection with existing types/templates
+- Preview before committing changes
+
+**Sharing Best Practices:**
+- Add metadata (author, license) to exports for attribution
+- Include descriptive template names and descriptions
+- Test imported types before using in production campaigns
+- Document any dependencies or required field types
+- Consider licensing (CC-BY-4.0, MIT, etc.) for community sharing
+
 ### Validation and Error Prevention
 
 Director Assist validates custom entity types to prevent errors:

@@ -1,7 +1,8 @@
 <script lang="ts">
-	import { Plus, Trash2, GripVertical, ChevronDown, ChevronUp, Eye, EyeOff } from 'lucide-svelte';
-	import type { FieldDefinition, FieldType, EntityType } from '$lib/types';
+	import { Plus, Trash2, GripVertical, ChevronDown, ChevronUp, Eye, EyeOff, Library } from 'lucide-svelte';
+	import type { FieldDefinition, FieldType, EntityType, FieldTemplate } from '$lib/types';
 	import ComputedFieldEditor from './ComputedFieldEditor.svelte';
+	import FieldTemplatePicker from './FieldTemplatePicker.svelte';
 
 	interface Props {
 		fields: FieldDefinition[];
@@ -12,6 +13,7 @@
 
 	let expandedIndex = $state<number | null>(null);
 	let previewIndex = $state<number | null>(null);
+	let showTemplatePicker = $state(false);
 
 	// Field type categories
 	const FIELD_TYPE_CATEGORIES = {
@@ -158,6 +160,35 @@
 		};
 		fields = [...fields, newField];
 		expandedIndex = fields.length - 1;
+		onchange?.(fields);
+	}
+
+	function addFieldsFromTemplate(template: FieldTemplate) {
+		const existingKeys = new Set(fields.map((f) => f.key));
+		const startOrder = fields.length;
+
+		// Add template fields, handling conflicts
+		const newFields = template.fieldDefinitions.map((field, index) => {
+			let key = field.key;
+			let suffix = 1;
+
+			// Handle key conflicts by appending _1, _2, etc.
+			while (existingKeys.has(key)) {
+				key = `${field.key}_${suffix}`;
+				suffix++;
+			}
+
+			existingKeys.add(key);
+
+			return {
+				...structuredClone(field),
+				key,
+				order: startOrder + index + 1
+			};
+		});
+
+		fields = [...fields, ...newFields];
+		showTemplatePicker = false;
 		onchange?.(fields);
 	}
 
@@ -629,20 +660,44 @@
 		</div>
 	{/each}
 
-	<!-- Add field button -->
-	<button
-		type="button"
-		class="btn btn-secondary w-full"
-		onclick={addField}
-		onkeydown={(e) => {
-			if (e.key === 'Enter' || e.key === ' ') {
-				e.preventDefault();
-				addField();
-			}
-		}}
-		aria-label="Add new field"
-	>
-		<Plus class="w-4 h-4" />
-		Add Field
-	</button>
+	<!-- Add field buttons -->
+	<div class="flex gap-2">
+		<button
+			type="button"
+			class="btn btn-secondary flex-1"
+			onclick={addField}
+			onkeydown={(e) => {
+				if (e.key === 'Enter' || e.key === ' ') {
+					e.preventDefault();
+					addField();
+				}
+			}}
+			aria-label="Add new field"
+		>
+			<Plus class="w-4 h-4" />
+			Add Field
+		</button>
+		<button
+			type="button"
+			class="btn btn-secondary"
+			onclick={() => (showTemplatePicker = true)}
+			onkeydown={(e) => {
+				if (e.key === 'Enter' || e.key === ' ') {
+					e.preventDefault();
+					showTemplatePicker = true;
+				}
+			}}
+			aria-label="Add fields from template"
+		>
+			<Library class="w-4 h-4" />
+			Add from Template
+		</button>
+	</div>
 </div>
+
+<!-- Template Picker Modal -->
+<FieldTemplatePicker
+	open={showTemplatePicker}
+	onselect={addFieldsFromTemplate}
+	oncancel={() => (showTemplatePicker = false)}
+/>

@@ -1,4 +1,10 @@
-import type { EntityId, EntityTypeDefinition, EntityTypeOverride, BaseEntity } from './entities';
+import type {
+	EntityId,
+	EntityTypeDefinition,
+	EntityTypeOverride,
+	BaseEntity,
+	FieldDefinition
+} from './entities';
 import type { ChatMessage } from './ai';
 
 // Campaign model
@@ -30,13 +36,33 @@ export interface CampaignSettings {
 }
 
 /**
+ * Field Template Interface (GitHub Issue #210)
+ *
+ * Represents a reusable collection of field definitions that can be applied
+ * to custom entity types. Field templates allow users to save and share
+ * common field configurations.
+ */
+export interface FieldTemplate {
+	id: string; // Unique identifier
+	name: string; // Display name
+	description?: string; // Usage description
+	category: string; // Organization category (e.g., 'draw-steel', 'user')
+	fieldDefinitions: FieldDefinition[]; // Field definitions in this template
+	createdAt: Date; // When template was created
+	updatedAt: Date; // When template was last updated
+}
+
+/**
  * Campaign-specific metadata stored in the entity's metadata field.
  * This is used when Campaign is stored as a BaseEntity.
+ * Index signature added to satisfy Record<string, unknown> compatibility for BaseEntity.metadata
  */
 export interface CampaignMetadata {
+	[key: string]: unknown; // Index signature for Record<string, unknown> compatibility
 	systemId?: string; // Game system identifier (e.g., 'draw-steel', 'system-agnostic')
 	customEntityTypes: EntityTypeDefinition[];
 	entityTypeOverrides: EntityTypeOverride[];
+	fieldTemplates?: FieldTemplate[]; // User-created field templates (Issue #210)
 	settings: CampaignSettings;
 }
 

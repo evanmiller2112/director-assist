@@ -7,9 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-01-21
+
 ### Added
 
-**Custom Entity Creation UX Improvements (Issue #168, Phase 1)**
+**Player Mode Export System (Issues #52, #53, PR #207)**
+- PlayerExportModal component in settings for exporting filtered campaign data
+- Multiple export formats: HTML (with embedded styling), JSON (structured data), Markdown (human-readable)
+- playerExportFilterService for filtering what content to export (entity types, fields, DM-only content)
+- playerExportService orchestrates export process across multiple services
+- Format-specific exporters: HtmlExporter, JsonExporter, MarkdownExporter
+- DM-only field filtering to protect sensitive campaign information
+- Custom field selection for fine-grained control over exported data
+
+**Chat Interface UX Improvements (Issue #203, PR #211)**
+- ChatFloatingButton component for minimized chat state with unread message badge
+- Collapsible conversation sidebar sections for better space management
+- Minimize/maximize toggle for chat panel
+- Improved chat panel layout with better use of vertical space
+- Conversation sidebar now collapsible to show more chat messages
+- Enhanced mobile responsiveness for chat interface
+
+**Custom Entity Creation UX Improvements (Issue #168, Phase 1, PR #212)**
 - DrawSteelTipsPanel component provides contextual guidance when creating custom entity types
 - Field types grouped into categories: Text & Content, Numeric, Selection, Links & References, Specialized
 - "Draw Steel Recommended" badges highlight field types commonly used in Draw Steel campaigns
@@ -18,6 +37,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Category descriptions help users understand when to use each relationship type
 - Collapsible tips sections for field types and examples with real-world use cases
 - Improved discoverability for complex features like computed fields and entity references
+
+### Fixed
+
+**Entity List Reordering (Issue #205, PR #208)**
+- Replaced unreliable drag-drop with up/down button controls for entity reorder in sidebar
+- Added id property to entity types for stable reordering
+- More reliable and accessible reordering mechanism
+- Fixed issues with entity type positions not persisting correctly
 
 ## [0.8.0] - 2026-01-20
 

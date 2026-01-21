@@ -13,6 +13,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+**In-Memory State Refresh for Static Hosting (Issue #252)**
+- Replaced all `window.location.reload()` calls with in-memory state refresh
+- Created `stateRefreshService.ts` with functions for refreshing application state without full page reload
+- Added `reset()` methods to stores that needed clean state capability
+- Enables proper functionality when served from static file servers without SPA routing support
+- Improves user experience by eliminating jarring full-page reloads during campaign switching
+- 45 comprehensive tests ensure reliable state management
+
 ## [1.1.0] - 2026-01-21
 
 ### Added

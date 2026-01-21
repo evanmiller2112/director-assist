@@ -17,6 +17,8 @@
 		setLastMilestoneReached,
 		getLastExportedAt,
 		getDaysSinceExport,
+		refreshAllStores,
+		resetAllStores,
 		type RelationshipContextSettings
 	} from '$lib/services';
 	import { Download, Upload, Moon, Sun, Monitor, Trash2, Key, RefreshCw, Layers, ChevronRight, Users } from 'lucide-svelte';
@@ -311,10 +313,9 @@
 				}
 
 				// Reload stores
-				await campaignStore.load();
+				await refreshAllStores();
 
 				notificationStore.success('Backup imported successfully!');
-				window.location.reload();
 			} catch (error) {
 				console.error('Import failed:', error);
 				notificationStore.error('Failed to import backup. Please check the file format.');
@@ -351,7 +352,9 @@
 				}
 			);
 
-			window.location.reload();
+			// Reset stores and reload from empty database
+			await resetAllStores();
+			await campaignStore.load(); // This will create a default campaign
 		} catch (error) {
 			console.error('Failed to clear data:', error);
 			notificationStore.error('Failed to clear data');

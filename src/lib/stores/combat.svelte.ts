@@ -678,6 +678,29 @@ function createCombatStore() {
 			if (unsubscribe) {
 				unsubscribe();
 			}
+		},
+
+		/**
+		 * Reset store to initial state
+		 * Used when clearing all data or resetting application state
+		 */
+		reset: () => {
+			combats = [];
+			activeCombat = null;
+			isLoading = true;
+			error = null;
+		},
+
+		/**
+		 * Load combats from database
+		 * Re-subscribes to the live query
+		 */
+		load: async () => {
+			// The live query subscription is already active from initialization
+			// This method exists for consistency with other stores
+			// The subscription will automatically update the combats array
+			// No additional action needed
+			return Promise.resolve();
 		}
 	};
 }

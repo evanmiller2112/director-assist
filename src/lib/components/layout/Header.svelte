@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { MessageSquare, Settings, Menu, ChevronDown, Check } from 'lucide-svelte';
 	import { aiSettings, campaignStore, uiStore, notificationStore } from '$lib/stores';
+	import { refreshAfterCampaignSwitch } from '$lib/services';
 	import HeaderSearch from './HeaderSearch.svelte';
 
 	let campaignDropdownOpen = $state(false);
@@ -27,8 +28,8 @@
 		try {
 			await campaignStore.setActiveCampaign(id);
 			notificationStore.success('Switched campaign');
-			// Reload page to refresh all data for new campaign
-			window.location.reload();
+			// Refresh all data for new campaign
+			await refreshAfterCampaignSwitch({ navigateTo: '/' });
 		} catch (error) {
 			console.error('Failed to switch campaign:', error);
 			notificationStore.error('Failed to switch campaign');

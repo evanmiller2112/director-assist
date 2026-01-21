@@ -568,6 +568,7 @@ function createCombatStore() {
 		get combats() {
 			return combats;
 		},
+		getAll: () => combats,
 		get activeCombat() {
 			return activeCombat;
 		},

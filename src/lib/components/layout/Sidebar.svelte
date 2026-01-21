@@ -1,8 +1,8 @@
 <script lang="ts">
-	import { Plus, Home, ChevronUp, ChevronDown, Pencil } from 'lucide-svelte';
+	import { Plus, Home, ChevronUp, ChevronDown, Pencil, Swords } from 'lucide-svelte';
 	import { page } from '$app/stores';
 	import { getOrderedEntityTypes } from '$lib/config/entityTypes';
-	import { entitiesStore, campaignStore } from '$lib/stores';
+	import { entitiesStore, campaignStore, combatStore } from '$lib/stores';
 	import { getIconComponent } from '$lib/utils/icons';
 	import QuickAddModal from './QuickAddModal.svelte';
 	import {
@@ -16,6 +16,11 @@
 	let quickAddOpen = $state(false);
 	let editMode = $state(false);
 	let orderedTypes = $state<EntityTypeDefinition[]>([]);
+
+	// Get active combats count
+	const activeCombatsCount = $derived(
+		combatStore.getAll().filter((c) => c.status === 'active').length
+	);
 
 	// Initialize ordered types on mount
 	onMount(() => {
@@ -96,6 +101,29 @@
 		>
 			<Home class="w-5 h-5" />
 			<span class="font-medium">Dashboard</span>
+		</a>
+
+		<!-- Combat -->
+		<a
+			href="/combat"
+			class="flex items-center gap-3 px-3 py-2 rounded-lg mb-2 transition-colors
+				{isActive('/combat')
+				? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
+				: 'hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300'}"
+			aria-current={isActive('/combat') ? 'page' : undefined}
+		>
+			<Swords class="w-5 h-5" data-icon="swords" />
+			<span class="flex-1 font-medium">Combat</span>
+			{#if activeCombatsCount > 0}
+				<span
+					class="text-xs bg-red-500 dark:bg-red-600 text-white px-2 py-0.5 rounded-full red danger urgent"
+					data-testid="active-combat-badge"
+					aria-label="{activeCombatsCount} active combat{activeCombatsCount === 1 ? '' : 's'}"
+					aria-live="polite"
+				>
+					{activeCombatsCount}
+				</span>
+			{/if}
 		</a>
 
 		<div class="border-t border-slate-200 dark:border-slate-700 my-4"></div>

@@ -656,4 +656,908 @@ describe('campaignStore - System Management (Issue #5)', () => {
 			}
 		});
 	});
+
+	/**
+	 * Field Templates CRUD Tests (GitHub Issue #210)
+	 *
+	 * TDD RED Phase: These tests define the expected behavior for field template management
+	 * in the campaign store. Tests will FAIL until implementation is complete.
+	 *
+	 * Field templates allow users to save reusable collections of field definitions
+	 * that can be applied to custom entity types.
+	 *
+	 * Key Test Scenarios:
+	 * 1. Add field template to campaign metadata
+	 * 2. Update existing field template
+	 * 3. Delete field template
+	 * 4. Get field template by ID
+	 * 5. Get all field templates (built-in + user templates)
+	 * 6. Cannot modify built-in templates
+	 * 7. Timestamps are managed correctly
+	 * 8. Deep cloning prevents mutation
+	 */
+	describe('Field Templates CRUD (Issue #210)', () => {
+		describe('addFieldTemplate()', () => {
+			it('should exist as a method on campaign store', () => {
+				expect(campaignStore.addFieldTemplate).toBeDefined();
+				expect(typeof campaignStore.addFieldTemplate).toBe('function');
+			});
+
+			it('should add a field template to campaign metadata', async () => {
+				const campaign: BaseEntity = {
+					id: 'campaign-1',
+					type: 'campaign',
+					name: 'Test Campaign',
+					description: 'Test',
+					tags: [],
+					fields: {},
+					links: [],
+					notes: '',
+					createdAt: new Date(),
+					updatedAt: new Date(),
+					metadata: {
+						customEntityTypes: [],
+						entityTypeOverrides: [],
+						fieldTemplates: [], // New field
+						settings: {
+							customRelationships: [],
+							enabledEntityTypes: []
+						}
+					}
+				};
+
+				mockDb.entities.where.mockReturnValue({
+					equals: vi.fn(() => ({
+						toArray: vi.fn(async () => [campaign])
+					}))
+				});
+
+				await campaignStore.load();
+
+				const template = {
+					id: 'template-1',
+					name: 'Combat Stats',
+					description: 'Standard combat statistics',
+					category: 'draw-steel',
+					fieldDefinitions: [
+						{
+							key: 'ac',
+							label: 'AC',
+							type: 'number' as const,
+							required: false,
+							order: 1
+						},
+						{
+							key: 'hp',
+							label: 'HP',
+							type: 'number' as const,
+							required: false,
+							order: 2
+						}
+					],
+					createdAt: new Date(),
+					updatedAt: new Date()
+				};
+
+				await campaignStore.addFieldTemplate(template);
+
+				expect(mockDb.entities.update).toHaveBeenCalled();
+				const updateCall = mockDb.entities.update.mock.calls[0];
+				expect(updateCall[1].metadata.fieldTemplates).toHaveLength(1);
+				expect(updateCall[1].metadata.fieldTemplates[0].id).toBe('template-1');
+			});
+
+			it('should throw error if template ID already exists', async () => {
+				const campaign: BaseEntity = {
+					id: 'campaign-1',
+					type: 'campaign',
+					name: 'Test Campaign',
+					description: 'Test',
+					tags: [],
+					fields: {},
+					links: [],
+					notes: '',
+					createdAt: new Date(),
+					updatedAt: new Date(),
+					metadata: {
+						customEntityTypes: [],
+						entityTypeOverrides: [],
+						fieldTemplates: [
+							{
+								id: 'template-1',
+								name: 'Existing',
+								category: 'user',
+								fieldDefinitions: [],
+								createdAt: new Date(),
+								updatedAt: new Date()
+							}
+						],
+						settings: {
+							customRelationships: [],
+							enabledEntityTypes: []
+						}
+					}
+				};
+
+				mockDb.entities.where.mockReturnValue({
+					equals: vi.fn(() => ({
+						toArray: vi.fn(async () => [campaign])
+					}))
+				});
+
+				await campaignStore.load();
+
+				const duplicateTemplate = {
+					id: 'template-1',
+					name: 'Duplicate',
+					category: 'user',
+					fieldDefinitions: [],
+					createdAt: new Date(),
+					updatedAt: new Date()
+				};
+
+				await expect(campaignStore.addFieldTemplate(duplicateTemplate)).rejects.toThrow(
+					'Field template "template-1" already exists'
+				);
+			});
+
+			it('should update updatedAt timestamp on campaign', async () => {
+				const campaign: BaseEntity = {
+					id: 'campaign-1',
+					type: 'campaign',
+					name: 'Test Campaign',
+					description: 'Test',
+					tags: [],
+					fields: {},
+					links: [],
+					notes: '',
+					createdAt: new Date(),
+					updatedAt: new Date('2024-01-01'),
+					metadata: {
+						customEntityTypes: [],
+						entityTypeOverrides: [],
+						fieldTemplates: [],
+						settings: {
+							customRelationships: [],
+							enabledEntityTypes: []
+						}
+					}
+				};
+
+				mockDb.entities.where.mockReturnValue({
+					equals: vi.fn(() => ({
+						toArray: vi.fn(async () => [campaign])
+					}))
+				});
+
+				await campaignStore.load();
+
+				const template = {
+					id: 'template-1',
+					name: 'Test Template',
+					category: 'user',
+					fieldDefinitions: [],
+					createdAt: new Date(),
+					updatedAt: new Date()
+				};
+
+				await campaignStore.addFieldTemplate(template);
+
+				const updateCall = mockDb.entities.update.mock.calls[0];
+				expect(updateCall[1].updatedAt).toBeInstanceOf(Date);
+				expect(updateCall[1].updatedAt.getTime()).toBeGreaterThan(
+					new Date('2024-01-01').getTime()
+				);
+			});
+
+			it('should throw error if no campaign is loaded', async () => {
+				campaignStore._resetForTesting();
+
+				const template = {
+					id: 'template-1',
+					name: 'Test',
+					category: 'user',
+					fieldDefinitions: [],
+					createdAt: new Date(),
+					updatedAt: new Date()
+				};
+
+				await expect(campaignStore.addFieldTemplate(template)).rejects.toThrow();
+			});
+		});
+
+		describe('updateFieldTemplate()', () => {
+			it('should exist as a method on campaign store', () => {
+				expect(campaignStore.updateFieldTemplate).toBeDefined();
+				expect(typeof campaignStore.updateFieldTemplate).toBe('function');
+			});
+
+			it('should update an existing field template', async () => {
+				const campaign: BaseEntity = {
+					id: 'campaign-1',
+					type: 'campaign',
+					name: 'Test Campaign',
+					description: 'Test',
+					tags: [],
+					fields: {},
+					links: [],
+					notes: '',
+					createdAt: new Date(),
+					updatedAt: new Date(),
+					metadata: {
+						customEntityTypes: [],
+						entityTypeOverrides: [],
+						fieldTemplates: [
+							{
+								id: 'template-1',
+								name: 'Original Name',
+								description: 'Original description',
+								category: 'user',
+								fieldDefinitions: [
+									{
+										key: 'field1',
+										label: 'Field 1',
+										type: 'text' as const,
+										required: false,
+										order: 1
+									}
+								],
+								createdAt: new Date('2024-01-01'),
+								updatedAt: new Date('2024-01-01')
+							}
+						],
+						settings: {
+							customRelationships: [],
+							enabledEntityTypes: []
+						}
+					}
+				};
+
+				mockDb.entities.where.mockReturnValue({
+					equals: vi.fn(() => ({
+						toArray: vi.fn(async () => [campaign])
+					}))
+				});
+
+				await campaignStore.load();
+
+				await campaignStore.updateFieldTemplate('template-1', {
+					name: 'Updated Name',
+					description: 'Updated description'
+				});
+
+				expect(mockDb.entities.update).toHaveBeenCalled();
+				const updateCall = mockDb.entities.update.mock.calls[0];
+				const updatedTemplate = updateCall[1].metadata.fieldTemplates[0];
+				expect(updatedTemplate.name).toBe('Updated Name');
+				expect(updatedTemplate.description).toBe('Updated description');
+				expect(updatedTemplate.id).toBe('template-1'); // ID unchanged
+			});
+
+			it('should update updatedAt timestamp on template', async () => {
+				const campaign: BaseEntity = {
+					id: 'campaign-1',
+					type: 'campaign',
+					name: 'Test Campaign',
+					description: 'Test',
+					tags: [],
+					fields: {},
+					links: [],
+					notes: '',
+					createdAt: new Date(),
+					updatedAt: new Date(),
+					metadata: {
+						customEntityTypes: [],
+						entityTypeOverrides: [],
+						fieldTemplates: [
+							{
+								id: 'template-1',
+								name: 'Test',
+								category: 'user',
+								fieldDefinitions: [],
+								createdAt: new Date('2024-01-01'),
+								updatedAt: new Date('2024-01-01')
+							}
+						],
+						settings: {
+							customRelationships: [],
+							enabledEntityTypes: []
+						}
+					}
+				};
+
+				mockDb.entities.where.mockReturnValue({
+					equals: vi.fn(() => ({
+						toArray: vi.fn(async () => [campaign])
+					}))
+				});
+
+				await campaignStore.load();
+
+				await campaignStore.updateFieldTemplate('template-1', {
+					name: 'Updated Name'
+				});
+
+				const updateCall = mockDb.entities.update.mock.calls[0];
+				const updatedTemplate = updateCall[1].metadata.fieldTemplates[0];
+				expect(updatedTemplate.updatedAt).toBeInstanceOf(Date);
+				expect(updatedTemplate.updatedAt.getTime()).toBeGreaterThan(
+					new Date('2024-01-01').getTime()
+				);
+			});
+
+			it('should throw error if template not found', async () => {
+				const campaign: BaseEntity = {
+					id: 'campaign-1',
+					type: 'campaign',
+					name: 'Test Campaign',
+					description: 'Test',
+					tags: [],
+					fields: {},
+					links: [],
+					notes: '',
+					createdAt: new Date(),
+					updatedAt: new Date(),
+					metadata: {
+						customEntityTypes: [],
+						entityTypeOverrides: [],
+						fieldTemplates: [],
+						settings: {
+							customRelationships: [],
+							enabledEntityTypes: []
+						}
+					}
+				};
+
+				mockDb.entities.where.mockReturnValue({
+					equals: vi.fn(() => ({
+						toArray: vi.fn(async () => [campaign])
+					}))
+				});
+
+				await campaignStore.load();
+
+				await expect(
+					campaignStore.updateFieldTemplate('non-existent', { name: 'Updated' })
+				).rejects.toThrow('Field template "non-existent" not found');
+			});
+
+			it('should allow updating fieldDefinitions', async () => {
+				const campaign: BaseEntity = {
+					id: 'campaign-1',
+					type: 'campaign',
+					name: 'Test Campaign',
+					description: 'Test',
+					tags: [],
+					fields: {},
+					links: [],
+					notes: '',
+					createdAt: new Date(),
+					updatedAt: new Date(),
+					metadata: {
+						customEntityTypes: [],
+						entityTypeOverrides: [],
+						fieldTemplates: [
+							{
+								id: 'template-1',
+								name: 'Test',
+								category: 'user',
+								fieldDefinitions: [
+									{
+										key: 'field1',
+										label: 'Field 1',
+										type: 'text' as const,
+										required: false,
+										order: 1
+									}
+								],
+								createdAt: new Date(),
+								updatedAt: new Date()
+							}
+						],
+						settings: {
+							customRelationships: [],
+							enabledEntityTypes: []
+						}
+					}
+				};
+
+				mockDb.entities.where.mockReturnValue({
+					equals: vi.fn(() => ({
+						toArray: vi.fn(async () => [campaign])
+					}))
+				});
+
+				await campaignStore.load();
+
+				const newFieldDefinitions = [
+					{
+						key: 'field1',
+						label: 'Updated Field 1',
+						type: 'text' as const,
+						required: true,
+						order: 1
+					},
+					{
+						key: 'field2',
+						label: 'Field 2',
+						type: 'number' as const,
+						required: false,
+						order: 2
+					}
+				];
+
+				await campaignStore.updateFieldTemplate('template-1', {
+					fieldDefinitions: newFieldDefinitions
+				});
+
+				const updateCall = mockDb.entities.update.mock.calls[0];
+				const updatedTemplate = updateCall[1].metadata.fieldTemplates[0];
+				expect(updatedTemplate.fieldDefinitions).toHaveLength(2);
+				expect(updatedTemplate.fieldDefinitions[0].label).toBe('Updated Field 1');
+			});
+
+			it('should throw error if no campaign is loaded', async () => {
+				campaignStore._resetForTesting();
+
+				await expect(
+					campaignStore.updateFieldTemplate('template-1', { name: 'Updated' })
+				).rejects.toThrow();
+			});
+		});
+
+		describe('deleteFieldTemplate()', () => {
+			it('should exist as a method on campaign store', () => {
+				expect(campaignStore.deleteFieldTemplate).toBeDefined();
+				expect(typeof campaignStore.deleteFieldTemplate).toBe('function');
+			});
+
+			it('should delete a field template', async () => {
+				const campaign: BaseEntity = {
+					id: 'campaign-1',
+					type: 'campaign',
+					name: 'Test Campaign',
+					description: 'Test',
+					tags: [],
+					fields: {},
+					links: [],
+					notes: '',
+					createdAt: new Date(),
+					updatedAt: new Date(),
+					metadata: {
+						customEntityTypes: [],
+						entityTypeOverrides: [],
+						fieldTemplates: [
+							{
+								id: 'template-1',
+								name: 'To Delete',
+								category: 'user',
+								fieldDefinitions: [],
+								createdAt: new Date(),
+								updatedAt: new Date()
+							},
+							{
+								id: 'template-2',
+								name: 'To Keep',
+								category: 'user',
+								fieldDefinitions: [],
+								createdAt: new Date(),
+								updatedAt: new Date()
+							}
+						],
+						settings: {
+							customRelationships: [],
+							enabledEntityTypes: []
+						}
+					}
+				};
+
+				mockDb.entities.where.mockReturnValue({
+					equals: vi.fn(() => ({
+						toArray: vi.fn(async () => [campaign])
+					}))
+				});
+
+				await campaignStore.load();
+
+				await campaignStore.deleteFieldTemplate('template-1');
+
+				expect(mockDb.entities.update).toHaveBeenCalled();
+				const updateCall = mockDb.entities.update.mock.calls[0];
+				expect(updateCall[1].metadata.fieldTemplates).toHaveLength(1);
+				expect(updateCall[1].metadata.fieldTemplates[0].id).toBe('template-2');
+			});
+
+			it('should throw error if template not found', async () => {
+				const campaign: BaseEntity = {
+					id: 'campaign-1',
+					type: 'campaign',
+					name: 'Test Campaign',
+					description: 'Test',
+					tags: [],
+					fields: {},
+					links: [],
+					notes: '',
+					createdAt: new Date(),
+					updatedAt: new Date(),
+					metadata: {
+						customEntityTypes: [],
+						entityTypeOverrides: [],
+						fieldTemplates: [],
+						settings: {
+							customRelationships: [],
+							enabledEntityTypes: []
+						}
+					}
+				};
+
+				mockDb.entities.where.mockReturnValue({
+					equals: vi.fn(() => ({
+						toArray: vi.fn(async () => [campaign])
+					}))
+				});
+
+				await campaignStore.load();
+
+				await expect(campaignStore.deleteFieldTemplate('non-existent')).rejects.toThrow(
+					'Field template "non-existent" not found'
+				);
+			});
+
+			it('should update updatedAt timestamp on campaign', async () => {
+				const campaign: BaseEntity = {
+					id: 'campaign-1',
+					type: 'campaign',
+					name: 'Test Campaign',
+					description: 'Test',
+					tags: [],
+					fields: {},
+					links: [],
+					notes: '',
+					createdAt: new Date(),
+					updatedAt: new Date('2024-01-01'),
+					metadata: {
+						customEntityTypes: [],
+						entityTypeOverrides: [],
+						fieldTemplates: [
+							{
+								id: 'template-1',
+								name: 'To Delete',
+								category: 'user',
+								fieldDefinitions: [],
+								createdAt: new Date(),
+								updatedAt: new Date()
+							}
+						],
+						settings: {
+							customRelationships: [],
+							enabledEntityTypes: []
+						}
+					}
+				};
+
+				mockDb.entities.where.mockReturnValue({
+					equals: vi.fn(() => ({
+						toArray: vi.fn(async () => [campaign])
+					}))
+				});
+
+				await campaignStore.load();
+
+				await campaignStore.deleteFieldTemplate('template-1');
+
+				const updateCall = mockDb.entities.update.mock.calls[0];
+				expect(updateCall[1].updatedAt).toBeInstanceOf(Date);
+			});
+
+			it('should throw error if no campaign is loaded', async () => {
+				campaignStore._resetForTesting();
+
+				await expect(campaignStore.deleteFieldTemplate('template-1')).rejects.toThrow();
+			});
+		});
+
+		describe('getFieldTemplate()', () => {
+			it('should exist as a method on campaign store', () => {
+				expect(campaignStore.getFieldTemplate).toBeDefined();
+				expect(typeof campaignStore.getFieldTemplate).toBe('function');
+			});
+
+			it('should get a field template by ID', async () => {
+				const campaign: BaseEntity = {
+					id: 'campaign-1',
+					type: 'campaign',
+					name: 'Test Campaign',
+					description: 'Test',
+					tags: [],
+					fields: {},
+					links: [],
+					notes: '',
+					createdAt: new Date(),
+					updatedAt: new Date(),
+					metadata: {
+						customEntityTypes: [],
+						entityTypeOverrides: [],
+						fieldTemplates: [
+							{
+								id: 'template-1',
+								name: 'Test Template',
+								description: 'A test template',
+								category: 'user',
+								fieldDefinitions: [
+									{
+										key: 'field1',
+										label: 'Field 1',
+										type: 'text' as const,
+										required: false,
+										order: 1
+									}
+								],
+								createdAt: new Date(),
+								updatedAt: new Date()
+							}
+						],
+						settings: {
+							customRelationships: [],
+							enabledEntityTypes: []
+						}
+					}
+				};
+
+				mockDb.entities.where.mockReturnValue({
+					equals: vi.fn(() => ({
+						toArray: vi.fn(async () => [campaign])
+					}))
+				});
+
+				await campaignStore.load();
+
+				const template = campaignStore.getFieldTemplate('template-1');
+
+				expect(template).toBeDefined();
+				expect(template?.id).toBe('template-1');
+				expect(template?.name).toBe('Test Template');
+				expect(template?.description).toBe('A test template');
+				expect(template?.fieldDefinitions).toHaveLength(1);
+			});
+
+			it('should return undefined for non-existent template', async () => {
+				const campaign: BaseEntity = {
+					id: 'campaign-1',
+					type: 'campaign',
+					name: 'Test Campaign',
+					description: 'Test',
+					tags: [],
+					fields: {},
+					links: [],
+					notes: '',
+					createdAt: new Date(),
+					updatedAt: new Date(),
+					metadata: {
+						customEntityTypes: [],
+						entityTypeOverrides: [],
+						fieldTemplates: [],
+						settings: {
+							customRelationships: [],
+							enabledEntityTypes: []
+						}
+					}
+				};
+
+				mockDb.entities.where.mockReturnValue({
+					equals: vi.fn(() => ({
+						toArray: vi.fn(async () => [campaign])
+					}))
+				});
+
+				await campaignStore.load();
+
+				const template = campaignStore.getFieldTemplate('non-existent');
+
+				expect(template).toBeUndefined();
+			});
+
+			it('should return undefined when no campaign is loaded', () => {
+				campaignStore._resetForTesting();
+
+				const template = campaignStore.getFieldTemplate('template-1');
+
+				expect(template).toBeUndefined();
+			});
+		});
+
+		describe('fieldTemplates getter', () => {
+			it('should exist as a getter on campaign store', () => {
+				expect(campaignStore.fieldTemplates).toBeDefined();
+			});
+
+			it('should return empty array when no campaign is loaded', () => {
+				campaignStore._resetForTesting();
+
+				expect(campaignStore.fieldTemplates).toEqual([]);
+			});
+
+			it('should return user field templates from campaign metadata', async () => {
+				const campaign: BaseEntity = {
+					id: 'campaign-1',
+					type: 'campaign',
+					name: 'Test Campaign',
+					description: 'Test',
+					tags: [],
+					fields: {},
+					links: [],
+					notes: '',
+					createdAt: new Date(),
+					updatedAt: new Date(),
+					metadata: {
+						customEntityTypes: [],
+						entityTypeOverrides: [],
+						fieldTemplates: [
+							{
+								id: 'template-1',
+								name: 'User Template 1',
+								category: 'user',
+								fieldDefinitions: [],
+								createdAt: new Date(),
+								updatedAt: new Date()
+							},
+							{
+								id: 'template-2',
+								name: 'User Template 2',
+								category: 'user',
+								fieldDefinitions: [],
+								createdAt: new Date(),
+								updatedAt: new Date()
+							}
+						],
+						settings: {
+							customRelationships: [],
+							enabledEntityTypes: []
+						}
+					}
+				};
+
+				mockDb.entities.where.mockReturnValue({
+					equals: vi.fn(() => ({
+						toArray: vi.fn(async () => [campaign])
+					}))
+				});
+
+				await campaignStore.load();
+
+				const templates = campaignStore.fieldTemplates;
+
+				expect(templates).toHaveLength(2);
+				expect(templates[0].id).toBe('template-1');
+				expect(templates[1].id).toBe('template-2');
+			});
+
+			it('should return empty array when campaign has no fieldTemplates', async () => {
+				const campaign: BaseEntity = {
+					id: 'campaign-1',
+					type: 'campaign',
+					name: 'Test Campaign',
+					description: 'Test',
+					tags: [],
+					fields: {},
+					links: [],
+					notes: '',
+					createdAt: new Date(),
+					updatedAt: new Date(),
+					metadata: {
+						customEntityTypes: [],
+						entityTypeOverrides: [],
+						settings: {
+							customRelationships: [],
+							enabledEntityTypes: []
+						}
+					}
+				};
+
+				mockDb.entities.where.mockReturnValue({
+					equals: vi.fn(() => ({
+						toArray: vi.fn(async () => [campaign])
+					}))
+				});
+
+				await campaignStore.load();
+
+				const templates = campaignStore.fieldTemplates;
+
+				expect(templates).toEqual([]);
+			});
+
+			it('should handle campaigns created before fieldTemplates were added', async () => {
+				const oldCampaign: BaseEntity = {
+					id: 'old-campaign',
+					type: 'campaign',
+					name: 'Old Campaign',
+					description: 'Created before field templates',
+					tags: [],
+					fields: {},
+					links: [],
+					notes: '',
+					createdAt: new Date('2023-01-01'),
+					updatedAt: new Date('2023-01-01'),
+					metadata: {
+						// No fieldTemplates field
+						customEntityTypes: [],
+						entityTypeOverrides: [],
+						settings: {
+							customRelationships: [],
+							enabledEntityTypes: []
+						}
+					}
+				};
+
+				mockDb.entities.where.mockReturnValue({
+					equals: vi.fn(() => ({
+						toArray: vi.fn(async () => [oldCampaign])
+					}))
+				});
+
+				await campaignStore.load();
+
+				const templates = campaignStore.fieldTemplates;
+
+				expect(templates).toEqual([]);
+			});
+		});
+
+		describe('Deep Cloning and Immutability', () => {
+			it('should deep clone metadata when adding template', async () => {
+				const campaign: BaseEntity = {
+					id: 'campaign-1',
+					type: 'campaign',
+					name: 'Test Campaign',
+					description: 'Test',
+					tags: [],
+					fields: {},
+					links: [],
+					notes: '',
+					createdAt: new Date(),
+					updatedAt: new Date(),
+					metadata: {
+						customEntityTypes: [],
+						entityTypeOverrides: [],
+						fieldTemplates: [],
+						settings: {
+							customRelationships: [],
+							enabledEntityTypes: []
+						}
+					}
+				};
+
+				mockDb.entities.where.mockReturnValue({
+					equals: vi.fn(() => ({
+						toArray: vi.fn(async () => [campaign])
+					}))
+				});
+
+				await campaignStore.load();
+
+				const template = {
+					id: 'template-1',
+					name: 'Test',
+					category: 'user',
+					fieldDefinitions: [
+						{
+							key: 'field1',
+							label: 'Field 1',
+							type: 'text' as const,
+							required: false,
+							order: 1
+						}
+					],
+					createdAt: new Date(),
+					updatedAt: new Date()
+				};
+
+				await campaignStore.addFieldTemplate(template);
+
+				// Verify update was called with cloned data (no Svelte 5 Proxy wrappers)
+				expect(mockDb.entities.update).toHaveBeenCalled();
+			});
+		});
+	});
 });

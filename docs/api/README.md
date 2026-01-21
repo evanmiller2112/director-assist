@@ -42,6 +42,23 @@ Validation utilities for custom entity types and field definitions.
 - Debugging validation errors
 - Understanding validation rules and error messages
 
+### Clone and Template Library (Issue #210)
+
+Utilities for cloning entity types, managing field templates, and exporting/importing configurations.
+
+**Contents:**
+- `cloneEntityType()` - Deep clone entity types for creating new custom types
+- Field template CRUD operations in campaign store
+- `exportEntityType()` - Export entity types as JSON
+- `exportFieldTemplate()` - Export field templates as JSON
+- `validateImport()` - Validate and preview import data
+
+**Use this when:**
+- Implementing clone functionality in UI
+- Creating field template management UI
+- Building export/import workflows
+- Sharing entity types between campaigns
+
 ## Quick Reference
 
 ### Field Types
@@ -80,6 +97,33 @@ import {
   validateComputedFieldFormula,
   detectCircularDependencies
 } from '$lib/utils/entityTypeValidation';
+```
+
+**Clone Utility** (`/src/lib/utils/cloneEntityType.ts`)
+```typescript
+import { cloneEntityType } from '$lib/utils/cloneEntityType';
+```
+
+**Export/Import Service** (`/src/lib/services/entityTypeExportService.ts`)
+```typescript
+import {
+  exportEntityType,
+  exportFieldTemplate,
+  validateImport,
+  EXPORT_VERSION
+} from '$lib/services/entityTypeExportService';
+```
+
+**Campaign Store** (`/src/lib/stores/campaign.svelte.ts`)
+```typescript
+import { campaignStore } from '$lib/stores/campaign.svelte';
+
+// Field template operations
+campaignStore.addFieldTemplate(template);
+campaignStore.updateFieldTemplate(id, updates);
+campaignStore.deleteFieldTemplate(id);
+const template = campaignStore.getFieldTemplate(id);
+const allTemplates = campaignStore.fieldTemplates;
 ```
 
 **Components** (`/src/lib/components/entity/`)
@@ -123,6 +167,87 @@ import { normalizeFieldType } from '$lib/utils/fieldTypes';
 const type = normalizeFieldType('short-text'); // Returns: 'text'
 ```
 
+**Cloning an Entity Type**
+```typescript
+import { cloneEntityType } from '$lib/utils/cloneEntityType';
+
+const original = getEntityType('character');
+const cloned = cloneEntityType(original);
+
+// Cloned type has:
+// - type: '' (empty, user must provide)
+// - label: 'Character (Copy)'
+// - labelPlural: 'Characters (Copy)'
+// - isBuiltIn: false
+// - Deep cloned fieldDefinitions and defaultRelationships
+```
+
+**Exporting an Entity Type**
+```typescript
+import { exportEntityType } from '$lib/services/entityTypeExportService';
+
+const customType = campaignStore.getCustomEntityType('my-custom-type');
+const exported = exportEntityType(customType, {
+  author: 'Jane Doe',
+  license: 'CC-BY-4.0',
+  sourceUrl: 'https://example.com'
+});
+
+const json = JSON.stringify(exported, null, 2);
+// Download or share the JSON
+```
+
+**Importing and Validating**
+```typescript
+import { validateImport } from '$lib/services/entityTypeExportService';
+
+const jsonData = JSON.parse(fileContents);
+const existingTypes = campaignStore.customEntityTypes.map(t => t.type);
+const result = validateImport(jsonData, existingTypes);
+
+if (result.valid) {
+  console.log('Preview:', result.preview);
+  // Show preview to user, then import
+} else {
+  console.error('Validation errors:', result.errors);
+}
+```
+
+**Working with Field Templates**
+```typescript
+import { campaignStore } from '$lib/stores/campaign.svelte';
+
+// Create template
+const template: FieldTemplate = {
+  id: 'combat-stats',
+  name: 'Combat Stats',
+  description: 'Standard combat statistics',
+  category: 'draw-steel',
+  fieldDefinitions: [
+    { key: 'ac', label: 'AC', type: 'number', required: false, order: 1 },
+    { key: 'hp', label: 'HP', type: 'number', required: false, order: 2 }
+  ],
+  createdAt: new Date(),
+  updatedAt: new Date()
+};
+
+await campaignStore.addFieldTemplate(template);
+
+// Retrieve template
+const retrieved = campaignStore.getFieldTemplate('combat-stats');
+
+// Update template
+await campaignStore.updateFieldTemplate('combat-stats', {
+  description: 'Updated description'
+});
+
+// Delete template
+await campaignStore.deleteFieldTemplate('combat-stats');
+
+// Get all templates
+const allTemplates = campaignStore.fieldTemplates;
+```
+
 ## Type Definitions
 
 Core types are defined in `/src/lib/types/entities.ts`:
@@ -136,7 +261,64 @@ Core types are defined in `/src/lib/types/entities.ts`:
 - `ComputedFieldConfig` - Computed field configuration
 - `ValidationResult` - Validation result structure
 
-See the [type definitions file](../../src/lib/types/entities.ts) for complete type signatures.
+**Clone and Template Types** (`/src/lib/types/campaign.ts` and `/src/lib/types/entityTypeExport.ts`):
+- `FieldTemplate` - Field template definition
+- `CampaignMetadata` - Campaign metadata including field templates
+- `EntityTypeExport` - Export format for entity types and templates
+- `ImportValidationResult` - Import validation result with preview
+
+See the [type definitions files](../../src/lib/types/) for complete type signatures.
+
+### FieldTemplate Interface
+
+```typescript
+interface FieldTemplate {
+  id: string;                    // Unique identifier
+  name: string;                  // Display name
+  description?: string;          // Usage description
+  category: string;              // Organization category (e.g., 'draw-steel', 'user')
+  fieldDefinitions: FieldDefinition[];  // Field definitions in template
+  createdAt: Date;              // Creation timestamp
+  updatedAt: Date;              // Last update timestamp
+}
+```
+
+### EntityTypeExport Interface
+
+```typescript
+interface EntityTypeExport {
+  version: '1.0.0';             // Export format version
+  exportedAt: Date;             // Export timestamp
+  generator: {
+    name: 'Director Assist';    // Application name
+    version: string;            // Application version
+  };
+  type: 'entity-type' | 'field-template';  // Export type
+  data: EntityTypeDefinition | FieldTemplate;  // Exported data
+  metadata: {
+    author?: string;            // Creator attribution
+    sourceUrl?: string;         // Original source
+    license?: string;           // License (e.g., 'CC-BY-4.0', 'MIT')
+    [key: string]: unknown;     // Additional custom metadata
+  };
+}
+```
+
+### ImportValidationResult Interface
+
+```typescript
+interface ImportValidationResult {
+  valid: boolean;                // Whether import data is valid
+  errors: string[];              // Critical errors preventing import
+  warnings: string[];            // Non-critical warnings
+  preview: {
+    name: string;                // Name of entity type or template
+    type: 'entity-type' | 'field-template';  // Type being imported
+    fieldCount: number;          // Number of field definitions
+    conflictsWithExisting: boolean;  // Whether conflicts detected
+  };
+}
+```
 
 ## Related Documentation
 

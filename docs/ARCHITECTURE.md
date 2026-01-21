@@ -221,6 +221,7 @@ interface CampaignMetadata {
   systemId?: string;           // System profile ID ('draw-steel', 'system-agnostic')
   customEntityTypes?: EntityTypeDefinition[];
   entityTypeOverrides?: EntityTypeOverride[];
+  fieldTemplates?: FieldTemplate[];  // Reusable field definition templates (Issue #210)
   settings?: CampaignSettings;
 }
 
@@ -3272,6 +3273,11 @@ Manages campaigns as first-class entities via the entity repository:
 - `deleteCustomEntityType(type)`: Remove custom entity type from campaign
 - `setEntityTypeOverride(override)`: Set entity type override
 - `removeEntityTypeOverride(type)`: Remove entity type override
+- `addFieldTemplate(template)`: Add field template to campaign library (Issue #210)
+- `updateFieldTemplate(id, updates)`: Update existing field template (Issue #210)
+- `deleteFieldTemplate(id)`: Remove field template from campaign library (Issue #210)
+- `getFieldTemplate(id)`: Retrieve field template by ID (Issue #210)
+- `fieldTemplates`: Getter for all field templates in campaign (Issue #210)
 - `deleteCampaign(id)`: Delete campaign (protected: cannot delete last campaign)
 - `reload()`: Reload campaigns from database
 - `reset()`: Reset store to initial state (for testing)

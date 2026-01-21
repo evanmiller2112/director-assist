@@ -13,6 +13,24 @@ import { getSystemProfile } from '$lib/config/systems';
 import { nanoid } from 'nanoid';
 
 /**
+ * Deep clone an object, preserving Date instances
+ * This is used instead of JSON.parse/stringify to maintain Date objects
+ */
+function deepClone<T>(obj: T): T {
+	if (obj === null || typeof obj !== 'object') return obj;
+	if (obj instanceof Date) return new Date(obj.getTime()) as T;
+	if (Array.isArray(obj)) return obj.map((item) => deepClone(item)) as T;
+
+	const cloned: Record<string, unknown> = {};
+	for (const key in obj) {
+		if (Object.prototype.hasOwnProperty.call(obj, key)) {
+			cloned[key] = deepClone((obj as Record<string, unknown>)[key]);
+		}
+	}
+	return cloned as T;
+}
+
+/**
  * Helper to get campaign metadata from a campaign entity
  */
 function getCampaignMetadata(entity: BaseEntity | null): CampaignMetadata {
@@ -22,6 +40,7 @@ function getCampaignMetadata(entity: BaseEntity | null): CampaignMetadata {
 		systemId: metadata?.systemId,
 		customEntityTypes: metadata?.customEntityTypes ?? [],
 		entityTypeOverrides: metadata?.entityTypeOverrides ?? [],
+		fieldTemplates: metadata?.fieldTemplates ?? [],
 		settings: metadata?.settings ?? { ...DEFAULT_CAMPAIGN_SETTINGS }
 	};
 }
@@ -117,7 +136,7 @@ function createCampaignStore() {
 				};
 
 				// Deep clone to remove Svelte 5 Proxy wrappers
-				const clonedMetadata = JSON.parse(JSON.stringify(updatedMetadata));
+				const clonedMetadata = deepClone(updatedMetadata);
 
 				await db.entities.update(campaign.id, {
 					metadata: clonedMetadata,
@@ -293,7 +312,7 @@ function createCampaignStore() {
 				};
 
 				// Deep clone to remove Svelte 5 Proxy wrappers
-				const clonedMetadata = JSON.parse(JSON.stringify(updatedMetadata));
+				const clonedMetadata = deepClone(updatedMetadata);
 
 				await db.entities.update(campaign.id, {
 					metadata: clonedMetadata,
@@ -331,7 +350,7 @@ function createCampaignStore() {
 				};
 
 				// Deep clone to remove Svelte 5 Proxy wrappers
-				const clonedMetadata = JSON.parse(JSON.stringify(updatedMetadata));
+				const clonedMetadata = deepClone(updatedMetadata);
 
 				await db.entities.update(campaign.id, {
 					metadata: clonedMetadata,
@@ -379,7 +398,7 @@ function createCampaignStore() {
 				};
 
 				// Deep clone to remove Svelte 5 Proxy wrappers
-				const clonedMetadata = JSON.parse(JSON.stringify(updatedMetadata));
+				const clonedMetadata = deepClone(updatedMetadata);
 
 				await db.entities.update(campaign.id, {
 					metadata: clonedMetadata,
@@ -416,7 +435,7 @@ function createCampaignStore() {
 				};
 
 				// Deep clone to remove Svelte 5 Proxy wrappers
-				const clonedMetadata = JSON.parse(JSON.stringify(updatedMetadata));
+				const clonedMetadata = deepClone(updatedMetadata);
 
 				await db.entities.update(campaign.id, {
 					metadata: clonedMetadata,
@@ -466,7 +485,7 @@ function createCampaignStore() {
 				};
 
 				// Deep clone to remove Svelte 5 Proxy wrappers
-				const clonedMetadata = JSON.parse(JSON.stringify(updatedMetadata));
+				const clonedMetadata = deepClone(updatedMetadata);
 
 				await db.entities.update(campaign.id, {
 					metadata: clonedMetadata,
@@ -498,7 +517,7 @@ function createCampaignStore() {
 				};
 
 				// Deep clone to remove Svelte 5 Proxy wrappers
-				const clonedMetadata = JSON.parse(JSON.stringify(updatedMetadata));
+				const clonedMetadata = deepClone(updatedMetadata);
 
 				await db.entities.update(campaign.id, {
 					metadata: clonedMetadata,
@@ -521,6 +540,166 @@ function createCampaignStore() {
 
 		getEntityTypeOverride(type: string): EntityTypeOverride | undefined {
 			return getCampaignMetadata(campaign).entityTypeOverrides.find((o) => o.type === type);
+		},
+
+		// Field Template CRUD methods (GitHub Issue #210)
+
+		/**
+		 * Get all field templates for the current campaign
+		 */
+		get fieldTemplates() {
+			if (!campaign) return [];
+			const metadata = getCampaignMetadata(campaign);
+			// Return deep cloned array to prevent mutation
+			return deepClone(metadata.fieldTemplates ?? []);
+		},
+
+		/**
+		 * Get a field template by ID
+		 */
+		getFieldTemplate(id: string) {
+			if (!campaign) return undefined;
+			const metadata = getCampaignMetadata(campaign);
+			const template = (metadata.fieldTemplates ?? []).find((t) => t.id === id);
+			// Return deep clone to prevent mutation
+			return template ? deepClone(template) : undefined;
+		},
+
+		/**
+		 * Add a field template to the campaign
+		 */
+		async addFieldTemplate(template: import('$lib/types').FieldTemplate): Promise<void> {
+			if (!campaign) {
+				throw new Error('No campaign loaded');
+			}
+
+			const metadata = getCampaignMetadata(campaign);
+			const existing = (metadata.fieldTemplates ?? []).find((t) => t.id === template.id);
+			if (existing) {
+				throw new Error(`Field template "${template.id}" already exists`);
+			}
+
+			try {
+				const updatedMetadata: CampaignMetadata = {
+					...metadata,
+					fieldTemplates: [...(metadata.fieldTemplates ?? []), template]
+				};
+
+				// Deep clone to remove Svelte 5 Proxy wrappers
+				const clonedMetadata = deepClone(updatedMetadata);
+
+				await db.entities.update(campaign.id, {
+					metadata: clonedMetadata,
+					updatedAt: new Date()
+				});
+
+				// Update local state
+				campaign = {
+					...campaign,
+					metadata: clonedMetadata,
+					updatedAt: new Date()
+				};
+				allCampaigns = allCampaigns.map((c) => (c.id === campaign!.id ? campaign! : c));
+			} catch (e) {
+				error = e instanceof Error ? e.message : 'Failed to add field template';
+				console.error('Failed to add field template:', e);
+				throw e;
+			}
+		},
+
+		/**
+		 * Update an existing field template
+		 */
+		async updateFieldTemplate(
+			id: string,
+			updates: Partial<Omit<import('$lib/types').FieldTemplate, 'id'>>
+		): Promise<void> {
+			if (!campaign) {
+				throw new Error('No campaign loaded');
+			}
+
+			const metadata = getCampaignMetadata(campaign);
+			const index = (metadata.fieldTemplates ?? []).findIndex((t) => t.id === id);
+			if (index === -1) {
+				throw new Error(`Field template "${id}" not found`);
+			}
+
+			try {
+				const updatedTemplates = [...(metadata.fieldTemplates ?? [])];
+				updatedTemplates[index] = {
+					...updatedTemplates[index],
+					...updates,
+					id, // Ensure id cannot be changed
+					updatedAt: new Date() // Update timestamp
+				};
+
+				const updatedMetadata: CampaignMetadata = {
+					...metadata,
+					fieldTemplates: updatedTemplates
+				};
+
+				// Deep clone to remove Svelte 5 Proxy wrappers
+				const clonedMetadata = deepClone(updatedMetadata);
+
+				await db.entities.update(campaign.id, {
+					metadata: clonedMetadata,
+					updatedAt: new Date()
+				});
+
+				// Update local state
+				campaign = {
+					...campaign,
+					metadata: clonedMetadata,
+					updatedAt: new Date()
+				};
+				allCampaigns = allCampaigns.map((c) => (c.id === campaign!.id ? campaign! : c));
+			} catch (e) {
+				error = e instanceof Error ? e.message : 'Failed to update field template';
+				console.error('Failed to update field template:', e);
+				throw e;
+			}
+		},
+
+		/**
+		 * Delete a field template
+		 */
+		async deleteFieldTemplate(id: string): Promise<void> {
+			if (!campaign) {
+				throw new Error('No campaign loaded');
+			}
+
+			const metadata = getCampaignMetadata(campaign);
+			const index = (metadata.fieldTemplates ?? []).findIndex((t) => t.id === id);
+			if (index === -1) {
+				throw new Error(`Field template "${id}" not found`);
+			}
+
+			try {
+				const updatedMetadata: CampaignMetadata = {
+					...metadata,
+					fieldTemplates: (metadata.fieldTemplates ?? []).filter((t) => t.id !== id)
+				};
+
+				// Deep clone to remove Svelte 5 Proxy wrappers
+				const clonedMetadata = deepClone(updatedMetadata);
+
+				await db.entities.update(campaign.id, {
+					metadata: clonedMetadata,
+					updatedAt: new Date()
+				});
+
+				// Update local state
+				campaign = {
+					...campaign,
+					metadata: clonedMetadata,
+					updatedAt: new Date()
+				};
+				allCampaigns = allCampaigns.map((c) => (c.id === campaign!.id ? campaign! : c));
+			} catch (e) {
+				error = e instanceof Error ? e.message : 'Failed to delete field template';
+				console.error('Failed to delete field template:', e);
+				throw e;
+			}
 		},
 
 		/**

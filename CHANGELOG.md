@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+**Custom Entity Clone and Template System (Issue #210, Phase 3)**
+- Clone utility for duplicating existing entity types as starting points for new custom types
+- Field template library for saving and sharing reusable field definition collections
+- Export/import service for sharing entity types and field templates as JSON files
+- `cloneEntityType()` function creates deep copies with type reset and "(Copy)" label suffix
+- Field template CRUD operations in campaign store: `addFieldTemplate()`, `updateFieldTemplate()`, `deleteFieldTemplate()`, `getFieldTemplate()`
+- `fieldTemplates` getter in campaign store for retrieving all templates
+- `exportEntityType()` and `exportFieldTemplate()` functions for standardized JSON export
+- `validateImport()` function for import validation with version checking and conflict detection
+- Export format version 1.0.0 with metadata support (author, license, source URL)
+- Import preview system shows name, field count, and potential conflicts before importing
+- Deep cloning ensures immutability (modifications to clones don't affect originals)
+- Backend foundation for UI components in future phases
+
 ## [0.9.0] - 2026-01-21
 
 ### Added

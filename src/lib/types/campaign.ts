@@ -25,6 +25,8 @@ export interface CampaignSettings {
 	customRelationships: string[]; // Custom relationship types beyond defaults
 	enabledEntityTypes: string[]; // Which entity types to show in UI
 	theme?: 'light' | 'dark' | 'system';
+	enforceCampaignLinking?: boolean; // Issue #48: Automatically link all new entities to campaigns
+	defaultCampaignId?: string; // Issue #48: Default campaign for auto-linking (when multiple campaigns exist)
 }
 
 /**

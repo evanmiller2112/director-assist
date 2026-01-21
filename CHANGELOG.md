@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+**Forced Campaign Linking Option (Issue #48)**
+- New "Enforce Campaign Linking" setting automatically links all new entities to campaigns
+- When enabled, creates 'belongs_to_campaign' relationship on entity creation
+- Bulk linking modal offers to link existing unlinked entities when first enabled
+- Shows entity count and allows campaign selection for bulk operations
+- Handles multiple scenarios: single campaign (auto-link), multiple campaigns (select default), no campaigns (disabled)
+- Default campaign selector appears when multiple campaigns exist
+- Info banner on entity creation forms indicates when auto-linking is active
+- CampaignLinkingSettings component provides settings UI with toggle and dropdown
+- BulkCampaignLinkingModal component handles bulk linking workflow
+- New campaign store methods: setEnforceCampaignLinking(), setDefaultCampaignId()
+- New entity repository method: getEntitiesWithoutCampaignLink() for identifying unlinked entities
+- Settings stored in campaign metadata: enforceCampaignLinking, defaultCampaignId
+
 ## [0.9.0] - 2026-01-21
 
 ### Added

@@ -15,6 +15,7 @@
 	import LoadingButton from '$lib/components/ui/LoadingButton.svelte';
 	import { MarkdownEditor } from '$lib/components/markdown';
 	import { PendingRelationshipList, CreateRelateCommand } from '$lib/components/entity';
+	import { FormActionBar } from '$lib/components/ui';
 
 	const entityType = $derived($page.params.type ?? '');
 	const typeDefinition = $derived(
@@ -942,7 +943,7 @@
 		</div>
 
 		<!-- Submit -->
-		<div class="flex gap-3 pt-4">
+		<FormActionBar>
 			<LoadingButton
 				type="submit"
 				variant="primary"
@@ -971,7 +972,7 @@
 				{/if}
 			</button>
 			<a href="/entities/{entityType}" class="btn btn-secondary"> Cancel </a>
-		</div>
+		</FormActionBar>
 	</form>
 </div>
 

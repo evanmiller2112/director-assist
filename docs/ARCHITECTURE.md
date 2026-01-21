@@ -99,6 +99,7 @@ src/
 │   │   │   ├── LoadingSkeleton.svelte
 │   │   │   ├── LoadingButton.svelte
 │   │   │   ├── ConfirmDialog.svelte
+│   │   │   ├── FormActionBar.svelte       # Sticky action bar for forms
 │   │   │   └── Pagination.svelte
 │   │   └── layout/          # Layout components
 │   │       ├── Header.svelte
@@ -2289,6 +2290,80 @@ interface ConfirmDialogProps {
 - Escape key to close
 - Click backdrop to dismiss
 
+#### FormActionBar Component
+
+**Location:** `/src/lib/components/ui/FormActionBar.svelte`
+
+**Purpose:** Sticky footer bar for form action buttons, keeping Save/Cancel controls visible while scrolling through long forms.
+
+**Props:**
+
+```typescript
+interface FormActionBarProps {
+  children?: Snippet;  // Slot for action buttons
+  class?: string;      // Additional CSS classes
+}
+```
+
+**Features:**
+
+- Sticky positioning at bottom of form
+- Background with border and upward shadow
+- Proper z-index layering above content
+- Dark mode support
+- Flexbox layout for button arrangement
+
+**Usage Examples:**
+
+```svelte
+<script lang="ts">
+  import { FormActionBar, LoadingButton } from '$lib/components/ui';
+
+  let saving = $state(false);
+
+  async function handleSave() {
+    saving = true;
+    try {
+      await saveEntity();
+    } finally {
+      saving = false;
+    }
+  }
+</script>
+
+<form onsubmit={handleSubmit}>
+  <!-- Form fields here -->
+
+  <FormActionBar>
+    <LoadingButton
+      type="submit"
+      variant="primary"
+      loading={saving}
+      loadingText="Saving..."
+    >
+      Save
+    </LoadingButton>
+    <a href="/cancel" class="btn btn-secondary">
+      Cancel
+    </a>
+  </FormActionBar>
+</form>
+```
+
+**Styling:**
+
+The component provides a consistent container with these styles:
+- `sticky bottom-0`: Stays at bottom during scroll
+- Border and shadow for visual separation from form content
+- Padding and flexbox gap for proper button spacing
+- Theme-aware colors for light/dark modes
+
+**Implementation Pattern:**
+
+Used in all entity forms:
+- `/src/routes/entities/[type]/new/+page.svelte` (entity creation)
+- `/src/routes/entities/[type]/[id]/edit/+page.svelte` (entity editing)
+
 #### SuggestionDetailsModal Component
 
 **Location:** `/src/lib/components/suggestions/SuggestionDetailsModal.svelte`
@@ -2665,6 +2740,7 @@ All markdown elements are styled consistently with the application theme:
 - Smooth transition to actual content
 
 **Entity Create/Edit Forms** (`/src/routes/entities/[type]/new/+page.svelte`, `/src/routes/entities/[type]/[id]/edit/+page.svelte`)
+- Use FormActionBar to wrap action buttons (Save/Cancel)
 - Use LoadingButton for save/create actions
 - Use MarkdownEditor for all richtext field types
 - Prevent double-submission during async operations
@@ -2682,12 +2758,13 @@ All markdown elements are styled consistently with the application theme:
 
 **Best Practices:**
 
-1. **Choose the Right Component**: Use LoadingSkeleton for content loading, LoadingSpinner for operations, LoadingButton for async actions
+1. **Choose the Right Component**: Use LoadingSkeleton for content loading, LoadingSpinner for operations, LoadingButton for async actions, FormActionBar for form action buttons
 2. **Match Layout**: LoadingSkeleton variants should match the content being loaded
 3. **Provide Context**: Use labels or loadingText to explain what's happening
 4. **Accessibility**: Always include ARIA attributes and screen reader text
 5. **Consistent Sizing**: Use matching size props across related components
 6. **Dark Mode**: All components support dark mode automatically
+7. **Form UX**: Always use FormActionBar to keep action buttons visible on long forms
 
 ### Dynamic Field System
 

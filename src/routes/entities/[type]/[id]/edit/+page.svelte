@@ -15,7 +15,7 @@
 	import FieldGenerateButton from '$lib/components/entity/FieldGenerateButton.svelte';
 	import LoadingButton from '$lib/components/ui/LoadingButton.svelte';
 	import { MarkdownEditor } from '$lib/components/markdown';
-	import { ConfirmDialog } from '$lib/components/ui';
+	import { ConfirmDialog, FormActionBar } from '$lib/components/ui';
 	import RelationshipContextSelector, { type RelationshipContextData } from '$lib/components/entity/RelationshipContextSelector.svelte';
 
 	const entityId = $derived($page.params.id ?? '');
@@ -1176,7 +1176,7 @@
 			</div>
 
 			<!-- Submit -->
-			<div class="flex gap-3 pt-4">
+			<FormActionBar>
 				<LoadingButton
 					type="submit"
 					variant="primary"
@@ -1189,7 +1189,7 @@
 					Save Changes
 				</LoadingButton>
 				<a href="/entities/{entityType}/{entityId}" class="btn btn-secondary"> Cancel </a>
-			</div>
+			</FormActionBar>
 		</form>
 
 		<!-- Confirmation Dialogs -->

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { Plus, MessageSquare } from 'lucide-svelte';
+	import { Plus, MessageSquare, ChevronDown } from 'lucide-svelte';
 	import { conversationStore, chatStore } from '$lib/stores';
 	import ConversationListItem from './ConversationListItem.svelte';
 
@@ -8,9 +8,36 @@
 	const activeConversationId = $derived(conversationStore.activeConversationId);
 	const isLoading = $derived(conversationStore.isLoading);
 
+	const STORAGE_KEY = 'chat-conversations-collapsed';
+	let isCollapsed = $state(false);
+
 	onMount(() => {
 		conversationStore.load();
+		loadCollapsedState();
 	});
+
+	function loadCollapsedState() {
+		try {
+			const saved = localStorage.getItem(STORAGE_KEY);
+			if (saved === 'true') {
+				isCollapsed = true;
+			} else if (saved === 'false') {
+				isCollapsed = false;
+			}
+			// else default to false (expanded)
+		} catch (e) {
+			console.warn('Failed to load collapsed state:', e);
+		}
+	}
+
+	function toggleCollapsed() {
+		isCollapsed = !isCollapsed;
+		try {
+			localStorage.setItem(STORAGE_KEY, String(isCollapsed));
+		} catch (e) {
+			console.warn('Failed to save collapsed state:', e);
+		}
+	}
 
 	async function handleNewConversation() {
 		await conversationStore.create();
@@ -31,21 +58,37 @@
 </script>
 
 <div class="flex flex-col max-h-48 border-b border-slate-200 dark:border-slate-700">
-	<!-- Header with New Conversation button -->
+	<!-- Section Header with Conversations label and toggle -->
+	<div class="px-3 py-2 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
+		<h3 class="text-sm font-medium text-slate-700 dark:text-slate-300">Conversations</h3>
+		<button
+			type="button"
+			onclick={toggleCollapsed}
+			class="p-1 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 rounded transition-transform duration-200"
+			aria-label={isCollapsed ? 'Expand conversations' : 'toggle conversations'}
+			aria-expanded={!isCollapsed}
+			title={isCollapsed ? 'Expand conversations' : 'toggle conversations'}
+		>
+			<ChevronDown class="w-5 h-5 transition-transform duration-200" style="transform: rotate({isCollapsed ? -90 : 0}deg);" />
+		</button>
+	</div>
+
+	<!-- New Conversation button -->
 	<div class="px-3 py-2 border-b border-slate-200 dark:border-slate-700">
 		<button
 			type="button"
 			onclick={handleNewConversation}
 			class="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
 			disabled={isLoading}
+			aria-label="New Conversation"
 		>
 			<Plus class="w-4 h-4" />
-			New Conversation
+			Create New
 		</button>
 	</div>
 
 	<!-- Conversation List -->
-	<div class="flex-1 overflow-y-auto">
+	<div class="flex-1 overflow-y-auto" style="display: {isCollapsed ? 'none' : 'block'}; transition: height 0.2s ease-in-out;">
 		{#if isLoading}
 			<div class="flex items-center justify-center py-8">
 				<div class="text-sm text-slate-400 dark:text-slate-500">
@@ -65,7 +108,7 @@
 			</div>
 		{:else}
 			<!-- Conversation List -->
-			<ul role="list" class="p-2 space-y-1">
+			<ul role="list" class="p-2 space-y-1" style="transition: opacity 0.2s ease-in-out;">
 				{#each conversations as conversation (conversation.id)}
 					<ConversationListItem
 						{conversation}

@@ -72,7 +72,7 @@
 	>
 		<span class="flex items-center gap-2">
 			<Link class="w-4 h-4" />
-			Context
+			Entity Selection
 			{#if selectedIds.length > 0}
 				<span class="bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-full text-xs">
 					{selectedIds.length} selected

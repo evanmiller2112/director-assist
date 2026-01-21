@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+**Pending Relationship Context in AI Generation (Issue #232)**
+- Pending relationships now included when generating content for new entities
+- When creating a new entity with relationships, related entities' information is automatically included in AI context
+- Enables contextually appropriate content generation that reflects relationships before first save
+- New utility function `buildPendingRelationshipsContext()` builds privacy-safe summaries from pending relationships
+- Works for both full-entity generation and per-field generation during entity creation
+- Related entity summaries use existing privacy protection (hidden/secret fields excluded)
+
 ## [1.0.0] - 2026-01-21
 
 ### Added

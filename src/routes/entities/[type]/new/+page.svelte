@@ -17,6 +17,7 @@
 	import { MarkdownEditor } from '$lib/components/markdown';
 	import { PendingRelationshipList, CreateRelateCommand } from '$lib/components/entity';
 	import { FormActionBar } from '$lib/components/ui';
+	import { buildPendingRelationshipsContext } from './pendingRelationshipsContext';
 
 	const entityType = $derived($page.params.type ?? '');
 	const typeDefinition = $derived(
@@ -199,6 +200,9 @@
 		isGenerating = true;
 
 		try {
+			// Build relationship context from pending relationships (Issue #232)
+			const relationshipContext = buildPendingRelationshipsContext(pendingRelationships);
+
 			// Build context from current form values
 			const context = {
 				name: name.trim() || undefined,
@@ -207,7 +211,8 @@
 					.split(',')
 					.map((t) => t.trim())
 					.filter(Boolean),
-				fields: $state.snapshot(fields)
+				fields: $state.snapshot(fields),
+				relationshipContext: relationshipContext || undefined
 			};
 
 			// Get campaign context if available
@@ -270,12 +275,16 @@
 					}
 				: undefined;
 
+			// Build relationship context from pending relationships (Issue #232)
+			const relationshipContext = buildPendingRelationshipsContext(pendingRelationships);
+
 			const result = await generateField({
 				entityType,
 				typeDefinition,
 				targetField,
 				currentValues,
-				campaignContext
+				campaignContext,
+				relationshipContext
 			});
 
 			if (result.success && result.value !== undefined) {

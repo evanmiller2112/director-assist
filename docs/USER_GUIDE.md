@@ -815,7 +815,7 @@ One of Director Assist's most powerful features is the ability to create relatio
 
 **Method 1: During Entity Creation**
 
-You can now add relationships while creating a new entity, before the first save:
+You can add relationships while creating a new entity, before the first save:
 
 1. Fill in the entity creation form (name, description, etc.)
 2. Scroll to the "Relationships" section
@@ -827,6 +827,8 @@ You can now add relationships while creating a new entity, before the first save
 8. Add tags or tension level if relevant
 9. Click "Create Link"
 10. The relationship will be saved when you create the entity
+
+**AI Generation Tip:** When you use AI generation on the creation form, any relationships you've added are automatically included in the context. This means the AI can generate content that reflects those connections, even before saving the entity for the first time.
 
 **Method 2: From the Entity Detail Page**
 
@@ -1985,12 +1987,22 @@ For each selected relationship:
 
 **When Relationship Context is NOT Included:**
 
-- Creating new entities (they have no relationships yet)
 - Fields that don't benefit from relationship awareness (equipment, stats, etc.)
-- When no relationships are selected in the panel
+- When no relationships are selected in the panel (for existing entities)
 - When relationship context is disabled in Settings
-- When the entity has no relationships
+- When the entity has no relationships (neither saved nor pending)
 - For entity types that don't benefit from social context (items, encounters, etc.)
+
+**Pending Relationships During Entity Creation:**
+
+When creating a new entity, any relationships you add before saving are automatically included in AI generation context. This allows the AI to create content that reflects those connections from the start:
+
+1. Fill in the basic entity information (name, description)
+2. Add relationships in the "Relationships" section
+3. Click "Generate" on any field or use the main generate button
+4. The AI receives information about the related entities to create contextually appropriate content
+
+For example, creating an NPC "George" with a "best_friends" relationship to "Sarah" means the AI knows about Sarah when generating George's personality, background, or other fields.
 
 **Cache Regeneration:**
 

@@ -1122,5 +1122,93 @@ export const entityRepository = {
 		});
 
 		return results;
+	},
+
+	/**
+	 * Get all entities that don't have a 'belongs_to_campaign' link (Issue #48)
+	 * Excludes campaign entities themselves
+	 */
+	async getEntitiesWithoutCampaignLink(): Promise<BaseEntity[]> {
+		await ensureDbReady();
+
+		return db.entities
+			.filter((entity) => {
+				// Exclude campaign entities
+				if (entity.type === 'campaign') {
+					return false;
+				}
+
+				// Check if entity has a belongs_to_campaign link
+				const hasCampaignLink = entity.links.some(
+					(link) => link.relationship === 'belongs_to_campaign'
+				);
+
+				return !hasCampaignLink;
+			})
+			.toArray();
+	},
+
+	/**
+	 * Bulk link multiple entities to a campaign (Issue #48)
+	 * Creates unidirectional 'belongs_to_campaign' relationships
+	 * Skips entities already linked to that campaign
+	 * Returns count of entities successfully linked
+	 */
+	async bulkLinkToCampaign(entityIds: string[], campaignId: string): Promise<number> {
+		await ensureDbReady();
+
+		return await db.transaction('rw', db.entities, async () => {
+			// Verify campaign exists
+			const campaign = await db.entities.get(campaignId);
+			if (!campaign) {
+				throw new Error(`Campaign ${campaignId} not found`);
+			}
+
+			let linkedCount = 0;
+			const now = new Date();
+
+			for (const entityId of entityIds) {
+				const entity = await db.entities.get(entityId);
+				if (!entity) {
+					// Skip non-existent entities
+					continue;
+				}
+
+				// Check if already linked to this campaign
+				const alreadyLinked = entity.links.some(
+					(link) =>
+						link.relationship === 'belongs_to_campaign' && link.targetId === campaignId
+				);
+
+				if (alreadyLinked) {
+					// Skip - already linked
+					continue;
+				}
+
+				// Create the campaign link
+				const newLink: BaseEntity['links'][0] = {
+					id: nanoid(),
+					sourceId: entityId,
+					targetId: campaignId,
+					targetType: 'campaign',
+					relationship: 'belongs_to_campaign',
+					bidirectional: false,
+					createdAt: now,
+					updatedAt: now
+				};
+
+				// Add link to entity
+				const updatedLinks = JSON.parse(JSON.stringify([...entity.links, newLink]));
+
+				await db.entities.update(entityId, {
+					links: updatedLinks,
+					updatedAt: now
+				});
+
+				linkedCount++;
+			}
+
+			return linkedCount;
+		});
 	}
 };

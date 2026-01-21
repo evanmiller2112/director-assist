@@ -95,18 +95,41 @@ export function createMockCampaignStore() {
 		notes: '',
 		createdAt: new Date(),
 		updatedAt: new Date(),
-		metadata: {} as Record<string, unknown>
+		metadata: {
+			customEntityTypes: [],
+			entityTypeOverrides: [],
+			settings: {
+				customRelationships: [],
+				enabledEntityTypes: [],
+				enforceCampaignLinking: false,
+				defaultCampaignId: undefined
+			}
+		} as Record<string, unknown>
 	};
 
-	return {
+	const store = {
 		campaign,
 		customEntityTypes: [] as Array<unknown>,
 		entityTypeOverrides: [] as Array<unknown>,
 		allCampaigns: [campaign] as typeof campaign[],
 		activeCampaignId: 'test-campaign',
 		load: vi.fn(),
-		setActiveCampaign: vi.fn()
+		setActiveCampaign: vi.fn(),
+		// Campaign linking getters (Issue #48)
+		get enforceCampaignLinking(): boolean {
+			const settings = (store.campaign?.metadata as any)?.settings;
+			return settings?.enforceCampaignLinking ?? false;
+		},
+		get defaultCampaignId(): string | undefined {
+			const settings = (store.campaign?.metadata as any)?.settings;
+			return settings?.defaultCampaignId;
+		},
+		// Campaign linking methods (Issue #48)
+		setEnforceCampaignLinking: vi.fn(),
+		setDefaultCampaignId: vi.fn()
 	};
+
+	return store;
 }
 
 /**

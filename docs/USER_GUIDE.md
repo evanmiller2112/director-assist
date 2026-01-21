@@ -1249,6 +1249,7 @@ Each campaign has its own settings stored separately:
 - **Entity Type Overrides**: Customize built-in entity types for this campaign
 - **Custom Relationships**: Define custom relationship types
 - **Enabled Entity Types**: Control which entity types appear in the UI
+- **Campaign Linking**: Automatically link new entities to campaigns (see Settings → Campaign Linking for details)
 
 Access campaign-specific settings:
 1. View the campaign details
@@ -1390,6 +1391,88 @@ When generating content with AI, Director Assist can include information about r
 - You can override the default on a per-entity basis when editing
 - Settings persist across browser sessions
 - Not included in backups (local preference only)
+
+### Campaign Linking
+
+The Campaign Linking feature automatically creates relationships between entities and campaigns, helping you organize which entities belong to which campaign.
+
+**What It Does:**
+
+When enabled, Director Assist automatically:
+- Links all newly created entities to campaigns using the 'belongs_to_campaign' relationship
+- Offers to bulk-link existing unlinked entities when you first enable the setting
+- Maintains campaign organization without manual relationship creation
+
+**How to Enable:**
+
+1. Open Settings (gear icon in header or `/settings` command)
+2. Scroll to the "Campaign Linking" section
+3. Check "Enforce Campaign Linking"
+4. If you have existing unlinked entities, a modal appears with options to link them
+
+**Bulk Linking Modal:**
+
+When you enable campaign linking for the first time with existing entities:
+
+1. Modal shows count of unlinked entities
+2. Choose a campaign to link them to (if multiple campaigns exist)
+3. Three options:
+   - **Link All**: Links all existing unlinked entities to the selected campaign
+   - **Skip**: Enables the setting without linking existing entities (only new entities will be linked)
+   - **Cancel**: Cancels enabling the feature
+
+**Default Campaign Selection:**
+
+When you have multiple campaigns:
+
+- A "Default Campaign" dropdown appears in the Campaign Linking settings
+- Select which campaign new entities should automatically link to
+- Only visible when multiple campaigns exist
+- Can be changed at any time
+
+**Behavior by Scenario:**
+
+**Single Campaign:**
+- New entities automatically link to your campaign
+- No campaign selection needed
+
+**Multiple Campaigns:**
+- New entities link to the selected default campaign
+- Change the default campaign anytime in Settings
+- Default campaign dropdown appears below the toggle
+
+**No Campaigns:**
+- Setting is disabled (grayed out)
+- Create a campaign first to enable this feature
+- Message appears: "Please create a campaign first to enable this feature"
+
+**When Auto-Linking is Active:**
+
+On entity creation forms, an info banner appears:
+- Indicates the entity will be automatically linked to a campaign
+- Shows which campaign it will link to
+- No action required from you
+
+**Benefits:**
+
+- Maintains clear campaign organization automatically
+- Eliminates manual relationship creation for campaign membership
+- Makes it easier to filter entities by campaign
+- Useful when managing multiple campaigns simultaneously
+
+**Disabling the Feature:**
+
+1. Open Settings
+2. Uncheck "Enforce Campaign Linking"
+3. New entities will no longer be automatically linked
+4. Existing relationships remain unchanged
+
+**Important Notes:**
+
+- Disabling the setting doesn't remove existing campaign links
+- Only affects new entity creation, not existing entities
+- Setting is stored per-campaign in campaign metadata
+- Works seamlessly with the relationship system
 
 ### Advanced Settings
 

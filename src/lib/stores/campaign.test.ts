@@ -657,3 +657,634 @@ describe('campaignStore - System Management (Issue #5)', () => {
 		});
 	});
 });
+
+/**
+ * Tests for Issue #48: Forced Campaign Linking Option for Entities
+ *
+ * RED Phase (TDD): These tests define expected behavior before implementation.
+ * Tests will FAIL until the campaign linking settings are implemented.
+ *
+ * The campaign store should:
+ * 1. Store `enforceCampaignLinking` flag in campaign settings
+ * 2. Store `defaultCampaignId` in campaign settings (for multi-campaign scenarios)
+ * 3. Provide getters for these settings
+ * 4. Provide setters to update these settings
+ */
+
+describe('campaignStore - Campaign Linking Settings (Issue #48)', () => {
+	let campaignStore: any;
+	let mockDb: any;
+
+	beforeEach(async () => {
+		vi.clearAllMocks();
+
+		// Import fresh mocks
+		const dbModule = await import('$lib/db');
+		mockDb = dbModule.db;
+
+		// Dynamically import the store to get a fresh instance
+		const module = await import('./campaign.svelte');
+		campaignStore = module.campaignStore;
+	});
+
+	describe('enforceCampaignLinking getter', () => {
+		it('should exist as a getter on campaign store', () => {
+			expect(campaignStore.enforceCampaignLinking).toBeDefined();
+		});
+
+		it('should return false when setting does not exist (default)', async () => {
+			const campaign: BaseEntity = {
+				id: 'campaign-1',
+				type: 'campaign',
+				name: 'Test Campaign',
+				description: 'Test',
+				tags: [],
+				fields: {},
+				links: [],
+				notes: '',
+				createdAt: new Date(),
+				updatedAt: new Date(),
+				metadata: {
+					customEntityTypes: [],
+					entityTypeOverrides: [],
+					settings: {
+						customRelationships: [],
+						enabledEntityTypes: []
+						// No enforceCampaignLinking field
+					}
+				}
+			};
+
+			mockDb.entities.where.mockReturnValue({
+				equals: vi.fn(() => ({
+					toArray: vi.fn(async () => [campaign])
+				}))
+			});
+
+			await campaignStore.load();
+
+			expect(campaignStore.enforceCampaignLinking).toBe(false);
+		});
+
+		it('should return true when enforceCampaignLinking is enabled', async () => {
+			const campaign: BaseEntity = {
+				id: 'campaign-1',
+				type: 'campaign',
+				name: 'Test Campaign',
+				description: 'Test',
+				tags: [],
+				fields: {},
+				links: [],
+				notes: '',
+				createdAt: new Date(),
+				updatedAt: new Date(),
+				metadata: {
+					customEntityTypes: [],
+					entityTypeOverrides: [],
+					settings: {
+						customRelationships: [],
+						enabledEntityTypes: [],
+						enforceCampaignLinking: true
+					}
+				}
+			};
+
+			mockDb.entities.where.mockReturnValue({
+				equals: vi.fn(() => ({
+					toArray: vi.fn(async () => [campaign])
+				}))
+			});
+
+			await campaignStore.load();
+
+			expect(campaignStore.enforceCampaignLinking).toBe(true);
+		});
+
+		it('should return false when explicitly disabled', async () => {
+			const campaign: BaseEntity = {
+				id: 'campaign-1',
+				type: 'campaign',
+				name: 'Test Campaign',
+				description: 'Test',
+				tags: [],
+				fields: {},
+				links: [],
+				notes: '',
+				createdAt: new Date(),
+				updatedAt: new Date(),
+				metadata: {
+					customEntityTypes: [],
+					entityTypeOverrides: [],
+					settings: {
+						customRelationships: [],
+						enabledEntityTypes: [],
+						enforceCampaignLinking: false
+					}
+				}
+			};
+
+			mockDb.entities.where.mockReturnValue({
+				equals: vi.fn(() => ({
+					toArray: vi.fn(async () => [campaign])
+				}))
+			});
+
+			await campaignStore.load();
+
+			expect(campaignStore.enforceCampaignLinking).toBe(false);
+		});
+
+		it('should return false when no campaign is loaded (safe default)', () => {
+			campaignStore._resetForTesting();
+			// Returns false as safe default to prevent auto-linking without campaign context
+			expect(campaignStore.enforceCampaignLinking).toBe(false);
+		});
+	});
+
+	describe('defaultCampaignId getter', () => {
+		it('should exist as a getter on campaign store', () => {
+			// Getter exists but returns undefined when no default is set
+			expect('defaultCampaignId' in campaignStore).toBe(true);
+		});
+
+		it('should return undefined when setting does not exist (default)', async () => {
+			const campaign: BaseEntity = {
+				id: 'campaign-1',
+				type: 'campaign',
+				name: 'Test Campaign',
+				description: 'Test',
+				tags: [],
+				fields: {},
+				links: [],
+				notes: '',
+				createdAt: new Date(),
+				updatedAt: new Date(),
+				metadata: {
+					customEntityTypes: [],
+					entityTypeOverrides: [],
+					settings: {
+						customRelationships: [],
+						enabledEntityTypes: []
+						// No defaultCampaignId field
+					}
+				}
+			};
+
+			mockDb.entities.where.mockReturnValue({
+				equals: vi.fn(() => ({
+					toArray: vi.fn(async () => [campaign])
+				}))
+			});
+
+			await campaignStore.load();
+
+			expect(campaignStore.defaultCampaignId).toBeUndefined();
+		});
+
+		it('should return the default campaign ID when set', async () => {
+			const campaign: BaseEntity = {
+				id: 'campaign-1',
+				type: 'campaign',
+				name: 'Test Campaign',
+				description: 'Test',
+				tags: [],
+				fields: {},
+				links: [],
+				notes: '',
+				createdAt: new Date(),
+				updatedAt: new Date(),
+				metadata: {
+					customEntityTypes: [],
+					entityTypeOverrides: [],
+					settings: {
+						customRelationships: [],
+						enabledEntityTypes: [],
+						defaultCampaignId: 'campaign-2'
+					}
+				}
+			};
+
+			mockDb.entities.where.mockReturnValue({
+				equals: vi.fn(() => ({
+					toArray: vi.fn(async () => [campaign])
+				}))
+			});
+
+			await campaignStore.load();
+
+			expect(campaignStore.defaultCampaignId).toBe('campaign-2');
+		});
+
+		it('should return undefined when no campaign is loaded', () => {
+			campaignStore._resetForTesting();
+			expect(campaignStore.defaultCampaignId).toBeUndefined();
+		});
+	});
+
+	describe('setEnforceCampaignLinking method', () => {
+		it('should exist as a method on campaign store', () => {
+			expect(campaignStore.setEnforceCampaignLinking).toBeDefined();
+			expect(typeof campaignStore.setEnforceCampaignLinking).toBe('function');
+		});
+
+		it('should update campaign settings with enforceCampaignLinking enabled', async () => {
+			const campaign: BaseEntity = {
+				id: 'campaign-1',
+				type: 'campaign',
+				name: 'Test Campaign',
+				description: 'Test',
+				tags: [],
+				fields: {},
+				links: [],
+				notes: '',
+				createdAt: new Date(),
+				updatedAt: new Date(),
+				metadata: {
+					customEntityTypes: [],
+					entityTypeOverrides: [],
+					settings: {
+						customRelationships: [],
+						enabledEntityTypes: []
+					}
+				}
+			};
+
+			mockDb.entities.where.mockReturnValue({
+				equals: vi.fn(() => ({
+					toArray: vi.fn(async () => [campaign])
+				}))
+			});
+
+			await campaignStore.load();
+
+			mockDb.entities.update.mockResolvedValue(undefined);
+
+			await campaignStore.setEnforceCampaignLinking(true);
+
+			// Verify database update was called
+			expect(mockDb.entities.update).toHaveBeenCalled();
+
+			const updateCall = mockDb.entities.update.mock.calls[0];
+			expect(updateCall[0]).toBe('campaign-1'); // Campaign ID
+			expect(updateCall[1].metadata.settings.enforceCampaignLinking).toBe(true);
+		});
+
+		it('should update with defaultCampaignId when provided', async () => {
+			const campaign: BaseEntity = {
+				id: 'campaign-1',
+				type: 'campaign',
+				name: 'Test Campaign',
+				description: 'Test',
+				tags: [],
+				fields: {},
+				links: [],
+				notes: '',
+				createdAt: new Date(),
+				updatedAt: new Date(),
+				metadata: {
+					customEntityTypes: [],
+					entityTypeOverrides: [],
+					settings: {
+						customRelationships: [],
+						enabledEntityTypes: []
+					}
+				}
+			};
+
+			mockDb.entities.where.mockReturnValue({
+				equals: vi.fn(() => ({
+					toArray: vi.fn(async () => [campaign])
+				}))
+			});
+
+			await campaignStore.load();
+
+			mockDb.entities.update.mockResolvedValue(undefined);
+
+			await campaignStore.setEnforceCampaignLinking(true, 'campaign-2');
+
+			const updateCall = mockDb.entities.update.mock.calls[0];
+			expect(updateCall[1].metadata.settings.enforceCampaignLinking).toBe(true);
+			expect(updateCall[1].metadata.settings.defaultCampaignId).toBe('campaign-2');
+		});
+
+		it('should disable enforceCampaignLinking', async () => {
+			const campaign: BaseEntity = {
+				id: 'campaign-1',
+				type: 'campaign',
+				name: 'Test Campaign',
+				description: 'Test',
+				tags: [],
+				fields: {},
+				links: [],
+				notes: '',
+				createdAt: new Date(),
+				updatedAt: new Date(),
+				metadata: {
+					customEntityTypes: [],
+					entityTypeOverrides: [],
+					settings: {
+						customRelationships: [],
+						enabledEntityTypes: [],
+						enforceCampaignLinking: true,
+						defaultCampaignId: 'campaign-2'
+					}
+				}
+			};
+
+			mockDb.entities.where.mockReturnValue({
+				equals: vi.fn(() => ({
+					toArray: vi.fn(async () => [campaign])
+				}))
+			});
+
+			await campaignStore.load();
+
+			mockDb.entities.update.mockResolvedValue(undefined);
+
+			await campaignStore.setEnforceCampaignLinking(false);
+
+			const updateCall = mockDb.entities.update.mock.calls[0];
+			expect(updateCall[1].metadata.settings.enforceCampaignLinking).toBe(false);
+		});
+
+		it('should update local campaign state', async () => {
+			const campaign: BaseEntity = {
+				id: 'campaign-1',
+				type: 'campaign',
+				name: 'Test Campaign',
+				description: 'Test',
+				tags: [],
+				fields: {},
+				links: [],
+				notes: '',
+				createdAt: new Date(),
+				updatedAt: new Date(),
+				metadata: {
+					customEntityTypes: [],
+					entityTypeOverrides: [],
+					settings: {
+						customRelationships: [],
+						enabledEntityTypes: []
+					}
+				}
+			};
+
+			mockDb.entities.where.mockReturnValue({
+				equals: vi.fn(() => ({
+					toArray: vi.fn(async () => [campaign])
+				}))
+			});
+
+			await campaignStore.load();
+
+			mockDb.entities.update.mockResolvedValue(undefined);
+
+			await campaignStore.setEnforceCampaignLinking(true, 'campaign-2');
+
+			// Verify the store now returns the updated settings
+			expect(campaignStore.enforceCampaignLinking).toBe(true);
+			expect(campaignStore.defaultCampaignId).toBe('campaign-2');
+		});
+
+		it('should preserve other settings when updating', async () => {
+			const campaign: BaseEntity = {
+				id: 'campaign-1',
+				type: 'campaign',
+				name: 'Test Campaign',
+				description: 'Test',
+				tags: [],
+				fields: {},
+				links: [],
+				notes: '',
+				createdAt: new Date(),
+				updatedAt: new Date(),
+				metadata: {
+					customEntityTypes: [],
+					entityTypeOverrides: [],
+					settings: {
+						customRelationships: ['custom_rel'],
+						enabledEntityTypes: ['character', 'npc'],
+						theme: 'dark'
+					}
+				}
+			};
+
+			mockDb.entities.where.mockReturnValue({
+				equals: vi.fn(() => ({
+					toArray: vi.fn(async () => [campaign])
+				}))
+			});
+
+			await campaignStore.load();
+
+			mockDb.entities.update.mockResolvedValue(undefined);
+
+			await campaignStore.setEnforceCampaignLinking(true);
+
+			const updateCall = mockDb.entities.update.mock.calls[0];
+			expect(updateCall[1].metadata.settings.customRelationships).toEqual(['custom_rel']);
+			expect(updateCall[1].metadata.settings.enabledEntityTypes).toEqual(['character', 'npc']);
+			expect(updateCall[1].metadata.settings.theme).toBe('dark');
+		});
+	});
+
+	describe('setDefaultCampaignId method', () => {
+		it('should exist as a method on campaign store', () => {
+			expect(campaignStore.setDefaultCampaignId).toBeDefined();
+			expect(typeof campaignStore.setDefaultCampaignId).toBe('function');
+		});
+
+		it('should update campaign settings with defaultCampaignId', async () => {
+			const campaign: BaseEntity = {
+				id: 'campaign-1',
+				type: 'campaign',
+				name: 'Test Campaign',
+				description: 'Test',
+				tags: [],
+				fields: {},
+				links: [],
+				notes: '',
+				createdAt: new Date(),
+				updatedAt: new Date(),
+				metadata: {
+					customEntityTypes: [],
+					entityTypeOverrides: [],
+					settings: {
+						customRelationships: [],
+						enabledEntityTypes: [],
+						enforceCampaignLinking: true
+					}
+				}
+			};
+
+			mockDb.entities.where.mockReturnValue({
+				equals: vi.fn(() => ({
+					toArray: vi.fn(async () => [campaign])
+				}))
+			});
+
+			await campaignStore.load();
+
+			mockDb.entities.update.mockResolvedValue(undefined);
+
+			await campaignStore.setDefaultCampaignId('campaign-2');
+
+			// Verify database update was called
+			expect(mockDb.entities.update).toHaveBeenCalled();
+
+			const updateCall = mockDb.entities.update.mock.calls[0];
+			expect(updateCall[0]).toBe('campaign-1');
+			expect(updateCall[1].metadata.settings.defaultCampaignId).toBe('campaign-2');
+		});
+
+		it('should update local campaign state', async () => {
+			const campaign: BaseEntity = {
+				id: 'campaign-1',
+				type: 'campaign',
+				name: 'Test Campaign',
+				description: 'Test',
+				tags: [],
+				fields: {},
+				links: [],
+				notes: '',
+				createdAt: new Date(),
+				updatedAt: new Date(),
+				metadata: {
+					customEntityTypes: [],
+					entityTypeOverrides: [],
+					settings: {
+						customRelationships: [],
+						enabledEntityTypes: []
+					}
+				}
+			};
+
+			mockDb.entities.where.mockReturnValue({
+				equals: vi.fn(() => ({
+					toArray: vi.fn(async () => [campaign])
+				}))
+			});
+
+			await campaignStore.load();
+
+			mockDb.entities.update.mockResolvedValue(undefined);
+
+			await campaignStore.setDefaultCampaignId('campaign-2');
+
+			// Verify the store now returns the updated default campaign ID
+			expect(campaignStore.defaultCampaignId).toBe('campaign-2');
+		});
+
+		it('should allow clearing defaultCampaignId with undefined', async () => {
+			const campaign: BaseEntity = {
+				id: 'campaign-1',
+				type: 'campaign',
+				name: 'Test Campaign',
+				description: 'Test',
+				tags: [],
+				fields: {},
+				links: [],
+				notes: '',
+				createdAt: new Date(),
+				updatedAt: new Date(),
+				metadata: {
+					customEntityTypes: [],
+					entityTypeOverrides: [],
+					settings: {
+						customRelationships: [],
+						enabledEntityTypes: [],
+						defaultCampaignId: 'campaign-2'
+					}
+				}
+			};
+
+			mockDb.entities.where.mockReturnValue({
+				equals: vi.fn(() => ({
+					toArray: vi.fn(async () => [campaign])
+				}))
+			});
+
+			await campaignStore.load();
+
+			mockDb.entities.update.mockResolvedValue(undefined);
+
+			await campaignStore.setDefaultCampaignId(undefined);
+
+			const updateCall = mockDb.entities.update.mock.calls[0];
+			expect(updateCall[1].metadata.settings.defaultCampaignId).toBeUndefined();
+		});
+	});
+
+	describe('CampaignSettings type extensions', () => {
+		it('should support enforceCampaignLinking field', async () => {
+			const campaign: BaseEntity = {
+				id: 'campaign-1',
+				type: 'campaign',
+				name: 'Test Campaign',
+				description: 'Test',
+				tags: [],
+				fields: {},
+				links: [],
+				notes: '',
+				createdAt: new Date(),
+				updatedAt: new Date(),
+				metadata: {
+					customEntityTypes: [],
+					entityTypeOverrides: [],
+					settings: {
+						customRelationships: [],
+						enabledEntityTypes: [],
+						enforceCampaignLinking: true // TypeScript should allow this
+					}
+				}
+			};
+
+			mockDb.entities.where.mockReturnValue({
+				equals: vi.fn(() => ({
+					toArray: vi.fn(async () => [campaign])
+				}))
+			});
+
+			await campaignStore.load();
+
+			// Type check passes if compilation succeeds
+			expect(campaignStore.settings.enforceCampaignLinking).toBe(true);
+		});
+
+		it('should support defaultCampaignId field', async () => {
+			const campaign: BaseEntity = {
+				id: 'campaign-1',
+				type: 'campaign',
+				name: 'Test Campaign',
+				description: 'Test',
+				tags: [],
+				fields: {},
+				links: [],
+				notes: '',
+				createdAt: new Date(),
+				updatedAt: new Date(),
+				metadata: {
+					customEntityTypes: [],
+					entityTypeOverrides: [],
+					settings: {
+						customRelationships: [],
+						enabledEntityTypes: [],
+						defaultCampaignId: 'campaign-2' // TypeScript should allow this
+					}
+				}
+			};
+
+			mockDb.entities.where.mockReturnValue({
+				equals: vi.fn(() => ({
+					toArray: vi.fn(async () => [campaign])
+				}))
+			});
+
+			await campaignStore.load();
+
+			// Type check passes if compilation succeeds
+			expect(campaignStore.settings.defaultCampaignId).toBe('campaign-2');
+		});
+	});
+});

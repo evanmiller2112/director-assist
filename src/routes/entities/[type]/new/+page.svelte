@@ -9,6 +9,7 @@
 	import { validateEntity, formatContextSummary } from '$lib/utils';
 	import { getSystemAwareEntityType } from '$lib/utils/entityFormUtils';
 	import { deserializePrefillParams } from '$lib/utils/entityPrefillUtils';
+	import { nanoid } from 'nanoid';
 	import PrefillBanner from '$lib/components/ui/PrefillBanner.svelte';
 	import { ArrowLeft, Save, Sparkles, Loader2, ExternalLink, ImagePlus, X as XIcon, Upload, Search, ChevronDown, Eye, EyeOff, Plus, ChevronRight } from 'lucide-svelte';
 	import FieldGenerateButton from '$lib/components/entity/FieldGenerateButton.svelte';
@@ -50,6 +51,25 @@
 	let pendingRelationships = $state<PendingRelationship[]>([]);
 	let showRelateCommand = $state(false);
 	let relationshipsExpanded = $state(false);
+
+	// Auto-linking for Issue #48
+	const shouldAutoLink = $derived(
+		campaignStore.enforceCampaignLinking &&
+		entityType !== 'campaign'  // Don't link campaigns to themselves
+	);
+
+	const autoLinkCampaignId = $derived(() => {
+		if (!shouldAutoLink) return null;
+		// If single campaign, use it; otherwise use defaultCampaignId
+		const campaigns = campaignStore.allCampaigns;
+		if (campaigns.length === 1) return campaigns[0].id;
+		return campaignStore.defaultCampaignId ?? null;
+	});
+
+	function getCampaignName(campaignId: string): string {
+		const camp = campaignStore.allCampaigns.find(c => c.id === campaignId);
+		return camp?.name ?? 'Unknown Campaign';
+	}
 
 	// Prefill state (from chat entity detection)
 	const prefillParam = $derived($page.url.searchParams.get('prefill'));
@@ -116,6 +136,28 @@
 		isSaving = true;
 
 		try {
+			// Auto-link to campaign if enabled (Issue #48)
+			let relationshipsToCreate = [...pendingRelationships];
+			const targetCampaignId = autoLinkCampaignId();
+			if (targetCampaignId) {
+				// Check if a campaign link already exists
+				const hasCampaignLink = relationshipsToCreate.some(
+					r => r.relationship === 'belongs_to_campaign' ||
+					(r.targetType === 'campaign' && r.targetId === targetCampaignId)
+				);
+
+				if (!hasCampaignLink) {
+					const campaignLink: PendingRelationship = {
+						tempId: nanoid(),
+						targetId: targetCampaignId,
+						targetType: 'campaign',
+						relationship: 'belongs_to_campaign',
+						bidirectional: false
+					};
+					relationshipsToCreate = [...relationshipsToCreate, campaignLink];
+				}
+			}
+
 			const newEntity = createEntity(entityType, name.trim(), {
 				description: description.trim(),
 				summary: summary.trim() || undefined,
@@ -129,9 +171,9 @@
 			});
 
 			let created;
-			if (pendingRelationships.length > 0) {
+			if (relationshipsToCreate.length > 0) {
 				// Use createWithRelationships when there are pending relationships
-				created = await entitiesStore.createWithRelationships(newEntity, pendingRelationships);
+				created = await entitiesStore.createWithRelationships(newEntity, relationshipsToCreate);
 			} else {
 				// Use standard create when no relationships
 				created = await entitiesStore.create(newEntity);
@@ -414,6 +456,18 @@
 			sourceMessageId={prefillData.sourceMessageId}
 			onDismiss={dismissPrefillBanner}
 		/>
+	{/if}
+
+	{#if shouldAutoLink}
+		{@const campaignId = autoLinkCampaignId()}
+		{#if campaignId}
+			<div class="mb-4 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+				<p class="text-sm text-blue-700 dark:text-blue-300">
+					This entity will be automatically linked to campaign:
+					<strong>{getCampaignName(campaignId)}</strong>
+				</p>
+			</div>
+		{/if}
 	{/if}
 
 	<form onsubmit={handleSubmit} class="space-y-6">

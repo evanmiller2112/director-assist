@@ -22,7 +22,7 @@
 	import { Download, Upload, Moon, Sun, Monitor, Trash2, Key, RefreshCw, Layers, ChevronRight, Users } from 'lucide-svelte';
 	import PlayerExportModal from '$lib/components/settings/PlayerExportModal.svelte';
 	import LoadingButton from '$lib/components/ui/LoadingButton.svelte';
-	import { SystemSelector } from '$lib/components/settings';
+	import { SystemSelector, CampaignLinkingSettings } from '$lib/components/settings';
 	import { page } from '$app/stores';
 
 	// Form state
@@ -394,6 +394,11 @@
 				Create or select a campaign to change the game system.
 			</p>
 		{/if}
+	</section>
+
+	<!-- Campaign Linking -->
+	<section class="mb-8">
+		<CampaignLinkingSettings />
 	</section>
 
 	<!-- Theme -->

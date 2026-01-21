@@ -4487,3 +4487,405 @@ describe('EntityRepository - Create Entity with Relationships (Issue #124)', () 
 		});
 	});
 });
+
+/**
+ * Tests for Issue #48: Forced Campaign Linking Option for Entities
+ *
+ * RED Phase (TDD): These tests define expected behavior before implementation.
+ * Tests should FAIL until the new repository methods are implemented.
+ *
+ * Covers:
+ * - getEntitiesWithoutCampaignLink(): Get all entities that aren't linked to any campaign
+ * - bulkLinkToCampaign(): Link multiple entities to a campaign at once
+ */
+
+describe('EntityRepository - Campaign Linking (Issue #48)', () => {
+	// Sample test data
+	let campaign1: BaseEntity;
+	let campaign2: BaseEntity;
+	let character1: BaseEntity;
+	let character2: BaseEntity;
+	let npc1: BaseEntity;
+	let location1: BaseEntity;
+
+	beforeEach(async () => {
+		// Clear the database before each test
+		await db.entities.clear();
+
+		// Create test campaigns
+		campaign1 = createMockEntity({
+			id: 'campaign-1',
+			type: 'campaign',
+			name: 'Test Campaign 1',
+			description: 'First test campaign',
+			fields: { system: 'Draw Steel', setting: 'Test World' },
+			links: []
+		});
+
+		campaign2 = createMockEntity({
+			id: 'campaign-2',
+			type: 'campaign',
+			name: 'Test Campaign 2',
+			description: 'Second test campaign',
+			fields: { system: 'D&D 5e', setting: 'Forgotten Realms' },
+			links: []
+		});
+
+		// Create test entities (initially without campaign links)
+		character1 = createMockEntity({
+			id: 'char-1',
+			type: 'character',
+			name: 'Hero',
+			description: 'A brave hero',
+			links: []
+		});
+
+		character2 = createMockEntity({
+			id: 'char-2',
+			type: 'character',
+			name: 'Sidekick',
+			description: 'A loyal sidekick',
+			links: []
+		});
+
+		npc1 = createMockEntity({
+			id: 'npc-1',
+			type: 'npc',
+			name: 'Villain',
+			description: 'A dastardly villain',
+			links: []
+		});
+
+		location1 = createMockEntity({
+			id: 'loc-1',
+			type: 'location',
+			name: 'Tavern',
+			description: 'A cozy tavern',
+			links: []
+		});
+
+		// Add entities to database
+		await db.entities.bulkAdd([campaign1, campaign2, character1, character2, npc1, location1]);
+	});
+
+	afterEach(async () => {
+		// Clean up after each test
+		await db.entities.clear();
+	});
+
+	describe('getEntitiesWithoutCampaignLink', () => {
+		it('should have getEntitiesWithoutCampaignLink method', () => {
+			expect(entityRepository.getEntitiesWithoutCampaignLink).toBeDefined();
+			expect(typeof entityRepository.getEntitiesWithoutCampaignLink).toBe('function');
+		});
+
+		it('should return all entities when no campaign links exist', async () => {
+			const unlinkedEntities = await entityRepository.getEntitiesWithoutCampaignLink();
+
+			// Should return all non-campaign entities (character1, character2, npc1, location1)
+			expect(unlinkedEntities).toHaveLength(4);
+			expect(unlinkedEntities.map((e) => e.id).sort()).toEqual(
+				[character1.id, character2.id, npc1.id, location1.id].sort()
+			);
+		});
+
+		it('should exclude campaign entities themselves', async () => {
+			const unlinkedEntities = await entityRepository.getEntitiesWithoutCampaignLink();
+
+			// Should not include the campaign entities
+			const campaignIds = [campaign1.id, campaign2.id];
+			expect(unlinkedEntities.every((e) => !campaignIds.includes(e.id))).toBe(true);
+		});
+
+		it('should exclude entities that have a belongs_to_campaign link', async () => {
+			// Link character1 to campaign1
+			await entityRepository.addLink(
+				character1.id,
+				campaign1.id,
+				'belongs_to_campaign',
+				false // unidirectional link
+			);
+
+			const unlinkedEntities = await entityRepository.getEntitiesWithoutCampaignLink();
+
+			// Should return 3 entities (character2, npc1, location1) - character1 is now linked
+			expect(unlinkedEntities).toHaveLength(3);
+			expect(unlinkedEntities.map((e) => e.id).sort()).toEqual(
+				[character2.id, npc1.id, location1.id].sort()
+			);
+		});
+
+		it('should return empty array when all entities are linked', async () => {
+			// Link all entities to campaign1
+			await entityRepository.addLink(character1.id, campaign1.id, 'belongs_to_campaign', false);
+			await entityRepository.addLink(character2.id, campaign1.id, 'belongs_to_campaign', false);
+			await entityRepository.addLink(npc1.id, campaign1.id, 'belongs_to_campaign', false);
+			await entityRepository.addLink(location1.id, campaign1.id, 'belongs_to_campaign', false);
+
+			const unlinkedEntities = await entityRepository.getEntitiesWithoutCampaignLink();
+
+			expect(unlinkedEntities).toHaveLength(0);
+			expect(unlinkedEntities).toEqual([]);
+		});
+
+		it('should handle entities linked to different campaigns', async () => {
+			// Link character1 to campaign1, character2 to campaign2
+			await entityRepository.addLink(character1.id, campaign1.id, 'belongs_to_campaign', false);
+			await entityRepository.addLink(character2.id, campaign2.id, 'belongs_to_campaign', false);
+
+			const unlinkedEntities = await entityRepository.getEntitiesWithoutCampaignLink();
+
+			// Should return 2 entities (npc1, location1)
+			expect(unlinkedEntities).toHaveLength(2);
+			expect(unlinkedEntities.map((e) => e.id).sort()).toEqual([npc1.id, location1.id].sort());
+		});
+
+		it('should ignore other relationship types', async () => {
+			// Link character1 to location1 with a different relationship
+			await entityRepository.addLink(character1.id, location1.id, 'knows', false);
+
+			const unlinkedEntities = await entityRepository.getEntitiesWithoutCampaignLink();
+
+			// Should still return all 4 entities (no belongs_to_campaign links)
+			expect(unlinkedEntities).toHaveLength(4);
+		});
+
+		it('should return entities with mixed relationship types', async () => {
+			// Link character1 to campaign1 AND to location1 with a different relationship
+			await entityRepository.addLink(character1.id, campaign1.id, 'belongs_to_campaign', false);
+			await entityRepository.addLink(character1.id, location1.id, 'located_at', false);
+
+			const unlinkedEntities = await entityRepository.getEntitiesWithoutCampaignLink();
+
+			// character1 has belongs_to_campaign link, so should be excluded
+			expect(unlinkedEntities).toHaveLength(3);
+			expect(unlinkedEntities.find((e) => e.id === character1.id)).toBeUndefined();
+		});
+
+		it('should handle bidirectional campaign links', async () => {
+			// Link character1 to campaign1 bidirectionally
+			await entityRepository.addLink(character1.id, campaign1.id, 'belongs_to_campaign', true);
+
+			const unlinkedEntities = await entityRepository.getEntitiesWithoutCampaignLink();
+
+			// character1 should be excluded
+			expect(unlinkedEntities).toHaveLength(3);
+			expect(unlinkedEntities.find((e) => e.id === character1.id)).toBeUndefined();
+		});
+
+		it('should work with empty database', async () => {
+			await db.entities.clear();
+
+			const unlinkedEntities = await entityRepository.getEntitiesWithoutCampaignLink();
+
+			expect(unlinkedEntities).toEqual([]);
+		});
+	});
+
+	describe('bulkLinkToCampaign', () => {
+		it('should have bulkLinkToCampaign method', () => {
+			expect(entityRepository.bulkLinkToCampaign).toBeDefined();
+			expect(typeof entityRepository.bulkLinkToCampaign).toBe('function');
+		});
+
+		it('should link multiple entities to a campaign', async () => {
+			const entityIds = [character1.id, character2.id, npc1.id];
+			const linkedCount = await entityRepository.bulkLinkToCampaign(entityIds, campaign1.id);
+
+			// Should link all 3 entities
+			expect(linkedCount).toBe(3);
+
+			// Verify links were created
+			const char1Updated = await db.entities.get(character1.id);
+			const char2Updated = await db.entities.get(character2.id);
+			const npc1Updated = await db.entities.get(npc1.id);
+
+			expect(char1Updated?.links).toHaveLength(1);
+			expect(char1Updated?.links[0].targetId).toBe(campaign1.id);
+			expect(char1Updated?.links[0].relationship).toBe('belongs_to_campaign');
+
+			expect(char2Updated?.links).toHaveLength(1);
+			expect(char2Updated?.links[0].targetId).toBe(campaign1.id);
+
+			expect(npc1Updated?.links).toHaveLength(1);
+			expect(npc1Updated?.links[0].targetId).toBe(campaign1.id);
+		});
+
+		it('should use belongs_to_campaign relationship type', async () => {
+			const entityIds = [character1.id];
+			await entityRepository.bulkLinkToCampaign(entityIds, campaign1.id);
+
+			const updated = await db.entities.get(character1.id);
+			expect(updated?.links[0].relationship).toBe('belongs_to_campaign');
+		});
+
+		it('should create unidirectional links (not bidirectional)', async () => {
+			const entityIds = [character1.id];
+			await entityRepository.bulkLinkToCampaign(entityIds, campaign1.id);
+
+			const updated = await db.entities.get(character1.id);
+			expect(updated?.links[0].bidirectional).toBe(false);
+
+			// Campaign should not have a reverse link
+			const campaignUpdated = await db.entities.get(campaign1.id);
+			const reverseLink = campaignUpdated?.links.find((l) => l.targetId === character1.id);
+			expect(reverseLink).toBeUndefined();
+		});
+
+		it('should skip entities already linked to that campaign', async () => {
+			// Link character1 to campaign1 first
+			await entityRepository.addLink(character1.id, campaign1.id, 'belongs_to_campaign', false);
+
+			const entityIds = [character1.id, character2.id];
+			const linkedCount = await entityRepository.bulkLinkToCampaign(entityIds, campaign1.id);
+
+			// Should only link character2 (character1 already linked)
+			expect(linkedCount).toBe(1);
+
+			// Verify character1 still has only 1 link (not duplicated)
+			const char1Updated = await db.entities.get(character1.id);
+			expect(char1Updated?.links).toHaveLength(1);
+		});
+
+		it('should handle empty entity list', async () => {
+			const linkedCount = await entityRepository.bulkLinkToCampaign([], campaign1.id);
+
+			expect(linkedCount).toBe(0);
+		});
+
+		it('should link all entities when none are already linked', async () => {
+			const entityIds = [character1.id, character2.id, npc1.id, location1.id];
+			const linkedCount = await entityRepository.bulkLinkToCampaign(entityIds, campaign1.id);
+
+			expect(linkedCount).toBe(4);
+		});
+
+		it('should handle entities linked to different campaigns', async () => {
+			// Link character1 to campaign2
+			await entityRepository.addLink(character1.id, campaign2.id, 'belongs_to_campaign', false);
+
+			// Now link character1 and character2 to campaign1
+			const entityIds = [character1.id, character2.id];
+			const linkedCount = await entityRepository.bulkLinkToCampaign(entityIds, campaign1.id);
+
+			// Both should be linked (character1 now has links to both campaigns)
+			expect(linkedCount).toBe(2);
+
+			const char1Updated = await db.entities.get(character1.id);
+			expect(char1Updated?.links).toHaveLength(2);
+
+			// Verify one link to campaign1, one to campaign2
+			const campaign1Link = char1Updated?.links.find((l) => l.targetId === campaign1.id);
+			const campaign2Link = char1Updated?.links.find((l) => l.targetId === campaign2.id);
+			expect(campaign1Link).toBeDefined();
+			expect(campaign2Link).toBeDefined();
+		});
+
+		it('should preserve existing non-campaign links', async () => {
+			// Create a non-campaign link
+			await entityRepository.addLink(character1.id, location1.id, 'located_at', false);
+
+			const entityIds = [character1.id];
+			await entityRepository.bulkLinkToCampaign(entityIds, campaign1.id);
+
+			// Should have 2 links now
+			const updated = await db.entities.get(character1.id);
+			expect(updated?.links).toHaveLength(2);
+
+			// Verify both links exist
+			const campaignLink = updated?.links.find((l) => l.targetId === campaign1.id);
+			const locationLink = updated?.links.find((l) => l.targetId === location1.id);
+			expect(campaignLink).toBeDefined();
+			expect(locationLink).toBeDefined();
+		});
+
+		it('should throw error if campaign does not exist', async () => {
+			const fakeId = 'non-existent-campaign';
+			const entityIds = [character1.id];
+
+			await expect(entityRepository.bulkLinkToCampaign(entityIds, fakeId)).rejects.toThrow();
+		});
+
+		it('should skip non-existent entities in the list', async () => {
+			const entityIds = [character1.id, 'non-existent-entity', character2.id];
+			const linkedCount = await entityRepository.bulkLinkToCampaign(entityIds, campaign1.id);
+
+			// Should link the 2 valid entities
+			expect(linkedCount).toBe(2);
+		});
+
+		it('should update entity timestamps', async () => {
+			const originalUpdatedAt = character1.updatedAt;
+
+			// Wait a bit to ensure timestamp difference
+			await new Promise((resolve) => setTimeout(resolve, 10));
+
+			const entityIds = [character1.id];
+			await entityRepository.bulkLinkToCampaign(entityIds, campaign1.id);
+
+			const updated = await db.entities.get(character1.id);
+			expect(updated?.updatedAt.getTime()).toBeGreaterThan(originalUpdatedAt.getTime());
+		});
+
+		it('should return 0 when all entities are already linked', async () => {
+			// Link all entities first
+			await entityRepository.addLink(character1.id, campaign1.id, 'belongs_to_campaign', false);
+			await entityRepository.addLink(character2.id, campaign1.id, 'belongs_to_campaign', false);
+
+			// Try to link them again
+			const entityIds = [character1.id, character2.id];
+			const linkedCount = await entityRepository.bulkLinkToCampaign(entityIds, campaign1.id);
+
+			expect(linkedCount).toBe(0);
+		});
+
+		it('should handle mixed: some linked, some not', async () => {
+			// Link character1 only
+			await entityRepository.addLink(character1.id, campaign1.id, 'belongs_to_campaign', false);
+
+			const entityIds = [character1.id, character2.id, npc1.id];
+			const linkedCount = await entityRepository.bulkLinkToCampaign(entityIds, campaign1.id);
+
+			// Should link character2 and npc1 (2 entities)
+			expect(linkedCount).toBe(2);
+		});
+
+		it('should work in a transaction (all or nothing)', async () => {
+			// This test ensures atomicity
+			// If one link fails, none should be created
+
+			const entityIds = [character1.id, character2.id];
+
+			// Mock a failure scenario by trying to link to a non-existent campaign
+			// This should rollback the entire operation
+			await expect(
+				entityRepository.bulkLinkToCampaign(entityIds, 'non-existent')
+			).rejects.toThrow();
+
+			// Verify no links were created
+			const char1 = await db.entities.get(character1.id);
+			const char2 = await db.entities.get(character2.id);
+
+			expect(char1?.links).toHaveLength(0);
+			expect(char2?.links).toHaveLength(0);
+		});
+
+		it('should set correct link metadata fields', async () => {
+			const entityIds = [character1.id];
+			await entityRepository.bulkLinkToCampaign(entityIds, campaign1.id);
+
+			const updated = await db.entities.get(character1.id);
+			const link = updated?.links[0];
+
+			expect(link).toBeDefined();
+			expect(link?.id).toBeDefined();
+			expect(link?.sourceId).toBe(character1.id);
+			expect(link?.targetId).toBe(campaign1.id);
+			expect(link?.targetType).toBe('campaign');
+			expect(link?.relationship).toBe('belongs_to_campaign');
+			expect(link?.bidirectional).toBe(false);
+			expect(link?.createdAt).toBeInstanceOf(Date);
+			expect(link?.updatedAt).toBeInstanceOf(Date);
+		});
+	});
+});

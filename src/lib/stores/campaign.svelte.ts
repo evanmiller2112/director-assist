@@ -139,6 +139,112 @@ function createCampaignStore() {
 		},
 
 		/**
+		 * Get the enforceCampaignLinking setting (Issue #48)
+		 * Returns false by default if not set
+		 */
+		get enforceCampaignLinking(): boolean | undefined {
+			return getCampaignMetadata(campaign).settings.enforceCampaignLinking ?? false;
+		},
+
+		/**
+		 * Get the defaultCampaignId setting (Issue #48)
+		 * Returns undefined if not set
+		 */
+		get defaultCampaignId(): string | undefined {
+			return getCampaignMetadata(campaign).settings.defaultCampaignId;
+		},
+
+		/**
+		 * Set the enforceCampaignLinking setting (Issue #48)
+		 * Optionally set a default campaign ID for multi-campaign scenarios
+		 */
+		async setEnforceCampaignLinking(enabled: boolean, defaultCampaignId?: string): Promise<void> {
+			if (!campaign) {
+				throw new Error('No campaign loaded');
+			}
+
+			try {
+				const metadata = getCampaignMetadata(campaign);
+				const updatedSettings: CampaignSettings = {
+					...metadata.settings,
+					enforceCampaignLinking: enabled
+				};
+
+				// Set defaultCampaignId if provided
+				if (defaultCampaignId !== undefined) {
+					updatedSettings.defaultCampaignId = defaultCampaignId;
+				}
+
+				const updatedMetadata: CampaignMetadata = {
+					...metadata,
+					settings: updatedSettings
+				};
+
+				// Deep clone to remove Svelte 5 Proxy wrappers
+				const clonedMetadata = JSON.parse(JSON.stringify(updatedMetadata));
+
+				await db.entities.update(campaign.id, {
+					metadata: clonedMetadata,
+					updatedAt: new Date()
+				});
+
+				// Update local state
+				campaign = {
+					...campaign,
+					metadata: clonedMetadata,
+					updatedAt: new Date()
+				};
+				allCampaigns = allCampaigns.map((c) => (c.id === campaign!.id ? campaign! : c));
+			} catch (e) {
+				error = e instanceof Error ? e.message : 'Failed to set enforce campaign linking';
+				console.error('Failed to set enforce campaign linking:', e);
+				throw e;
+			}
+		},
+
+		/**
+		 * Set the defaultCampaignId setting (Issue #48)
+		 */
+		async setDefaultCampaignId(campaignId: string | undefined): Promise<void> {
+			if (!campaign) {
+				throw new Error('No campaign loaded');
+			}
+
+			try {
+				const metadata = getCampaignMetadata(campaign);
+				const updatedSettings: CampaignSettings = {
+					...metadata.settings,
+					defaultCampaignId: campaignId
+				};
+
+				const updatedMetadata: CampaignMetadata = {
+					...metadata,
+					settings: updatedSettings
+				};
+
+				// Deep clone to remove Svelte 5 Proxy wrappers
+				const clonedMetadata = JSON.parse(JSON.stringify(updatedMetadata));
+
+				await db.entities.update(campaign.id, {
+					metadata: clonedMetadata,
+					updatedAt: new Date()
+				});
+
+				// Update local state
+				campaign = {
+					...campaign,
+					metadata: clonedMetadata,
+					updatedAt: new Date()
+				};
+				allCampaigns = allCampaigns.map((c) => (c.id === campaign!.id ? campaign! : c));
+			} catch (e) {
+				error = e instanceof Error ? e.message : 'Failed to set default campaign ID';
+				console.error('Failed to set default campaign ID:', e);
+				throw e;
+			}
+		},
+
+		/**
 		 * Load campaigns from database
 		 * If no campaigns exist, creates a default one
 		 */
@@ -534,6 +640,12 @@ function createCampaignStore() {
 			try {
 				await entityRepository.delete(id);
 				allCampaigns = allCampaigns.filter((c) => c.id !== id);
+
+				// If deleting the default campaign for auto-linking, clear it (Issue #48)
+				const currentMetadata = getCampaignMetadata(campaign);
+				if (currentMetadata.settings.defaultCampaignId === id) {
+					await this.setDefaultCampaignId(undefined);
+				}
 
 				// If deleting active campaign, switch to another
 				if (activeCampaignId === id) {

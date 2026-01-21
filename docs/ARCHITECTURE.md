@@ -2580,7 +2580,7 @@ interface MarkdownEditorProps {
   placeholder?: string;                 // Placeholder text for empty editor
   disabled?: boolean;                   // Disable editing
   readonly?: boolean;                   // Read-only mode
-  mode?: 'edit' | 'preview' | 'split';  // Editor display mode (default: 'split')
+  mode?: 'edit' | 'preview' | 'split';  // Editor display mode (default: 'edit')
   minHeight?: string;                   // Minimum height (default: '150px')
   maxHeight?: string;                   // Maximum height (default: '400px')
   class?: string;                       // Additional CSS classes
@@ -2592,11 +2592,12 @@ interface MarkdownEditorProps {
 
 **Features:**
 
-- Formatting toolbar with buttons for bold, italic, heading, code, link, and list
+- Formatting toolbar with buttons for bold, italic, heading, code, link, list, and preview toggle
 - Three editing modes:
-  - **Edit**: Show only markdown editor
+  - **Edit**: Show only markdown editor (default)
   - **Preview**: Show only rendered preview
   - **Split**: Show editor and preview side-by-side
+- Preview/Edit toggle button in toolbar for quick mode switching
 - Keyboard shortcuts: Ctrl+B (bold), Ctrl+I (italic)
 - Real-time preview with HTML sanitization
 - Automatic textarea resizing within min/max bounds

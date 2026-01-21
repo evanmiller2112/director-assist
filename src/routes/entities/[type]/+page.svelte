@@ -3,11 +3,12 @@
 	import { goto } from '$app/navigation';
 	import { entitiesStore, campaignStore, notificationStore } from '$lib/stores';
 	import { getEntityTypeDefinition } from '$lib/config/entityTypes';
-	import { Plus, Search, Link, EyeOff, Check, Circle } from 'lucide-svelte';
+	import { Plus, Search, Link, EyeOff, Check, Circle, Upload } from 'lucide-svelte';
 	import RelateCommand from '$lib/components/entity/RelateCommand.svelte';
 	import Pagination from '$lib/components/ui/Pagination.svelte';
 	import LoadingSkeleton from '$lib/components/ui/LoadingSkeleton.svelte';
 	import { RelationshipFilter } from '$lib/components/filters';
+	import ForgeSteelImportModal from '$lib/components/settings/ForgeSteelImportModal.svelte';
 	import type { BaseEntity } from '$lib/types';
 
 	const entityType = $derived($page?.params?.type ?? '');
@@ -27,6 +28,7 @@
 	let relateCommandOpen = $state(false);
 	let selectedEntityForLink = $state<BaseEntity | null>(null);
 	let isInitialLoad = $state(true);
+	let forgeSteelModalOpen = $state(false);
 
 	// Read pagination parameters from URL
 	const currentPage = $derived.by(() => {
@@ -195,10 +197,18 @@
 			</p>
 		</div>
 
-		<button onclick={() => goto(`/entities/${entityType}/new`)} class="btn btn-primary">
-			<Plus class="w-4 h-4" />
-			Add {typeDefinition?.label ?? 'Entity'}
-		</button>
+		<div class="flex items-center gap-2">
+			{#if entityType === 'character'}
+				<button onclick={() => forgeSteelModalOpen = true} class="btn btn-secondary">
+					<Upload class="w-4 h-4" />
+					Import from Forge Steel
+				</button>
+			{/if}
+			<a href="/entities/{entityType}/new" class="btn btn-primary">
+				<Plus class="w-4 h-4" />
+				Add {typeDefinition?.label ?? 'Entity'}
+			</a>
+		</div>
 	</div>
 
 	<!-- Relationship Filter -->
@@ -336,6 +346,14 @@
 		sourceEntity={selectedEntityForLink}
 		bind:open={relateCommandOpen}
 		onClose={() => { selectedEntityForLink = null; }}
+	/>
+{/if}
+
+{#if entityType === 'character'}
+	<ForgeSteelImportModal
+		bind:open={forgeSteelModalOpen}
+		onimport={() => { forgeSteelModalOpen = false; }}
+		oncancel={() => { forgeSteelModalOpen = false; }}
 	/>
 {/if}
 </div>

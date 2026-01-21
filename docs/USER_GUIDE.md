@@ -2373,11 +2373,12 @@ Director Assist can import character data directly from Forge Steel, the officia
 **How to Import**:
 
 1. Export your character from Forge Steel as a `.ds-hero` or `.json` file
-2. Open Settings in Director Assist (gear icon)
-3. Scroll to the "Import from Forge Steel" section
-4. Click "Import Character"
-5. Select your `.ds-hero` or `.json` file
-6. Review the import preview:
+2. In Director Assist, either:
+   - Click "Import from Forge Steel" on the character list page (`/entities/character`), OR
+   - Open Settings (gear icon) and scroll to the "Import from Forge Steel" section
+3. Click "Import Character"
+4. Select your `.ds-hero` or `.json` file
+5. Review the import preview:
    - Character name
    - Concept (Ancestry + Class)
    - Background (notes)

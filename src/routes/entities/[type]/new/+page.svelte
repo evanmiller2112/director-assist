@@ -545,7 +545,6 @@
 							placeholder={field.placeholder}
 							error={errors[field.key]}
 							onchange={(value) => updateField(field.key, value)}
-							mode="split"
 							minHeight="200px"
 							maxHeight="600px"
 						/>

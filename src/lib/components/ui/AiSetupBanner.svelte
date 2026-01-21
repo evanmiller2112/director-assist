@@ -2,18 +2,31 @@
 	import { Settings, X } from 'lucide-svelte';
 
 	interface Props {
+		onGetStarted?: () => void;
+		onPlayerDismiss?: () => void;
+		onDisableAi?: () => void;
+		// Legacy props for backwards compatibility
 		onConfigure?: () => void;
 		onDismiss?: () => void;
 	}
 
-	let { onConfigure, onDismiss }: Props = $props();
+	let { onGetStarted, onPlayerDismiss, onDisableAi, onConfigure, onDismiss }: Props = $props();
 
-	function handleConfigure() {
-		onConfigure?.();
+	function handleGetStarted() {
+		onGetStarted?.() ?? onConfigure?.();
 	}
 
-	function handleDismiss() {
-		onDismiss?.();
+	function handlePlayerDismiss() {
+		onPlayerDismiss?.() ?? onDismiss?.();
+	}
+
+	function handleDisableAi() {
+		onDisableAi?.();
+	}
+
+	function handleClose() {
+		// Close button behaves like "I'm a Player" - just dismiss without disabling AI
+		onPlayerDismiss?.() ?? onDismiss?.();
 	}
 </script>
 
@@ -38,16 +51,26 @@
 			<button
 				type="button"
 				class="btn btn-primary bg-blue-600 hover:bg-blue-700 text-white border-0 focus:ring-blue-500 text-sm px-3 py-1.5"
-				onclick={handleConfigure}
+				onclick={handleGetStarted}
+				aria-label="Get Started with AI configuration"
 			>
 				Get Started
 			</button>
 			<button
 				type="button"
-				class="btn btn-secondary border-blue-300 dark:border-blue-700 text-blue-900 dark:text-blue-100 hover:bg-blue-100 dark:hover:bg-blue-900/40 text-sm px-3 py-1.5"
-				onclick={handleDismiss}
+				class="btn btn-secondary border-blue-300 dark:border-blue-700 text-blue-900 dark:text-blue-100 hover:bg-blue-100 dark:hover:bg-blue-900/40 focus:ring-blue-500 text-sm px-3 py-1.5"
+				onclick={handlePlayerDismiss}
+				aria-label="I'm a Player - Dismiss this banner"
 			>
-				Not Now
+				I'm a Player
+			</button>
+			<button
+				type="button"
+				class="btn btn-secondary border-blue-300 dark:border-blue-700 text-blue-900 dark:text-blue-100 hover:bg-blue-100 dark:hover:bg-blue-900/40 focus:ring-blue-500 text-sm px-3 py-1.5"
+				onclick={handleDisableAi}
+				aria-label="Not Using AI - Disable AI features"
+			>
+				Not Using AI
 			</button>
 		</div>
 	</div>
@@ -56,7 +79,7 @@
 	<button
 		type="button"
 		class="flex-shrink-0 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
-		onclick={handleDismiss}
+		onclick={handleClose}
 		aria-label="Close"
 	>
 		<X class="w-5 h-5" />

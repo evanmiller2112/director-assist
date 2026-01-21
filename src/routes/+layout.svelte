@@ -96,14 +96,20 @@
 		setLastBackupPromptDismissedAt(new Date());
 	}
 
-	function handleAiSetupConfigure() {
+	function handleAiSetupGetStarted() {
 		// Navigate to settings (AI configuration section)
 		goto('/settings');
 	}
 
-	function handleAiSetupDismiss() {
-		// Permanently dismiss AI setup banner
+	function handleAiSetupPlayerDismiss() {
+		// Player dismisses banner - don't disable AI, just hide banner
 		setAiSetupDismissed();
+	}
+
+	function handleAiSetupDisableAi() {
+		// Director not using AI - dismiss banner AND disable AI
+		setAiSetupDismissed();
+		aiSettings.setEnabled(false);
 	}
 </script>
 
@@ -118,8 +124,9 @@
 			{#if aiSetupReminderState.show}
 				<div class="mb-6">
 					<AiSetupBanner
-						onConfigure={handleAiSetupConfigure}
-						onDismiss={handleAiSetupDismiss}
+						onGetStarted={handleAiSetupGetStarted}
+						onPlayerDismiss={handleAiSetupPlayerDismiss}
+						onDisableAi={handleAiSetupDisableAi}
 					/>
 				</div>
 			{/if}

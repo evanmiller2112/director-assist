@@ -65,8 +65,9 @@ describe('AiSetupBanner Component - Message Content', () => {
 	it('should display message about AI setup', () => {
 		render(AiSetupBanner);
 
-		// Should mention AI or configuration
-		expect(screen.getByText(/AI|configure|setup|assistant/i)).toBeInTheDocument();
+		// Should mention AI or configuration (using getAllByText since text appears multiple times)
+		const elements = screen.getAllByText(/AI|configure|setup|assistant/i);
+		expect(elements.length).toBeGreaterThan(0);
 	});
 
 	it('should explain what needs to be configured', () => {
@@ -79,9 +80,9 @@ describe('AiSetupBanner Component - Message Content', () => {
 	it('should have encouraging, helpful tone', () => {
 		render(AiSetupBanner);
 
-		// Should have positive message about AI features
-		const banner = screen.getByText(/AI|configure|setup|assistant/i);
-		expect(banner).toBeInTheDocument();
+		// Should have positive message about AI features (using getAllByText since text appears multiple times)
+		const elements = screen.getAllByText(/AI|configure|setup|assistant/i);
+		expect(elements.length).toBeGreaterThan(0);
 	});
 
 	it('should explain the benefit of setting up AI', () => {
@@ -107,263 +108,383 @@ describe('AiSetupBanner Component - Message Content', () => {
 });
 
 describe('AiSetupBanner Component - Action Buttons', () => {
-	it('should render Configure button', () => {
+	// ISSUE #214: THREE-BUTTON ENHANCEMENT - These tests will FAIL until implemented
+	it('should render "Get Started" button', () => {
 		render(AiSetupBanner);
 
-		const configButton = screen.getByRole('button', { name: /configure|setup|get started/i });
-		expect(configButton).toBeInTheDocument();
+		const getStartedButton = screen.getByRole('button', { name: /get started/i });
+		expect(getStartedButton).toBeInTheDocument();
 	});
 
-	it('should render Dismiss button', () => {
+	it('should render "I\'m a Player" button', () => {
 		render(AiSetupBanner);
 
-		const dismissButton = screen.getByRole('button', { name: /dismiss|not now|skip/i });
-		expect(dismissButton).toBeInTheDocument();
+		const playerButton = screen.getByRole('button', { name: /player/i });
+		expect(playerButton).toBeInTheDocument();
+	});
+
+	it('should render "Not Using AI" button', () => {
+		render(AiSetupBanner);
+
+		const notUsingButton = screen.getByRole('button', { name: /not using ai/i });
+		expect(notUsingButton).toBeInTheDocument();
 	});
 
 	it('should render close (X) button', () => {
 		render(AiSetupBanner);
 
 		// Look for close button (might be aria-label or icon)
-		const closeButton = screen.getByRole('button', { name: /close|dismiss/i });
+		const closeButton = screen.getByRole('button', { name: /close/i });
 		expect(closeButton).toBeInTheDocument();
 	});
 
-	it('should style Configure as primary action', () => {
+	it('should have all THREE action buttons visible', () => {
 		render(AiSetupBanner);
 
-		const configButton = screen.getByRole('button', { name: /configure|setup|get started/i });
+		const getStartedButton = screen.getByRole('button', { name: /get started/i });
+		const playerButton = screen.getByRole('button', { name: /player/i });
+		const notUsingButton = screen.getByRole('button', { name: /not using ai/i });
+
+		expect(getStartedButton).toBeInTheDocument();
+		expect(playerButton).toBeInTheDocument();
+		expect(notUsingButton).toBeInTheDocument();
+	});
+
+	it('should style "Get Started" as primary action', () => {
+		render(AiSetupBanner);
+
+		const getStartedButton = screen.getByRole('button', { name: /get started/i });
 		// Primary button should have prominent styling
-		expect(configButton).toHaveClass(/primary|bg-|border/);
+		expect(getStartedButton).toHaveClass(/primary|bg-blue/);
 	});
 
-	it('should style Dismiss as secondary action', () => {
+	it('should style "I\'m a Player" as secondary action', () => {
 		render(AiSetupBanner);
 
-		const dismissButton = screen.getByRole('button', { name: /dismiss|not now|skip/i });
+		const playerButton = screen.getByRole('button', { name: /player/i });
 		// Secondary button should have less prominent styling
-		expect(dismissButton).toHaveClass(/secondary|ghost|text-|border/);
+		expect(playerButton).toHaveClass(/secondary|border|text-/);
 	});
 
-	it('should have both action buttons', () => {
+	it('should style "Not Using AI" as secondary action', () => {
 		render(AiSetupBanner);
 
-		const configButton = screen.getByRole('button', { name: /configure|setup|get started/i });
-		const dismissButton = screen.getByRole('button', { name: /dismiss|not now|skip/i });
+		const notUsingButton = screen.getByRole('button', { name: /not using ai/i });
+		// Secondary button should have less prominent styling
+		expect(notUsingButton).toHaveClass(/secondary|border|text-/);
+	});
 
-		expect(configButton).toBeInTheDocument();
-		expect(dismissButton).toBeInTheDocument();
+	it('should have proper button order (Get Started, Player, Not Using AI)', () => {
+		const { container } = render(AiSetupBanner);
+
+		const buttons = container.querySelectorAll('button');
+		const buttonTexts = Array.from(buttons).map(
+			(btn) => btn.textContent?.toLowerCase() || btn.getAttribute('aria-label')?.toLowerCase() || ''
+		);
+
+		// Get Started should come before Player and Not Using AI
+		const getStartedIndex = buttonTexts.findIndex((text) => text.includes('get started'));
+		const playerIndex = buttonTexts.findIndex((text) => text.includes('player'));
+		const notUsingIndex = buttonTexts.findIndex((text) => text.includes('not using'));
+
+		expect(getStartedIndex).toBeGreaterThanOrEqual(0);
+		expect(playerIndex).toBeGreaterThan(getStartedIndex);
+		expect(notUsingIndex).toBeGreaterThan(playerIndex);
 	});
 });
 
-describe('AiSetupBanner Component - Configure Callback', () => {
-	it('should call onConfigure when Configure button is clicked', async () => {
-		const onConfigure = vi.fn();
+describe('AiSetupBanner Component - Get Started Callback', () => {
+	// ISSUE #214: "Get Started" button navigates to AI settings
+	it('should call onGetStarted when "Get Started" button is clicked', async () => {
+		const onGetStarted = vi.fn();
 
 		render(AiSetupBanner, {
 			props: {
-				onConfigure
+				onGetStarted
 			}
 		});
 
-		const configButton = screen.getByRole('button', { name: /configure|setup|get started/i });
-		await fireEvent.click(configButton);
+		const getStartedButton = screen.getByRole('button', { name: /get started/i });
+		await fireEvent.click(getStartedButton);
 
-		expect(onConfigure).toHaveBeenCalledTimes(1);
+		expect(onGetStarted).toHaveBeenCalledTimes(1);
 	});
 
-	it('should call onConfigure only once per click', async () => {
-		const onConfigure = vi.fn();
+	it('should call onGetStarted only once per click', async () => {
+		const onGetStarted = vi.fn();
 
 		render(AiSetupBanner, {
 			props: {
-				onConfigure
+				onGetStarted
 			}
 		});
 
-		const configButton = screen.getByRole('button', { name: /configure|setup|get started/i });
-		await fireEvent.click(configButton);
+		const getStartedButton = screen.getByRole('button', { name: /get started/i });
+		await fireEvent.click(getStartedButton);
 
-		expect(onConfigure).toHaveBeenCalledTimes(1);
+		expect(onGetStarted).toHaveBeenCalledTimes(1);
 	});
 
-	it('should handle missing onConfigure callback gracefully', async () => {
+	it('should handle missing onGetStarted callback gracefully', async () => {
 		render(AiSetupBanner);
 
-		const configButton = screen.getByRole('button', { name: /configure|setup|get started/i });
+		const getStartedButton = screen.getByRole('button', { name: /get started/i });
 
 		// Should not throw error
 		await expect(async () => {
-			await fireEvent.click(configButton);
+			await fireEvent.click(getStartedButton);
 		}).not.toThrow();
 	});
 
-	it('should not call onDismiss when Configure button is clicked', async () => {
-		const onConfigure = vi.fn();
-		const onDismiss = vi.fn();
+	it('should not call other callbacks when Get Started is clicked', async () => {
+		const onGetStarted = vi.fn();
+		const onPlayerDismiss = vi.fn();
+		const onDisableAi = vi.fn();
 
 		render(AiSetupBanner, {
 			props: {
-				onConfigure,
-				onDismiss
+				onGetStarted,
+				onPlayerDismiss,
+				onDisableAi
 			}
 		});
 
-		const configButton = screen.getByRole('button', { name: /configure|setup|get started/i });
-		await fireEvent.click(configButton);
+		const getStartedButton = screen.getByRole('button', { name: /get started/i });
+		await fireEvent.click(getStartedButton);
 
-		expect(onConfigure).toHaveBeenCalled();
-		expect(onDismiss).not.toHaveBeenCalled();
+		expect(onGetStarted).toHaveBeenCalled();
+		expect(onPlayerDismiss).not.toHaveBeenCalled();
+		expect(onDisableAi).not.toHaveBeenCalled();
 	});
 
-	it('should handle multiple rapid clicks on Configure', async () => {
-		const onConfigure = vi.fn();
+	it('should handle multiple rapid clicks on Get Started', async () => {
+		const onGetStarted = vi.fn();
 
 		render(AiSetupBanner, {
 			props: {
-				onConfigure
+				onGetStarted
 			}
 		});
 
-		const configButton = screen.getByRole('button', { name: /configure|setup|get started/i });
+		const getStartedButton = screen.getByRole('button', { name: /get started/i });
 
-		await fireEvent.click(configButton);
-		await fireEvent.click(configButton);
-		await fireEvent.click(configButton);
+		await fireEvent.click(getStartedButton);
+		await fireEvent.click(getStartedButton);
+		await fireEvent.click(getStartedButton);
 
 		// Should call callback multiple times (parent handles debouncing if needed)
-		expect(onConfigure).toHaveBeenCalledTimes(3);
+		expect(onGetStarted).toHaveBeenCalledTimes(3);
 	});
 });
 
-describe('AiSetupBanner Component - Dismiss Callback', () => {
-	it('should call onDismiss when Dismiss button is clicked', async () => {
-		const onDismiss = vi.fn();
+describe('AiSetupBanner Component - "I\'m a Player" Callback', () => {
+	// ISSUE #214: "I'm a Player" button dismisses without disabling AI
+	it('should call onPlayerDismiss when "I\'m a Player" button is clicked', async () => {
+		const onPlayerDismiss = vi.fn();
 
 		render(AiSetupBanner, {
 			props: {
-				onDismiss
+				onPlayerDismiss
 			}
 		});
 
-		const dismissButton = screen.getByRole('button', { name: /dismiss|not now|skip/i });
-		await fireEvent.click(dismissButton);
+		const playerButton = screen.getByRole('button', { name: /player/i });
+		await fireEvent.click(playerButton);
 
-		expect(onDismiss).toHaveBeenCalledTimes(1);
+		expect(onPlayerDismiss).toHaveBeenCalledTimes(1);
 	});
 
-	it('should call onDismiss only once per click', async () => {
-		const onDismiss = vi.fn();
+	it('should call onPlayerDismiss only once per click', async () => {
+		const onPlayerDismiss = vi.fn();
 
 		render(AiSetupBanner, {
 			props: {
-				onDismiss
+				onPlayerDismiss
 			}
 		});
 
-		const dismissButton = screen.getByRole('button', { name: /dismiss|not now|skip/i });
-		await fireEvent.click(dismissButton);
+		const playerButton = screen.getByRole('button', { name: /player/i });
+		await fireEvent.click(playerButton);
 
-		expect(onDismiss).toHaveBeenCalledTimes(1);
+		expect(onPlayerDismiss).toHaveBeenCalledTimes(1);
 	});
 
-	it('should handle missing onDismiss callback gracefully', async () => {
+	it('should handle missing onPlayerDismiss callback gracefully', async () => {
 		render(AiSetupBanner);
 
-		const dismissButton = screen.getByRole('button', { name: /dismiss|not now|skip/i });
+		const playerButton = screen.getByRole('button', { name: /player/i });
 
 		// Should not throw error
 		await expect(async () => {
-			await fireEvent.click(dismissButton);
+			await fireEvent.click(playerButton);
 		}).not.toThrow();
 	});
 
-	it('should not call onConfigure when Dismiss button is clicked', async () => {
-		const onConfigure = vi.fn();
-		const onDismiss = vi.fn();
+	it('should not call other callbacks when Player button is clicked', async () => {
+		const onGetStarted = vi.fn();
+		const onPlayerDismiss = vi.fn();
+		const onDisableAi = vi.fn();
 
 		render(AiSetupBanner, {
 			props: {
-				onConfigure,
-				onDismiss
+				onGetStarted,
+				onPlayerDismiss,
+				onDisableAi
 			}
 		});
 
-		const dismissButton = screen.getByRole('button', { name: /dismiss|not now|skip/i });
-		await fireEvent.click(dismissButton);
+		const playerButton = screen.getByRole('button', { name: /player/i });
+		await fireEvent.click(playerButton);
 
-		expect(onDismiss).toHaveBeenCalled();
-		expect(onConfigure).not.toHaveBeenCalled();
+		expect(onPlayerDismiss).toHaveBeenCalled();
+		expect(onGetStarted).not.toHaveBeenCalled();
+		expect(onDisableAi).not.toHaveBeenCalled();
 	});
 
-	it('should handle multiple rapid clicks on Dismiss', async () => {
-		const onDismiss = vi.fn();
+	it('should handle multiple rapid clicks on Player button', async () => {
+		const onPlayerDismiss = vi.fn();
 
 		render(AiSetupBanner, {
 			props: {
-				onDismiss
+				onPlayerDismiss
 			}
 		});
 
-		const dismissButton = screen.getByRole('button', { name: /dismiss|not now|skip/i });
+		const playerButton = screen.getByRole('button', { name: /player/i });
 
-		await fireEvent.click(dismissButton);
-		await fireEvent.click(dismissButton);
+		await fireEvent.click(playerButton);
+		await fireEvent.click(playerButton);
 
-		expect(onDismiss).toHaveBeenCalled();
+		expect(onPlayerDismiss).toHaveBeenCalled();
+	});
+});
+
+describe('AiSetupBanner Component - "Not Using AI" Callback', () => {
+	// ISSUE #214: "Not Using AI" button disables AI and dismisses
+	it('should call onDisableAi when "Not Using AI" button is clicked', async () => {
+		const onDisableAi = vi.fn();
+
+		render(AiSetupBanner, {
+			props: {
+				onDisableAi
+			}
+		});
+
+		const notUsingButton = screen.getByRole('button', { name: /not using ai/i });
+		await fireEvent.click(notUsingButton);
+
+		expect(onDisableAi).toHaveBeenCalledTimes(1);
+	});
+
+	it('should call onDisableAi only once per click', async () => {
+		const onDisableAi = vi.fn();
+
+		render(AiSetupBanner, {
+			props: {
+				onDisableAi
+			}
+		});
+
+		const notUsingButton = screen.getByRole('button', { name: /not using ai/i });
+		await fireEvent.click(notUsingButton);
+
+		expect(onDisableAi).toHaveBeenCalledTimes(1);
+	});
+
+	it('should handle missing onDisableAi callback gracefully', async () => {
+		render(AiSetupBanner);
+
+		const notUsingButton = screen.getByRole('button', { name: /not using ai/i });
+
+		// Should not throw error
+		await expect(async () => {
+			await fireEvent.click(notUsingButton);
+		}).not.toThrow();
+	});
+
+	it('should not call other callbacks when Not Using AI is clicked', async () => {
+		const onGetStarted = vi.fn();
+		const onPlayerDismiss = vi.fn();
+		const onDisableAi = vi.fn();
+
+		render(AiSetupBanner, {
+			props: {
+				onGetStarted,
+				onPlayerDismiss,
+				onDisableAi
+			}
+		});
+
+		const notUsingButton = screen.getByRole('button', { name: /not using ai/i });
+		await fireEvent.click(notUsingButton);
+
+		expect(onDisableAi).toHaveBeenCalled();
+		expect(onGetStarted).not.toHaveBeenCalled();
+		expect(onPlayerDismiss).not.toHaveBeenCalled();
+	});
+
+	it('should handle multiple rapid clicks on Not Using AI button', async () => {
+		const onDisableAi = vi.fn();
+
+		render(AiSetupBanner, {
+			props: {
+				onDisableAi
+			}
+		});
+
+		const notUsingButton = screen.getByRole('button', { name: /not using ai/i });
+
+		await fireEvent.click(notUsingButton);
+		await fireEvent.click(notUsingButton);
+
+		expect(onDisableAi).toHaveBeenCalled();
 	});
 });
 
 describe('AiSetupBanner Component - Close Button Callback', () => {
-	it('should call onDismiss when close (X) button is clicked', async () => {
-		const onDismiss = vi.fn();
+	// ISSUE #214: Close button should behave like temporary dismiss
+	it('should call onPlayerDismiss when close (X) button is clicked', async () => {
+		const onPlayerDismiss = vi.fn();
 
 		render(AiSetupBanner, {
 			props: {
-				onDismiss
+				onPlayerDismiss
 			}
 		});
 
-		const closeButton = screen.getByRole('button', { name: /close|dismiss/i });
+		const closeButton = screen.getByRole('button', { name: /close/i });
 		await fireEvent.click(closeButton);
 
-		expect(onDismiss).toHaveBeenCalledTimes(1);
+		expect(onPlayerDismiss).toHaveBeenCalledTimes(1);
 	});
 
-	it('should distinguish close button from Dismiss button', async () => {
-		const onDismiss = vi.fn();
+	it('should distinguish close button from action buttons', async () => {
+		render(AiSetupBanner);
 
-		render(AiSetupBanner, {
-			props: {
-				onDismiss
-			}
-		});
-
-		// Both should call onDismiss but should be separate buttons
+		// Should have close button plus 3 action buttons
 		const buttons = screen.getAllByRole('button');
-		const dismissButtons = buttons.filter((btn) =>
-			/close|dismiss|not now|skip/i.test(btn.textContent || btn.getAttribute('aria-label') || '')
-		);
-
-		expect(dismissButtons.length).toBeGreaterThanOrEqual(2);
+		expect(buttons.length).toBeGreaterThanOrEqual(4);
 	});
 
-	it('should not call onConfigure when close button is clicked', async () => {
-		const onConfigure = vi.fn();
-		const onDismiss = vi.fn();
+	it('should not call other callbacks when close button is clicked', async () => {
+		const onGetStarted = vi.fn();
+		const onPlayerDismiss = vi.fn();
+		const onDisableAi = vi.fn();
 
 		render(AiSetupBanner, {
 			props: {
-				onConfigure,
-				onDismiss
+				onGetStarted,
+				onPlayerDismiss,
+				onDisableAi
 			}
 		});
 
-		const closeButton = screen.getByRole('button', { name: /close|dismiss/i });
+		const closeButton = screen.getByRole('button', { name: /close/i });
 		await fireEvent.click(closeButton);
 
-		expect(onDismiss).toHaveBeenCalled();
-		expect(onConfigure).not.toHaveBeenCalled();
+		expect(onPlayerDismiss).toHaveBeenCalled();
+		expect(onGetStarted).not.toHaveBeenCalled();
+		expect(onDisableAi).not.toHaveBeenCalled();
 	});
 });
 
@@ -382,16 +503,35 @@ describe('AiSetupBanner Component - Accessibility', () => {
 		expect(banner).toBeInTheDocument();
 	});
 
-	it('should have accessible button labels', () => {
+	// ISSUE #214: All three buttons must have accessible labels
+	it('should have accessible button labels for all THREE action buttons', () => {
 		render(AiSetupBanner);
 
-		const configButton = screen.getByRole('button', { name: /configure|setup|get started/i });
-		const dismissButton = screen.getByRole('button', { name: /dismiss|not now|skip/i });
-		const closeButton = screen.getByRole('button', { name: /close|dismiss/i });
+		const getStartedButton = screen.getByRole('button', { name: /get started/i });
+		const playerButton = screen.getByRole('button', { name: /player/i });
+		const notUsingButton = screen.getByRole('button', { name: /not using ai/i });
+		const closeButton = screen.getByRole('button', { name: /close/i });
 
-		expect(configButton).toHaveAccessibleName();
-		expect(dismissButton).toHaveAccessibleName();
+		expect(getStartedButton).toHaveAccessibleName();
+		expect(playerButton).toHaveAccessibleName();
+		expect(notUsingButton).toHaveAccessibleName();
 		expect(closeButton).toHaveAccessibleName();
+	});
+
+	it('should have descriptive aria-labels that explain button purpose', () => {
+		render(AiSetupBanner);
+
+		// "Get Started" should clearly indicate it navigates to settings
+		const getStartedButton = screen.getByRole('button', { name: /get started/i });
+		expect(getStartedButton).toHaveAccessibleName();
+
+		// "I'm a Player" should indicate it's for players who don't need AI
+		const playerButton = screen.getByRole('button', { name: /player/i });
+		expect(playerButton).toHaveAccessibleName();
+
+		// "Not Using AI" should indicate it disables AI features
+		const notUsingButton = screen.getByRole('button', { name: /not using ai/i });
+		expect(notUsingButton).toHaveAccessibleName();
 	});
 
 	it('should have keyboard accessible buttons', () => {
@@ -418,23 +558,28 @@ describe('AiSetupBanner Component - Accessibility', () => {
 	it('should provide context for screen reader users', () => {
 		render(AiSetupBanner);
 
-		// Should have meaningful text content about AI
-		expect(screen.getByText(/AI|configure|setup|assistant/i)).toBeInTheDocument();
+		// Should have meaningful text content about AI (using getAllByText since text appears multiple times)
+		const elements = screen.getAllByText(/AI|configure|setup|assistant/i);
+		expect(elements.length).toBeGreaterThan(0);
 	});
 
-	it('should have focus visible styles on buttons', () => {
+	it('should have focus visible styles on all buttons', () => {
 		render(AiSetupBanner);
 
-		const configButton = screen.getByRole('button', { name: /configure|setup|get started/i });
+		const getStartedButton = screen.getByRole('button', { name: /get started/i });
+		const playerButton = screen.getByRole('button', { name: /player/i });
+		const notUsingButton = screen.getByRole('button', { name: /not using ai/i });
 
-		// Button should have focus styles
-		expect(configButton).toHaveClass(/focus|ring/);
+		// All buttons should have focus styles
+		expect(getStartedButton).toHaveClass(/focus|ring/);
+		expect(playerButton).toHaveClass(/focus|ring/);
+		expect(notUsingButton).toHaveClass(/focus|ring/);
 	});
 
 	it('should have descriptive aria-label for close button', () => {
 		render(AiSetupBanner);
 
-		const closeButton = screen.getByRole('button', { name: /close|dismiss/i });
+		const closeButton = screen.getByRole('button', { name: /close/i });
 		expect(closeButton).toHaveAccessibleName();
 	});
 });
@@ -499,52 +644,75 @@ describe('AiSetupBanner Component - Visual Design', () => {
 });
 
 describe('AiSetupBanner Component - Interaction Flow', () => {
-	it('should provide clear call-to-action', () => {
+	// ISSUE #214: Three clear options for different user scenarios
+	it('should provide clear call-to-action for DMs who want AI', () => {
 		render(AiSetupBanner);
 
 		// Primary action should be clear
-		const configButton = screen.getByRole('button', { name: /configure|setup|get started/i });
-		expect(configButton).toBeInTheDocument();
-		expect(configButton).toBeVisible();
+		const getStartedButton = screen.getByRole('button', { name: /get started/i });
+		expect(getStartedButton).toBeInTheDocument();
+		expect(getStartedButton).toBeVisible();
 	});
 
-	it('should allow easy dismissal', () => {
+	it('should provide clear option for players', () => {
 		render(AiSetupBanner);
 
-		// Should have at least 2 ways to dismiss (Dismiss button and X)
-		const dismissButton = screen.getByRole('button', { name: /dismiss|not now|skip/i });
-		const closeButton = screen.getByRole('button', { name: /close|dismiss/i });
+		// Player option should be clear
+		const playerButton = screen.getByRole('button', { name: /player/i });
+		expect(playerButton).toBeInTheDocument();
+		expect(playerButton).toBeVisible();
+	});
 
-		expect(dismissButton).toBeInTheDocument();
+	it('should provide clear option for DMs not using AI', () => {
+		render(AiSetupBanner);
+
+		// Not using AI option should be clear
+		const notUsingButton = screen.getByRole('button', { name: /not using ai/i });
+		expect(notUsingButton).toBeInTheDocument();
+		expect(notUsingButton).toBeVisible();
+	});
+
+	it('should allow easy dismissal with close button', () => {
+		render(AiSetupBanner);
+
+		// Should have close button for quick dismissal
+		const closeButton = screen.getByRole('button', { name: /close/i });
 		expect(closeButton).toBeInTheDocument();
 	});
 
-	it('should maintain consistent button order', () => {
+	it('should maintain consistent button order (Get Started, Player, Not Using)', () => {
 		const { container } = render(AiSetupBanner);
 
 		const buttons = container.querySelectorAll('button');
-		// Button order should be consistent
-		expect(buttons.length).toBeGreaterThanOrEqual(2);
+		// Should have 4 buttons total (3 actions + close)
+		expect(buttons.length).toBe(4);
 	});
 
-	it('should provide feedback on hover (via CSS)', () => {
+	it('should provide feedback on hover for all action buttons (via CSS)', () => {
 		render(AiSetupBanner);
 
-		const configButton = screen.getByRole('button', { name: /configure|setup|get started/i });
-		// Button should have hover styles
-		expect(configButton).toHaveClass(/hover/);
+		const getStartedButton = screen.getByRole('button', { name: /get started/i });
+		const playerButton = screen.getByRole('button', { name: /player/i });
+		const notUsingButton = screen.getByRole('button', { name: /not using ai/i });
+
+		// All buttons should have hover styles
+		expect(getStartedButton).toHaveClass(/hover/);
+		expect(playerButton).toHaveClass(/hover/);
+		expect(notUsingButton).toHaveClass(/hover/);
 	});
 
-	it('should clearly differentiate primary and secondary actions', () => {
+	it('should clearly differentiate primary action from alternatives', () => {
 		render(AiSetupBanner);
 
-		const configButton = screen.getByRole('button', { name: /configure|setup|get started/i });
-		const dismissButton = screen.getByRole('button', { name: /dismiss|not now|skip/i });
+		const getStartedButton = screen.getByRole('button', { name: /get started/i });
+		const playerButton = screen.getByRole('button', { name: /player/i });
+		const notUsingButton = screen.getByRole('button', { name: /not using ai/i });
 
 		// Primary should have more prominent styling
-		expect(configButton).toHaveClass(/bg-|primary/);
-		// Secondary should be less prominent
-		expect(dismissButton).toHaveClass(/secondary|ghost|text-/);
+		expect(getStartedButton).toHaveClass(/bg-blue/);
+		// Alternatives should be less prominent
+		expect(playerButton).toHaveClass(/border/);
+		expect(notUsingButton).toHaveClass(/border/);
 	});
 });
 
@@ -552,11 +720,14 @@ describe('AiSetupBanner Component - Edge Cases', () => {
 	it('should render consistently on multiple renders', () => {
 		const { rerender } = render(AiSetupBanner);
 
-		expect(screen.getByText(/AI|configure|setup|assistant/i)).toBeInTheDocument();
+		// Using getAllByText since text appears multiple times
+		let elements = screen.getAllByText(/AI|configure|setup|assistant/i);
+		expect(elements.length).toBeGreaterThan(0);
 
 		rerender({});
 
-		expect(screen.getByText(/AI|configure|setup|assistant/i)).toBeInTheDocument();
+		elements = screen.getAllByText(/AI|configure|setup|assistant/i);
+		expect(elements.length).toBeGreaterThan(0);
 	});
 
 	it('should handle undefined callbacks gracefully', async () => {
@@ -647,40 +818,77 @@ describe('AiSetupBanner Component - Content Quality', () => {
 });
 
 describe('AiSetupBanner Component - Integration', () => {
-	it('should work with both callbacks provided', async () => {
-		const onConfigure = vi.fn();
-		const onDismiss = vi.fn();
+	// ISSUE #214: All three callbacks work independently
+	it('should work with all THREE callbacks provided', async () => {
+		const onGetStarted = vi.fn();
+		const onPlayerDismiss = vi.fn();
+		const onDisableAi = vi.fn();
 
 		render(AiSetupBanner, {
 			props: {
-				onConfigure,
-				onDismiss
+				onGetStarted,
+				onPlayerDismiss,
+				onDisableAi
 			}
 		});
 
-		const configButton = screen.getByRole('button', { name: /configure|setup|get started/i });
-		const dismissButton = screen.getByRole('button', { name: /dismiss|not now|skip/i });
+		const getStartedButton = screen.getByRole('button', { name: /get started/i });
+		const playerButton = screen.getByRole('button', { name: /player/i });
+		const notUsingButton = screen.getByRole('button', { name: /not using ai/i });
 
-		await fireEvent.click(configButton);
-		expect(onConfigure).toHaveBeenCalledTimes(1);
-		expect(onDismiss).not.toHaveBeenCalled();
+		await fireEvent.click(getStartedButton);
+		expect(onGetStarted).toHaveBeenCalledTimes(1);
+		expect(onPlayerDismiss).not.toHaveBeenCalled();
+		expect(onDisableAi).not.toHaveBeenCalled();
 
-		await fireEvent.click(dismissButton);
-		expect(onDismiss).toHaveBeenCalledTimes(1);
-		expect(onConfigure).toHaveBeenCalledTimes(1); // Still just 1
+		await fireEvent.click(playerButton);
+		expect(onPlayerDismiss).toHaveBeenCalledTimes(1);
+		expect(onGetStarted).toHaveBeenCalledTimes(1); // Still just 1
+		expect(onDisableAi).not.toHaveBeenCalled();
+
+		await fireEvent.click(notUsingButton);
+		expect(onDisableAi).toHaveBeenCalledTimes(1);
+		expect(onGetStarted).toHaveBeenCalledTimes(1); // Still just 1
+		expect(onPlayerDismiss).toHaveBeenCalledTimes(1); // Still just 1
 	});
 
 	it('should work with no callbacks provided', async () => {
 		render(AiSetupBanner);
 
-		const configButton = screen.getByRole('button', { name: /configure|setup|get started/i });
-		const dismissButton = screen.getByRole('button', { name: /dismiss|not now|skip/i });
+		const getStartedButton = screen.getByRole('button', { name: /get started/i });
+		const playerButton = screen.getByRole('button', { name: /player/i });
+		const notUsingButton = screen.getByRole('button', { name: /not using ai/i });
 
 		// Should not throw
 		await expect(async () => {
-			await fireEvent.click(configButton);
-			await fireEvent.click(dismissButton);
+			await fireEvent.click(getStartedButton);
+			await fireEvent.click(playerButton);
+			await fireEvent.click(notUsingButton);
 		}).not.toThrow();
+	});
+
+	it('should work with partial callbacks provided', async () => {
+		const onGetStarted = vi.fn();
+
+		render(AiSetupBanner, {
+			props: {
+				onGetStarted
+				// onPlayerDismiss and onDisableAi not provided
+			}
+		});
+
+		const getStartedButton = screen.getByRole('button', { name: /get started/i });
+		const playerButton = screen.getByRole('button', { name: /player/i });
+		const notUsingButton = screen.getByRole('button', { name: /not using ai/i });
+
+		// Should not throw even with missing callbacks
+		await expect(async () => {
+			await fireEvent.click(getStartedButton);
+			await fireEvent.click(playerButton);
+			await fireEvent.click(notUsingButton);
+		}).not.toThrow();
+
+		expect(onGetStarted).toHaveBeenCalledTimes(1);
 	});
 
 	it('should be usable in different layout contexts', () => {
@@ -689,5 +897,71 @@ describe('AiSetupBanner Component - Integration', () => {
 		// Should render correctly regardless of parent
 		const banner = container.querySelector('[role="alert"], [role="banner"]');
 		expect(banner).toBeInTheDocument();
+	});
+
+	it('should handle complete user flow: DM gets started', async () => {
+		const onGetStarted = vi.fn();
+		const onPlayerDismiss = vi.fn();
+		const onDisableAi = vi.fn();
+
+		render(AiSetupBanner, {
+			props: {
+				onGetStarted,
+				onPlayerDismiss,
+				onDisableAi
+			}
+		});
+
+		// DM clicks "Get Started" to configure AI
+		const getStartedButton = screen.getByRole('button', { name: /get started/i });
+		await fireEvent.click(getStartedButton);
+
+		expect(onGetStarted).toHaveBeenCalledTimes(1);
+		expect(onPlayerDismiss).not.toHaveBeenCalled();
+		expect(onDisableAi).not.toHaveBeenCalled();
+	});
+
+	it('should handle complete user flow: Player dismisses', async () => {
+		const onGetStarted = vi.fn();
+		const onPlayerDismiss = vi.fn();
+		const onDisableAi = vi.fn();
+
+		render(AiSetupBanner, {
+			props: {
+				onGetStarted,
+				onPlayerDismiss,
+				onDisableAi
+			}
+		});
+
+		// Player clicks "I'm a Player" to dismiss
+		const playerButton = screen.getByRole('button', { name: /player/i });
+		await fireEvent.click(playerButton);
+
+		expect(onPlayerDismiss).toHaveBeenCalledTimes(1);
+		expect(onGetStarted).not.toHaveBeenCalled();
+		expect(onDisableAi).not.toHaveBeenCalled();
+	});
+
+	it('should handle complete user flow: DM disables AI', async () => {
+		const onGetStarted = vi.fn();
+		const onPlayerDismiss = vi.fn();
+		const onDisableAi = vi.fn();
+
+		render(AiSetupBanner, {
+			props: {
+				onGetStarted,
+				onPlayerDismiss,
+				onDisableAi
+			}
+		});
+
+		// DM clicks "Not Using AI" to disable AI features
+		const notUsingButton = screen.getByRole('button', { name: /not using ai/i });
+		await fireEvent.click(notUsingButton);
+
+		expect(onDisableAi).toHaveBeenCalledTimes(1);
+		expect(onGetStarted).not.toHaveBeenCalled();
+		expect(onPlayerDismiss).not.toHaveBeenCalled();
 	});
 });

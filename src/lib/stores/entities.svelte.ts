@@ -350,6 +350,22 @@ function createEntitiesStore() {
 				relationshipType: undefined,
 				hasRelationships: undefined
 			};
+		},
+
+		/**
+		 * Reset store to initial state
+		 * Used when clearing all data or resetting application state
+		 */
+		reset(): void {
+			entities = [];
+			isLoading = true;
+			error = null;
+			searchQuery = '';
+			relationshipFilter = {
+				relatedToEntityId: undefined,
+				relationshipType: undefined,
+				hasRelationships: undefined
+			};
 		}
 	};
 }

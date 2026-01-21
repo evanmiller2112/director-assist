@@ -3,6 +3,7 @@
 	import { goto } from '$app/navigation';
 	import { entitiesStore, campaignStore, notificationStore } from '$lib/stores';
 	import { getEntityTypeDefinition } from '$lib/config/entityTypes';
+	import { refreshAfterCampaignSwitch } from '$lib/services';
 	import { Plus, Search, Link, EyeOff, Check, Circle, Upload } from 'lucide-svelte';
 	import RelateCommand from '$lib/components/entity/RelateCommand.svelte';
 	import Pagination from '$lib/components/ui/Pagination.svelte';
@@ -111,8 +112,8 @@
 		try {
 			await campaignStore.setActiveCampaign(entity.id);
 			notificationStore.success(`Switched to campaign: ${entity.name}`);
-			// Reload page to refresh all data for new campaign
-			window.location.reload();
+			// Refresh all data for new campaign
+			await refreshAfterCampaignSwitch({ navigateTo: '/' });
 		} catch (error) {
 			console.error('Failed to set active campaign:', error);
 			notificationStore.error('Failed to set active campaign');

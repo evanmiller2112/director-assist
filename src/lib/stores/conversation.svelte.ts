@@ -135,6 +135,17 @@ function createConversationStore() {
 			activeConversationId = null;
 			isLoading = true;
 			error = null;
+		},
+
+		/**
+		 * Reset store to initial state
+		 * Used when clearing all data or resetting application state
+		 */
+		reset() {
+			conversations = [];
+			activeConversationId = null;
+			isLoading = true;
+			error = null;
 		}
 	};
 }

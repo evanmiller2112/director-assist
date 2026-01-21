@@ -135,3 +135,10 @@ export {
 	hasAnyApiKey,
 	shouldShowAiSetupBanner
 } from './aiSetupReminderService';
+
+// State refresh service (Issue #252)
+export {
+	refreshAllStores,
+	resetAllStores,
+	refreshAfterCampaignSwitch
+} from './stateRefreshService';

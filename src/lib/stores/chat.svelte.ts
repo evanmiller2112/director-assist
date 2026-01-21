@@ -203,6 +203,21 @@ function createChatStore() {
 
 		clearTypeFieldValues() {
 			typeFieldValues = {};
+		},
+
+		/**
+		 * Reset store to initial state
+		 * Used when clearing all data or resetting application state
+		 */
+		reset() {
+			messages = [];
+			isLoading = false;
+			error = null;
+			contextEntityIds = [];
+			streamingContent = '';
+			includeLinkedEntities = true;
+			generationType = 'custom';
+			typeFieldValues = {};
 		}
 	};
 }

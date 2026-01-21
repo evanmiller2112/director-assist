@@ -1385,7 +1385,7 @@ To switch to a different campaign:
 1. Navigate to the campaigns list (`/entities/campaign`)
 2. Find the campaign you want to activate
 3. Click the "Set as Active" button
-4. The page will reload with the new active campaign
+4. The application will refresh to load the new active campaign
 
 All navigation, entities, and relationships will now show data from the newly active campaign.
 

@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-01-21
+
 ### Added
 
 **Debug Console for AI Request/Response Inspection (Issue #118)**
@@ -60,6 +62,65 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Export format version 1.0.0 with metadata support
 - Import preview system shows name, field count, and potential conflicts
 - Deep cloning ensures immutability (modifications to clones don't affect originals)
+
+**Generate Button Context Tooltip (Issue #117)**
+- New context summary tooltip on Generate button in chat interface
+- Shows what information will be included in AI generation context
+- Displays selected generation type, entity count, and context configuration
+- Includes relationship context status and estimated token usage
+- Helps users understand what data the AI will use before generating
+- Improves transparency and control over AI generation
+
+**Sticky/Floating Action Buttons for Entity Forms (Issue #44)**
+- Floating action buttons on entity create and edit forms
+- Save and Cancel buttons remain visible while scrolling long forms
+- Improves UX for forms with many fields or long content
+- Positioned at bottom-right corner with fixed positioning
+- Responsive design maintains usability on mobile and desktop
+
+### Fixed
+
+**AI Setup Banner Display Logic (Issue #214)**
+- Fixed catch-22 where banner never showed for new users
+- Banner now correctly appears when AI is enabled but no API key is configured
+- Improved logic for detecting first-time setup scenarios
+- Users can now properly discover AI features on initial use
+
+**Combat Tracker UI Access (Issue #228)**
+- Combat tracker now accessible via sidebar navigation
+- Added route integration for `/combat` pages
+- Combat system fully integrated with main UI navigation
+- Fixed issue where combat features were implemented but unreachable
+
+**Build Failure: EntityContext Property Error (Issue #231)**
+- Fixed TypeScript error: "Property 'content' does not exist on type 'EntityContext'"
+- Corrected property access in entity context handling
+- Build now completes successfully without type errors
+- Improved type safety in entity context operations
+
+### Security
+
+**API Key Handling Validation (Issue #27)**
+- Comprehensive security audit of API key storage and handling
+- Verified API keys stored only in browser localStorage (never transmitted to servers)
+- Confirmed API keys never included in backups or exports
+- Validated secure communication with AI providers (HTTPS only)
+- Documented security best practices in user guide
+- No API keys logged or exposed in debug outputs
+
+**Backup API Key Exclusion Verification (Issue #31)**
+- Verified backup system excludes API keys from all export formats
+- Confirmed localStorage data (including API keys) never included in campaign backups
+- Validated JSON, HTML, and Markdown exports contain only campaign data
+- Users can safely share backups without exposing sensitive credentials
+- Added security notes to backup documentation
+
+**Model Selection Backup Validation (Issue #35)**
+- Verified selected AI model included in campaign backups
+- Model preferences preserved in backup metadata
+- Restore operations correctly apply saved model selections
+- Users maintain consistent AI experience across backup/restore cycles
+- Model configuration properly persisted in campaign settings
 
 ## [0.9.0] - 2026-01-21
 

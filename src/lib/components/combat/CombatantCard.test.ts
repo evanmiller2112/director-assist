@@ -598,7 +598,7 @@ describe('CombatantCard Component - Accessibility', () => {
 		});
 
 		const hpSection = screen.getByTestId('hp-section');
-		expect(hpSection).toHaveAttribute('aria-label', expect.stringMatching(/25.*40.*hit points/i));
+		expect(hpSection).toHaveAttribute('aria-label', expect.stringMatching(/25.*40.*stamina/i));
 	});
 });
 

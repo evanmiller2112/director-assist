@@ -135,7 +135,7 @@ describe('chatService - Generation Type Integration', () => {
 				'npc',
 				'location',
 				'plot_hook',
-				'encounter',
+				'combat',
 				'item',
 				'faction',
 				'session_prep'
@@ -259,16 +259,16 @@ describe('chatService - Generation Type Integration', () => {
 
 	describe('Encounter generation type', () => {
 		it('should append encounter prompt template', async () => {
-			await sendChatMessage('Generate an encounter', [], true, undefined, 'encounter');
+			await sendChatMessage('Generate an encounter', [], true, undefined, 'combat');
 
 			expect(mockMessagesCreate).toHaveBeenCalled();
 			const callArgs = mockMessagesCreate.mock.calls[0][0];
 
-			expect(callArgs.system).toContain('encounter');
+			expect(callArgs.system).toContain('combat');
 		});
 
 		it('should include encounter suggested structure', async () => {
-			await sendChatMessage('Create a battle', [], true, undefined, 'encounter');
+			await sendChatMessage('Create a battle', [], true, undefined, 'combat');
 
 			const callArgs = mockMessagesCreate.mock.calls[0][0];
 			expect(callArgs.system.toLowerCase()).toMatch(/enemies|terrain|tactics/);
@@ -408,7 +408,7 @@ describe('chatService - Generation Type Integration', () => {
 				'npc',
 				'location',
 				'plot_hook',
-				'encounter',
+				'combat',
 				'item',
 				'faction',
 				'session_prep'
@@ -434,12 +434,12 @@ describe('chatService - Generation Type Integration', () => {
 		});
 
 		it('should pass generationType prompt to non-streaming API', async () => {
-			await sendChatMessage('Test', [], true, undefined, 'encounter');
+			await sendChatMessage('Test', [], true, undefined, 'combat');
 
 			expect(mockMessagesCreate).toHaveBeenCalled();
 			const callArgs = mockMessagesCreate.mock.calls[0][0];
 
-			expect(callArgs.system).toContain('encounter');
+			expect(callArgs.system).toContain('combat');
 		});
 	});
 
@@ -501,7 +501,7 @@ describe('chatService - Generation Type Integration', () => {
 				['entity-1', 'entity-2'],
 				false,
 				onStream,
-				'encounter'
+				'combat'
 			);
 
 			expect(mockMessagesStream).toHaveBeenCalled();
@@ -510,7 +510,7 @@ describe('chatService - Generation Type Integration', () => {
 		it('should handle rapid calls with different generation types', async () => {
 			await sendChatMessage('Test 1', [], true, undefined, 'npc');
 			await sendChatMessage('Test 2', [], true, undefined, 'location');
-			await sendChatMessage('Test 3', [], true, undefined, 'encounter');
+			await sendChatMessage('Test 3', [], true, undefined, 'combat');
 
 			expect(mockMessagesCreate).toHaveBeenCalledTimes(3);
 		});
@@ -949,7 +949,7 @@ describe('chatService - Generation Type Integration', () => {
 
 			it('should handle typeFieldValues for all non-NPC types gracefully', async () => {
 				const nonNpcTypes: GenerationType[] = [
-					'custom', 'location', 'plot_hook', 'encounter', 'item', 'faction', 'session_prep'
+					'custom', 'location', 'plot_hook', 'combat', 'item', 'faction', 'session_prep'
 				];
 
 				for (const type of nonNpcTypes) {

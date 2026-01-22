@@ -338,70 +338,6 @@ export const BUILT_IN_ENTITY_TYPES: EntityTypeDefinition[] = [
 		defaultRelationships: ['owned_by', 'located_at', 'created_by']
 	},
 	{
-		type: 'encounter',
-		label: 'Encounter',
-		labelPlural: 'Encounters',
-		icon: 'swords',
-		color: 'encounter',
-		isBuiltIn: true,
-		fieldDefinitions: [
-			{
-				key: 'encounterType',
-				label: 'Type',
-				type: 'select',
-				options: ['combat', 'social', 'exploration', 'puzzle', 'trap', 'event'],
-				required: false,
-				order: 1
-			},
-			{
-				key: 'setup',
-				label: 'Setup/Hook',
-				type: 'richtext',
-				required: false,
-				order: 2
-			},
-			{
-				key: 'challenge',
-				label: 'Challenge',
-				type: 'richtext',
-				required: false,
-				order: 3
-			},
-			{
-				key: 'resolution',
-				label: 'Possible Resolutions',
-				type: 'richtext',
-				required: false,
-				order: 4
-			},
-			{
-				key: 'rewards',
-				label: 'Rewards',
-				type: 'richtext',
-				required: false,
-				order: 5
-			},
-			{
-				key: 'difficulty',
-				label: 'Difficulty',
-				type: 'select',
-				options: ['trivial', 'easy', 'moderate', 'hard', 'deadly'],
-				required: false,
-				order: 6
-			},
-			{
-				key: 'status',
-				label: 'Status',
-				type: 'select',
-				options: ['planned', 'ready', 'used', 'scrapped'],
-				required: true,
-				defaultValue: 'planned',
-				order: 7
-			}
-		],
-		defaultRelationships: ['located_at', 'involves']
-	},
-	{
 		type: 'session',
 		label: 'Session',
 		labelPlural: 'Sessions',
@@ -996,7 +932,6 @@ export function getDefaultEntityTypeOrder(): string[] {
 		'location',
 		'faction',
 		'item',
-		'encounter',
 		'session',
 		'scene',
 		'deity',

@@ -330,7 +330,7 @@ describe('HpTracker Component - Healing Controls', () => {
 		const healInput = screen.queryByLabelText(/^healing$/i);
 		expect(healInput).not.toBeInTheDocument();
 		// Instead, there should be a message saying at max HP
-		expect(screen.getByText(/max.*hp/i)).toBeInTheDocument();
+		expect(screen.getByText(/max.*stamina/i)).toBeInTheDocument();
 	});
 
 	it('should show message when at max HP', () => {
@@ -345,7 +345,7 @@ describe('HpTracker Component - Healing Controls', () => {
 			}
 		});
 
-		expect(screen.getByText(/max.*hp/i)).toBeInTheDocument();
+		expect(screen.getByText(/max.*stamina/i)).toBeInTheDocument();
 	});
 
 	it('should clear healing input after applying', async () => {
@@ -386,7 +386,7 @@ describe('HpTracker Component - Temp HP Controls', () => {
 			}
 		});
 
-		expect(screen.getByLabelText(/^temp hp$/i)).toBeInTheDocument();
+		expect(screen.getByLabelText(/^temp.*stamina$/i)).toBeInTheDocument();
 	});
 
 	it('should display Set Temp HP button', () => {
@@ -416,7 +416,7 @@ describe('HpTracker Component - Temp HP Controls', () => {
 			}
 		});
 
-		const tempHpInput = screen.getByLabelText(/^temp hp$/i) as HTMLInputElement;
+		const tempHpInput = screen.getByLabelText(/^temp.*stamina$/i) as HTMLInputElement;
 		expect(tempHpInput.placeholder).toContain('8');
 	});
 
@@ -433,7 +433,7 @@ describe('HpTracker Component - Temp HP Controls', () => {
 			}
 		});
 
-		const tempHpInput = screen.getByLabelText(/^temp hp$/i);
+		const tempHpInput = screen.getByLabelText(/^temp.*stamina$/i);
 		await fireEvent.input(tempHpInput, { target: { value: '10' } });
 
 		const setButton = screen.getByRole('button', { name: /set.*temp/i });
@@ -455,7 +455,7 @@ describe('HpTracker Component - Temp HP Controls', () => {
 			}
 		});
 
-		const tempHpInput = screen.getByLabelText(/^temp hp$/i);
+		const tempHpInput = screen.getByLabelText(/^temp.*stamina$/i);
 		await fireEvent.input(tempHpInput, { target: { value: '0' } });
 
 		const setButton = screen.getByRole('button', { name: /set.*temp/i });
@@ -493,7 +493,7 @@ describe('HpTracker Component - Temp HP Controls', () => {
 			}
 		});
 
-		const tempHpInput = screen.getByLabelText(/^temp hp$/i) as HTMLInputElement;
+		const tempHpInput = screen.getByLabelText(/^temp.*stamina$/i) as HTMLInputElement;
 		await fireEvent.input(tempHpInput, { target: { value: '10' } });
 
 		const setButton = screen.getByRole('button', { name: /set.*temp/i });
@@ -660,7 +660,7 @@ describe('HpTracker Component - Accessibility', () => {
 
 		expect(screen.getByLabelText(/^damage$/i)).toHaveAccessibleName();
 		expect(screen.getByLabelText(/^healing$/i)).toHaveAccessibleName();
-		expect(screen.getByLabelText(/^temp hp$/i)).toHaveAccessibleName();
+		expect(screen.getByLabelText(/^temp.*stamina$/i)).toHaveAccessibleName();
 	});
 
 	it('should announce HP changes to screen readers', () => {
@@ -821,7 +821,7 @@ describe('HpTracker Component - Optional Max HP (Issue #233)', () => {
 		// Should allow healing even at high HP
 		const healInput = screen.getByLabelText(/^healing$/i);
 		expect(healInput).toBeInTheDocument();
-		expect(screen.queryByText(/max.*hp/i)).not.toBeInTheDocument();
+		expect(screen.queryByText(/max.*stamina/i)).not.toBeInTheDocument();
 	});
 
 	it('should show healing controls when maxHp is undefined', () => {

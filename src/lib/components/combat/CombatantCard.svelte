@@ -78,7 +78,7 @@
 	class={`${getCardClasses()} p-4 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 transition-all duration-200`}
 	data-testid="combatant-card"
 	role="article"
-	aria-label={`${combatant.name}, ${isHero ? 'Hero' : 'Creature'}, ${combatant.hp} out of ${combatant.maxHp} hit points`}
+	aria-label={`${combatant.name}, ${isHero ? 'Hero' : 'Creature'}, ${combatant.hp} out of ${combatant.maxHp} stamina`}
 	aria-current={isCurrent ? 'true' : undefined}
 	tabindex={isClickable ? 0 : undefined}
 	onclick={handleClick}
@@ -139,7 +139,7 @@
 	<div
 		class="hp-section mb-3"
 		data-testid="hp-section"
-		aria-label={`${Math.max(0, combatant.hp)} out of ${combatant.maxHp} hit points`}
+		aria-label={`${Math.max(0, combatant.hp)} out of ${combatant.maxHp} stamina`}
 	>
 		<div class="flex items-center justify-between mb-1">
 			<div class="text-sm font-medium text-slate-700 dark:text-slate-300">
@@ -148,7 +148,7 @@
 			</div>
 			{#if combatant.tempHp > 0}
 				<div class="text-xs text-blue-600 dark:text-blue-400">
-					Temp: {combatant.tempHp}
+					Temp Stamina: {combatant.tempHp}
 				</div>
 			{/if}
 		</div>

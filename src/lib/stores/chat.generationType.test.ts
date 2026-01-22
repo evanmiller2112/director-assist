@@ -117,8 +117,8 @@ describe('Chat Store - Generation Type Extension', () => {
 		});
 
 		it('should set generationType to "encounter"', () => {
-			chatStore.setGenerationType('encounter');
-			expect(chatStore.generationType).toBe('encounter');
+			chatStore.setGenerationType('combat');
+			expect(chatStore.generationType).toBe('combat');
 		});
 
 		it('should set generationType to "item"', () => {
@@ -151,8 +151,8 @@ describe('Chat Store - Generation Type Extension', () => {
 			chatStore.setGenerationType('location');
 			expect(chatStore.generationType).toBe('location');
 
-			chatStore.setGenerationType('encounter');
-			expect(chatStore.generationType).toBe('encounter');
+			chatStore.setGenerationType('combat');
+			expect(chatStore.generationType).toBe('combat');
 		});
 
 		it('should not affect other state when changing generationType', () => {
@@ -229,7 +229,7 @@ describe('Chat Store - Generation Type Extension', () => {
 				'npc',
 				'location',
 				'plot_hook',
-				'encounter',
+				'combat',
 				'item',
 				'faction',
 				'session_prep'
@@ -295,12 +295,12 @@ describe('Chat Store - Generation Type Extension', () => {
 					generationType: GenerationType
 				) => {
 					onStream('Streaming...');
-					expect(generationType).toBe('encounter');
+					expect(generationType).toBe('combat');
 					return 'Response';
 				}
 			);
 
-			chatStore.setGenerationType('encounter');
+			chatStore.setGenerationType('combat');
 			await chatStore.sendMessage('Generate encounter');
 
 			expect(mockSendChatMessage).toHaveBeenCalled();
@@ -436,13 +436,13 @@ describe('Chat Store - Generation Type Extension', () => {
 		});
 
 		it('should preserve generationType when setting context entities', () => {
-			chatStore.setGenerationType('encounter');
+			chatStore.setGenerationType('combat');
 
 			chatStore.setContextEntities(['entity-1']);
 			chatStore.addContextEntity('entity-2');
 			chatStore.removeContextEntity('entity-1');
 
-			expect(chatStore.generationType).toBe('encounter');
+			expect(chatStore.generationType).toBe('combat');
 		});
 
 		it('should preserve generationType when toggling includeLinkedEntities', () => {
@@ -525,7 +525,7 @@ describe('Chat Store - Generation Type Extension', () => {
 				'npc',
 				'location',
 				'plot_hook',
-				'encounter',
+				'combat',
 				'item',
 				'faction',
 				'session_prep',
@@ -601,7 +601,7 @@ describe('Chat Store - Generation Type Extension', () => {
 				'npc',
 				'location',
 				'plot_hook',
-				'encounter',
+				'combat',
 				'item',
 				'faction',
 				'session_prep'
@@ -777,7 +777,7 @@ describe('Chat Store - Generation Type Extension', () => {
 				chatStore.setGenerationType('npc');
 				chatStore.setTypeFieldValue('threatLevel', 'elite');
 
-				chatStore.setGenerationType('encounter');
+				chatStore.setGenerationType('combat');
 				expect(chatStore.typeFieldValues).toEqual({});
 			});
 		});

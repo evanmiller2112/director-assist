@@ -12,7 +12,6 @@ export default {
 				location: { DEFAULT: '#f59e0b', dark: '#b45309' },
 				faction: { DEFAULT: '#a855f7', dark: '#7c3aed' },
 				item: { DEFAULT: '#f97316', dark: '#c2410c' },
-				encounter: { DEFAULT: '#ef4444', dark: '#b91c1c' },
 				session: { DEFAULT: '#06b6d4', dark: '#0891b2' },
 				scene: { DEFAULT: '#9333ea', dark: '#7e22ce' },
 				deity: { DEFAULT: '#eab308', dark: '#a16207' },

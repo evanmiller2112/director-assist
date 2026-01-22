@@ -109,7 +109,7 @@
 									value={index + 1}
 									onchange={(e) => handlePositionChange(combatant.id, e)}
 									onkeydown={(e) => handlePositionKeydown(combatant.id, index, e)}
-									class="w-8 h-6 text-center text-xs font-medium bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+									class="position-input w-8 h-6 text-center text-xs font-medium bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
 									aria-label="Position in initiative order"
 								/>
 								<button
@@ -148,5 +148,17 @@
 
 	.initiative-tracker.compact li {
 		@apply p-1;
+	}
+
+	/* Hide native number input spinners */
+	.position-input::-webkit-outer-spin-button,
+	.position-input::-webkit-inner-spin-button {
+		-webkit-appearance: none;
+		margin: 0;
+	}
+
+	.position-input {
+		-moz-appearance: textfield;
+		appearance: textfield;
 	}
 </style>

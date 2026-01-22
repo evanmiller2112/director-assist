@@ -94,6 +94,14 @@ function applyDamageToCombatant(combatant: Combatant, damage: number): Combatant
 }
 
 /**
+ * Sort combatants by turnOrder ascending.
+ * Used to maintain consistent ordering after turnOrder changes.
+ */
+function sortByTurnOrder(combatants: Combatant[]): Combatant[] {
+	return [...combatants].sort((a, b) => a.turnOrder - b.turnOrder);
+}
+
+/**
  * Decrement condition durations at end of round.
  * Removes expired conditions (duration reaches 0).
  * Permanent conditions (duration -1) are not decremented.
@@ -389,6 +397,7 @@ export const combatRepository = {
 			entityId: input.entityId,
 			initiative: 0,
 			initiativeRoll: [0, 0],
+			turnOrder: combat.combatants.length + 1,
 			hp: input.hp ?? input.maxHp!,
 			maxHp: input.maxHp,
 			tempHp: 0,
@@ -437,6 +446,7 @@ export const combatRepository = {
 			entityId: input.entityId,
 			initiative: 0,
 			initiativeRoll: [0, 0],
+			turnOrder: combat.combatants.length + 1,
 			hp: input.hp ?? input.maxHp!,
 			maxHp: input.maxHp,
 			tempHp: 0,
@@ -522,6 +532,7 @@ export const combatRepository = {
 			name: finalName,
 			initiative: 0,
 			initiativeRoll: [0, 0] as [number, number],
+			turnOrder: combat.combatants.length + 1,
 			hp: input.hp,
 			maxHp: undefined as number | undefined,
 			tempHp: 0,
@@ -654,6 +665,60 @@ export const combatRepository = {
 	},
 
 	/**
+	 * Update a combatant's turn order and re-sort the array.
+	 * Adjusts currentTurn to follow the current combatant after re-sort.
+	 */
+	async updateTurnOrder(
+		combatId: string,
+		combatantId: string,
+		newTurnOrder: number
+	): Promise<CombatSession> {
+		await ensureDbReady();
+
+		const combat = await db.combatSessions.get(combatId);
+		if (!combat) {
+			throw new Error(`Combat session ${combatId} not found`);
+		}
+
+		const combatantIndex = combat.combatants.findIndex((c) => c.id === combatantId);
+		if (combatantIndex === -1) {
+			throw new Error(`Combatant ${combatantId} not found`);
+		}
+
+		// Track the current turn holder's ID before re-sorting
+		const currentTurnHolderId = combat.combatants[combat.currentTurn]?.id;
+
+		// Update the combatant's turnOrder
+		const updatedCombatants = [...combat.combatants];
+		updatedCombatants[combatantIndex] = {
+			...updatedCombatants[combatantIndex],
+			turnOrder: newTurnOrder
+		};
+
+		// Re-sort by turnOrder
+		const sortedCombatants = sortByTurnOrder(updatedCombatants);
+
+		// Find the new index of the current turn holder
+		let newCurrentTurn = combat.currentTurn;
+		if (currentTurnHolderId) {
+			const newIndex = sortedCombatants.findIndex((c) => c.id === currentTurnHolderId);
+			if (newIndex !== -1) {
+				newCurrentTurn = newIndex;
+			}
+		}
+
+		const updated: CombatSession = {
+			...combat,
+			combatants: sortedCombatants,
+			currentTurn: newCurrentTurn,
+			updatedAt: new Date()
+		};
+
+		await db.combatSessions.put(updated);
+		return updated;
+	},
+
+	/**
 	 * Remove combatant from combat.
 	 */
 	async removeCombatant(combatId: string, combatantId: string): Promise<CombatSession> {
@@ -739,6 +804,7 @@ export const combatRepository = {
 
 	/**
 	 * Roll initiative for all combatants and sort by initiative descending.
+	 * Assigns turnOrder based on sorted position (1, 2, 3, etc.).
 	 */
 	async rollInitiativeForAll(combatId: string): Promise<CombatSession> {
 		await ensureDbReady();
@@ -761,8 +827,14 @@ export const combatRepository = {
 		// Sort by initiative descending
 		updatedCombatants.sort((a, b) => b.initiative - a.initiative);
 
+		// Assign turnOrder based on sorted position (1-indexed)
+		const combatantsWithTurnOrder = updatedCombatants.map((combatant, index) => ({
+			...combatant,
+			turnOrder: index + 1
+		}));
+
 		// Create log entries for all rolls
-		const logEntries = updatedCombatants.map((combatant) =>
+		const logEntries = combatantsWithTurnOrder.map((combatant) =>
 			createLogEntry(
 				combat,
 				`${combatant.name} rolled initiative: ${combatant.initiative} (${combatant.initiativeRoll[0]} + ${combatant.initiativeRoll[1]})`,
@@ -773,7 +845,7 @@ export const combatRepository = {
 
 		const updated: CombatSession = {
 			...combat,
-			combatants: updatedCombatants,
+			combatants: combatantsWithTurnOrder,
 			log: [...combat.log, ...logEntries],
 			updatedAt: new Date()
 		};

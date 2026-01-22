@@ -148,9 +148,12 @@ export const entityRepository = {
 	async create(newEntity: NewEntity): Promise<BaseEntity> {
 		await ensureDbReady();
 
+		// Serialize to strip any reactive proxies (Issue #256)
+		const plainEntity = JSON.parse(JSON.stringify(newEntity));
+
 		const now = new Date();
 		const entity: BaseEntity = {
-			...newEntity,
+			...plainEntity,
 			id: nanoid(),
 			createdAt: now,
 			updatedAt: now
@@ -166,6 +169,9 @@ export const entityRepository = {
 		pendingLinks: import('$lib/types').PendingRelationship[]
 	): Promise<BaseEntity> {
 		await ensureDbReady();
+
+		// Serialize to strip any reactive proxies (Issue #256)
+		const plainEntity = JSON.parse(JSON.stringify(newEntity));
 
 		return await db.transaction('rw', db.entities, async () => {
 			const now = new Date();
@@ -214,7 +220,7 @@ export const entityRepository = {
 
 			// Create the entity with its links
 			const entity: BaseEntity = {
-				...newEntity,
+				...plainEntity,
 				id: entityId,
 				links,
 				createdAt: now,

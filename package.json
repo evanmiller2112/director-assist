@@ -50,7 +50,7 @@
     "carta-md": "^4.11.1",
     "date-fns": "^4.1.0",
     "dexie": "^4.0.10",
-    "isomorphic-dompurify": "^2.35.0",
+    "dompurify": "^3.3.1",
     "lucide-svelte": "^0.469.0",
     "marked": "^17.0.1",
     "nanoid": "^5.0.9",

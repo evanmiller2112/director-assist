@@ -490,6 +490,7 @@ describe('sidebarOrderService', () => {
 					'item',
 					'encounter',
 					'session',
+					'scene',
 					'deity',
 					'timeline_event',
 					'world_rule',
@@ -499,6 +500,11 @@ describe('sidebarOrderService', () => {
 				expectedTypes.forEach((type) => {
 					expect(order).toContain(type);
 				});
+			});
+
+			it('should include scene type', () => {
+				const order = getDefaultOrder();
+				expect(order).toContain('scene');
 			});
 
 			it('should return same order on multiple calls', () => {
@@ -549,9 +555,9 @@ describe('sidebarOrderService', () => {
 		});
 
 		describe('Expected Count', () => {
-			it('should return exactly 12 built-in types', () => {
+			it('should return exactly 13 built-in types', () => {
 				const order = getDefaultOrder();
-				expect(order.length).toBe(12);
+				expect(order.length).toBe(13);
 			});
 		});
 

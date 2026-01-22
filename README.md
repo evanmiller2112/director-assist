@@ -6,7 +6,7 @@ Director Assist features a **system-aware architecture** with first-class suppor
 
 ## Features
 
-- **Track Everything**: Characters, NPCs, locations, factions, items, encounters, sessions, deities, timeline events, world rules, and player profiles
+- **Track Everything**: Characters, NPCs, locations, factions, items, encounters, sessions, scenes, deities, timeline events, world rules, and player profiles
 - **Connect the Dots**: Create relationships between entities (knows, allied with, member of, located at)
 - **Visualize Connections**: Relationship Matrix View shows a 2D grid of relationships between entity types with filtering, sorting, and color-coded cell density
 - **Find Anything Fast**: Global search with Cmd/Ctrl+K shortcut, results grouped by type, keyboard navigation
@@ -157,7 +157,7 @@ When generating fields for existing entities, Director Assist automatically incl
 
 ### Entity Types
 
-Director Assist includes 11 built-in entity types:
+Director Assist includes 12 built-in entity types:
 
 - **Characters** - Player characters with background, goals, and secrets
 - **NPCs** - Non-player characters with personality and motivations
@@ -166,6 +166,7 @@ Director Assist includes 11 built-in entity types:
 - **Items** - Weapons, artifacts, treasures with properties and lore
 - **Encounters** - Combat, social, or exploration challenges
 - **Sessions** - Session notes and preparation
+- **Scenes** - Game moments like "party enters town" with mood, NPCs present, and what happened
 - **Deities** - Gods with domains and worshippers
 - **Timeline Events** - Historical events with dates and consequences
 - **World Rules** - How magic, society, or nature works in your world

@@ -90,7 +90,7 @@ Congratulations! You've created your first entity. You'll see it listed on the N
 
 ## Creating Entities
 
-Director Assist includes 11 built-in entity types to help you organize your campaign. You can also create custom entity types with your own fields to track anything specific to your campaign.
+Director Assist includes 12 built-in entity types to help you organize your campaign. You can also create custom entity types with your own fields to track anything specific to your campaign.
 
 ### Entity Types
 
@@ -114,6 +114,9 @@ Plan combat, social, or exploration encounters. Include objective, difficulty, t
 
 **Sessions**
 Keep session notes and prep for upcoming sessions. Track what happened, what's next, and any loose threads. For Draw Steel campaigns, track XP awarded, glory distribution, power roll outcomes, and negotiation results.
+
+**Scenes**
+Track specific moments in your game like "party entering town" or "entering the tavern". Record the scene's status (planned, in progress, or completed), link to the location and NPCs present, set the mood, and capture what happened. Use scene setting text for read-aloud descriptions and summaries to keep track of setup and outcomes.
 
 **Deities**
 Gods, goddesses, or other divine entities. Note their domains, worshippers, symbols, and influence on the world.
@@ -205,7 +208,7 @@ Examples of hidden fields:
 
 ## Custom Entity Types
 
-Beyond the 11 built-in entity types, you can create custom entity types tailored to your campaign's unique needs. Define your own fields, choose field types, and even create computed fields that calculate values automatically.
+Beyond the 12 built-in entity types, you can create custom entity types tailored to your campaign's unique needs. Define your own fields, choose field types, and even create computed fields that calculate values automatically.
 
 ### Why Use Custom Entity Types?
 

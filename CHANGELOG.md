@@ -7,11 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-01-22
+
 ### Added
 
-### Changed
+**Scene Entity Type**
+- New "Scene" entity type for tracking moments in the game like "party entering town" or "entering the tavern"
+- Scene status tracking: planned, in_progress, completed
+- Scene fields:
+  - Location: link to location entity where scene takes place
+  - NPCs Present: links to NPC entities involved in the scene
+  - Scene Setting Text: rich text field for read-aloud descriptions (AI-generatable)
+  - What Happened: rich text field for recording events during the scene
+  - Pre-Summary: AI summary of scene setup and preparation
+  - Post-Summary: AI summary of what occurred during the scene
+  - Mood: select from tense, relaxed, mysterious, celebratory, somber, chaotic, peaceful, or ominous
+  - Session: link to session entity for organizing scenes by game session
+- Scene generation service supports AI-powered content creation for scene fields
+- Scene styling integrated with consistent color scheme and card design
 
 ### Fixed
+
+**Entity-refs Field Display Bug**
+- Fixed `entity-refs` fields (like "NPCs Present") displaying raw entity IDs instead of resolved entity names on view pages
+- Control flow in entity view page now correctly checks for entity-refs type before generic array handling
 
 **In-Memory State Refresh for Static Hosting (Issue #252)**
 - Replaced all `window.location.reload()` calls with in-memory state refresh

@@ -22,6 +22,7 @@ export function getDefaultOrder(): string[] {
 		'item',
 		'encounter',
 		'session',
+		'scene',
 		'deity',
 		'timeline_event',
 		'world_rule',

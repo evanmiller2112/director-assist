@@ -783,9 +783,9 @@ describe('entityTypes - Ordering Functions', () => {
 				});
 			});
 
-			it('should return exactly 12 built-in types', () => {
+			it('should return exactly 13 built-in types', () => {
 				const order = getDefaultEntityTypeOrder();
-				expect(order.length).toBe(12);
+				expect(order.length).toBe(13);
 			});
 		});
 
@@ -818,6 +818,7 @@ describe('entityTypes - Ordering Functions', () => {
 					'item',
 					'encounter',
 					'session',
+					'scene',
 					'deity',
 					'timeline_event',
 					'world_rule',
@@ -827,6 +828,11 @@ describe('entityTypes - Ordering Functions', () => {
 				expectedTypes.forEach((type) => {
 					expect(order).toContain(type);
 				});
+			});
+
+			it('should include scene type', () => {
+				const order = getDefaultEntityTypeOrder();
+				expect(order).toContain('scene');
 			});
 
 			it('should include character type', () => {
@@ -862,6 +868,11 @@ describe('entityTypes - Ordering Functions', () => {
 			it('should include session type', () => {
 				const order = getDefaultEntityTypeOrder();
 				expect(order).toContain('session');
+			});
+
+			it('should include scene type', () => {
+				const order = getDefaultEntityTypeOrder();
+				expect(order).toContain('scene');
 			});
 
 			it('should include deity type', () => {
@@ -951,13 +962,14 @@ describe('entityTypes - Ordering Functions', () => {
 			it('should include all built-in types when no custom order', () => {
 				const ordered = getOrderedEntityTypes([], [], null);
 
-				expect(ordered.length).toBe(12);
+				expect(ordered.length).toBe(13);
 
 				const types = ordered.map((t) => t.type);
 				expect(types).toContain('campaign');
 				expect(types).toContain('character');
 				expect(types).toContain('npc');
 				expect(types).toContain('location');
+				expect(types).toContain('scene');
 			});
 
 			it('should apply overrides even when using default order', () => {
@@ -1018,7 +1030,7 @@ describe('entityTypes - Ordering Functions', () => {
 
 				// First type should be campaign, others in default order
 				expect(ordered[0].type).toBe('campaign');
-				expect(ordered.length).toBe(12); // All types still included
+				expect(ordered.length).toBe(13); // All types still included
 			});
 		});
 
@@ -1033,7 +1045,7 @@ describe('entityTypes - Ordering Functions', () => {
 				expect(ordered[2].type).toBe('npc');
 
 				// Remaining types should be appended
-				expect(ordered.length).toBe(12);
+				expect(ordered.length).toBe(13);
 
 				const typesInOrder = ordered.map((t) => t.type);
 				expect(typesInOrder.slice(0, 3)).toEqual(['campaign', 'character', 'npc']);
@@ -1048,7 +1060,7 @@ describe('entityTypes - Ordering Functions', () => {
 				const customOrder = ['campaign'];
 				const ordered = getOrderedEntityTypes([], [], customOrder);
 
-				expect(ordered.length).toBe(12);
+				expect(ordered.length).toBe(13);
 
 				const types = ordered.map((t) => t.type);
 				BUILT_IN_ENTITY_TYPES.forEach((builtInType) => {
@@ -1060,7 +1072,7 @@ describe('entityTypes - Ordering Functions', () => {
 				const customOrder: string[] = [];
 				const ordered = getOrderedEntityTypes([], [], customOrder);
 
-				expect(ordered.length).toBe(12);
+				expect(ordered.length).toBe(13);
 				expect(ordered[0].type).toBe('campaign');
 			});
 		});
@@ -1103,7 +1115,7 @@ describe('entityTypes - Ordering Functions', () => {
 				const ordered = getOrderedEntityTypes([], [], customOrder);
 
 				// Should return all built-in types in default order
-				expect(ordered.length).toBe(12);
+				expect(ordered.length).toBe(13);
 				expect(ordered[0].type).toBe('campaign');
 			});
 		});
@@ -1186,7 +1198,7 @@ describe('entityTypes - Ordering Functions', () => {
 
 				const types = ordered.map((t) => t.type);
 				expect(types).not.toContain('custom_creature');
-				expect(types.length).toBe(12); // Only built-in types
+				expect(types.length).toBe(13); // Only built-in types
 			});
 		});
 
@@ -1265,7 +1277,7 @@ describe('entityTypes - Ordering Functions', () => {
 				const longOrder = [...BUILT_IN_ENTITY_TYPES.map((t) => t.type)].reverse();
 				const ordered = getOrderedEntityTypes([], [], longOrder);
 
-				expect(ordered.length).toBe(12);
+				expect(ordered.length).toBe(13);
 			});
 
 			it('should handle custom order with duplicates', () => {

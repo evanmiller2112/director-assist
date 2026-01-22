@@ -426,12 +426,12 @@ interface BaseEntity {
 
 **Key Concepts:**
 - **Dynamic Fields**: Each entity type defines its own fields via `EntityTypeDefinition`
-- **Flexible**: Same base structure for all 11 built-in types plus custom types
+- **Flexible**: Same base structure for all 12 built-in types plus custom types
 - **Linked**: Entities reference each other through `EntityLink` objects
 
 #### Custom Entity Types (Issue #25)
 
-Director Assist supports user-defined custom entity types with full field customization. This feature allows users to create entity types tailored to their campaign needs, beyond the 11 built-in types.
+Director Assist supports user-defined custom entity types with full field customization. This feature allows users to create entity types tailored to their campaign needs, beyond the 12 built-in types.
 
 **Core Types:**
 
@@ -1226,7 +1226,7 @@ The Matrix View displays entities as rows and columns in a grid where cells repr
 1. **Flexible Entity Type Selection**
    - Choose any entity type for rows (characters, NPCs, locations, factions, etc.)
    - Choose any entity type for columns (can be same or different type)
-   - Support for all 11 built-in entity types
+   - Support for all 12 built-in entity types
    - Dynamic updates when entity types change
 
 2. **Visual Cell Indicators**

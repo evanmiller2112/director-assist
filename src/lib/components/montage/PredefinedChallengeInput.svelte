@@ -43,8 +43,8 @@
 			})
 		};
 
-		// Convert existing challenges to plain objects to avoid $state proxy issues with IndexedDB
-		const plainChallenges = challenges.map(c => ({ ...c }));
+		// Deep clone existing challenges to convert all $state proxies (including nested arrays) to plain objects
+		const plainChallenges = JSON.parse(JSON.stringify(challenges));
 		onUpdate([...plainChallenges, newChallenge]);
 
 		// Reset form
@@ -55,8 +55,9 @@
 	}
 
 	function handleRemove(index: number) {
-		// Convert to plain objects to avoid $state proxy issues with IndexedDB
-		const updated = challenges.filter((_, i) => i !== index).map(c => ({ ...c }));
+		// Deep clone to convert all $state proxies (including nested arrays) to plain objects
+		const filtered = challenges.filter((_, i) => i !== index);
+		const updated = JSON.parse(JSON.stringify(filtered));
 		onUpdate(updated);
 	}
 </script>

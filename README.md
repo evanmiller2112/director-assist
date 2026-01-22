@@ -17,6 +17,7 @@ Director Assist features a **system-aware architecture** with first-class suppor
 - **AI-Powered Content Generation**: Generate content using Claude AI with campaign context awareness
 - **Conversation Management**: Organize AI chats into separate conversations—create, switch, rename, and delete as needed
 - **Forge Steel Integration**: Import character data directly from Forge Steel character builder
+- **Montage Challenge Tracker**: Track Draw Steel montage challenges with player count-based limits, success/failure tracking across two rounds, difficulty-based outcomes (Easy, Moderate, Hard), and automatic victory point awards
 - **Responsive Loading States**: Polished loading feedback with skeleton screens, spinners, and loading buttons
 
 ## Quick Start

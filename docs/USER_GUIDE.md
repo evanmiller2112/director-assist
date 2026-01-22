@@ -11,12 +11,13 @@ Welcome to Director Assist! This guide will help you get started managing your D
 5. [Connecting Entities](#connecting-entities)
 6. [Using Search](#using-search)
 7. [Using Commands](#using-commands)
-8. [Managing Campaigns](#managing-campaigns)
-9. [Settings](#settings)
-10. [AI Features](#ai-features)
-11. [Backup & Restore](#backup--restore)
-12. [Tips & Best Practices](#tips--best-practices)
-13. [Troubleshooting](#troubleshooting)
+8. [Draw Steel Features](#draw-steel-features)
+9. [Managing Campaigns](#managing-campaigns)
+10. [Settings](#settings)
+11. [AI Features](#ai-features)
+12. [Backup & Restore](#backup--restore)
+13. [Tips & Best Practices](#tips--best-practices)
+14. [Troubleshooting](#troubleshooting)
 
 ## What is Director Assist?
 
@@ -1354,6 +1355,172 @@ Opens the settings page.
 - Only relevant commands show (e.g., `/relate` only appears when viewing an entity)
 - You can use arrow keys to select commands before pressing Enter
 - Commands save time compared to clicking through menus
+
+## Draw Steel Features
+
+Director Assist includes specialized tools for Draw Steel RPG campaigns. These features help Directors track game-specific mechanics and maintain the flow of play.
+
+### Montage Challenge Tracker
+
+The Montage Challenge Tracker helps you manage Draw Steel montage challenges, where heroes complete a series of tasks to achieve a larger objective.
+
+**What is a Montage?**
+
+In Draw Steel, montages are narrative challenges where each hero attempts one task per round across two rounds. Success is determined by accumulating enough successes before hitting the failure limit, with difficulty and player count affecting the thresholds.
+
+**Access the Tracker:**
+
+Navigate to `/montage` or click "Montage" in the sidebar.
+
+**Active Montages Badge:**
+
+When you have active montages, a badge appears next to "Montage" in the sidebar showing the count of in-progress montage sessions.
+
+### Creating a Montage Session
+
+1. Click "Montage" in the sidebar
+2. Click "New Montage"
+3. Configure the montage:
+   - **Name**: Descriptive title (e.g., "Escape from the Collapsing Temple")
+   - **Description**: What heroes are trying to accomplish (optional)
+   - **Difficulty**: Easy, Moderate, or Hard
+   - **Player Count**: Number of heroes participating
+
+**Difficulty Effects:**
+
+Each difficulty level has different success and failure thresholds:
+
+**Easy:**
+- Success Limit: Equal to player count
+- Failure Limit: Equal to player count
+- Victory Points: 1 (Total Success), 0 (Partial Success)
+
+**Moderate:**
+- Success Limit: Player count + 1
+- Failure Limit: Maximum of 2 or (player count - 1)
+- Victory Points: 1 (Total Success), 0 (Partial Success)
+
+**Hard:**
+- Success Limit: Player count + 2
+- Failure Limit: Maximum of 2 or (player count - 2)
+- Victory Points: 2 (Total Success), 1 (Partial Success)
+
+### Running a Montage
+
+Once you create a montage, the tracker displays:
+
+**Setup Phase:**
+- Montage details (name, description, difficulty)
+- Success and failure limits based on your settings
+- Player count and current round tracker
+- Challenge cards for Round 1 and Round 2
+
+**Recording Results:**
+
+For each hero's challenge:
+1. Click the challenge card for the current round
+2. Select the result:
+   - **Success**: Challenge succeeded
+   - **Failure**: Challenge failed
+   - **Skip**: Challenge not attempted (doesn't count toward either limit)
+3. Optionally add:
+   - Challenge description
+   - Player/hero name
+   - Notes about what happened
+
+**Tracking Progress:**
+
+The tracker shows:
+- Current success count vs. success limit
+- Current failure count vs. failure limit
+- Visual progress bars for both success and failure
+- Current round (1 or 2)
+- Which challenges have been completed
+
+**Auto-Completion:**
+
+The montage automatically completes when:
+- Success limit is reached (Total Success)
+- Failure limit is reached and outcome is determined (Partial Success or Total Failure)
+
+### Montage Outcomes
+
+Outcomes are calculated automatically based on Draw Steel rules:
+
+**Total Success:**
+- Successes reach the success limit before failures reach the failure limit
+- Heroes achieve their objective completely
+- Awards full victory points for the difficulty level
+
+**Partial Success:**
+- Failures reach the failure limit
+- Successes are at least 2 more than failures (successes >= failures + 2)
+- Heroes achieve their objective but with complications
+- Awards reduced victory points (0 for Easy/Moderate, 1 for Hard)
+
+**Total Failure:**
+- Failures reach the failure limit
+- Successes are less than failures + 2
+- Heroes fail to achieve their objective
+- Awards no victory points
+
+### Managing Montages
+
+**View All Montages:**
+
+The main montage page shows:
+- Active montages at the top
+- Completed montages below
+- Quick status indicators
+- Creation timestamps
+
+**Edit a Montage:**
+
+You can edit montage details (name, description, difficulty, player count) before it's completed. Changing difficulty or player count recalculates limits and may affect the outcome.
+
+**Delete a Montage:**
+
+Remove a montage session from the tracker. This cannot be undone.
+
+**Start a New Round:**
+
+After completing all challenges in Round 1, the tracker advances to Round 2 automatically if the montage hasn't reached an outcome.
+
+### Montage Best Practices
+
+**Before the Session:**
+- Create the montage session with appropriate difficulty
+- Share the success/failure limits with your players
+- Explain what they're trying to accomplish
+
+**During the Session:**
+- Have each player describe their hero's approach
+- Roll dice and determine success or failure
+- Record results immediately in the tracker
+- Add notes about dramatic moments or complications
+
+**After Resolution:**
+- Award victory points as shown in the outcome
+- Narrate the results based on the outcome type
+- Use notes from challenge cards to enrich the narrative
+
+### Tips for Directors
+
+**Choosing Difficulty:**
+- Easy: Lower-stakes objectives, training scenarios
+- Moderate: Standard montages, balanced risk
+- Hard: High-stakes moments, climactic scenes
+
+**Using the Tracker:**
+- Keep it visible during play for transparency
+- Let players see the progress bars
+- Update results immediately after each hero's turn
+- Use the description fields to capture memorable moments
+
+**Handling Edge Cases:**
+- Use "Skip" if a hero can't attempt their challenge
+- Skipped challenges don't count toward success or failure
+- Edit montage details if you realize you set the wrong difficulty
 
 ## Managing Campaigns
 

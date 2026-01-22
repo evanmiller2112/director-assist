@@ -6,7 +6,8 @@ import type {
 	Conversation,
 	AISuggestion,
 	RelationshipSummaryCache,
-	CombatSession
+	CombatSession,
+	MontageSession
 } from '$lib/types';
 import { migrateCampaignToEntity } from './migrations/migrateCampaignToEntity';
 import { migrateExistingChatMessages } from './migrations/migrateExistingChatMessages';
@@ -26,6 +27,7 @@ class DMAssistantDB extends Dexie {
 	appConfig!: Table<AppConfig>;
 	relationshipSummaryCache!: Table<RelationshipSummaryCache>;
 	combatSessions!: Table<CombatSession>;
+	montageSessions!: Table<MontageSession>;
 
 	constructor() {
 		super('dm-assistant');
@@ -92,6 +94,19 @@ class DMAssistantDB extends Dexie {
 			appConfig: 'key',
 			relationshipSummaryCache: 'id, sourceId, targetId, relationship, generatedAt',
 			combatSessions: 'id, status, createdAt, updatedAt'
+		});
+
+		// Version 7: Add montageSessions table for Draw Steel montage tracking
+		this.version(7).stores({
+			entities: 'id, type, name, *tags, createdAt, updatedAt',
+			campaign: 'id',
+			conversations: 'id, name, updatedAt',
+			chatMessages: 'id, conversationId, timestamp',
+			suggestions: 'id, type, status, createdAt, expiresAt, *affectedEntityIds',
+			appConfig: 'key',
+			relationshipSummaryCache: 'id, sourceId, targetId, relationship, generatedAt',
+			combatSessions: 'id, status, createdAt, updatedAt',
+			montageSessions: 'id, status, createdAt, updatedAt'
 		});
 	}
 }

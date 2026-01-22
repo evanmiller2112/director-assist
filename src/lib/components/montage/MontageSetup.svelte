@@ -40,12 +40,17 @@
 		isSubmitting = true;
 
 		try {
+			// Convert $state proxy to plain objects for IndexedDB
+			const plainChallenges = predefinedChallenges.length > 0
+				? predefinedChallenges.map(c => ({ ...c }))
+				: undefined;
+
 			await onSubmit({
 				name: name.trim(),
 				description: description.trim() || undefined,
 				difficulty,
 				playerCount,
-				...(predefinedChallenges.length > 0 && { predefinedChallenges })
+				...(plainChallenges && { predefinedChallenges: plainChallenges })
 			});
 		} catch (err: any) {
 			error = err.message;

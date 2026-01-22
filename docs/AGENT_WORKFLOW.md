@@ -148,6 +148,19 @@ Once tests are passing, the code can be improved and cleaned up while maintainin
 - Document expected behavior in test descriptions
 - Hand off failing tests to senior-web-architect
 
+**Critical: Svelte 5 + IndexedDB Testing:**
+When writing tests for code that passes data to IndexedDB (via Dexie), include tests that verify `$state` proxy objects are converted to plain objects before database operations. Svelte 5's `$state` creates Proxy objects that cannot be cloned by IndexedDB's structured clone algorithm, causing `DataCloneError: Proxy object could not be cloned` errors.
+
+Test pattern:
+```typescript
+it('should handle Svelte 5 $state proxy objects', async () => {
+  // Ensure data passed to repository is plain objects, not proxies
+  const input = { items: [{ name: 'test' }] }; // Simulates $state proxy
+  await repository.create(input);
+  // Should not throw DataCloneError
+});
+```
+
 **TDD Approach:**
 In the TDD workflow, this agent writes tests FIRST, before any code exists. The tests should fail (RED state) because the functionality hasn't been implemented yet. This is the correct and expected behavior.
 
@@ -189,6 +202,26 @@ In the TDD workflow, this agent writes tests FIRST, before any code exists. The 
 - Run tests during development to track progress
 - Hand off working code with passing tests
 
+**Critical: Svelte 5 + IndexedDB Implementation:**
+When passing data from Svelte components to IndexedDB (via Dexie repositories), ALWAYS convert `$state` proxy objects to plain objects first. Svelte 5's `$state` creates Proxy objects that cannot be cloned by IndexedDB.
+
+**Pattern to follow:**
+```typescript
+// In Svelte component before calling repository:
+const plainData = myStateArray.map(item => ({ ...item }));
+await repository.create({ items: plainData });
+
+// Or for single objects:
+const plainObject = { ...myStateObject };
+await repository.update(id, plainObject);
+```
+
+**Never do this:**
+```typescript
+// BAD - passes $state proxy directly to IndexedDB
+await repository.create({ items: myStateArray }); // DataCloneError!
+```
+
 **TDD Approach:**
 In the TDD workflow, this agent writes the minimum code necessary to make the failing tests pass. The goal is to transition from RED (failing tests) to GREEN (passing tests) efficiently and purposefully.
 
@@ -224,6 +257,14 @@ In the TDD workflow, this agent writes the minimum code necessary to make the fa
 - Ensure user experience is intuitive
 - Confirm tests remain passing during validation
 - Hand off to code reviewer or documentation specialist
+
+**Critical: Svelte 5 + IndexedDB Validation:**
+When validating features that save data to IndexedDB, specifically test the data flow from Svelte components to the database. Watch for `DataCloneError: Proxy object could not be cloned` errors which indicate `$state` proxy objects are being passed directly to IndexedDB instead of being converted to plain objects first.
+
+**QA Checklist Item:**
+- [ ] Test creating/updating data from UI forms - verify no DataCloneError in console
+- [ ] Verify arrays from `$state` are converted with `.map(item => ({ ...item }))`
+- [ ] Verify objects from `$state` are spread with `{ ...object }` before database calls
 
 **TDD Approach:**
 In the TDD workflow, QA validation occurs after implementation is complete and tests are passing (GREEN state). This agent verifies that the code not only passes tests but also meets all acceptance criteria and handles edge cases appropriately.
@@ -852,6 +893,37 @@ User should explicitly confirm: "The fix works correctly, proceed to close the i
 ---
 
 ## Troubleshooting
+
+### Problem: DataCloneError with Svelte 5 $state and IndexedDB
+
+**Symptoms:**
+- `DataCloneError: Proxy object could not be cloned` in browser console
+- Data fails to save to IndexedDB
+- Error occurs when submitting forms or saving data from UI
+
+**Cause:**
+Svelte 5's `$state` runes create Proxy objects for reactivity. IndexedDB uses the structured clone algorithm which cannot clone Proxy objects.
+
+**Solution:**
+Convert `$state` proxy objects to plain objects before passing to IndexedDB:
+
+```typescript
+// For arrays:
+const plainArray = myStateArray.map(item => ({ ...item }));
+
+// For objects:
+const plainObject = { ...myStateObject };
+
+// For nested structures:
+const plainData = JSON.parse(JSON.stringify(myStateData));
+```
+
+**Prevention:**
+1. unit-test-expert: Write tests that verify data can be saved to IndexedDB
+2. senior-web-architect: Always spread/map `$state` data before database calls
+3. qa-expert: Test form submissions and verify no DataCloneError in console
+
+---
 
 ### Problem: Agent Doesn't Have Enough Context
 

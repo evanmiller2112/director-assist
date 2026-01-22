@@ -72,8 +72,10 @@
 
 	async function handleUpdatePredefinedChallenges(challenges: (PredefinedChallenge | Omit<PredefinedChallenge, 'id'>)[]) {
 		if (!montage) return;
+		// Convert $state proxy to plain objects for IndexedDB
+		const plainChallenges = challenges.map(c => ({ ...c }));
 		await montageStore.updateMontage(montage.id, {
-			predefinedChallenges: challenges
+			predefinedChallenges: plainChallenges
 		});
 	}
 </script>

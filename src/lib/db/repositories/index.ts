@@ -5,6 +5,7 @@ export { appConfigRepository, APP_CONFIG_KEYS } from './appConfigRepository';
 export { relationshipSummaryCacheRepository } from './relationshipSummaryCacheRepository';
 export { suggestionRepository } from './suggestionRepository';
 export { combatRepository } from './combatRepository';
+export { montageRepository } from './montageRepository';
 
 // Re-export types for graph visualization
 export type {

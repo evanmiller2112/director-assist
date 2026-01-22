@@ -1,8 +1,8 @@
 <script lang="ts">
-	import { Plus, Home, ChevronUp, ChevronDown, Pencil, Swords } from 'lucide-svelte';
+	import { Plus, Home, ChevronUp, ChevronDown, Pencil, Swords, Theater } from 'lucide-svelte';
 	import { page } from '$app/stores';
 	import { getOrderedEntityTypes } from '$lib/config/entityTypes';
-	import { entitiesStore, campaignStore, combatStore } from '$lib/stores';
+	import { entitiesStore, campaignStore, combatStore, montageStore } from '$lib/stores';
 	import { getIconComponent } from '$lib/utils/icons';
 	import QuickAddModal from './QuickAddModal.svelte';
 	import {
@@ -20,6 +20,11 @@
 	// Get active combats count
 	const activeCombatsCount = $derived(
 		combatStore.getAll().filter((c) => c.status === 'active').length
+	);
+
+	// Get active montages count
+	const activeMontagesCount = $derived(
+		montageStore.montages.filter((m) => m.status === 'active').length
 	);
 
 	// Initialize ordered types on mount
@@ -122,6 +127,29 @@
 					aria-live="polite"
 				>
 					{activeCombatsCount}
+				</span>
+			{/if}
+		</a>
+
+		<!-- Montage -->
+		<a
+			href="/montage"
+			class="flex items-center gap-3 px-3 py-2 rounded-lg mb-2 transition-colors
+				{isActive('/montage')
+				? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
+				: 'hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300'}"
+			aria-current={isActive('/montage') ? 'page' : undefined}
+		>
+			<Theater class="w-5 h-5" data-icon="theater" />
+			<span class="flex-1 font-medium">Montage</span>
+			{#if activeMontagesCount > 0}
+				<span
+					class="text-xs bg-purple-500 dark:bg-purple-600 text-white px-2 py-0.5 rounded-full"
+					data-testid="active-montage-badge"
+					aria-label="{activeMontagesCount} active montage{activeMontagesCount === 1 ? '' : 's'}"
+					aria-live="polite"
+				>
+					{activeMontagesCount}
 				</span>
 			{/if}
 		</a>

@@ -5,5 +5,6 @@ export * from './ai';
 export * from './cache';
 export * from './systems';
 export * from './combat';
+export * from './montage';
 export * from './playerExport';
 export * from './entityTypeExport';

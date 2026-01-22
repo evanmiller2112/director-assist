@@ -94,6 +94,13 @@ src/
 │   │   │   ├── ConditionManager.svelte       # Condition management
 │   │   │   ├── ConditionBadge.svelte         # Condition display
 │   │   │   └── index.ts                      # Barrel exports
+│   │   ├── montage/         # Montage challenge tracking (Draw Steel)
+│   │   │   ├── MontageSetup.svelte           # Montage creation/configuration
+│   │   │   ├── MontageProgress.svelte        # Progress bars and counters
+│   │   │   ├── ChallengeCard.svelte          # Individual challenge card
+│   │   │   ├── MontageControls.svelte        # Round controls and actions
+│   │   │   ├── OutcomeDisplay.svelte         # Outcome results display
+│   │   │   └── index.ts                      # Barrel exports
 │   │   ├── ui/              # UI components
 │   │   │   ├── LoadingSpinner.svelte
 │   │   │   ├── LoadingSkeleton.svelte
@@ -129,6 +136,7 @@ src/
 │   │       ├── chatRepository.ts                       # Chat messages and conversations
 │   │       ├── suggestionRepository.ts                 # AI suggestions management
 │   │       ├── combatRepository.ts                     # Combat sessions CRUD and game mechanics
+│   │       ├── montageRepository.ts                    # Montage sessions CRUD and challenge tracking
 │   │       └── relationshipSummaryCacheRepository.ts   # Relationship summary cache
 │   ├── services/            # Business logic services
 │   │   ├── contextBuilder.ts                      # Entity context building for AI
@@ -150,13 +158,15 @@ src/
 │   ├── stores/              # Application state
 │   │   ├── campaign.svelte.ts
 │   │   ├── entities.svelte.ts
-│   │   ├── combat.svelte.ts # Combat session state (Svelte 5 runes)
+│   │   ├── combat.svelte.ts   # Combat session state (Svelte 5 runes)
+│   │   ├── montage.svelte.ts  # Montage session state (Svelte 5 runes)
 │   │   └── ui.svelte.ts
 │   └── types/               # TypeScript definitions
 │       ├── entities.ts      # Entity type system
 │       ├── campaign.ts      # Campaign types
 │       ├── systems.ts       # Game system profile types
 │       ├── combat.ts        # Combat type system (Draw Steel)
+│       ├── montage.ts       # Montage type system (Draw Steel)
 │       ├── ai.ts            # AI integration types
 │       ├── relationships.ts # Relationship filtering and sorting types
 │       ├── matrix.ts        # Matrix view types
@@ -182,6 +192,12 @@ src/
 │   │   │   └── +page.svelte # Relationship matrix view (/relationships/matrix)
 │   │   └── network/
 │   │       └── +page.svelte     # Network diagram (/relationships/network)
+│   ├── montage/             # Montage challenge tracking routes
+│   │   ├── +page.svelte         # Montage list page (/montage)
+│   │   ├── new/
+│   │   │   └── +page.svelte     # Create montage (/montage/new)
+│   │   └── [id]/
+│   │       └── +page.svelte     # View/run montage (/montage/abc123)
 │   └── settings/
 │       └── +page.svelte     # Settings page
 ├── app.css                  # Global styles & Tailwind
@@ -3683,6 +3699,313 @@ await combatStore.nextTurn(combat.id);
 - [Combat System Developer Guide](../COMBAT_SYSTEM.md) - Complete combat system documentation
 - [Combat Type Definitions](/src/lib/types/combat.ts) - TypeScript types
 - [Combat Repository](/src/lib/db/repositories/combatRepository.ts) - Data layer
+
+## Montage Challenge Tracker
+
+The Montage Challenge Tracker implements Draw Steel's montage mechanics, allowing Directors to track heroes completing a series of challenges across two rounds to achieve a larger objective.
+
+### Overview
+
+**What is a Montage?**
+
+In Draw Steel, montages are narrative challenges where each hero attempts one task per round across two rounds. Success is determined by accumulating enough successes before hitting the failure limit, with difficulty and player count affecting the thresholds.
+
+**Implementation Files:**
+- **Types:** `/src/lib/types/montage.ts`
+- **Repository:** `/src/lib/db/repositories/montageRepository.ts`
+- **Store:** `/src/lib/stores/montage.svelte.ts`
+- **Components:** `/src/lib/components/montage/`
+- **Routes:** `/src/routes/montage/`
+
+### Architecture
+
+The montage system follows Director Assist's standard three-layer architecture:
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                     UI Layer                             │
+│  Montage Components (Setup, Progress, Cards, Controls)  │
+└─────────────────────────────────────────────────────────┘
+                          │
+                          ▼
+┌─────────────────────────────────────────────────────────┐
+│                   State Layer                            │
+│         montageStore (Svelte 5 Runes)                    │
+└─────────────────────────────────────────────────────────┘
+                          │
+                          ▼
+┌─────────────────────────────────────────────────────────┐
+│                   Data Layer                             │
+│         montageRepository (Dexie/IndexedDB)              │
+└─────────────────────────────────────────────────────────┘
+```
+
+### Type System
+
+The montage type system is defined in `/src/lib/types/montage.ts`.
+
+**Core Types:**
+
+```typescript
+// Difficulty levels
+type MontageDifficulty = 'easy' | 'moderate' | 'hard';
+
+// Possible outcomes
+type MontageOutcome = 'total_success' | 'partial_success' | 'total_failure';
+
+// Session status
+type MontageStatus = 'preparing' | 'active' | 'completed';
+
+// Individual challenge result
+type ChallengeResult = 'success' | 'failure' | 'skip' | 'pending';
+
+// Main session object
+interface MontageSession {
+  id: string;
+  name: string;
+  description?: string;
+  status: MontageStatus;
+  difficulty: MontageDifficulty;
+  playerCount: number;
+  successLimit: number;      // Calculated from difficulty + player count
+  failureLimit: number;      // Calculated from difficulty + player count
+  challenges: MontageChallenge[];
+  successCount: number;      // Current success count
+  failureCount: number;      // Current failure count
+  currentRound: 1 | 2;
+  outcome?: MontageOutcome;
+  victoryPoints: number;     // VP awarded based on outcome + difficulty
+  createdAt: Date;
+  updatedAt: Date;
+  completedAt?: Date;
+}
+
+// Individual challenge
+interface MontageChallenge {
+  id: string;
+  round: 1 | 2;
+  result: ChallengeResult;
+  description?: string;
+  playerName?: string;       // Hero who attempted this challenge
+  notes?: string;
+}
+```
+
+### Difficulty Mechanics
+
+Limits and victory points are calculated based on difficulty and player count:
+
+**Easy:**
+- Success Limit: `playerCount`
+- Failure Limit: `playerCount`
+- Victory Points: 1 (Total Success), 0 (Partial Success)
+
+**Moderate:**
+- Success Limit: `playerCount + 1`
+- Failure Limit: `Math.max(2, playerCount - 1)`
+- Victory Points: 1 (Total Success), 0 (Partial Success)
+
+**Hard:**
+- Success Limit: `playerCount + 2`
+- Failure Limit: `Math.max(2, playerCount - 2)`
+- Victory Points: 2 (Total Success), 1 (Partial Success)
+
+### Outcome Calculation
+
+Outcomes are determined automatically based on Draw Steel rules:
+
+**Total Success:**
+- Condition: `successCount >= successLimit`
+- Before failure limit is reached
+- Awards full victory points for difficulty
+
+**Partial Success:**
+- Condition: `failureCount >= failureLimit AND successCount >= failureCount + 2`
+- Heroes achieve objective with complications
+- Awards reduced victory points (0 for Easy/Moderate, 1 for Hard)
+
+**Total Failure:**
+- Condition: `failureCount >= failureLimit AND successCount < failureCount + 2`
+- Heroes fail to achieve objective
+- Awards 0 victory points
+
+### Repository Layer
+
+**Location:** `/src/lib/db/repositories/montageRepository.ts`
+
+The repository provides CRUD operations and challenge tracking:
+
+```typescript
+// Create new montage
+create(input: CreateMontageInput): Promise<MontageSession>
+
+// Get montage by ID
+getById(id: string): Promise<MontageSession | undefined>
+
+// Get all montages
+getAll(): Promise<MontageSession[]>
+
+// Update montage details
+update(id: string, updates: UpdateMontageInput): Promise<void>
+
+// Record challenge result
+recordChallengeResult(
+  sessionId: string,
+  challengeId: string,
+  input: RecordChallengeResultInput
+): Promise<void>
+
+// Delete montage
+delete(id: string): Promise<void>
+```
+
+**Challenge Tracking:**
+
+Recording a challenge result automatically:
+1. Updates the challenge with the new result
+2. Recalculates success and failure counts
+3. Checks if an outcome has been reached
+4. Awards victory points if completed
+5. Updates status to 'completed' if outcome reached
+
+### Store Layer
+
+**Location:** `/src/lib/stores/montage.svelte.ts`
+
+The store provides reactive state management using Svelte 5 runes:
+
+```typescript
+// State
+let montages = $state<MontageSession[]>([]);
+
+// Derived state
+const activeMontages = $derived(
+  montages.filter(m => m.status === 'active')
+);
+
+const completedMontages = $derived(
+  montages.filter(m => m.status === 'completed')
+);
+
+// Actions
+async function create(input: CreateMontageInput): Promise<MontageSession>
+async function update(id: string, updates: UpdateMontageInput): Promise<void>
+async function recordResult(
+  sessionId: string,
+  challengeId: string,
+  input: RecordChallengeResultInput
+): Promise<void>
+async function deleteMontage(id: string): Promise<void>
+function getById(id: string): MontageSession | undefined
+function getAll(): MontageSession[]
+```
+
+### UI Components
+
+**Location:** `/src/lib/components/montage/`
+
+**MontageSetup.svelte**
+- Montage creation form
+- Difficulty selector with preview of limits
+- Player count input
+- Shows calculated success/failure limits
+
+**MontageProgress.svelte**
+- Visual progress bars for successes and failures
+- Current counts vs. limits
+- Round indicator
+- Status badges
+
+**ChallengeCard.svelte**
+- Individual challenge display
+- Result recording interface (Success/Failure/Skip)
+- Optional fields (description, player name, notes)
+- Round indicator
+
+**MontageControls.svelte**
+- Round advancement controls
+- Edit montage button
+- Delete montage button
+- Start/restart controls
+
+**OutcomeDisplay.svelte**
+- Final outcome display (Total Success/Partial Success/Total Failure)
+- Victory points awarded
+- Summary of challenge results
+- Round-by-round breakdown
+
+### Routes
+
+**Montage List:** `/montage`
+- Lists all montages (active and completed)
+- Active montages shown at top
+- Quick actions (edit, delete, view)
+- Create new montage button
+
+**Create Montage:** `/montage/new`
+- Creation form
+- Difficulty selection
+- Player count input
+- Name and description fields
+
+**View/Run Montage:** `/montage/[id]`
+- Montage details and configuration
+- Challenge cards for both rounds
+- Progress tracking
+- Result recording interface
+- Outcome display (when completed)
+
+### Database Schema
+
+**Table:** `montageSessions` (added in database version 6)
+
+```typescript
+db.version(6).stores({
+  // ... existing tables
+  montageSessions: 'id, status, createdAt, updatedAt'
+});
+```
+
+**Indexes:**
+- Primary key: `id`
+- `status`: For filtering active/completed montages
+- `createdAt`: For sorting by creation date
+- `updatedAt`: For sorting by last modification
+
+### Usage Example
+
+```typescript
+import { montageStore } from '$lib/stores';
+
+// Create a new montage
+const montage = await montageStore.create({
+  name: 'Escape from the Collapsing Temple',
+  description: 'Heroes must escape before the temple collapses',
+  difficulty: 'hard',
+  playerCount: 4
+});
+
+// Record challenge results
+await montageStore.recordResult(
+  montage.id,
+  challenge1Id,
+  {
+    result: 'success',
+    description: 'Climbed the crumbling wall',
+    playerName: 'Ajax',
+    notes: 'Used athletics skill'
+  }
+);
+
+// Access reactive state
+const active = montageStore.activeMontages;
+const completed = montageStore.completedMontages;
+```
+
+**Related Documentation:**
+- [User Guide - Montage Tracker](../USER_GUIDE.md#montage-challenge-tracker) - User-facing montage documentation
+- [Montage Type Definitions](/src/lib/types/montage.ts) - TypeScript types
+- [Montage Repository](/src/lib/db/repositories/montageRepository.ts) - Data layer
 
 ## Search & Filtering
 

@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-01-22
+
 ### Added
 
 **Scene Entity Type**
@@ -24,9 +26,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Scene generation service supports AI-powered content creation for scene fields
 - Scene styling integrated with consistent color scheme and card design
 
-### Changed
-
 ### Fixed
+
+**Entity-refs Field Display Bug**
+- Fixed `entity-refs` fields (like "NPCs Present") displaying raw entity IDs instead of resolved entity names on view pages
+- Control flow in entity view page now correctly checks for entity-refs type before generic array handling
 
 **In-Memory State Refresh for Static Hosting (Issue #252)**
 - Replaced all `window.location.reload()` calls with in-memory state refresh

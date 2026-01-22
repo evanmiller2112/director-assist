@@ -255,7 +255,35 @@
 									{/if}
 								</div>
 								<div class="text-slate-900 dark:text-white whitespace-pre-wrap">
-									{#if Array.isArray(value)}
+									{#if fieldDef?.type === 'entity-refs' && Array.isArray(value)}
+										{#if value.length > 0}
+											<div class="flex flex-col gap-1">
+												{#each value as entityId}
+													{@const referencedEntity = getEntityById(entityId)}
+													{#if referencedEntity}
+														{@const refTypeDef = getEntityTypeDefinition(
+															referencedEntity.type,
+															campaignStore.customEntityTypes,
+															campaignStore.entityTypeOverrides
+														)}
+														<a
+															href="/entities/{referencedEntity.type}/{referencedEntity.id}"
+															class="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:underline"
+														>
+															{referencedEntity.name}
+															<span class="text-xs text-slate-500 dark:text-slate-400">
+																({refTypeDef?.label ?? referencedEntity.type})
+															</span>
+														</a>
+													{:else}
+														<span class="text-slate-400 dark:text-slate-500">(Deleted)</span>
+													{/if}
+												{/each}
+											</div>
+										{:else}
+											<span class="text-slate-400 dark:text-slate-500">—</span>
+										{/if}
+									{:else if Array.isArray(value)}
 										{#if fieldDef?.type === 'multi-select'}
 											{value.map((v) => String(v).replace(/_/g, ' ')).join(', ')}
 										{:else}
@@ -306,34 +334,6 @@
 											</a>
 										{:else}
 											<span class="text-slate-400 dark:text-slate-500">(Deleted)</span>
-										{/if}
-									{:else if fieldDef?.type === 'entity-refs' && Array.isArray(value)}
-										{#if value.length > 0}
-											<div class="flex flex-col gap-1">
-												{#each value as entityId}
-													{@const referencedEntity = getEntityById(entityId)}
-													{#if referencedEntity}
-														{@const refTypeDef = getEntityTypeDefinition(
-															referencedEntity.type,
-															campaignStore.customEntityTypes,
-															campaignStore.entityTypeOverrides
-														)}
-														<a
-															href="/entities/{referencedEntity.type}/{referencedEntity.id}"
-															class="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:underline"
-														>
-															{referencedEntity.name}
-															<span class="text-xs text-slate-500 dark:text-slate-400">
-																({refTypeDef?.label ?? referencedEntity.type})
-															</span>
-														</a>
-													{:else}
-														<span class="text-slate-400 dark:text-slate-500">(Deleted)</span>
-													{/if}
-												{/each}
-											</div>
-										{:else}
-											<span class="text-slate-400 dark:text-slate-500">—</span>
 										{/if}
 									{:else if fieldDef?.type === 'richtext' && typeof value === 'string'}
 										<MarkdownViewer content={value} />

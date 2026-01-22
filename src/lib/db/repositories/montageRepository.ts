@@ -159,6 +159,15 @@ export const montageRepository = {
 		const limits = calculateLimits(input.difficulty, input.playerCount);
 		const now = new Date();
 
+		// Generate IDs for predefined challenges if provided
+		let predefinedChallenges = undefined;
+		if (input.predefinedChallenges !== undefined) {
+			predefinedChallenges = input.predefinedChallenges.map((pc) => ({
+				...pc,
+				id: nanoid()
+			}));
+		}
+
 		const montage: MontageSession = {
 			id: nanoid(),
 			name: input.name,
@@ -173,6 +182,7 @@ export const montageRepository = {
 			failureCount: 0,
 			currentRound: 1,
 			victoryPoints: 0,
+			predefinedChallenges,
 			createdAt: now,
 			updatedAt: now
 		};
@@ -342,7 +352,8 @@ export const montageRepository = {
 			result: input.result,
 			description: input.description,
 			playerName: input.playerName,
-			notes: input.notes
+			notes: input.notes,
+			predefinedChallengeId: input.predefinedChallengeId
 		};
 
 		// Update counts

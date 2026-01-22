@@ -7,10 +7,11 @@
 		MontageProgress,
 		MontageControls,
 		ChallengeCard,
-		OutcomeDisplay
+		OutcomeDisplay,
+		PredefinedChallengeList
 	} from '$lib/components/montage';
 	import { ArrowLeft, Play, RefreshCw } from 'lucide-svelte';
-	import type { RecordChallengeResultInput } from '$lib/types/montage';
+	import type { RecordChallengeResultInput, PredefinedChallenge } from '$lib/types/montage';
 
 	const montageId = $derived($page.params.id);
 
@@ -26,6 +27,16 @@
 	const round1Challenges = $derived(montageStore.round1Challenges);
 	const round2Challenges = $derived(montageStore.round2Challenges);
 
+	let selectedPredefinedChallenge = $state<PredefinedChallenge | null>(null);
+
+	function handleSelectPredefinedChallenge(challenge: PredefinedChallenge) {
+		selectedPredefinedChallenge = challenge;
+	}
+
+	function handleClearSelection() {
+		selectedPredefinedChallenge = null;
+	}
+
 	function handleBack() {
 		goto('/montage');
 	}
@@ -38,6 +49,8 @@
 	async function handleRecordChallenge(input: RecordChallengeResultInput) {
 		if (!montage) return;
 		await montageStore.recordChallengeResult(montage.id, input);
+		// Clear selection after recording
+		selectedPredefinedChallenge = null;
 	}
 
 	async function handleReopenMontage() {
@@ -124,6 +137,20 @@
 
 		<!-- Active State -->
 		{#if montage.status === 'active'}
+			<!-- Predefined Challenges List -->
+			{#if montage.predefinedChallenges && montage.predefinedChallenges.length > 0}
+				<div
+					class="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-6 mb-6"
+				>
+					<PredefinedChallengeList
+						predefinedChallenges={montage.predefinedChallenges}
+						recordedChallenges={montage.challenges}
+						onSelectChallenge={handleSelectPredefinedChallenge}
+						selectedChallengeId={selectedPredefinedChallenge?.id}
+					/>
+				</div>
+			{/if}
+
 			<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
 				<!-- Left Column: Progress -->
 				<div
@@ -142,7 +169,12 @@
 					<h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">
 						Record Challenge
 					</h2>
-					<MontageControls {montage} onRecordChallenge={handleRecordChallenge} />
+					<MontageControls
+						{montage}
+						onRecordChallenge={handleRecordChallenge}
+						selectedPredefinedChallenge={selectedPredefinedChallenge}
+						onClearSelection={handleClearSelection}
+					/>
 				</div>
 			</div>
 		{/if}

@@ -10,3 +10,5 @@ export { default as MontageProgress } from './MontageProgress.svelte';
 export { default as MontageControls } from './MontageControls.svelte';
 export { default as OutcomeDisplay } from './OutcomeDisplay.svelte';
 export { default as MontageSetup } from './MontageSetup.svelte';
+export { default as PredefinedChallengeInput } from './PredefinedChallengeInput.svelte';
+export { default as PredefinedChallengeList } from './PredefinedChallengeList.svelte';

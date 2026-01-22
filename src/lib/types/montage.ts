@@ -57,12 +57,28 @@ export type MontageStatus = 'preparing' | 'active' | 'completed';
 export type ChallengeResult = 'success' | 'failure' | 'skip' | 'pending';
 
 // ============================================================================
+// Predefined Challenge
+// ============================================================================
+
+/**
+ * Predefined challenge that players can attempt during a montage.
+ * Examples: "Find Shelter", "Rally Horse", "Forage for Herbs"
+ */
+export interface PredefinedChallenge {
+	id: string;
+	name: string;
+	description?: string;
+	suggestedSkills?: string[];
+}
+
+// ============================================================================
 // Montage Challenge
 // ============================================================================
 
 /**
  * Individual challenge within a montage.
  * Two rounds of challenges, tracked separately.
+ * Can reference a predefined challenge or be ad-hoc.
  */
 export interface MontageChallenge {
 	id: string;
@@ -71,6 +87,7 @@ export interface MontageChallenge {
 	description?: string;
 	playerName?: string; // Hero who attempted this challenge
 	notes?: string;
+	predefinedChallengeId?: string; // Links to a PredefinedChallenge if used
 }
 
 // ============================================================================
@@ -120,6 +137,7 @@ export interface MontageSession {
 	currentRound: 1 | 2;
 	outcome?: MontageOutcome;
 	victoryPoints: number;
+	predefinedChallenges?: PredefinedChallenge[]; // Optional list of challenges to attempt
 	createdAt: Date;
 	updatedAt: Date;
 	completedAt?: Date;
@@ -137,6 +155,7 @@ export interface CreateMontageInput {
 	description?: string;
 	difficulty: MontageDifficulty;
 	playerCount: number;
+	predefinedChallenges?: Omit<PredefinedChallenge, 'id'>[]; // Challenges without IDs (generated on creation)
 }
 
 /**
@@ -157,4 +176,5 @@ export interface RecordChallengeResultInput {
 	description?: string;
 	playerName?: string;
 	notes?: string;
+	predefinedChallengeId?: string; // Reference to a predefined challenge if used
 }

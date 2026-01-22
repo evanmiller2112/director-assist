@@ -43,7 +43,9 @@
 			})
 		};
 
-		onUpdate([...challenges, newChallenge]);
+		// Convert existing challenges to plain objects to avoid $state proxy issues with IndexedDB
+		const plainChallenges = challenges.map(c => ({ ...c }));
+		onUpdate([...plainChallenges, newChallenge]);
 
 		// Reset form
 		isAdding = false;
@@ -53,7 +55,8 @@
 	}
 
 	function handleRemove(index: number) {
-		const updated = challenges.filter((_, i) => i !== index);
+		// Convert to plain objects to avoid $state proxy issues with IndexedDB
+		const updated = challenges.filter((_, i) => i !== index).map(c => ({ ...c }));
 		onUpdate(updated);
 	}
 </script>

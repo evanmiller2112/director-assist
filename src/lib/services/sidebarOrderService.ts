@@ -20,7 +20,6 @@ export function getDefaultOrder(): string[] {
 		'location',
 		'faction',
 		'item',
-		'encounter',
 		'session',
 		'scene',
 		'deity',

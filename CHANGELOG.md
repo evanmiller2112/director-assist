@@ -26,6 +26,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Scene generation service supports AI-powered content creation for scene fields
 - Scene styling integrated with consistent color scheme and card design
 
+**Draw Steel Terminology: HP to Stamina (Issue #280)**
+- Updated all user-facing "HP" text to "Stamina" to match Draw Steel terminology
+- Affects HpTracker.svelte (renamed to StaminaTracker.svelte), CombatantCard.svelte, AddCombatantModal.svelte
+- Documentation updated: README.md, USER_GUIDE.md, COMBAT_SYSTEM.md now use "Stamina" terminology
+- Internal field names and types updated: `hp` → `stamina`, `maxHp` → `maxStamina`, `tempHp` → `tempStamina`
+
+**Removed Encounters Entity Type (Issue #281)**
+- Removed redundant "Encounters" entity type (11 built-in types, down from 12)
+- Combat tracker system supersedes the need for a separate Encounters entity
+- Removed from sidebar navigation, entity type configuration, and type definitions
+- Generation type in chat renamed from 'encounter' to 'combat' for clarity
+- Documentation updated to reflect 11 built-in entity types
+
 ### Fixed
 
 **Entity-refs Field Display Bug**

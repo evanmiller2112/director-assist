@@ -180,7 +180,7 @@ Each entity type has custom fields relevant to its purpose. When you select a ga
   - Class: Class, Kit, Heroic Resource, Class Features
   - Characteristics: Might, Agility, Reason, Intuition, Presence
   - Skills with training levels (Trained, Expert, Master)
-  - Health: Max HP, Current HP, Vitality, Conditions
+  - Health: Max Stamina, Current Stamina, Vitality, Conditions
   - Resources: XP, Gold, Weapons, Armor
 - **NPCs**: Threat Level (minion/standard/elite/boss/solo), Combat Role (ambusher, artillery, brute, etc.)
 - **Encounters**: Victory Points, Negotiation DC, system-specific encounter types (combat, negotiation, montage, exploration)

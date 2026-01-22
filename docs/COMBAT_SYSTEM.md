@@ -8,7 +8,7 @@ The combat system provides comprehensive combat tracking for Draw Steel RPG camp
 
 **Implementation:** Track A (Issues #1 and #17)
 - A1: Combat Foundation (types, database, store)
-- A2: Combat UI (components for initiative, HP, conditions, turn management)
+- A2: Combat UI (components for initiative, Stamina, conditions, turn management)
 
 ## Architecture
 
@@ -17,7 +17,7 @@ The combat system follows Director Assist's standard three-layer architecture:
 ```
 ┌─────────────────────────────────────────────────────────┐
 │                     UI Layer                             │
-│  Combat Components (Initiative, HP, Conditions, Turns)   │
+│  Combat Components (Initiative, Stamina, Conditions, Turns)   │
 └─────────────────────────────────────────────────────────┘
                           │
                           ▼
@@ -49,7 +49,7 @@ The combat system follows Director Assist's standard three-layer architecture:
 - `/src/lib/components/combat/InitiativeTracker.svelte` - Turn order display
 - `/src/lib/components/combat/CombatantCard.svelte` - Individual combatant card
 - `/src/lib/components/combat/TurnControls.svelte` - Turn navigation
-- `/src/lib/components/combat/HpTracker.svelte` - HP management
+- `/src/lib/components/combat/StaminaTracker.svelte` - Stamina management
 - `/src/lib/components/combat/ConditionManager.svelte` - Condition management
 - `/src/lib/components/combat/ConditionBadge.svelte` - Condition display
 - `/src/lib/components/combat/index.ts` - Barrel exports
@@ -94,9 +94,9 @@ interface BaseCombatant {
   entityId?: string;               // Links to entity in entities table (optional for ad-hoc combatants)
   initiative: number;
   initiativeRoll: [number, number]; // Draw Steel uses 2d10
-  hp: number;
-  maxHp?: number;                  // Optional - allows tracking current HP without a cap
-  tempHp: number;
+  stamina: number;
+  maxStamina?: number;             // Optional - allows tracking current Stamina without a cap
+  tempStamina: number;
   ac?: number;
   conditions: CombatCondition[];
 }
@@ -201,8 +201,8 @@ interface CreateCombatInput {
 interface AddHeroCombatantInput {
   name: string;
   entityId: string;
-  hp?: number;                      // Current HP (defaults to maxHp if not provided)
-  maxHp?: number;                   // Optional - allows tracking HP without a cap
+  stamina?: number;                 // Current Stamina (defaults to maxStamina if not provided)
+  maxStamina?: number;              // Optional - allows tracking Stamina without a cap
   ac?: number;
   heroicResource?: HeroicResource;  // Optional for simplified entry
 }
@@ -210,8 +210,8 @@ interface AddHeroCombatantInput {
 interface AddCreatureCombatantInput {
   name: string;
   entityId?: string;                // Optional - allows ad-hoc creatures
-  hp?: number;                      // Current HP (defaults to maxHp if not provided)
-  maxHp?: number;                   // Optional - allows tracking HP without a cap
+  stamina?: number;                 // Current Stamina (defaults to maxStamina if not provided)
+  maxStamina?: number;              // Optional - allows tracking Stamina without a cap
   ac?: number;
   threat?: number;                  // Defaults to 1 if not provided
 }
@@ -220,7 +220,7 @@ interface AddCreatureCombatantInput {
 interface AddQuickCombatantInput {
   name: string;                     // Auto-numbered if duplicates exist
   type: 'hero' | 'creature';
-  hp: number;                       // Only HP is required
+  stamina: number;                  // Only Stamina is required
   ac?: number;
   threat?: number;                  // For creatures, defaults to 1
 }
@@ -230,9 +230,9 @@ interface UpdateCombatantInput {
   name?: string;
   initiative?: number;
   initiativeRoll?: [number, number];
-  hp?: number;
-  maxHp?: number;
-  tempHp?: number;
+  stamina?: number;
+  maxStamina?: number;
+  tempStamina?: number;
   ac?: number;
   conditions?: CombatCondition[];
 }
@@ -350,7 +350,7 @@ addHeroCombatant(combatId: string, input: AddHeroCombatantInput): Promise<Combat
 addCreatureCombatant(combatId: string, input: AddCreatureCombatantInput): Promise<CombatSession>
 
 // Quick-add combatant (Issue #233)
-// Simplified entry with only name and HP required
+// Simplified entry with only name and Stamina required
 // Auto-numbers duplicates: "Goblin", "Goblin 1", "Goblin 2"
 addQuickCombatant(combatId: string, input: AddQuickCombatantInput): Promise<CombatSession>
 
@@ -410,41 +410,41 @@ previousTurn(combatId: string): Promise<CombatSession>
 - Duration 0: "Until end of combat" - never decremented
 - Duration -1: Permanent - never decremented
 
-### HP Management
+### Stamina Management
 
 ```typescript
-// Apply damage (handles temp HP absorption)
+// Apply damage (handles temp Stamina absorption)
 applyDamage(combatId: string, combatantId: string, damage: number, source?: string): Promise<CombatSession>
 
-// Apply healing (cannot exceed maxHp)
+// Apply healing (cannot exceed maxStamina)
 applyHealing(combatId: string, combatantId: string, healing: number, source?: string): Promise<CombatSession>
 
-// Add temporary HP (replaces existing temp HP if higher)
-addTemporaryHp(combatId: string, combatantId: string, tempHp: number): Promise<CombatSession>
+// Add temporary Stamina (replaces existing temp Stamina if higher)
+addTemporaryStamina(combatId: string, combatantId: string, tempStamina: number): Promise<CombatSession>
 ```
 
 **Damage application rules:**
-1. Temporary HP absorbs damage first
-2. Remaining damage applies to regular HP
-3. HP cannot go below 0
+1. Temporary Stamina absorbs damage first
+2. Remaining damage applies to regular Stamina
+3. Stamina cannot go below 0
 4. Logs damage to combat log
 
 **Healing rules:**
-1. Adds healing to current HP
-2. Cannot exceed maxHp (if maxHp is defined)
-3. No cap if maxHp is undefined
-4. Does not affect temporary HP
+1. Adds healing to current Stamina
+2. Cannot exceed maxStamina (if maxStamina is defined)
+3. No cap if maxStamina is undefined
+4. Does not affect temporary Stamina
 5. Logs healing to combat log
 
-**Temporary HP rules:**
-1. Replaces existing temp HP if new value is higher
-2. Does not stack with existing temp HP
-3. Absorbs damage before regular HP
+**Temporary Stamina rules:**
+1. Replaces existing temp Stamina if new value is higher
+2. Does not stack with existing temp Stamina
+3. Absorbs damage before regular Stamina
 
 **Internal helper:**
 ```typescript
 function applyDamageToCombatant(combatant: Combatant, damage: number): Combatant {
-  // Absorb with temp HP first, then apply to HP
+  // Absorb with temp Stamina first, then apply to Stamina
 }
 ```
 
@@ -642,10 +642,10 @@ rollInitiativeForAll(combatId: string): Promise<CombatSession>
 nextTurn(combatId: string): Promise<CombatSession>
 previousTurn(combatId: string): Promise<CombatSession>
 
-// HP
+// Stamina
 applyDamage(combatId: string, combatantId: string, damage: number, source?: string): Promise<CombatSession>
 applyHealing(combatId: string, combatantId: string, healing: number, source?: string): Promise<CombatSession>
-addTemporaryHp(combatId: string, combatantId: string, tempHp: number): Promise<CombatSession>
+addTemporaryStamina(combatId: string, combatantId: string, tempStamina: number): Promise<CombatSession>
 
 // Conditions
 addCondition(combatId: string, combatantId: string, condition: AddConditionInput): Promise<CombatSession>
@@ -754,7 +754,7 @@ interface Props {
 - Highlights current combatant
 - Shows initiative values and dice rolls
 - Displays combatant type (hero/creature)
-- Shows HP and conditions at a glance
+- Shows Stamina and conditions at a glance
 
 **Usage:**
 ```svelte
@@ -788,8 +788,8 @@ dispatch('applyHealing', { combatantId, healing });
 ```
 
 **Features:**
-- Display all combatant stats (HP, AC, initiative)
-- Inline HP adjustment
+- Display all combatant stats (Stamina, AC, initiative)
+- Inline Stamina adjustment
 - Condition badges
 - Initiative re-roll button
 - Heroic resource tracking (for heroes)
@@ -847,11 +847,11 @@ dispatch('previous');
 />
 ```
 
-### HpTracker
+### StaminaTracker
 
-HP management with damage/healing input and temporary HP.
+Stamina management with damage/healing input and temporary Stamina.
 
-**Location:** `HpTracker.svelte`
+**Location:** `StaminaTracker.svelte`
 
 **Props:**
 ```typescript
@@ -869,9 +869,9 @@ dispatch('tempHp', { amount: number });
 ```
 
 **Features:**
-- HP bar with percentage
-- Current/max HP display
-- Temporary HP display
+- Stamina bar with percentage
+- Current/max Stamina display
+- Temporary Stamina display
 - Quick damage/healing buttons
 - Custom amount input
 - Optional source tracking
@@ -879,11 +879,11 @@ dispatch('tempHp', { amount: number });
 
 **Usage:**
 ```svelte
-<HpTracker
+<StaminaTracker
   combatant={hero}
   on:damage={handleDamage}
   on:heal={handleHealing}
-  on:tempHp={handleTempHp}
+  on:tempStamina={handleTempStamina}
 />
 ```
 
@@ -977,7 +977,7 @@ All components are exported via barrel file:
 export { default as InitiativeTracker } from './InitiativeTracker.svelte';
 export { default as CombatantCard } from './CombatantCard.svelte';
 export { default as TurnControls } from './TurnControls.svelte';
-export { default as HpTracker } from './HpTracker.svelte';
+export { default as StaminaTracker } from './StaminaTracker.svelte';
 export { default as ConditionManager } from './ConditionManager.svelte';
 export { default as ConditionBadge } from './ConditionBadge.svelte';
 ```
@@ -988,7 +988,7 @@ import {
   InitiativeTracker,
   CombatantCard,
   TurnControls,
-  HpTracker,
+  StaminaTracker,
   ConditionManager
 } from '$lib/components/combat';
 ```
@@ -1007,7 +1007,7 @@ All combat system code has comprehensive test coverage.
 - Combatant management
 - Initiative rolling (2d10 mechanics)
 - Turn advancement and round tracking
-- HP management (damage, healing, temp HP)
+- Stamina management (damage, healing, temp Stamina)
 - Condition tracking and duration
 - Hero points and victory points
 - Combat logging
@@ -1031,7 +1031,7 @@ Each component has a dedicated test file:
 - `InitiativeTracker.test.ts` - Initiative display and sorting
 - `CombatantCard.test.ts` - Combatant display and events
 - `TurnControls.test.ts` - Turn navigation
-- `HpTracker.test.ts` - HP management UI
+- `StaminaTracker.test.ts` - Stamina management UI
 - `ConditionManager.test.ts` - Condition CRUD
 - `ConditionBadge.test.ts` - Condition display (if exists)
 
@@ -1063,7 +1063,7 @@ Issue #233 introduced simplified combatant entry for faster combat setup.
 ### Quick-Add Mode
 
 Allows adding combatants with minimal information:
-- **Required:** Name and current HP only
+- **Required:** Name and current Stamina only
 - **Optional:** AC and threat level (for creatures)
 - **Auto-numbering:** Duplicate names get numbered automatically
 
@@ -1073,7 +1073,7 @@ Allows adding combatants with minimal information:
 await combatStore.addQuickCombatant(combatId, {
   name: 'Goblin',
   type: 'creature',
-  hp: 12,
+  stamina: 12,
   ac: 14,
   threat: 1
 });
@@ -1082,7 +1082,7 @@ await combatStore.addQuickCombatant(combatId, {
 await combatStore.addQuickCombatant(combatId, {
   name: 'Goblin',
   type: 'creature',
-  hp: 12
+  stamina: 12
 });
 ```
 
@@ -1097,46 +1097,46 @@ await combatStore.addQuickCombatant(combatId, {
 - Indicates no linked entity in the database
 - Useful for temporary combatants or mooks
 
-### Optional Max HP
+### Optional Max Stamina
 
-Both quick-add and standard entry now support optional maxHp.
+Both quick-add and standard entry now support optional maxStamina.
 
-**Behavior when maxHp is undefined:**
-- Current HP can be tracked without a maximum cap
+**Behavior when maxStamina is undefined:**
+- Current Stamina can be tracked without a maximum cap
 - Healing has no upper limit
-- HP bar and bloodied indicators hidden in UI
+- Stamina bar and bloodied indicators hidden in UI
 - Useful for tracking abstract "health" or temporary combatants
 
-**Behavior when maxHp is defined:**
-- Standard healing cap at maxHp
-- HP bar shows percentage
-- Bloodied indicator appears at 50% HP
+**Behavior when maxStamina is defined:**
+- Standard healing cap at maxStamina
+- Stamina bar shows percentage
+- Bloodied indicator appears at 50% Stamina
 - Full combat tracking with limits
 
 **Usage:**
 ```typescript
-// Hero with maxHp
+// Hero with maxStamina
 await combatStore.addHero(combatId, {
   name: 'Aragorn',
   entityId: 'hero-1',
-  hp: 45,
-  maxHp: 45,
+  stamina: 45,
+  maxStamina: 45,
   heroicResource: { current: 0, max: 5, name: 'Victories' }
 });
 
-// Hero without maxHp (simplified tracking)
+// Hero without maxStamina (simplified tracking)
 await combatStore.addHero(combatId, {
   name: 'Gandalf',
   entityId: 'hero-2',
-  hp: 50
+  stamina: 50
 });
 ```
 
 ### Simplified Hero Entry
 
 Heroes can now be added with minimal information:
-- **Required:** Name, entityId, and current HP
-- **Optional:** maxHp, heroicResource, AC
+- **Required:** Name, entityId, and current Stamina
+- **Optional:** maxStamina, heroicResource, AC
 - Allows quick setup for casual games or temporary heroes
 
 ## Draw Steel Mechanics
@@ -1263,7 +1263,7 @@ const combat = await combatStore.createCombat({
 await combatStore.addHero(combat.id, {
   name: 'Aragorn',
   entityId: 'hero-1',
-  maxHp: 45,
+  maxStamina: 45,
   ac: 16,
   heroicResource: { current: 0, max: 5, name: 'Victories' }
 });
@@ -1272,7 +1272,7 @@ await combatStore.addHero(combat.id, {
 await combatStore.addCreature(combat.id, {
   name: 'Dragon',
   entityId: 'creature-1',
-  maxHp: 200,
+  maxStamina: 200,
   ac: 18,
   threat: 3  // Boss
 });
@@ -1490,9 +1490,9 @@ db.version(6).stores({
 - Check that duration is positive (not 0 or -1)
 - Ensure round is actually advancing
 
-**Temp HP not absorbing damage:**
-- Verify `applyDamageToCombatant()` checks temp HP first
-- Check that temp HP is being stored correctly
+**Temp Stamina not absorbing damage:**
+- Verify `applyDamageToCombatant()` checks temp Stamina first
+- Check that temp Stamina is being stored correctly
 - Ensure damage application order is correct
 
 ### Debugging

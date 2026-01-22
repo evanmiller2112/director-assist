@@ -67,9 +67,6 @@
 	.entity-card[data-type='item'] {
 		@apply border-l-4 border-l-item;
 	}
-	.entity-card[data-type='encounter'] {
-		@apply border-l-4 border-l-encounter;
-	}
 	.entity-card[data-type='session'] {
 		@apply border-l-4 border-l-session;
 	}

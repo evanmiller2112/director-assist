@@ -213,12 +213,12 @@ export const GENERATION_TYPES: readonly GenerationTypeConfig[] = [
 - How it ties to existing campaign elements`
 	},
 	{
-		id: 'encounter',
-		label: 'Encounter',
+		id: 'combat',
+		label: 'Combat',
 		description: 'Design combat encounters and challenges',
 		icon: 'swords',
-		promptTemplate: `When generating an encounter, create an interesting combat or challenge scenario with tactical elements, environmental factors, and clear objectives. Consider pacing and difficulty. Format the response using the suggested structure below.`,
-		suggestedStructure: `## Encounter Name
+		promptTemplate: `When generating a combat encounter, create an interesting combat or challenge scenario with tactical elements, environmental factors, and clear objectives. Consider pacing and difficulty. Format the response using the suggested structure below.`,
+		suggestedStructure: `## Combat Name
 **Type** (combat, trap, puzzle, social, etc.)
 
 ## Setup

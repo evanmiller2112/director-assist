@@ -43,7 +43,7 @@ describe('generationTypes configuration', () => {
 			expect(types).toContain('npc');
 			expect(types).toContain('location');
 			expect(types).toContain('plot_hook');
-			expect(types).toContain('encounter');
+			expect(types).toContain('combat');
 			expect(types).toContain('item');
 			expect(types).toContain('faction');
 			expect(types).toContain('session_prep');
@@ -105,7 +105,7 @@ describe('generationTypes configuration', () => {
 				'npc',
 				'location',
 				'plot_hook',
-				'encounter',
+				'combat',
 				'item',
 				'faction',
 				'session_prep'
@@ -277,37 +277,37 @@ describe('generationTypes configuration', () => {
 		});
 	});
 
-	describe('Encounter generation type', () => {
-		const encounterConfig = GENERATION_TYPES.find((c) => c.id === 'encounter');
+	describe('Combat generation type', () => {
+		const combatConfig = GENERATION_TYPES.find((c) => c.id === 'combat');
 
-		it('should have encounter type defined', () => {
-			expect(encounterConfig).toBeDefined();
+		it('should have combat type defined', () => {
+			expect(combatConfig).toBeDefined();
 		});
 
-		it('should have label "Encounter"', () => {
-			expect(encounterConfig?.label).toBe('Encounter');
+		it('should have label "Combat"', () => {
+			expect(combatConfig?.label).toBe('Combat');
 		});
 
 		it('should have description about combat/challenge generation', () => {
-			expect(encounterConfig?.description).toBeTruthy();
-			expect(encounterConfig?.description.toLowerCase()).toMatch(
+			expect(combatConfig?.description).toBeTruthy();
+			expect(combatConfig?.description.toLowerCase()).toMatch(
 				/encounter|combat|battle|challenge/
 			);
 		});
 
 		it('should have a swords/combat icon', () => {
-			expect(encounterConfig?.icon).toBeTruthy();
-			expect(encounterConfig?.icon.toLowerCase()).toMatch(/sword|swords|shield|combat/);
+			expect(combatConfig?.icon).toBeTruthy();
+			expect(combatConfig?.icon.toLowerCase()).toMatch(/sword|swords|shield|combat/);
 		});
 
-		it('should have prompt template for encounter generation', () => {
-			expect(encounterConfig?.promptTemplate).toBeTruthy();
-			expect(encounterConfig?.promptTemplate.toLowerCase()).toContain('encounter');
+		it('should have prompt template for combat generation', () => {
+			expect(combatConfig?.promptTemplate).toBeTruthy();
+			expect(combatConfig?.promptTemplate.toLowerCase()).toMatch(/combat|encounter/);
 		});
 
-		it('should have suggested structure for encounter fields', () => {
-			expect(encounterConfig?.suggestedStructure).toBeTruthy();
-			expect(encounterConfig?.suggestedStructure?.toLowerCase()).toMatch(
+		it('should have suggested structure for combat fields', () => {
+			expect(combatConfig?.suggestedStructure).toBeTruthy();
+			expect(combatConfig?.suggestedStructure?.toLowerCase()).toMatch(
 				/enemies|terrain|tactics|rewards/
 			);
 		});
@@ -437,7 +437,7 @@ describe('generationTypes configuration', () => {
 				'npc',
 				'location',
 				'plot_hook',
-				'encounter',
+				'combat',
 				'item',
 				'faction',
 				'session_prep'
@@ -520,8 +520,8 @@ describe('generationTypes configuration', () => {
 			const locationConfig = getGenerationTypeConfig('location');
 			expect(locationConfig?.promptTemplate).toContain('location');
 
-			const encounterConfig = getGenerationTypeConfig('encounter');
-			expect(encounterConfig?.promptTemplate).toContain('encounter');
+			const combatConfig = getGenerationTypeConfig('combat');
+			expect(combatConfig?.promptTemplate).toMatch(/combat|encounter/);
 		});
 
 		it('should mention structure in prompt templates', () => {

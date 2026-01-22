@@ -264,7 +264,7 @@ Templates provide pre-configured fields for common Draw Steel mechanics. When yo
 
 **Available Templates:**
 
-- **Monster/Threat**: Track enemies with threat level, role, AC, HP, movement, and abilities
+- **Monster/Threat**: Track enemies with threat level, role, AC, Stamina, movement, and abilities
 - **Ability/Power**: Class abilities and kit powers with action cost, range, keywords, and effects
 - **Condition**: Status effects with duration, severity, and mechanical effects
 - **Negotiation Outcome**: Negotiation results with tier, benefit/consequence, and requirements
@@ -623,8 +623,8 @@ From the Field Templates page (`/settings/field-templates`):
 ```
 Fields:
 - ac (number): Armor Class
-- hp (number): Hit Points
-- currentHP (number): Current HP
+- stamina (number): Stamina
+- currentStamina (number): Current Stamina
 - speed (number): Speed in feet
 - initiative (number): Initiative bonus
 ```
@@ -763,7 +763,7 @@ Validation errors appear immediately in the form, preventing invalid configurati
 Start with a few essential fields. You can always add more later.
 
 **Use Descriptive Keys**
-Field keys should be readable: `castingTime` not `ct`, `hitPoints` not `hp`.
+Field keys should be readable: `castingTime` not `ct`, `stamina` not `st`.
 
 **Leverage Computed Fields**
 Use computed fields for derived values to keep data consistent:
@@ -1645,7 +1645,7 @@ When you select a game system, entity forms automatically adapt to show system-a
   - Class: Class, Kit, Heroic Resource, Class Features
   - Characteristics: Might, Agility, Reason, Intuition, Presence
   - Skills with training levels (Trained, Expert, Master)
-  - Health: Max HP, Current HP, Vitality, Conditions
+  - Health: Max Stamina, Current Stamina, Vitality, Conditions
   - Resources: XP, Gold, Weapons, Armor
 - **NPCs**: Threat Level (minion/standard/elite/boss/solo), Combat Role (ambusher, artillery, brute, controller, defender, harrier, hexer, leader, mount, support)
 - **Encounters**: Victory Points, Negotiation DC, Challenge Level, Threats (entity references to NPCs), Environment, Victory Conditions, Defeat Conditions, Read-Aloud Text, Tactical Notes, Treasure & Rewards, Negotiation Position (hostile/unfavorable/neutral/favorable/friendly), Negotiation Motivations, system-specific encounter types (combat, negotiation, montage, exploration, social, puzzle, trap)

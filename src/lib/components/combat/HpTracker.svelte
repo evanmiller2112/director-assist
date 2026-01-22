@@ -98,17 +98,17 @@
 		data-testid="hp-display"
 		aria-live="polite"
 		aria-label={combatant.maxHp !== undefined
-			? `${Math.max(0, combatant.hp)} out of ${combatant.maxHp} hit points`
-			: `${Math.max(0, combatant.hp)} hit points`}
+			? `${Math.max(0, combatant.hp)} out of ${combatant.maxHp} stamina`
+			: `${Math.max(0, combatant.hp)} stamina`}
 	>
 		<div class="flex items-center justify-between mb-2">
 			<div class="text-lg font-semibold text-slate-900 dark:text-white">
 				{#if combatant.maxHp !== undefined}
 					<span>{Math.max(0, combatant.hp)} / {combatant.maxHp}</span>
-					<span class="text-xs text-slate-500 dark:text-slate-400 ml-2">HP</span>
+					<span class="text-xs text-slate-500 dark:text-slate-400 ml-2">Stamina</span>
 				{:else}
 					<span>{Math.max(0, combatant.hp)}</span>
-					<span class="text-xs text-slate-500 dark:text-slate-400 ml-2">HP</span>
+					<span class="text-xs text-slate-500 dark:text-slate-400 ml-2">Stamina</span>
 				{/if}
 			</div>
 			{#if isBloodied && !isDefeated}
@@ -133,7 +133,7 @@
 		<!-- Temp HP -->
 		{#if combatant.tempHp > 0}
 			<div class="mt-2 text-sm text-blue-600 dark:text-blue-400">
-				Temp HP: {combatant.tempHp}
+				Temp Stamina: {combatant.tempHp}
 			</div>
 		{/if}
 	</div>
@@ -181,7 +181,7 @@
 			Healing
 		</label>
 		{#if isAtMaxHp}
-			<p class="text-sm text-slate-500 dark:text-slate-400">At max HP</p>
+			<p class="text-sm text-slate-500 dark:text-slate-400">At max Stamina</p>
 		{:else}
 			<div class="flex gap-2">
 				<input
@@ -208,7 +208,7 @@
 
 			{#if showPreview && previewHealedHp() !== null}
 				<p class="text-xs text-slate-600 dark:text-slate-400 mt-1">
-					Will be {previewHealedHp()} HP
+					Will be {previewHealedHp()} Stamina
 				</p>
 			{/if}
 
@@ -223,7 +223,7 @@
 
 	<!-- Temp HP Controls -->
 	<div class="temp-hp-section">
-		<label for="temp-hp-input" class="label">Temp HP</label>
+		<label for="temp-hp-input" class="label">Temp Stamina</label>
 		<div class="flex gap-2">
 			<input
 				id="temp-hp-input"
@@ -238,9 +238,9 @@
 				class="btn btn-secondary"
 				onclick={handleSetTempHp}
 				disabled={tempHpButtonDisabled}
-				aria-label="Set temporary HP"
+				aria-label="Set temporary Stamina"
 			>
-				Set Temp HP
+				Set Temp Stamina
 			</button>
 		</div>
 	</div>

@@ -37,7 +37,7 @@ export type GenerationType =
 	| 'npc'
 	| 'location'
 	| 'plot_hook'
-	| 'encounter'
+	| 'combat'
 	| 'item'
 	| 'faction'
 	| 'session_prep'

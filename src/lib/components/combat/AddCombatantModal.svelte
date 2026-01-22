@@ -87,16 +87,16 @@
 		const maxHpNum = parseInt(maxHp, 10);
 
 		if (hp && hpNum < 0) {
-			newErrors.hp = 'HP must be positive';
+			newErrors.hp = 'Stamina must be positive';
 		}
 
 		if (maxHp && maxHpNum <= 0) {
-			newErrors.maxHp = 'Max HP must be greater than 0';
+			newErrors.maxHp = 'Max Stamina must be greater than 0';
 		}
 
 		// Only validate HP <= maxHp if both are provided
 		if (hp && maxHp && maxHpNum > 0 && hpNum > maxHpNum) {
-			newErrors.hp = 'HP cannot exceed Max HP';
+			newErrors.hp = 'Stamina cannot exceed Max Stamina';
 		}
 
 		if (combatantType === 'hero') {
@@ -304,7 +304,7 @@
 
 						<!-- Quick HP -->
 						<div>
-							<label for="quick-hp" class="label">HP</label>
+							<label for="quick-hp" class="label">Stamina</label>
 							<input
 								id="quick-hp"
 								type="number"
@@ -312,8 +312,8 @@
 								bind:value={quickHp}
 								min="1"
 								step="1"
-								placeholder="Current HP"
-								aria-label="HP"
+								placeholder="Current Stamina"
+								aria-label="Stamina"
 							/>
 						</div>
 					</div>
@@ -396,7 +396,7 @@
 							<!-- HP -->
 							<div class="grid grid-cols-2 gap-4">
 								<div>
-									<label for="hp" class="label">HP</label>
+									<label for="hp" class="label">Stamina</label>
 									<input
 										id="hp"
 										type="number"
@@ -404,14 +404,14 @@
 										bind:value={hp}
 										min="0"
 										step="1"
-										aria-label="HP"
+										aria-label="Stamina"
 									/>
 									{#if errors.hp}
 										<p class="text-xs text-red-600 dark:text-red-400 mt-1">{errors.hp}</p>
 									{/if}
 								</div>
 								<div>
-									<label for="max-hp" class="label">Max HP (optional)</label>
+									<label for="max-hp" class="label">Max Stamina (optional)</label>
 									<input
 										id="max-hp"
 										type="number"
@@ -420,7 +420,7 @@
 										min="1"
 										step="1"
 										placeholder="Optional"
-										aria-label="Max HP"
+										aria-label="Max Stamina"
 									/>
 									{#if errors.maxHp}
 										<p class="text-xs text-red-600 dark:text-red-400 mt-1">{errors.maxHp}</p>

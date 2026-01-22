@@ -5,7 +5,6 @@ export type EntityType =
 	| 'location'
 	| 'faction'
 	| 'item'
-	| 'encounter'
 	| 'session'
 	| 'scene'
 	| 'deity'

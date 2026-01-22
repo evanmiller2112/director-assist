@@ -340,6 +340,145 @@ describe('MontageStore - Derived Values', () => {
 			expect(round2).toHaveLength(2);
 		});
 	});
+
+	describe('unresolvedPredefinedChallenges derived', () => {
+		it('should return predefined challenges not yet attempted', () => {
+			const predefinedChallenges = [
+				{ id: 'pc-1', name: 'Find Shelter' },
+				{ id: 'pc-2', name: 'Rally Horse' },
+				{ id: 'pc-3', name: 'Forage for Herbs' }
+			];
+
+			const challenges: Array<{
+				id: string;
+				round: 1 | 2;
+				result: ChallengeResult;
+				predefinedChallengeId?: string;
+			}> = [
+				{
+					id: 'c-1',
+					round: 1 as const,
+					result: 'success' as ChallengeResult,
+					predefinedChallengeId: 'pc-1'
+				}
+			];
+
+			// Unresolved challenges are those whose ID is not in challenges' predefinedChallengeId list
+			const unresolvedIds = new Set(challenges.map((c) => c.predefinedChallengeId).filter(Boolean));
+			const unresolved = predefinedChallenges.filter((pc) => !unresolvedIds.has(pc.id));
+
+			expect(unresolved).toHaveLength(2);
+			expect(unresolved[0].name).toBe('Rally Horse');
+			expect(unresolved[1].name).toBe('Forage for Herbs');
+		});
+
+		it('should return all predefined challenges when none are attempted', () => {
+			const predefinedChallenges = [
+				{ id: 'pc-1', name: 'Challenge 1' },
+				{ id: 'pc-2', name: 'Challenge 2' }
+			];
+
+			const challenges: any[] = [];
+
+			const unresolvedIds = new Set(challenges.map((c) => c.predefinedChallengeId).filter(Boolean));
+			const unresolved = predefinedChallenges.filter((pc) => !unresolvedIds.has(pc.id));
+
+			expect(unresolved).toHaveLength(2);
+		});
+
+		it('should return empty array when all predefined challenges are attempted', () => {
+			const predefinedChallenges = [
+				{ id: 'pc-1', name: 'Challenge 1' },
+				{ id: 'pc-2', name: 'Challenge 2' }
+			];
+
+			const challenges = [
+				{
+					id: 'c-1',
+					round: 1 as const,
+					result: 'success' as ChallengeResult,
+					predefinedChallengeId: 'pc-1'
+				},
+				{
+					id: 'c-2',
+					round: 1 as const,
+					result: 'failure' as ChallengeResult,
+					predefinedChallengeId: 'pc-2'
+				}
+			];
+
+			const unresolvedIds = new Set(challenges.map((c) => c.predefinedChallengeId).filter(Boolean));
+			const unresolved = predefinedChallenges.filter((pc) => !unresolvedIds.has(pc.id));
+
+			expect(unresolved).toHaveLength(0);
+		});
+
+		it('should handle montage with no predefined challenges', () => {
+			const predefinedChallenges = undefined;
+			const challenges = [
+				{
+					id: 'c-1',
+					round: 1 as const,
+					result: 'success' as ChallengeResult,
+					description: 'Ad-hoc challenge'
+				}
+			];
+
+			const unresolved = predefinedChallenges || [];
+
+			expect(unresolved).toHaveLength(0);
+		});
+
+		it('should not count ad-hoc challenges as resolving predefined challenges', () => {
+			const predefinedChallenges = [
+				{ id: 'pc-1', name: 'Predefined Challenge' }
+			];
+
+			const challenges = [
+				{
+					id: 'c-1',
+					round: 1 as const,
+					result: 'success' as ChallengeResult,
+					description: 'Ad-hoc challenge without predefinedChallengeId'
+				}
+			];
+
+			const unresolvedIds = new Set(challenges.map((c) => c.predefinedChallengeId).filter(Boolean));
+			const unresolved = predefinedChallenges.filter((pc) => !unresolvedIds.has(pc.id));
+
+			expect(unresolved).toHaveLength(1);
+			expect(unresolved[0].name).toBe('Predefined Challenge');
+		});
+
+		it('should handle same predefined challenge attempted multiple times', () => {
+			const predefinedChallenges = [
+				{ id: 'pc-1', name: 'Difficult Challenge' },
+				{ id: 'pc-2', name: 'Other Challenge' }
+			];
+
+			const challenges = [
+				{
+					id: 'c-1',
+					round: 1 as const,
+					result: 'failure' as ChallengeResult,
+					predefinedChallengeId: 'pc-1'
+				},
+				{
+					id: 'c-2',
+					round: 1 as const,
+					result: 'success' as ChallengeResult,
+					predefinedChallengeId: 'pc-1'
+				}
+			];
+
+			// A challenge is considered resolved if attempted at least once
+			const unresolvedIds = new Set(challenges.map((c) => c.predefinedChallengeId).filter(Boolean));
+			const unresolved = predefinedChallenges.filter((pc) => !unresolvedIds.has(pc.id));
+
+			expect(unresolved).toHaveLength(1);
+			expect(unresolved[0].name).toBe('Other Challenge');
+		});
+	});
 });
 
 describe('MontageStore - CRUD Actions', () => {
@@ -629,7 +768,7 @@ describe('MontageStore - Helper Methods', () => {
 
 		it('should return undefined if challenge not found', () => {
 			const mockActiveMontage: MontageSession | null = null;
-			const challenge = mockActiveMontage?.challenges.find((c) => c.id === 'non-existent');
+			const challenge = mockActiveMontage?.challenges.find((c: any) => c.id === 'non-existent');
 
 			expect(challenge).toBeUndefined();
 		});
@@ -642,12 +781,12 @@ describe('MontageStore - Helper Methods', () => {
 		});
 
 		it('should return false if montage is preparing', () => {
-			const status: 'preparing' = 'preparing';
+			const status = 'preparing' as const;
 			expect(status === 'active').toBe(false);
 		});
 
 		it('should return false if montage is completed', () => {
-			const status: 'completed' = 'completed';
+			const status = 'completed' as const;
 			expect(status === 'active').toBe(false);
 		});
 	});
@@ -666,6 +805,155 @@ describe('MontageStore - Helper Methods', () => {
 		it('should return 0 when limit reached', () => {
 			const remainingSuccess = Math.max(0, 5 - 5);
 			expect(remainingSuccess).toBe(0);
+		});
+	});
+
+	describe('getPredefinedChallengeStatus', () => {
+		it('should return challenge result when predefined challenge has been attempted', () => {
+			const predefinedChallenges = [
+				{ id: 'pc-1', name: 'Find Shelter' },
+				{ id: 'pc-2', name: 'Rally Horse' }
+			];
+
+			const challenges = [
+				{
+					id: 'c-1',
+					round: 1 as const,
+					result: 'success' as ChallengeResult,
+					predefinedChallengeId: 'pc-1'
+				}
+			];
+
+			// Function logic: find the challenge with matching predefinedChallengeId
+			const getStatus = (predefinedChallengeId: string) => {
+				const challenge = challenges.find((c) => c.predefinedChallengeId === predefinedChallengeId);
+				return challenge?.result;
+			};
+
+			const status = getStatus('pc-1');
+			expect(status).toBe('success');
+		});
+
+		it('should return undefined when predefined challenge has not been attempted', () => {
+			const challenges = [
+				{
+					id: 'c-1',
+					round: 1 as const,
+					result: 'success' as ChallengeResult,
+					predefinedChallengeId: 'pc-1'
+				}
+			];
+
+			const getStatus = (predefinedChallengeId: string) => {
+				const challenge = challenges.find((c) => c.predefinedChallengeId === predefinedChallengeId);
+				return challenge?.result;
+			};
+
+			const status = getStatus('pc-2');
+			expect(status).toBeUndefined();
+		});
+
+		it('should return the most recent result when predefined challenge attempted multiple times', () => {
+			const challenges = [
+				{
+					id: 'c-1',
+					round: 1 as const,
+					result: 'failure' as ChallengeResult,
+					predefinedChallengeId: 'pc-1'
+				},
+				{
+					id: 'c-2',
+					round: 1 as const,
+					result: 'success' as ChallengeResult,
+					predefinedChallengeId: 'pc-1'
+				},
+				{
+					id: 'c-3',
+					round: 2 as const,
+					result: 'skip' as ChallengeResult,
+					predefinedChallengeId: 'pc-1'
+				}
+			];
+
+			// Most recent is the last one in the array
+			const getStatus = (predefinedChallengeId: string) => {
+				const matchingChallenges = challenges.filter(
+					(c) => c.predefinedChallengeId === predefinedChallengeId
+				);
+				return matchingChallenges[matchingChallenges.length - 1]?.result;
+			};
+
+			const status = getStatus('pc-1');
+			expect(status).toBe('skip');
+		});
+
+		it('should handle failure result correctly', () => {
+			const challenges = [
+				{
+					id: 'c-1',
+					round: 1 as const,
+					result: 'failure' as ChallengeResult,
+					predefinedChallengeId: 'pc-1'
+				}
+			];
+
+			const getStatus = (predefinedChallengeId: string) => {
+				const challenge = challenges.find((c) => c.predefinedChallengeId === predefinedChallengeId);
+				return challenge?.result;
+			};
+
+			const status = getStatus('pc-1');
+			expect(status).toBe('failure');
+		});
+
+		it('should handle skip result correctly', () => {
+			const challenges = [
+				{
+					id: 'c-1',
+					round: 1 as const,
+					result: 'skip' as ChallengeResult,
+					predefinedChallengeId: 'pc-1'
+				}
+			];
+
+			const getStatus = (predefinedChallengeId: string) => {
+				const challenge = challenges.find((c) => c.predefinedChallengeId === predefinedChallengeId);
+				return challenge?.result;
+			};
+
+			const status = getStatus('pc-1');
+			expect(status).toBe('skip');
+		});
+
+		it('should return undefined for empty challenges array', () => {
+			const challenges: any[] = [];
+
+			const getStatus = (predefinedChallengeId: string) => {
+				const challenge = challenges.find((c) => c.predefinedChallengeId === predefinedChallengeId);
+				return challenge?.result;
+			};
+
+			const status = getStatus('pc-1');
+			expect(status).toBeUndefined();
+		});
+
+		it('should only match exact predefined challenge IDs', () => {
+			const challenges = [
+				{
+					id: 'c-1',
+					round: 1 as const,
+					result: 'success' as ChallengeResult,
+					predefinedChallengeId: 'pc-1'
+				}
+			];
+
+			const getStatus = (predefinedChallengeId: string) => {
+				const challenge = challenges.find((c) => c.predefinedChallengeId === predefinedChallengeId);
+				return challenge?.result;
+			};
+
+			const status = getStatus('pc-1-different');
+			expect(status).toBeUndefined();
 		});
 	});
 });

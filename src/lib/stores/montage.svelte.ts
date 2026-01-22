@@ -136,6 +136,22 @@ function createMontageStore() {
 		return activeMontage.challenges.filter((c) => c.round === 2);
 	});
 
+	/**
+	 * Predefined challenges that have not been resolved yet.
+	 * A challenge is considered resolved if it has been attempted at least once.
+	 */
+	const unresolvedPredefinedChallenges = $derived.by(() => {
+		if (!activeMontage?.predefinedChallenges) {
+			return [];
+		}
+		const resolvedIds = new Set(
+			activeMontage.challenges
+				.filter((c) => c.predefinedChallengeId)
+				.map((c) => c.predefinedChallengeId)
+		);
+		return activeMontage.predefinedChallenges.filter((pc) => !resolvedIds.has(pc.id));
+	});
+
 	// ========================================================================
 	// Helper Methods
 	// ========================================================================
@@ -302,6 +318,21 @@ function createMontageStore() {
 		error = null;
 	}
 
+	/**
+	 * Get the status of a predefined challenge.
+	 * Returns the most recent challenge result for the given predefined challenge ID.
+	 */
+	function getPredefinedChallengeStatus(predefinedChallengeId: string): MontageChallenge | undefined {
+		if (!activeMontage) {
+			return undefined;
+		}
+		// Return the most recent result for this predefined challenge
+		const matches = activeMontage.challenges.filter(
+			(c) => c.predefinedChallengeId === predefinedChallengeId
+		);
+		return matches.length > 0 ? matches[matches.length - 1] : undefined;
+	}
+
 	// ========================================================================
 	// Return Store API
 	// ========================================================================
@@ -343,6 +374,9 @@ function createMontageStore() {
 		get round2Challenges() {
 			return round2Challenges;
 		},
+		get unresolvedPredefinedChallenges() {
+			return unresolvedPredefinedChallenges;
+		},
 
 		// CRUD
 		createMontage,
@@ -362,6 +396,7 @@ function createMontageStore() {
 		getChallengeById,
 		canRecordChallenge,
 		getRemainingChallenges,
+		getPredefinedChallengeStatus,
 		clearError,
 
 		// Cleanup

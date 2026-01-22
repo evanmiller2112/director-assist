@@ -1,5 +1,6 @@
 <script lang="ts">
-	import type { CreateMontageInput, MontageDifficulty } from '$lib/types/montage';
+	import type { CreateMontageInput, MontageDifficulty, PredefinedChallenge } from '$lib/types/montage';
+	import PredefinedChallengeInput from './PredefinedChallengeInput.svelte';
 
 	interface Props {
 		onSubmit: (input: CreateMontageInput) => Promise<void>;
@@ -12,8 +13,13 @@
 	let description = $state('');
 	let difficulty = $state<MontageDifficulty>('moderate');
 	let playerCount = $state(4);
+	let predefinedChallenges = $state<Omit<PredefinedChallenge, 'id'>[]>([]);
 	let isSubmitting = $state(false);
 	let error = $state<string | null>(null);
+
+	function handlePredefinedChallengesUpdate(challenges: Omit<PredefinedChallenge, 'id'>[]) {
+		predefinedChallenges = challenges;
+	}
 
 	async function handleSubmit(e: Event) {
 		e.preventDefault();
@@ -38,7 +44,8 @@
 				name: name.trim(),
 				description: description.trim() || undefined,
 				difficulty,
-				playerCount
+				playerCount,
+				...(predefinedChallenges.length > 0 && { predefinedChallenges })
 			});
 		} catch (err: any) {
 			error = err.message;
@@ -112,6 +119,15 @@
 				disabled={isSubmitting}
 			/>
 		</div>
+	</div>
+
+	<!-- Predefined Challenges -->
+	<div>
+		<PredefinedChallengeInput
+			challenges={predefinedChallenges}
+			onUpdate={handlePredefinedChallengesUpdate}
+			disabled={isSubmitting}
+		/>
 	</div>
 
 	<!-- Difficulty Info -->

@@ -1107,3 +1107,261 @@ describe('MontageRepository - Challenge Recording', () => {
 		});
 	});
 });
+
+describe('MontageRepository - Predefined Challenges', () => {
+	beforeEach(async () => {
+		await db.montageSessions.clear();
+	});
+
+	afterEach(async () => {
+		await db.montageSessions.clear();
+	});
+
+	describe('create with predefined challenges', () => {
+		it('should create montage with predefined challenges and generate IDs', async () => {
+			const montage = await montageRepository.create({
+				name: 'Keep Moving',
+				description: 'A journey through dangerous terrain',
+				difficulty: 'moderate',
+				playerCount: 4,
+				predefinedChallenges: [
+					{
+						name: 'Find Shelter',
+						description: 'Locate a safe place to rest',
+						suggestedSkills: ['Search', 'Nature']
+					},
+					{
+						name: 'Rally Horse',
+						description: 'Calm and gather the horses',
+						suggestedSkills: ['Animal Handling']
+					},
+					{
+						name: 'Forage for Herbs',
+						description: 'Find medicinal plants',
+						suggestedSkills: ['Nature', 'Medicine']
+					}
+				]
+			});
+
+			expect(montage.predefinedChallenges).toBeDefined();
+			expect(montage.predefinedChallenges).toHaveLength(3);
+
+			// Each predefined challenge should have a generated ID
+			expect(montage.predefinedChallenges![0].id).toBeDefined();
+			expect(montage.predefinedChallenges![0].name).toBe('Find Shelter');
+			expect(montage.predefinedChallenges![0].description).toBe('Locate a safe place to rest');
+			expect(montage.predefinedChallenges![0].suggestedSkills).toEqual(['Search', 'Nature']);
+
+			expect(montage.predefinedChallenges![1].id).toBeDefined();
+			expect(montage.predefinedChallenges![1].name).toBe('Rally Horse');
+
+			expect(montage.predefinedChallenges![2].id).toBeDefined();
+			expect(montage.predefinedChallenges![2].name).toBe('Forage for Herbs');
+
+			// IDs should be unique
+			const ids = montage.predefinedChallenges!.map((c) => c.id);
+			const uniqueIds = new Set(ids);
+			expect(uniqueIds.size).toBe(3);
+		});
+
+		it('should create montage without predefined challenges (backward compatible)', async () => {
+			const montage = await montageRepository.create({
+				name: 'Classic Montage',
+				difficulty: 'easy',
+				playerCount: 3
+			});
+
+			expect(montage.predefinedChallenges).toBeUndefined();
+			expect(montage.challenges).toEqual([]);
+			expect(montage.status).toBe('preparing');
+		});
+
+		it('should handle predefined challenges without optional fields', async () => {
+			const montage = await montageRepository.create({
+				name: 'Simple Challenges',
+				difficulty: 'hard',
+				playerCount: 5,
+				predefinedChallenges: [
+					{ name: 'Challenge 1' },
+					{ name: 'Challenge 2' },
+					{ name: 'Challenge 3' }
+				]
+			});
+
+			expect(montage.predefinedChallenges).toHaveLength(3);
+			expect(montage.predefinedChallenges![0].description).toBeUndefined();
+			expect(montage.predefinedChallenges![0].suggestedSkills).toBeUndefined();
+		});
+
+		it('should handle empty predefined challenges array', async () => {
+			const montage = await montageRepository.create({
+				name: 'No Predefined Challenges',
+				difficulty: 'moderate',
+				playerCount: 4,
+				predefinedChallenges: []
+			});
+
+			expect(montage.predefinedChallenges).toEqual([]);
+		});
+	});
+
+	describe('recordChallengeResult with predefined challenges', () => {
+		let montageId: string;
+		let predefinedChallengeIds: string[];
+
+		beforeEach(async () => {
+			const montage = await montageRepository.create({
+				name: 'Predefined Test Montage',
+				difficulty: 'moderate',
+				playerCount: 4,
+				predefinedChallenges: [
+					{ name: 'Challenge A', description: 'First challenge' },
+					{ name: 'Challenge B', description: 'Second challenge' },
+					{ name: 'Challenge C', description: 'Third challenge' }
+				]
+			});
+			montageId = montage.id;
+			predefinedChallengeIds = montage.predefinedChallenges!.map((c) => c.id);
+			await montageRepository.startMontage(montageId);
+		});
+
+		it('should record challenge result linked to predefined challenge', async () => {
+			const montage = await montageRepository.recordChallengeResult(montageId, {
+				result: 'success',
+				description: 'Successfully completed Challenge A',
+				playerName: 'Aragorn',
+				predefinedChallengeId: predefinedChallengeIds[0]
+			});
+
+			expect(montage.challenges).toHaveLength(1);
+			expect(montage.challenges[0].result).toBe('success');
+			expect(montage.challenges[0].predefinedChallengeId).toBe(predefinedChallengeIds[0]);
+			expect(montage.challenges[0].description).toBe('Successfully completed Challenge A');
+			expect(montage.successCount).toBe(1);
+		});
+
+		it('should record multiple results for different predefined challenges', async () => {
+			await montageRepository.recordChallengeResult(montageId, {
+				result: 'success',
+				playerName: 'Aragorn',
+				predefinedChallengeId: predefinedChallengeIds[0]
+			});
+
+			await montageRepository.recordChallengeResult(montageId, {
+				result: 'failure',
+				playerName: 'Legolas',
+				predefinedChallengeId: predefinedChallengeIds[1]
+			});
+
+			const montage = await montageRepository.recordChallengeResult(montageId, {
+				result: 'success',
+				playerName: 'Gimli',
+				predefinedChallengeId: predefinedChallengeIds[2]
+			});
+
+			expect(montage.challenges).toHaveLength(3);
+			expect(montage.challenges[0].predefinedChallengeId).toBe(predefinedChallengeIds[0]);
+			expect(montage.challenges[1].predefinedChallengeId).toBe(predefinedChallengeIds[1]);
+			expect(montage.challenges[2].predefinedChallengeId).toBe(predefinedChallengeIds[2]);
+			expect(montage.successCount).toBe(2);
+			expect(montage.failureCount).toBe(1);
+		});
+
+		it('should record ad-hoc challenge without predefined challenge ID', async () => {
+			const montage = await montageRepository.recordChallengeResult(montageId, {
+				result: 'success',
+				description: 'Improvised challenge',
+				playerName: 'Gandalf'
+			});
+
+			expect(montage.challenges).toHaveLength(1);
+			expect(montage.challenges[0].predefinedChallengeId).toBeUndefined();
+			expect(montage.challenges[0].description).toBe('Improvised challenge');
+			expect(montage.successCount).toBe(1);
+		});
+
+		it('should allow mixing predefined and ad-hoc challenges', async () => {
+			await montageRepository.recordChallengeResult(montageId, {
+				result: 'success',
+				playerName: 'Aragorn',
+				predefinedChallengeId: predefinedChallengeIds[0]
+			});
+
+			await montageRepository.recordChallengeResult(montageId, {
+				result: 'failure',
+				description: 'Unexpected obstacle',
+				playerName: 'Legolas'
+			});
+
+			const montage = await montageRepository.recordChallengeResult(montageId, {
+				result: 'success',
+				playerName: 'Gimli',
+				predefinedChallengeId: predefinedChallengeIds[1]
+			});
+
+			expect(montage.challenges).toHaveLength(3);
+			expect(montage.challenges[0].predefinedChallengeId).toBe(predefinedChallengeIds[0]);
+			expect(montage.challenges[1].predefinedChallengeId).toBeUndefined();
+			expect(montage.challenges[2].predefinedChallengeId).toBe(predefinedChallengeIds[1]);
+		});
+
+		it('should allow same predefined challenge to be attempted multiple times', async () => {
+			await montageRepository.recordChallengeResult(montageId, {
+				result: 'failure',
+				playerName: 'Aragorn',
+				notes: 'First attempt failed',
+				predefinedChallengeId: predefinedChallengeIds[0]
+			});
+
+			const montage = await montageRepository.recordChallengeResult(montageId, {
+				result: 'success',
+				playerName: 'Legolas',
+				notes: 'Second attempt succeeded',
+				predefinedChallengeId: predefinedChallengeIds[0]
+			});
+
+			expect(montage.challenges).toHaveLength(2);
+			expect(montage.challenges[0].predefinedChallengeId).toBe(predefinedChallengeIds[0]);
+			expect(montage.challenges[0].result).toBe('failure');
+			expect(montage.challenges[1].predefinedChallengeId).toBe(predefinedChallengeIds[0]);
+			expect(montage.challenges[1].result).toBe('success');
+			expect(montage.successCount).toBe(1);
+			expect(montage.failureCount).toBe(1);
+		});
+
+		it('should record skipped predefined challenge', async () => {
+			const montage = await montageRepository.recordChallengeResult(montageId, {
+				result: 'skip',
+				notes: 'Party decided to skip this challenge',
+				predefinedChallengeId: predefinedChallengeIds[1]
+			});
+
+			expect(montage.challenges).toHaveLength(1);
+			expect(montage.challenges[0].result).toBe('skip');
+			expect(montage.challenges[0].predefinedChallengeId).toBe(predefinedChallengeIds[1]);
+			expect(montage.successCount).toBe(0);
+			expect(montage.failureCount).toBe(0);
+		});
+	});
+
+	describe('backward compatibility', () => {
+		it('should work with montages created without predefined challenges', async () => {
+			const montage = await montageRepository.create({
+				name: 'Legacy Montage',
+				difficulty: 'easy',
+				playerCount: 3
+			});
+
+			await montageRepository.startMontage(montage.id);
+
+			const updated = await montageRepository.recordChallengeResult(montage.id, {
+				result: 'success',
+				description: 'Old style challenge'
+			});
+
+			expect(updated.predefinedChallenges).toBeUndefined();
+			expect(updated.challenges).toHaveLength(1);
+			expect(updated.challenges[0].predefinedChallengeId).toBeUndefined();
+		});
+	});
+});

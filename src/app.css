@@ -73,6 +73,9 @@
 	.entity-card[data-type='session'] {
 		@apply border-l-4 border-l-session;
 	}
+	.entity-card[data-type='scene'] {
+		@apply border-l-4 border-l-scene;
+	}
 	.entity-card[data-type='deity'] {
 		@apply border-l-4 border-l-deity;
 	}

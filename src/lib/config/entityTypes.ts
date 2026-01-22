@@ -472,6 +472,90 @@ export const BUILT_IN_ENTITY_TYPES: EntityTypeDefinition[] = [
 		defaultRelationships: ['involved', 'took_place_at']
 	},
 	{
+		type: 'scene',
+		label: 'Scene',
+		labelPlural: 'Scenes',
+		icon: 'theater',
+		color: 'scene',
+		isBuiltIn: true,
+		fieldDefinitions: [
+			{
+				key: 'sceneStatus',
+				label: 'Status',
+				type: 'select',
+				options: ['planned', 'in_progress', 'completed'],
+				required: true,
+				defaultValue: 'planned',
+				order: 1
+			},
+			{
+				key: 'location',
+				label: 'Location',
+				type: 'entity-ref',
+				entityTypes: ['location'],
+				required: false,
+				order: 2
+			},
+			{
+				key: 'npcsPresent',
+				label: 'NPCs Present',
+				type: 'entity-refs',
+				entityTypes: ['npc'],
+				required: false,
+				order: 3
+			},
+			{
+				key: 'sceneSettingText',
+				label: 'Scene Setting (Read-Aloud)',
+				type: 'richtext',
+				required: false,
+				order: 4,
+				helpText: 'Vivid description of the scene. Can be AI-generated from location and NPCs.'
+			},
+			{
+				key: 'whatHappened',
+				label: 'What Happened',
+				type: 'richtext',
+				required: false,
+				order: 5,
+				helpText: 'Record what actually happened during the scene.'
+			},
+			{
+				key: 'preSummary',
+				label: 'Pre-Scene Summary',
+				type: 'richtext',
+				required: false,
+				order: 6,
+				helpText: 'Brief summary of the scene setup (1-2 sentences). Can be AI-generated.'
+			},
+			{
+				key: 'postSummary',
+				label: 'Post-Scene Summary',
+				type: 'richtext',
+				required: false,
+				order: 7,
+				helpText: 'Brief summary of what happened (1-2 sentences). Can be AI-generated.'
+			},
+			{
+				key: 'mood',
+				label: 'Mood',
+				type: 'select',
+				options: ['tense', 'relaxed', 'mysterious', 'celebratory', 'somber', 'chaotic', 'peaceful', 'ominous'],
+				required: false,
+				order: 8
+			},
+			{
+				key: 'session',
+				label: 'Session',
+				type: 'entity-ref',
+				entityTypes: ['session'],
+				required: false,
+				order: 9
+			}
+		],
+		defaultRelationships: ['occurred_at', 'featured', 'part_of', 'leads_to', 'follows']
+	},
+	{
 		type: 'deity',
 		label: 'Deity',
 		labelPlural: 'Deities',
@@ -914,6 +998,7 @@ export function getDefaultEntityTypeOrder(): string[] {
 		'item',
 		'encounter',
 		'session',
+		'scene',
 		'deity',
 		'timeline_event',
 		'world_rule',

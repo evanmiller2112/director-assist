@@ -14,6 +14,7 @@ export default {
 				item: { DEFAULT: '#f97316', dark: '#c2410c' },
 				encounter: { DEFAULT: '#ef4444', dark: '#b91c1c' },
 				session: { DEFAULT: '#06b6d4', dark: '#0891b2' },
+				scene: { DEFAULT: '#9333ea', dark: '#7e22ce' },
 				deity: { DEFAULT: '#eab308', dark: '#a16207' },
 				timeline: { DEFAULT: '#64748b', dark: '#475569' },
 				rule: { DEFAULT: '#6366f1', dark: '#4f46e5' },

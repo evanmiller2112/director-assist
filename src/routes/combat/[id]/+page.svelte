@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
-	import { Plus, Minus } from 'lucide-svelte';
+	import { Plus, Minus, UserMinus, GripVertical } from 'lucide-svelte';
 	import { combatStore } from '$lib/stores';
 	import InitiativeTracker from '$lib/components/combat/InitiativeTracker.svelte';
 	import TurnControls from '$lib/components/combat/TurnControls.svelte';
@@ -13,6 +13,51 @@
 	const combatId = $derived($page.params.id);
 	let selectedCombatant = $state<Combatant | null>(null);
 	let showAddCombatantModal = $state(false);
+
+	// Resizable panel state
+	const MIN_PANEL_WIDTH = 280;
+	const MAX_PANEL_WIDTH = 600;
+	const DEFAULT_PANEL_WIDTH = 320;
+	const STORAGE_KEY = 'combat-panel-width';
+
+	let panelWidth = $state(DEFAULT_PANEL_WIDTH);
+	let isResizing = $state(false);
+
+	// Load saved width from localStorage
+	onMount(() => {
+		const saved = localStorage.getItem(STORAGE_KEY);
+		if (saved) {
+			const width = parseInt(saved, 10);
+			if (!isNaN(width) && width >= MIN_PANEL_WIDTH && width <= MAX_PANEL_WIDTH) {
+				panelWidth = width;
+			}
+		}
+	});
+
+	function startResize(e: MouseEvent) {
+		isResizing = true;
+		e.preventDefault();
+		document.addEventListener('mousemove', handleResize);
+		document.addEventListener('mouseup', stopResize);
+		document.body.style.cursor = 'col-resize';
+		document.body.style.userSelect = 'none';
+	}
+
+	function handleResize(e: MouseEvent) {
+		if (!isResizing) return;
+		const newWidth = Math.min(MAX_PANEL_WIDTH, Math.max(MIN_PANEL_WIDTH, e.clientX));
+		panelWidth = newWidth;
+	}
+
+	function stopResize() {
+		isResizing = false;
+		document.removeEventListener('mousemove', handleResize);
+		document.removeEventListener('mouseup', stopResize);
+		document.body.style.cursor = '';
+		document.body.style.userSelect = '';
+		// Save to localStorage
+		localStorage.setItem(STORAGE_KEY, String(panelWidth));
+	}
 
 	// Load the combat session
 	onMount(async () => {
@@ -68,6 +113,11 @@
 		await combatStore.endCombat(combat.id);
 	}
 
+	async function handleReopenCombat() {
+		if (!combat) return;
+		await combatStore.reopenCombat(combat.id);
+	}
+
 	async function handleApplyDamage(amount: number) {
 		if (!combat || !selectedCombatant) return;
 		await combatStore.applyDamage(combat.id, selectedCombatant.id, amount);
@@ -91,6 +141,17 @@
 	async function handleRemoveCondition(conditionName: string) {
 		if (!combat || !selectedCombatant) return;
 		await combatStore.removeCondition(combat.id, selectedCombatant.id, conditionName);
+	}
+
+	async function handleRemoveCombatant() {
+		if (!combat || !selectedCombatant) return;
+		await combatStore.removeCombatant(combat.id, selectedCombatant.id);
+		selectedCombatant = null;
+	}
+
+	async function handleReorderCombatant(combatantId: string, newPosition: number) {
+		if (!combat) return;
+		await combatStore.moveCombatantToPosition(combat.id, combatantId, newPosition);
 	}
 
 	async function handleUpdateConditionDuration(conditionName: string, newDuration: number) {
@@ -254,7 +315,10 @@
 		<!-- Main Content -->
 		<div class="flex flex-1 overflow-hidden">
 			<!-- Initiative Tracker (Left Side) -->
-			<div class="w-80 border-r border-slate-200 dark:border-slate-700 flex flex-col">
+			<div
+				class="border-r border-slate-200 dark:border-slate-700 flex flex-col flex-shrink-0"
+				style="width: {panelWidth}px"
+			>
 				<div class="p-4 border-b border-slate-200 dark:border-slate-700">
 					<button class="btn btn-primary w-full" onclick={() => (showAddCombatantModal = true)}>
 						<Plus class="w-4 h-4" />
@@ -277,7 +341,11 @@
 					</div>
 				{:else}
 					<div class="flex-1 overflow-hidden">
-						<InitiativeTracker {combat} onCombatantClick={handleCombatantClick} />
+						<InitiativeTracker
+							{combat}
+							onCombatantClick={handleCombatantClick}
+							onReorder={handleReorderCombatant}
+						/>
 					</div>
 				{/if}
 
@@ -290,8 +358,21 @@
 					onPauseCombat={handlePauseCombat}
 					onResumeCombat={handleResumeCombat}
 					onEndCombat={handleEndCombat}
+					onReopenCombat={handleReopenCombat}
 					loading={isLoading}
 				/>
+			</div>
+
+			<!-- Resize Handle -->
+			<!-- svelte-ignore a11y_no_static_element_interactions -->
+			<div
+				class="w-2 flex-shrink-0 cursor-col-resize flex items-center justify-center transition-colors group {isResizing ? 'bg-blue-300 dark:bg-blue-800' : 'bg-slate-100 dark:bg-slate-800 hover:bg-blue-200 dark:hover:bg-blue-900'}"
+				onmousedown={startResize}
+				role="separator"
+				aria-orientation="vertical"
+				aria-label="Resize panel"
+			>
+				<GripVertical class="w-4 h-4 transition-colors {isResizing ? 'text-blue-600' : 'text-slate-400 group-hover:text-blue-600 dark:group-hover:text-blue-400'}" />
 			</div>
 
 			<!-- Detail Panel (Right Side) -->
@@ -300,24 +381,36 @@
 					<div class="max-w-2xl mx-auto space-y-6">
 						<!-- Combatant Header -->
 						<div class="bg-white dark:bg-slate-800 rounded-lg p-6 border border-slate-200 dark:border-slate-700">
-							<h2 class="text-2xl font-bold text-slate-900 dark:text-white mb-2">
-								{selectedCombatant.name}
-							</h2>
-							<div class="flex items-center gap-4 text-sm text-slate-600 dark:text-slate-400">
+							<div class="flex items-start justify-between">
 								<div>
-									<span class="font-medium">Type:</span>
-									{selectedCombatant.type === 'hero' ? 'Hero' : 'Creature'}
-								</div>
-								<div>
-									<span class="font-medium">Initiative:</span>
-									{selectedCombatant.initiative}
-								</div>
-								{#if selectedCombatant.ac}
-									<div>
-										<span class="font-medium">AC:</span>
-										{selectedCombatant.ac}
+									<h2 class="text-2xl font-bold text-slate-900 dark:text-white mb-2">
+										{selectedCombatant.name}
+									</h2>
+									<div class="flex items-center gap-4 text-sm text-slate-600 dark:text-slate-400">
+										<div>
+											<span class="font-medium">Type:</span>
+											{selectedCombatant.type === 'hero' ? 'Hero' : 'Creature'}
+										</div>
+										<div>
+											<span class="font-medium">Initiative:</span>
+											{selectedCombatant.initiative}
+										</div>
+										{#if selectedCombatant.ac}
+											<div>
+												<span class="font-medium">AC:</span>
+												{selectedCombatant.ac}
+											</div>
+										{/if}
 									</div>
-								{/if}
+								</div>
+								<button
+									class="btn btn-secondary text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
+									onclick={handleRemoveCombatant}
+									aria-label="Remove combatant from combat"
+								>
+									<UserMinus class="w-4 h-4" />
+									Remove
+								</button>
 							</div>
 						</div>
 

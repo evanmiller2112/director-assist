@@ -1,20 +1,57 @@
 <script lang="ts">
+	import { ChevronUp, ChevronDown } from 'lucide-svelte';
 	import type { CombatSession, Combatant } from '$lib/types/combat';
 	import CombatantCard from './CombatantCard.svelte';
 
 	interface Props {
 		combat: CombatSession;
 		onCombatantClick?: (combatant: Combatant) => void;
+		onReorder?: (combatantId: string, newPosition: number) => void | Promise<void>;
 		compact?: boolean;
 	}
 
-	let { combat, onCombatantClick, compact = false }: Props = $props();
+	let { combat, onCombatantClick, onReorder, compact = false }: Props = $props();
 
-	const sortedCombatants = $derived(
-		[...combat.combatants].sort((a, b) => b.initiative - a.initiative)
-	);
+	// Use array order directly (no auto-sort)
+	const combatants = $derived(combat.combatants);
 
 	const isClickable = $derived(onCombatantClick !== undefined);
+	const canReorder = $derived(onReorder !== undefined);
+
+	function handleMoveUp(combatantId: string, currentIndex: number) {
+		if (onReorder && currentIndex > 0) {
+			onReorder(combatantId, currentIndex - 1);
+		}
+	}
+
+	function handleMoveDown(combatantId: string, currentIndex: number) {
+		if (onReorder && currentIndex < combatants.length - 1) {
+			onReorder(combatantId, currentIndex + 1);
+		}
+	}
+
+	function handlePositionChange(combatantId: string, event: Event) {
+		const input = event.target as HTMLInputElement;
+		const newPosition = parseInt(input.value, 10) - 1; // Convert 1-indexed to 0-indexed
+		if (onReorder && !isNaN(newPosition)) {
+			onReorder(combatantId, newPosition);
+		}
+	}
+
+	function handlePositionKeydown(combatantId: string, currentIndex: number, event: KeyboardEvent) {
+		if (event.key === 'Enter') {
+			const input = event.target as HTMLInputElement;
+			const newPosition = parseInt(input.value, 10) - 1;
+			if (onReorder && !isNaN(newPosition)) {
+				onReorder(combatantId, newPosition);
+			}
+			input.blur();
+		} else if (event.key === 'Escape') {
+			const input = event.target as HTMLInputElement;
+			input.value = String(currentIndex + 1);
+			input.blur();
+		}
+	}
 </script>
 
 <div class={`initiative-tracker ${compact ? 'compact' : ''} responsive`}>
@@ -35,7 +72,7 @@
 	</div>
 
 	<!-- Combatants List -->
-	{#if sortedCombatants.length === 0}
+	{#if combatants.length === 0}
 		<div class="p-8 text-center text-slate-500 dark:text-slate-400">
 			<p>No combatants in initiative order</p>
 		</div>
@@ -45,8 +82,8 @@
 			role="list"
 			aria-label="Initiative order and turn tracker"
 		>
-			{#each sortedCombatants as combatant, index}
-				{@const isCurrent = combat.combatants.indexOf(combatant) === combat.currentTurn}
+			{#each combatants as combatant, index}
+				{@const isCurrent = index === combat.currentTurn}
 				<li
 					class={`transition-colors ${
 						!isClickable ? '' : 'hover:bg-slate-50 dark:hover:bg-slate-800'
@@ -54,13 +91,45 @@
 					role="listitem"
 					aria-current={isCurrent ? 'true' : undefined}
 				>
-					<div class="p-3">
-						<CombatantCard
-							{combatant}
-							{isCurrent}
-							onClick={onCombatantClick}
-							{compact}
-						/>
+					<div class="p-3 flex items-start gap-2">
+						{#if canReorder}
+							<div class="flex flex-col items-center gap-0.5 pt-1">
+								<button
+									class="p-0.5 rounded text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:text-slate-300 dark:hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed"
+									onclick={() => handleMoveUp(combatant.id, index)}
+									disabled={index === 0}
+									aria-label="Move up"
+								>
+									<ChevronUp class="w-4 h-4" />
+								</button>
+								<input
+									type="number"
+									min="1"
+									max={combatants.length}
+									value={index + 1}
+									onchange={(e) => handlePositionChange(combatant.id, e)}
+									onkeydown={(e) => handlePositionKeydown(combatant.id, index, e)}
+									class="w-8 h-6 text-center text-xs font-medium bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+									aria-label="Position in initiative order"
+								/>
+								<button
+									class="p-0.5 rounded text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:text-slate-300 dark:hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed"
+									onclick={() => handleMoveDown(combatant.id, index)}
+									disabled={index === combatants.length - 1}
+									aria-label="Move down"
+								>
+									<ChevronDown class="w-4 h-4" />
+								</button>
+							</div>
+						{/if}
+						<div class="flex-1 min-w-0">
+							<CombatantCard
+								{combatant}
+								{isCurrent}
+								onClick={onCombatantClick}
+								{compact}
+							/>
+						</div>
 					</div>
 				</li>
 			{/each}

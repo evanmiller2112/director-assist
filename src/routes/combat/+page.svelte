@@ -1,8 +1,10 @@
 <script lang="ts">
-	import { Swords, Plus } from 'lucide-svelte';
+	import { Swords, Plus, Trash2 } from 'lucide-svelte';
 	import { goto } from '$app/navigation';
 	import { combatStore } from '$lib/stores';
 	import { formatDistanceToNow } from 'date-fns';
+
+	let confirmDeleteId = $state<string | null>(null);
 
 	// Simple reactive access to combats that works with both real store and test mocks
 	const combats = $derived(combatStore.getAll());
@@ -47,6 +49,22 @@
 			goto(`/combat/${combatId}`);
 		}
 	}
+
+	function handleDeleteClick(event: MouseEvent, combatId: string) {
+		event.stopPropagation();
+		confirmDeleteId = combatId;
+	}
+
+	async function handleConfirmDelete() {
+		if (confirmDeleteId) {
+			await combatStore.deleteCombat(confirmDeleteId);
+			confirmDeleteId = null;
+		}
+	}
+
+	function handleCancelDelete() {
+		confirmDeleteId = null;
+	}
 </script>
 
 <div class="combat-list-page p-6 max-w-7xl mx-auto">
@@ -90,7 +108,7 @@
 					onclick={() => handleCombatClick(combat.id)}
 					onkeydown={(e) => handleCardKeydown(e, combat.id)}
 				>
-					<!-- Status Badge -->
+					<!-- Status Badge and Delete Button -->
 					<div class="flex items-center justify-between mb-3">
 						<span
 							class={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeClass(combat.status)}`}
@@ -98,11 +116,20 @@
 						>
 							{combat.status.charAt(0).toUpperCase() + combat.status.slice(1)}
 						</span>
-						{#if combat.status === 'active' || combat.status === 'paused'}
-							<span class="text-sm font-medium text-slate-600 dark:text-slate-400">
-								Round {combat.currentRound}
-							</span>
-						{/if}
+						<div class="flex items-center gap-2">
+							{#if combat.status === 'active' || combat.status === 'paused'}
+								<span class="text-sm font-medium text-slate-600 dark:text-slate-400">
+									Round {combat.currentRound}
+								</span>
+							{/if}
+							<button
+								class="p-1.5 rounded-md text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:text-red-400 dark:hover:bg-red-900/20 transition-colors"
+								onclick={(e) => handleDeleteClick(e, combat.id)}
+								aria-label="Delete combat"
+							>
+								<Trash2 class="w-4 h-4" />
+							</button>
+						</div>
 					</div>
 
 					<!-- Combat Name -->
@@ -140,6 +167,45 @@
 		</div>
 	{/if}
 </div>
+
+<!-- Delete Confirmation Dialog -->
+{#if confirmDeleteId}
+	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+	<div
+		class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+		onclick={handleCancelDelete}
+		onkeydown={(e) => e.key === 'Escape' && handleCancelDelete()}
+		role="dialog"
+		aria-modal="true"
+		aria-labelledby="delete-dialog-title"
+		tabindex="-1"
+	>
+		<!-- svelte-ignore a11y_no_static_element_interactions -->
+		<!-- svelte-ignore a11y_click_events_have_key_events -->
+		<div
+			class="bg-white dark:bg-slate-800 rounded-lg p-6 max-w-sm mx-4 shadow-xl"
+			onclick={(e) => e.stopPropagation()}
+		>
+			<h2 id="delete-dialog-title" class="text-lg font-semibold text-slate-900 dark:text-white mb-2">
+				Delete Combat?
+			</h2>
+			<p class="text-slate-600 dark:text-slate-400 mb-4">
+				This will permanently delete this combat session and all its data. This action cannot be undone.
+			</p>
+			<div class="flex justify-end gap-3">
+				<button class="btn btn-secondary" onclick={handleCancelDelete}>
+					Cancel
+				</button>
+				<button
+					class="btn bg-red-600 hover:bg-red-700 text-white"
+					onclick={handleConfirmDelete}
+				>
+					Delete
+				</button>
+			</div>
+		</div>
+	</div>
+{/if}
 
 <style>
 	.line-clamp-2 {

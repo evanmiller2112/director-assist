@@ -3,6 +3,15 @@ import { liveQuery, type Observable } from 'dexie';
 import type { BaseEntity, EntityType, NewEntity } from '$lib/types';
 import { nanoid } from 'nanoid';
 
+/**
+ * Strips Svelte 5 reactive proxies from objects before IndexedDB storage.
+ * IndexedDB uses structured clone algorithm which cannot handle Proxy objects.
+ * This utility ensures all data is plain JavaScript objects.
+ */
+function stripProxy<T>(obj: T): T {
+	return JSON.parse(JSON.stringify(obj));
+}
+
 // Relationship Map interfaces for graph visualization
 
 /**
@@ -148,8 +157,8 @@ export const entityRepository = {
 	async create(newEntity: NewEntity): Promise<BaseEntity> {
 		await ensureDbReady();
 
-		// Serialize to strip any reactive proxies (Issue #256)
-		const plainEntity = JSON.parse(JSON.stringify(newEntity));
+		// Strip reactive proxies before IndexedDB storage (Issue #256)
+		const plainEntity = stripProxy(newEntity);
 
 		const now = new Date();
 		const entity: BaseEntity = {
@@ -170,15 +179,16 @@ export const entityRepository = {
 	): Promise<BaseEntity> {
 		await ensureDbReady();
 
-		// Serialize to strip any reactive proxies (Issue #256)
-		const plainEntity = JSON.parse(JSON.stringify(newEntity));
+		// Strip reactive proxies before IndexedDB storage (Issue #256)
+		const plainEntity = stripProxy(newEntity);
+		const plainLinks = stripProxy(pendingLinks);
 
 		return await db.transaction('rw', db.entities, async () => {
 			const now = new Date();
 			const entityId = nanoid();
 
 			// Validate all target entities exist before creating anything
-			for (const pendingLink of pendingLinks) {
+			for (const pendingLink of plainLinks) {
 				const targetExists = await db.entities.get(pendingLink.targetId);
 				if (!targetExists) {
 					throw new Error(`Target entity ${pendingLink.targetId} not found`);
@@ -186,7 +196,7 @@ export const entityRepository = {
 			}
 
 			// Build EntityLink array from pending relationships
-			const links: BaseEntity['links'] = pendingLinks.map((pending) => {
+			const links: BaseEntity['links'] = plainLinks.map((pending) => {
 				const link: BaseEntity['links'][0] = {
 					id: nanoid(),
 					sourceId: entityId,
@@ -230,8 +240,8 @@ export const entityRepository = {
 			await db.entities.add(entity);
 
 			// Handle bidirectional relationships - create reverse links on target entities
-			for (let i = 0; i < pendingLinks.length; i++) {
-				const pending = pendingLinks[i];
+			for (let i = 0; i < plainLinks.length; i++) {
+				const pending = plainLinks[i];
 				if (pending.bidirectional) {
 					const targetEntity = await db.entities.get(pending.targetId);
 					if (!targetEntity) continue;
@@ -282,8 +292,10 @@ export const entityRepository = {
 	// Update an existing entity
 	async update(id: string, changes: Partial<BaseEntity>): Promise<void> {
 		await ensureDbReady();
+		// Strip reactive proxies before IndexedDB storage (Issue #256)
+		const plainChanges = stripProxy(changes);
 		await db.entities.update(id, {
-			...changes,
+			...plainChanges,
 			updatedAt: new Date()
 		});
 	},

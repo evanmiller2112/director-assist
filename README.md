@@ -240,6 +240,15 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for:
 - Multi-campaign support
 - Cloud sync (optional)
 
+## Special Thanks
+
+Director Assist is built on the shoulders of excellent community projects:
+
+- **[Forge Steel](https://github.com/andyaiken/forgesteel)** by [andyaiken](https://github.com/andyaiken) - The character builder that powers our Forge Steel import feature
+- **[Draw Steel Montage Challenge Tracker](https://github.com/docMurk/Draw-Steel-Montage-Challenge-Tracker)** by [docMurk](https://github.com/docMurk) - A fantastic resource for Draw Steel montage challenges
+
+Thank you for your contributions to the Draw Steel community!
+
 ## License
 
 MIT License - see LICENSE file for details.

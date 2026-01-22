@@ -609,6 +609,251 @@ describe('MontageRepository - CRUD Operations', () => {
 			expect(updated.description).toBe('Original Description');
 			expect(updated.difficulty).toBe('easy');
 		});
+
+		describe('updating predefined challenges', () => {
+			it('should accept and save new predefined challenges', async () => {
+				const montage = await montageRepository.create({
+					name: 'Test Montage',
+					difficulty: 'moderate',
+					playerCount: 4
+				});
+
+				const updated = await montageRepository.update(montage.id, {
+					predefinedChallenges: [
+						{ name: 'Find Shelter', description: 'Locate a safe place' },
+						{ name: 'Rally Horse', suggestedSkills: ['Animal Handling'] }
+					]
+				});
+
+				expect(updated.predefinedChallenges).toBeDefined();
+				expect(updated.predefinedChallenges).toHaveLength(2);
+				expect(updated.predefinedChallenges![0].name).toBe('Find Shelter');
+				expect(updated.predefinedChallenges![0].description).toBe('Locate a safe place');
+				expect(updated.predefinedChallenges![1].name).toBe('Rally Horse');
+				expect(updated.predefinedChallenges![1].suggestedSkills).toEqual(['Animal Handling']);
+			});
+
+			it('should allow adding challenges to a montage that had none', async () => {
+				const montage = await montageRepository.create({
+					name: 'Empty Montage',
+					difficulty: 'easy',
+					playerCount: 3
+				});
+
+				expect(montage.predefinedChallenges).toBeUndefined();
+
+				const updated = await montageRepository.update(montage.id, {
+					predefinedChallenges: [
+						{ name: 'New Challenge 1' },
+						{ name: 'New Challenge 2' }
+					]
+				});
+
+				expect(updated.predefinedChallenges).toBeDefined();
+				expect(updated.predefinedChallenges).toHaveLength(2);
+			});
+
+			it('should allow removing all predefined challenges', async () => {
+				const montage = await montageRepository.create({
+					name: 'With Challenges',
+					difficulty: 'hard',
+					playerCount: 5,
+					predefinedChallenges: [
+						{ name: 'Challenge 1' },
+						{ name: 'Challenge 2' },
+						{ name: 'Challenge 3' }
+					]
+				});
+
+				expect(montage.predefinedChallenges).toHaveLength(3);
+
+				const updated = await montageRepository.update(montage.id, {
+					predefinedChallenges: []
+				});
+
+				expect(updated.predefinedChallenges).toEqual([]);
+			});
+
+			it('should generate IDs for new challenges without IDs', async () => {
+				const montage = await montageRepository.create({
+					name: 'Test Montage',
+					difficulty: 'moderate',
+					playerCount: 4
+				});
+
+				const updated = await montageRepository.update(montage.id, {
+					predefinedChallenges: [
+						{ name: 'Challenge A' },
+						{ name: 'Challenge B' },
+						{ name: 'Challenge C' }
+					]
+				});
+
+				expect(updated.predefinedChallenges).toBeDefined();
+				expect(updated.predefinedChallenges).toHaveLength(3);
+
+				// All challenges should have generated IDs
+				expect(updated.predefinedChallenges![0].id).toBeDefined();
+				expect(updated.predefinedChallenges![1].id).toBeDefined();
+				expect(updated.predefinedChallenges![2].id).toBeDefined();
+
+				// IDs should be unique
+				const ids = updated.predefinedChallenges!.map((c) => c.id);
+				const uniqueIds = new Set(ids);
+				expect(uniqueIds.size).toBe(3);
+			});
+
+			it('should preserve IDs for existing challenges', async () => {
+				const montage = await montageRepository.create({
+					name: 'With Challenges',
+					difficulty: 'easy',
+					playerCount: 3,
+					predefinedChallenges: [
+						{ name: 'Original Challenge 1' },
+						{ name: 'Original Challenge 2' }
+					]
+				});
+
+				const originalIds = montage.predefinedChallenges!.map((c) => c.id);
+
+				// Update challenges, preserving IDs
+				const updated = await montageRepository.update(montage.id, {
+					predefinedChallenges: [
+						{ id: originalIds[0], name: 'Updated Challenge 1' },
+						{ id: originalIds[1], name: 'Updated Challenge 2' },
+						{ name: 'New Challenge 3' } // New challenge without ID
+					]
+				});
+
+				expect(updated.predefinedChallenges).toHaveLength(3);
+
+				// First two should have same IDs
+				expect(updated.predefinedChallenges![0].id).toBe(originalIds[0]);
+				expect(updated.predefinedChallenges![0].name).toBe('Updated Challenge 1');
+				expect(updated.predefinedChallenges![1].id).toBe(originalIds[1]);
+				expect(updated.predefinedChallenges![1].name).toBe('Updated Challenge 2');
+
+				// Third should have a new generated ID
+				expect(updated.predefinedChallenges![2].id).toBeDefined();
+				expect(updated.predefinedChallenges![2].id).not.toBe(originalIds[0]);
+				expect(updated.predefinedChallenges![2].id).not.toBe(originalIds[1]);
+				expect(updated.predefinedChallenges![2].name).toBe('New Challenge 3');
+			});
+
+			it('should allow reordering predefined challenges', async () => {
+				const montage = await montageRepository.create({
+					name: 'Ordered Challenges',
+					difficulty: 'moderate',
+					playerCount: 4,
+					predefinedChallenges: [
+						{ name: 'First' },
+						{ name: 'Second' },
+						{ name: 'Third' }
+					]
+				});
+
+				const originalIds = montage.predefinedChallenges!.map((c) => c.id);
+
+				// Reverse the order
+				const updated = await montageRepository.update(montage.id, {
+					predefinedChallenges: [
+						{ id: originalIds[2], name: 'Third' },
+						{ id: originalIds[1], name: 'Second' },
+						{ id: originalIds[0], name: 'First' }
+					]
+				});
+
+				expect(updated.predefinedChallenges).toHaveLength(3);
+				expect(updated.predefinedChallenges![0].name).toBe('Third');
+				expect(updated.predefinedChallenges![0].id).toBe(originalIds[2]);
+				expect(updated.predefinedChallenges![1].name).toBe('Second');
+				expect(updated.predefinedChallenges![2].name).toBe('First');
+			});
+
+			it('should allow removing specific challenges from the middle', async () => {
+				const montage = await montageRepository.create({
+					name: 'Many Challenges',
+					difficulty: 'hard',
+					playerCount: 5,
+					predefinedChallenges: [
+						{ name: 'Challenge 1' },
+						{ name: 'Challenge 2' },
+						{ name: 'Challenge 3' },
+						{ name: 'Challenge 4' }
+					]
+				});
+
+				const originalIds = montage.predefinedChallenges!.map((c) => c.id);
+
+				// Remove Challenge 2 and Challenge 3, keep 1 and 4
+				const updated = await montageRepository.update(montage.id, {
+					predefinedChallenges: [
+						{ id: originalIds[0], name: 'Challenge 1' },
+						{ id: originalIds[3], name: 'Challenge 4' }
+					]
+				});
+
+				expect(updated.predefinedChallenges).toHaveLength(2);
+				expect(updated.predefinedChallenges![0].id).toBe(originalIds[0]);
+				expect(updated.predefinedChallenges![0].name).toBe('Challenge 1');
+				expect(updated.predefinedChallenges![1].id).toBe(originalIds[3]);
+				expect(updated.predefinedChallenges![1].name).toBe('Challenge 4');
+			});
+
+			it('should handle mix of challenges with and without IDs', async () => {
+				const montage = await montageRepository.create({
+					name: 'Test',
+					difficulty: 'easy',
+					playerCount: 3
+				});
+
+				const updated = await montageRepository.update(montage.id, {
+					predefinedChallenges: [
+						{ id: 'existing-id-1', name: 'Existing Challenge' },
+						{ name: 'New Challenge 1' },
+						{ name: 'New Challenge 2' },
+						{ id: 'existing-id-2', name: 'Another Existing' }
+					]
+				});
+
+				expect(updated.predefinedChallenges).toHaveLength(4);
+
+				// Check that existing IDs are preserved
+				expect(updated.predefinedChallenges![0].id).toBe('existing-id-1');
+				expect(updated.predefinedChallenges![3].id).toBe('existing-id-2');
+
+				// Check that new IDs are generated
+				expect(updated.predefinedChallenges![1].id).toBeDefined();
+				expect(updated.predefinedChallenges![1].id).not.toBe('existing-id-1');
+				expect(updated.predefinedChallenges![1].id).not.toBe('existing-id-2');
+
+				expect(updated.predefinedChallenges![2].id).toBeDefined();
+				expect(updated.predefinedChallenges![2].id).not.toBe('existing-id-1');
+				expect(updated.predefinedChallenges![2].id).not.toBe('existing-id-2');
+			});
+
+			it('should not update predefined challenges if not in update input', async () => {
+				const montage = await montageRepository.create({
+					name: 'With Challenges',
+					difficulty: 'moderate',
+					playerCount: 4,
+					predefinedChallenges: [
+						{ name: 'Challenge A' },
+						{ name: 'Challenge B' }
+					]
+				});
+
+				const originalChallenges = montage.predefinedChallenges;
+
+				// Update name only, should not affect predefined challenges
+				const updated = await montageRepository.update(montage.id, {
+					name: 'Updated Name'
+				});
+
+				expect(updated.name).toBe('Updated Name');
+				expect(updated.predefinedChallenges).toEqual(originalChallenges);
+			});
+		});
 	});
 
 	describe('delete', () => {

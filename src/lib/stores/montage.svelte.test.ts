@@ -576,6 +576,26 @@ describe('MontageStore - CRUD Actions', () => {
 				description: 'Updated description'
 			});
 		});
+
+		it('should update predefined challenges', async () => {
+			const { montageRepository } = await import('$lib/db/repositories');
+
+			await montageStore.updateMontage('m-1', {
+				predefinedChallenges: [
+					{ name: 'Find Shelter', description: 'Locate a safe place' },
+					{ name: 'Rally Horse' },
+					{ id: 'existing-id', name: 'Existing Challenge' }
+				]
+			});
+
+			expect(montageRepository.update).toHaveBeenCalledWith('m-1', {
+				predefinedChallenges: [
+					{ name: 'Find Shelter', description: 'Locate a safe place' },
+					{ name: 'Rally Horse' },
+					{ id: 'existing-id', name: 'Existing Challenge' }
+				]
+			});
+		});
 	});
 
 	describe('deleteMontage', () => {

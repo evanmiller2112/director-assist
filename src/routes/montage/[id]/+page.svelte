@@ -8,7 +8,8 @@
 		MontageControls,
 		ChallengeCard,
 		OutcomeDisplay,
-		PredefinedChallengeList
+		PredefinedChallengeList,
+		PredefinedChallengeInput
 	} from '$lib/components/montage';
 	import { ArrowLeft, Play, RefreshCw } from 'lucide-svelte';
 	import type { RecordChallengeResultInput, PredefinedChallenge } from '$lib/types/montage';
@@ -28,6 +29,17 @@
 	const round2Challenges = $derived(montageStore.round2Challenges);
 
 	let selectedPredefinedChallenge = $state<PredefinedChallenge | null>(null);
+
+	// Convert PredefinedChallenge[] to Omit<PredefinedChallenge, 'id'>[] for editing
+	const editableChallenges = $derived.by(() => {
+		if (!montage?.predefinedChallenges) return [];
+		return montage.predefinedChallenges.map(c => ({
+			id: c.id,
+			name: c.name,
+			...(c.description && { description: c.description }),
+			...(c.suggestedSkills && { suggestedSkills: c.suggestedSkills })
+		}));
+	});
 
 	function handleSelectPredefinedChallenge(challenge: PredefinedChallenge) {
 		selectedPredefinedChallenge = challenge;
@@ -56,6 +68,13 @@
 	async function handleReopenMontage() {
 		if (!montage) return;
 		await montageStore.reopenMontage(montage.id);
+	}
+
+	async function handleUpdatePredefinedChallenges(challenges: (PredefinedChallenge | Omit<PredefinedChallenge, 'id'>)[]) {
+		if (!montage) return;
+		await montageStore.updateMontage(montage.id, {
+			predefinedChallenges: challenges
+		});
 	}
 </script>
 
@@ -118,6 +137,17 @@
 
 		<!-- Preparing State -->
 		{#if montage.status === 'preparing'}
+			<!-- Predefined Challenges Editor -->
+			<div
+				class="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-6 mb-6"
+			>
+				<PredefinedChallengeInput
+					challenges={editableChallenges}
+					onUpdate={handleUpdatePredefinedChallenges}
+				/>
+			</div>
+
+			<!-- Ready to Start -->
 			<div
 				class="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-6 mb-6 text-center"
 			>

@@ -23,7 +23,8 @@ import type {
 	MontageDifficulty,
 	MontageOutcome,
 	MontageLimits,
-	MontageChallenge
+	MontageChallenge,
+	PredefinedChallenge
 } from '$lib/types/montage';
 import { nanoid } from 'nanoid';
 
@@ -203,12 +204,29 @@ export const montageRepository = {
 			throw new Error(`Montage session ${id} not found`);
 		}
 
-		// Apply updates
+		// Extract predefinedChallenges from input to handle separately
+		const { predefinedChallenges: inputChallenges, ...otherInputs } = input;
+
+		// Apply updates (excluding predefinedChallenges)
 		const updated: MontageSession = {
 			...montage,
-			...input,
+			...otherInputs,
 			updatedAt: new Date()
 		};
+
+		// Handle predefined challenges - generate IDs for those without, preserve existing IDs
+		if (inputChallenges !== undefined) {
+			const processedChallenges = inputChallenges.map((challenge) => {
+				if ('id' in challenge && challenge.id) {
+					return challenge as PredefinedChallenge;
+				}
+				return {
+					...challenge,
+					id: nanoid()
+				};
+			});
+			updated.predefinedChallenges = processedChallenges;
+		}
 
 		// Recalculate limits if difficulty or playerCount changed
 		if (input.difficulty !== undefined || input.playerCount !== undefined) {

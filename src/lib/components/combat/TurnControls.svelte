@@ -7,7 +7,8 @@
 		Square,
 		Loader2,
 		ChevronRight,
-		ChevronLeft
+		ChevronLeft,
+		RotateCcw
 	} from 'lucide-svelte';
 	import type { CombatSession } from '$lib/types/combat';
 	import { onMount, onDestroy } from 'svelte';
@@ -20,6 +21,7 @@
 		onPauseCombat?: () => void | Promise<void>;
 		onResumeCombat?: () => void | Promise<void>;
 		onEndCombat?: () => void | Promise<void>;
+		onReopenCombat?: () => void | Promise<void>;
 		loading?: boolean;
 		showRoundAdvance?: boolean;
 	}
@@ -32,6 +34,7 @@
 		onPauseCombat,
 		onResumeCombat,
 		onEndCombat,
+		onReopenCombat,
 		loading = false,
 		showRoundAdvance = false
 	}: Props = $props();
@@ -193,6 +196,18 @@
 			>
 				<Square class="w-4 h-4" />
 				End Combat
+			</button>
+		{/if}
+
+		{#if isCompleted && onReopenCombat}
+			<button
+				class="btn btn-primary flex-1"
+				onclick={onReopenCombat}
+				aria-label="Reopen Combat"
+				title="Reopen this combat session"
+			>
+				<RotateCcw class="w-4 h-4" />
+				Reopen Combat
 			</button>
 		{/if}
 	</div>

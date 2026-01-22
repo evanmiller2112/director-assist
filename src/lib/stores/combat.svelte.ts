@@ -239,6 +239,18 @@ function createCombatStore() {
 		}
 	}
 
+	async function reopenCombat(id: string): Promise<CombatSession> {
+		try {
+			error = null;
+			const updated = await combatRepository.reopenCombat(id);
+			updateActiveCombatIfMatch(updated);
+			return updated;
+		} catch (err: any) {
+			error = err.message;
+			throw err;
+		}
+	}
+
 	// ========================================================================
 	// Combatant Management
 	// ========================================================================
@@ -315,6 +327,26 @@ function createCombatStore() {
 		try {
 			error = null;
 			const updated = await combatRepository.removeCombatant(combatId, combatantId);
+			updateActiveCombatIfMatch(updated);
+			return updated;
+		} catch (err: any) {
+			error = err.message;
+			throw err;
+		}
+	}
+
+	async function moveCombatantToPosition(
+		combatId: string,
+		combatantId: string,
+		newPosition: number
+	): Promise<CombatSession> {
+		try {
+			error = null;
+			const updated = await combatRepository.moveCombatantToPosition(
+				combatId,
+				combatantId,
+				newPosition
+			);
 			updateActiveCombatIfMatch(updated);
 			return updated;
 		} catch (err: any) {
@@ -633,6 +665,7 @@ function createCombatStore() {
 		pauseCombat,
 		resumeCombat,
 		endCombat,
+		reopenCombat,
 
 		// Combatants
 		addHero,
@@ -640,6 +673,7 @@ function createCombatStore() {
 		addQuickCombatant,
 		updateCombatant,
 		removeCombatant,
+		moveCombatantToPosition,
 		rollInitiative,
 		rollInitiativeForAll,
 

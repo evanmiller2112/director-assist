@@ -333,6 +333,35 @@ export const combatRepository = {
 		return updated;
 	},
 
+	/**
+	 * Reopen completed combat (completed -> paused).
+	 */
+	async reopenCombat(id: string): Promise<CombatSession> {
+		await ensureDbReady();
+
+		const combat = await db.combatSessions.get(id);
+		if (!combat) {
+			throw new Error(`Combat session ${id} not found`);
+		}
+
+		if (combat.status !== 'completed') {
+			throw new Error('Combat is not completed');
+		}
+
+		const updated: CombatSession = {
+			...combat,
+			status: 'paused',
+			log: [
+				...combat.log,
+				createLogEntry(combat, 'Combat reopened', 'system')
+			],
+			updatedAt: new Date()
+		};
+
+		await db.combatSessions.put(updated);
+		return updated;
+	},
+
 	// ========================================================================
 	// Combatant Management
 	// ========================================================================
@@ -558,6 +587,65 @@ export const combatRepository = {
 		const updated: CombatSession = {
 			...combat,
 			combatants: updatedCombatants,
+			updatedAt: new Date()
+		};
+
+		await db.combatSessions.put(updated);
+		return updated;
+	},
+
+	/**
+	 * Move combatant to a specific position in the initiative order.
+	 * Position is 0-indexed.
+	 */
+	async moveCombatantToPosition(
+		combatId: string,
+		combatantId: string,
+		newPosition: number
+	): Promise<CombatSession> {
+		await ensureDbReady();
+
+		const combat = await db.combatSessions.get(combatId);
+		if (!combat) {
+			throw new Error(`Combat session ${combatId} not found`);
+		}
+
+		const currentIndex = combat.combatants.findIndex((c) => c.id === combatantId);
+		if (currentIndex === -1) {
+			throw new Error(`Combatant ${combatantId} not found`);
+		}
+
+		// Clamp position to valid range
+		const clampedPosition = Math.max(0, Math.min(newPosition, combat.combatants.length - 1));
+
+		if (currentIndex === clampedPosition) {
+			return combat; // No change needed
+		}
+
+		// Remove from current position and insert at new position
+		const updatedCombatants = [...combat.combatants];
+		const [combatant] = updatedCombatants.splice(currentIndex, 1);
+		updatedCombatants.splice(clampedPosition, 0, combatant);
+
+		// Adjust currentTurn if needed
+		let newCurrentTurn = combat.currentTurn;
+		if (combat.status === 'active') {
+			// If the moved combatant was the current turn holder, follow them
+			if (currentIndex === combat.currentTurn) {
+				newCurrentTurn = clampedPosition;
+			}
+			// If moved from before current to after (or vice versa), adjust
+			else if (currentIndex < combat.currentTurn && clampedPosition >= combat.currentTurn) {
+				newCurrentTurn = combat.currentTurn - 1;
+			} else if (currentIndex > combat.currentTurn && clampedPosition <= combat.currentTurn) {
+				newCurrentTurn = combat.currentTurn + 1;
+			}
+		}
+
+		const updated: CombatSession = {
+			...combat,
+			combatants: updatedCombatants,
+			currentTurn: newCurrentTurn,
 			updatedAt: new Date()
 		};
 

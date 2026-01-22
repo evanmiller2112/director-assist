@@ -28,6 +28,7 @@ export function createMockHeroCombatant(
 		entityId: `entity-${Math.random().toString(36).substring(7)}`,
 		initiative: 15,
 		initiativeRoll: [7, 8],
+		turnOrder: 1,
 		hp: 30,
 		maxHp: 40,
 		tempHp: 0,
@@ -55,6 +56,7 @@ export function createMockCreatureCombatant(
 		entityId: `entity-${Math.random().toString(36).substring(7)}`,
 		initiative: 12,
 		initiativeRoll: [6, 6],
+		turnOrder: 1,
 		hp: 25,
 		maxHp: 25,
 		tempHp: 0,
@@ -74,6 +76,7 @@ export function createMockHeroes(count: number, overrides: Partial<HeroCombatant
 			id: `hero-${i}`,
 			name: `Hero ${i + 1}`,
 			initiative: 15 - i,
+			turnOrder: i + 1,
 			...overrides[i]
 		})
 	);
@@ -88,6 +91,7 @@ export function createMockCreatures(count: number, overrides: Partial<CreatureCo
 			id: `creature-${i}`,
 			name: `Creature ${i + 1}`,
 			initiative: 10 - i,
+			turnOrder: i + 1,
 			...overrides[i]
 		})
 	);
@@ -158,7 +162,9 @@ export function createActiveCombatSession(
 ): CombatSession {
 	const heroes = createMockHeroes(heroCount);
 	const creatures = createMockCreatures(creatureCount);
-	const combatants = [...heroes, ...creatures].sort((a, b) => b.initiative - a.initiative);
+	const sortedCombatants = [...heroes, ...creatures].sort((a, b) => b.initiative - a.initiative);
+	// Assign proper turnOrder based on sorted position
+	const combatants = sortedCombatants.map((c, i) => ({ ...c, turnOrder: i + 1 }));
 
 	return createMockCombatSession({
 		status: 'active',

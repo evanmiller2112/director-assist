@@ -154,6 +154,11 @@
 		await combatStore.moveCombatantToPosition(combat.id, combatantId, newPosition);
 	}
 
+	async function handleTurnOrderChange(combatantId: string, newTurnOrder: number) {
+		if (!combat) return;
+		await combatStore.updateTurnOrder(combat.id, combatantId, newTurnOrder);
+	}
+
 	async function handleUpdateConditionDuration(conditionName: string, newDuration: number) {
 		if (!combat || !selectedCombatant) return;
 		// Find the condition and update it
@@ -345,6 +350,7 @@
 							{combat}
 							onCombatantClick={handleCombatantClick}
 							onReorder={handleReorderCombatant}
+							onTurnOrderChange={handleTurnOrderChange}
 						/>
 					</div>
 				{/if}

@@ -70,6 +70,7 @@ interface BaseCombatant {
 	entityId?: string; // Reference to entity in entities table (optional for ad-hoc combatants)
 	initiative: number;
 	initiativeRoll: [number, number]; // Draw Steel uses 2d10
+	turnOrder: number; // Float for flexible ordering (e.g., 2.1, 2.2, 2.3 for grouped combatants)
 	hp: number;
 	maxHp?: number; // Optional for ad-hoc combatants and uncapped healing
 	tempHp: number;
@@ -251,6 +252,7 @@ export interface UpdateCombatantInput {
 	name?: string;
 	initiative?: number;
 	initiativeRoll?: [number, number];
+	turnOrder?: number;
 	hp?: number;
 	maxHp?: number;
 	tempHp?: number;

@@ -355,6 +355,26 @@ function createCombatStore() {
 		}
 	}
 
+	async function updateTurnOrder(
+		combatId: string,
+		combatantId: string,
+		newTurnOrder: number
+	): Promise<CombatSession> {
+		try {
+			error = null;
+			const updated = await combatRepository.updateTurnOrder(
+				combatId,
+				combatantId,
+				newTurnOrder
+			);
+			updateActiveCombatIfMatch(updated);
+			return updated;
+		} catch (err: any) {
+			error = err.message;
+			throw err;
+		}
+	}
+
 	async function rollInitiative(
 		combatId: string,
 		combatantId: string,
@@ -674,6 +694,7 @@ function createCombatStore() {
 		updateCombatant,
 		removeCombatant,
 		moveCombatantToPosition,
+		updateTurnOrder,
 		rollInitiative,
 		rollInitiativeForAll,
 

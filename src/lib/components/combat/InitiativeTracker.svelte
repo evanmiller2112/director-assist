@@ -7,48 +7,51 @@
 		combat: CombatSession;
 		onCombatantClick?: (combatant: Combatant) => void;
 		onReorder?: (combatantId: string, newPosition: number) => void | Promise<void>;
+		onTurnOrderChange?: (combatantId: string, newTurnOrder: number) => void | Promise<void>;
 		compact?: boolean;
 	}
 
-	let { combat, onCombatantClick, onReorder, compact = false }: Props = $props();
+	let { combat, onCombatantClick, onReorder, onTurnOrderChange, compact = false }: Props = $props();
 
 	// Use array order directly (no auto-sort)
 	const combatants = $derived(combat.combatants);
 
 	const isClickable = $derived(onCombatantClick !== undefined);
-	const canReorder = $derived(onReorder !== undefined);
+	const canReorder = $derived(onReorder !== undefined || onTurnOrderChange !== undefined);
 
-	function handleMoveUp(combatantId: string, currentIndex: number) {
-		if (onReorder && currentIndex > 0) {
-			onReorder(combatantId, currentIndex - 1);
+	function handleMoveUp(combatant: Combatant) {
+		if (onTurnOrderChange) {
+			// Decrease turnOrder by 1 for up arrow
+			onTurnOrderChange(combatant.id, combatant.turnOrder - 1);
 		}
 	}
 
-	function handleMoveDown(combatantId: string, currentIndex: number) {
-		if (onReorder && currentIndex < combatants.length - 1) {
-			onReorder(combatantId, currentIndex + 1);
+	function handleMoveDown(combatant: Combatant) {
+		if (onTurnOrderChange) {
+			// Increase turnOrder by 1 for down arrow
+			onTurnOrderChange(combatant.id, combatant.turnOrder + 1);
 		}
 	}
 
-	function handlePositionChange(combatantId: string, event: Event) {
+	function handleTurnOrderChange(combatantId: string, event: Event) {
 		const input = event.target as HTMLInputElement;
-		const newPosition = parseInt(input.value, 10) - 1; // Convert 1-indexed to 0-indexed
-		if (onReorder && !isNaN(newPosition)) {
-			onReorder(combatantId, newPosition);
+		const newTurnOrder = parseFloat(input.value);
+		if (onTurnOrderChange && !isNaN(newTurnOrder)) {
+			onTurnOrderChange(combatantId, newTurnOrder);
 		}
 	}
 
-	function handlePositionKeydown(combatantId: string, currentIndex: number, event: KeyboardEvent) {
+	function handleTurnOrderKeydown(combatant: Combatant, event: KeyboardEvent) {
 		if (event.key === 'Enter') {
 			const input = event.target as HTMLInputElement;
-			const newPosition = parseInt(input.value, 10) - 1;
-			if (onReorder && !isNaN(newPosition)) {
-				onReorder(combatantId, newPosition);
+			const newTurnOrder = parseFloat(input.value);
+			if (onTurnOrderChange && !isNaN(newTurnOrder)) {
+				onTurnOrderChange(combatant.id, newTurnOrder);
 			}
 			input.blur();
 		} else if (event.key === 'Escape') {
 			const input = event.target as HTMLInputElement;
-			input.value = String(currentIndex + 1);
+			input.value = String(combatant.turnOrder);
 			input.blur();
 		}
 	}
@@ -96,27 +99,26 @@
 							<div class="flex flex-col items-center gap-0.5 pt-1">
 								<button
 									class="p-0.5 rounded text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:text-slate-300 dark:hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed"
-									onclick={() => handleMoveUp(combatant.id, index)}
+									onclick={() => handleMoveUp(combatant)}
 									disabled={index === 0}
-									aria-label="Move up"
+									aria-label="Move up (decrease turn order)"
 								>
 									<ChevronUp class="w-4 h-4" />
 								</button>
 								<input
 									type="number"
-									min="1"
-									max={combatants.length}
-									value={index + 1}
-									onchange={(e) => handlePositionChange(combatant.id, e)}
-									onkeydown={(e) => handlePositionKeydown(combatant.id, index, e)}
-									class="position-input w-8 h-6 text-center text-xs font-medium bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
-									aria-label="Position in initiative order"
+									step="any"
+									value={combatant.turnOrder}
+									onchange={(e) => handleTurnOrderChange(combatant.id, e)}
+									onkeydown={(e) => handleTurnOrderKeydown(combatant, e)}
+									class="position-input w-10 h-6 text-center text-xs font-medium bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+									aria-label="Turn order position (supports decimals like 2.1, 2.2)"
 								/>
 								<button
 									class="p-0.5 rounded text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:text-slate-300 dark:hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed"
-									onclick={() => handleMoveDown(combatant.id, index)}
+									onclick={() => handleMoveDown(combatant)}
 									disabled={index === combatants.length - 1}
-									aria-label="Move down"
+									aria-label="Move down (increase turn order)"
 								>
 									<ChevronDown class="w-4 h-4" />
 								</button>

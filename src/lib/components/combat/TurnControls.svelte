@@ -106,9 +106,9 @@
 					{currentCombatant.name}'s Turn
 				</div>
 			{/if}
-			{#if combat.combatants.length > 0}
+			{#if combat.combatants.length > 0 && currentCombatant}
 				<div class="text-xs text-slate-500 dark:text-slate-400 mt-1">
-					Turn {combat.currentTurn + 1} of {combat.combatants.length}
+					Turn {Math.floor(currentCombatant.turnOrder)} of {combat.combatants.length}
 				</div>
 			{/if}
 		{/if}

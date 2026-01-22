@@ -205,21 +205,25 @@ In the TDD workflow, this agent writes tests FIRST, before any code exists. The 
 **Critical: Svelte 5 + IndexedDB Implementation:**
 When passing data from Svelte components to IndexedDB (via Dexie repositories), ALWAYS convert `$state` proxy objects to plain objects first. Svelte 5's `$state` creates Proxy objects that cannot be cloned by IndexedDB.
 
+**IMPORTANT: Use deep cloning, not shallow spreading!** Shallow spread `({ ...obj })` does not clone nested arrays/objects which remain as proxies.
+
 **Pattern to follow:**
 ```typescript
-// In Svelte component before calling repository:
-const plainData = myStateArray.map(item => ({ ...item }));
+// CORRECT - Deep clone for any data with nested structures:
+const plainData = JSON.parse(JSON.stringify(myStateData));
 await repository.create({ items: plainData });
 
-// Or for single objects:
-const plainObject = { ...myStateObject };
-await repository.update(id, plainObject);
+// WRONG - Shallow spread leaves nested arrays as proxies:
+const stillHasProxies = myStateArray.map(item => ({ ...item })); // nested arrays still proxies!
 ```
 
 **Never do this:**
 ```typescript
 // BAD - passes $state proxy directly to IndexedDB
 await repository.create({ items: myStateArray }); // DataCloneError!
+
+// BAD - shallow spread doesn't clone nested arrays/objects
+const shallow = { ...myObject }; // nested properties still proxies!
 ```
 
 **TDD Approach:**
@@ -905,17 +909,14 @@ User should explicitly confirm: "The fix works correctly, proceed to close the i
 Svelte 5's `$state` runes create Proxy objects for reactivity. IndexedDB uses the structured clone algorithm which cannot clone Proxy objects.
 
 **Solution:**
-Convert `$state` proxy objects to plain objects before passing to IndexedDB:
+Use `JSON.parse(JSON.stringify())` to deep clone data before passing to IndexedDB:
 
 ```typescript
-// For arrays:
-const plainArray = myStateArray.map(item => ({ ...item }));
-
-// For objects:
-const plainObject = { ...myStateObject };
-
-// For nested structures:
+// ALWAYS use deep clone - handles nested arrays/objects safely:
 const plainData = JSON.parse(JSON.stringify(myStateData));
+
+// DO NOT use shallow spread - nested structures remain as proxies:
+// const stillBroken = myArray.map(item => ({ ...item })); // WRONG!
 ```
 
 **Prevention:**

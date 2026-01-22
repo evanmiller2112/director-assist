@@ -40,9 +40,9 @@
 		isSubmitting = true;
 
 		try {
-			// Convert $state proxy to plain objects for IndexedDB
+			// Deep clone to convert all $state proxies (including nested arrays) to plain objects for IndexedDB
 			const plainChallenges = predefinedChallenges.length > 0
-				? predefinedChallenges.map(c => ({ ...c }))
+				? JSON.parse(JSON.stringify(predefinedChallenges))
 				: undefined;
 
 			await onSubmit({

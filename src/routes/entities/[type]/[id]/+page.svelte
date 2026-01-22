@@ -3,6 +3,7 @@
 	import { goto } from '$app/navigation';
 	import { entitiesStore, campaignStore, notificationStore } from '$lib/stores';
 	import { getSystemAwareEntityType } from '$lib/utils/entityFormUtils';
+	import { getEntityTypeDefinition } from '$lib/config/entityTypes';
 	import { ArrowLeft, ArrowRight, Edit, Trash2, Link, Plus, X, ExternalLink, Check, X as XIcon, EyeOff } from 'lucide-svelte';
 	import { EntitySummary, RelateCommand, RelationshipCard, EditRelationshipModal } from '$lib/components/entity';
 	import { RelationshipBreadcrumbs } from '$lib/components/navigation';

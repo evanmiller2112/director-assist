@@ -166,6 +166,7 @@ export interface UpdateMontageInput {
 	description?: string;
 	difficulty?: MontageDifficulty;
 	playerCount?: number;
+	predefinedChallenges?: (PredefinedChallenge | Omit<PredefinedChallenge, 'id'>)[];
 }
 
 /**

@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.1.1] - 2026-01-22
+## [1.1.1] - 2026-01-23
 
 ### Added
 
@@ -40,6 +40,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Documentation updated to reflect 11 built-in entity types
 
 ### Fixed
+
+**Settings Page Infinite Effect Loop (Issue #302)**
+- Fixed critical bug where Settings page triggered Svelte 5 `effect_update_depth_exceeded` error
+- Moved initialization logic from `$effect` to `onMount` to prevent dependency tracking loop
+- Added guard to system profile sync effect to prevent unnecessary state updates
+- This fix also resolved:
+  - Navigation stops working after exporting data (Issue #258)
+  - Campaign linking checkbox incorrectly disabled (Issue #279)
+
+**Montage Tracker IndexedDB Proxy Issues (Issues #295, #297, #298)**
+- Fixed DataCloneError when saving montage data to IndexedDB
+- Convert Svelte 5 `$state` proxies to plain objects before database operations
+- Use deep clone (JSON.parse/stringify) for IndexedDB data to strip reactive wrappers
 
 **Entity-refs Field Display Bug**
 - Fixed `entity-refs` fields (like "NPCs Present") displaying raw entity IDs instead of resolved entity names on view pages

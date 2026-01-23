@@ -52,26 +52,24 @@
 	let lastExportedAt = $state<Date | null>(null);
 	let daysSinceExport = $state<number | null>(null);
 
-	// Load API key and models from storage
-	$effect(() => {
-		if (typeof window !== 'undefined') {
-			const stored = localStorage.getItem('dm-assist-api-key');
-			if (stored) {
-				apiKey = stored;
-				loadModels(stored);
-			}
-			selectedModel = getSelectedModel();
-
-			// Load last export info
-			lastExportedAt = getLastExportedAt();
-			daysSinceExport = getDaysSinceExport(lastExportedAt);
-		}
-	});
-
-	// Handle action parameter (e.g., ?action=export)
+	// Handle initialization and action parameters
 	onMount(() => {
 		debugStore.load();
 
+		// Load API key and models from storage
+		const stored = localStorage.getItem('dm-assist-api-key');
+		if (stored) {
+			apiKey = stored;
+			loadModels(stored);
+		}
+		selectedModel = getSelectedModel();
+
+		// Load last export info
+		const exportDate = getLastExportedAt();
+		lastExportedAt = exportDate;
+		daysSinceExport = getDaysSinceExport(exportDate);
+
+		// Handle action parameter (e.g., ?action=export)
 		const actionParam = $page.url.searchParams.get('action');
 		if (actionParam === 'export') {
 			// Trigger export
@@ -79,10 +77,10 @@
 		}
 	});
 
-	// Load current system profile from campaign
+	// Sync current system profile from campaign (only update if different)
 	$effect(() => {
 		const systemProfile = campaignStore.getCurrentSystemProfile();
-		if (systemProfile) {
+		if (systemProfile && systemProfile.id !== currentSystemId) {
 			currentSystemId = systemProfile.id;
 		}
 	});

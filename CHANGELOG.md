@@ -22,6 +22,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Streamlines workflow: add fields while working on entities without context switching
 - Modal includes helpful preview of generated field key
 
+**Inline Field Reordering on Entity Edit Pages (Issue #309)**
+- New "Reorder Fields" section on entity edit pages for adjusting field display order without navigating to Settings
+- FieldReorderInline component with up/down buttons for moving fields
+- Auto-save functionality updates field order immediately
+- "Reset Order" button appears when custom field order exists to restore default ordering
+- Works for both built-in entity types (via EntityTypeOverride) and custom entity types
+- Field order changes apply to all entities of that type (type-level, not per-entity)
+- Streamlines workflow: adjust field presentation while working on entities
+
 ## [1.1.1] - 2026-01-23
 
 ### Added

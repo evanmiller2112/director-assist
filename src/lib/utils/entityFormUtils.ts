@@ -36,11 +36,13 @@ export function getSystemAwareEntityType(
 	customTypes?: EntityTypeDefinition[],
 	overrides?: EntityTypeOverride[]
 ): EntityTypeDefinition | undefined {
-	// Get the base entity type definition
+	// Get the base entity type definition WITHOUT overrides
+	// Overrides (including fieldOrder) must be applied AFTER system modifications
+	// because applySystemModifications sorts by .order property
 	const baseDefinition = getEntityTypeDefinition(
 		entityType,
 		customTypes ?? [],
-		overrides ?? []
+		[] // Don't apply overrides here
 	);
 
 	// If no base definition found, return undefined
@@ -48,18 +50,22 @@ export function getSystemAwareEntityType(
 		return undefined;
 	}
 
-	// If no system profile provided or it's null, return base definition
+	// If no system profile provided or it's null, apply overrides directly
 	if (!systemProfile) {
-		return baseDefinition;
+		return getEntityTypeDefinition(
+			entityType,
+			customTypes ?? [],
+			overrides ?? []
+		);
 	}
 
-	// Apply system modifications using the existing function
-	// Note: Don't pass overrides here - they're already applied in baseDefinition
+	// Apply system modifications AND overrides
+	// Overrides are applied last so fieldOrder isn't undone by system's sort
 	return getEntityTypeDefinitionWithSystem(
 		entityType as any, // Cast to EntityType - getEntityTypeDefinitionWithSystem expects this
 		baseDefinition,
 		systemProfile,
 		customTypes ?? [],
-		[] // Overrides already applied above, don't apply again
+		overrides ?? [] // Apply overrides AFTER system modifications
 	);
 }

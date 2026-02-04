@@ -232,14 +232,13 @@
 		</div>
 
 		<!-- Fields -->
-		{#if Object.keys(entity.fields).length > 0}
+		{#if Object.keys(entity.fields).length > 0 && typeDefinition}
 			<div class="mb-8">
 				<h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">Details</h2>
 				<div class="grid gap-4">
-					{#each Object.entries(entity.fields) as [key, value]}
-						{@const fieldDef = typeDefinition?.fieldDefinitions.find(
-							(f) => f.key === key
-						)}
+					{#each typeDefinition.fieldDefinitions as fieldDef}
+						{@const key = fieldDef.key}
+						{@const value = entity.fields[key]}
 						{#if value !== null && value !== undefined && (value !== '' || fieldDef?.type === 'boolean')}
 							<div
 								class="bg-slate-50 dark:bg-slate-800 rounded-lg p-4"

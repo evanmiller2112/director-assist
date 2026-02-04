@@ -17,7 +17,8 @@
 	import { MarkdownEditor } from '$lib/components/markdown';
 	import { ConfirmDialog, FormActionBar } from '$lib/components/ui';
 	import RelationshipContextSelector, { type RelationshipContextData } from '$lib/components/entity/RelationshipContextSelector.svelte';
-	import { AddFieldInline } from '$lib/components/entity';
+	import { AddFieldInline, FieldReorderInline } from '$lib/components/entity';
+	import { ArrowUpDown } from 'lucide-svelte';
 
 	const entityId = $derived($page.params.id ?? '');
 	const entityType = $derived($page.params.type ?? '');
@@ -55,6 +56,9 @@
 	let generatingDescription = $state(false);
 	let showSummaryConfirm = $state(false);
 	let showDescriptionConfirm = $state(false);
+
+	// Field reorder mode
+	let reorderMode = $state(false);
 
 	// Relationship context state (Issues #62 & #134)
 	let relationshipContextData = $state<RelationshipContextData[]>([]);
@@ -728,8 +732,18 @@
 
 			<!-- Type-specific fields -->
 			{#if typeDefinition}
-				{#each typeDefinition.fieldDefinitions.filter((f) => f.section !== 'hidden') as field}
-					<div>
+				{@const visibleFields = typeDefinition.fieldDefinitions.filter((f) => f.section !== 'hidden')}
+				{#each visibleFields as field, fieldIndex}
+					<div class="flex items-start">
+						{#if reorderMode}
+							<FieldReorderInline
+								{entityType}
+								fieldDefinitions={visibleFields}
+								{fieldIndex}
+								totalFields={visibleFields.length}
+							/>
+						{/if}
+					<div class="flex-1">
 						<div class="flex items-center justify-between mb-1">
 							<label for={field.key} class="label mb-0">
 								{field.label}
@@ -1091,11 +1105,22 @@
 							<p class="error-message">{errors[field.key]}</p>
 						{/if}
 					</div>
+					</div>
 				{/each}
 
-				<!-- Add Field Button -->
-				<div class="pt-2">
+				<!-- Add Field / Reorder Buttons -->
+				<div class="pt-2 flex gap-2">
 					<AddFieldInline {entityType} />
+					{#if visibleFields.length > 1}
+						<button
+							type="button"
+							class="btn {reorderMode ? 'btn-primary' : 'btn-secondary'}"
+							onclick={() => reorderMode = !reorderMode}
+						>
+							<ArrowUpDown class="w-4 h-4" />
+							{reorderMode ? 'Done Reordering' : 'Reorder Fields'}
+						</button>
+					{/if}
 				</div>
 
 				<!-- Hidden/Secret fields -->

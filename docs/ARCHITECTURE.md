@@ -4668,6 +4668,8 @@ interface CampaignBackup {
   chatHistory: ChatMessage[];
   activeCampaignId: string | undefined;
   selectedModel?: string;       // User's selected Claude model preference
+  combatSessions?: CombatSession[];  // Combat sessions (Issue #310)
+  montageSessions?: MontageSession[]; // Montage sessions (Issue #310)
 }
 ```
 

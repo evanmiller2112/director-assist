@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.2] - TBD
+
+### Added
+
+**Inline Field Creation on Entity Forms (Issue #311)**
+- New "Add Field" button on entity edit and new pages for quick custom field creation
+- AddFieldInline component with modal interface for defining fields without navigating to Settings
+- Configure field label, type, options (for select types), section, and required status
+- Automatically generates field key from label (sanitized, lowercase with underscores)
+- Duplicate key detection prevents field conflicts
+- Works for both built-in entity types (via setEntityTypeOverride) and custom entity types (via updateCustomEntityType)
+- New fields appear at the end of forms with high order number (1000)
+- Streamlines workflow: add fields while working on entities without context switching
+- Modal includes helpful preview of generated field key
+
 ## [1.1.1] - 2026-01-23
 
 ### Added

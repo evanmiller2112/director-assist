@@ -5,3 +5,4 @@ export { default as RelationshipCard } from './RelationshipCard.svelte';
 export { default as EditRelationshipModal } from './EditRelationshipModal.svelte';
 export { default as PendingRelationshipList } from './PendingRelationshipList.svelte';
 export { default as CreateRelateCommand } from './CreateRelateCommand.svelte';
+export { default as AddFieldInline } from './AddFieldInline.svelte';

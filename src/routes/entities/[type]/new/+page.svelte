@@ -15,7 +15,7 @@
 	import FieldGenerateButton from '$lib/components/entity/FieldGenerateButton.svelte';
 	import LoadingButton from '$lib/components/ui/LoadingButton.svelte';
 	import { MarkdownEditor } from '$lib/components/markdown';
-	import { PendingRelationshipList, CreateRelateCommand } from '$lib/components/entity';
+	import { PendingRelationshipList, CreateRelateCommand, AddFieldInline } from '$lib/components/entity';
 	import { FormActionBar } from '$lib/components/ui';
 	import { buildPendingRelationshipsContext } from './pendingRelationshipsContext';
 
@@ -873,6 +873,11 @@
 					{/if}
 				</div>
 			{/each}
+
+			<!-- Add Field Button -->
+			<div class="pt-2">
+				<AddFieldInline {entityType} />
+			</div>
 
 			<!-- Hidden/Secret fields -->
 			{@const secretFields = typeDefinition.fieldDefinitions.filter(

@@ -54,11 +54,12 @@ export function getSystemAwareEntityType(
 	}
 
 	// Apply system modifications using the existing function
+	// Note: Don't pass overrides here - they're already applied in baseDefinition
 	return getEntityTypeDefinitionWithSystem(
 		entityType as any, // Cast to EntityType - getEntityTypeDefinitionWithSystem expects this
 		baseDefinition,
 		systemProfile,
 		customTypes ?? [],
-		overrides ?? []
+		[] // Overrides already applied above, don't apply again
 	);
 }

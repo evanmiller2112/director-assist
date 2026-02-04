@@ -17,6 +17,7 @@
 	import { MarkdownEditor } from '$lib/components/markdown';
 	import { ConfirmDialog, FormActionBar } from '$lib/components/ui';
 	import RelationshipContextSelector, { type RelationshipContextData } from '$lib/components/entity/RelationshipContextSelector.svelte';
+	import { AddFieldInline } from '$lib/components/entity';
 
 	const entityId = $derived($page.params.id ?? '');
 	const entityType = $derived($page.params.type ?? '');
@@ -1091,6 +1092,11 @@
 						{/if}
 					</div>
 				{/each}
+
+				<!-- Add Field Button -->
+				<div class="pt-2">
+					<AddFieldInline {entityType} />
+				</div>
 
 				<!-- Hidden/Secret fields -->
 				{@const secretFields = typeDefinition.fieldDefinitions.filter(

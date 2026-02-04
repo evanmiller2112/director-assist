@@ -419,6 +419,23 @@ Extend built-in types with additional fields:
 
 All customizations are per-campaign, so different campaigns can have different configurations.
 
+**Quick Field Creation: Inline "Add Field" Button**
+
+When creating or editing entities, you can add custom fields directly from the form without navigating to Settings:
+
+1. On any entity edit or new page, look for the "Add Field" button at the top of the form
+2. Click the button to open the field creation modal
+3. Configure your new field:
+   - **Field Label**: The display name (e.g., "Motivation")
+   - **Field Type**: Choose from text, textarea, richtext, number, boolean, select, multi-select, tags, date, url, or image
+   - **Options**: For select/multi-select types, enter one option per line
+   - **Section**: Choose Default, Hidden (DM Only), or Preparation
+   - **Required**: Toggle whether this field must be filled
+4. The field key is automatically generated from the label (lowercase with underscores)
+5. Click "Add Field" to save
+
+The new field immediately appears at the end of the form and is added to the entity type definition for all entities of that type. This streamlines your workflow by allowing you to extend entity types as you work, without breaking your creative flow to navigate to Settings.
+
 ### Custom Type Examples
 
 **Example 1: Spell Entity Type**

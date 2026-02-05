@@ -6,6 +6,8 @@ import type {
 	FieldDefinition
 } from './entities';
 import type { ChatMessage } from './ai';
+import type { CombatSession } from './combat';
+import type { MontageSession } from './montage';
 
 // Campaign model
 export interface Campaign {
@@ -75,6 +77,8 @@ export interface CampaignBackup {
 	chatHistory: ChatMessage[];
 	activeCampaignId?: string; // New: which campaign was active
 	selectedModel?: string; // Issue #34: User's selected Claude model preference
+	combatSessions?: CombatSession[]; // Issue #310: Combat sessions for backup/restore
+	montageSessions?: MontageSession[]; // Issue #310: Montage sessions for backup/restore
 }
 
 // Issue #152: Backup reminder system types

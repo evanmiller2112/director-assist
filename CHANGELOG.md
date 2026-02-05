@@ -31,6 +31,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Field order changes apply to all entities of that type (type-level, not per-entity)
 - Streamlines workflow: adjust field presentation while working on entities
 
+### Fixed
+
+**Combat and Montage Sessions Backup/Restore (Issue #310)**
+- Combat sessions now included in backup exports
+- Montage sessions now included in backup exports
+- Import function restores combat and montage sessions from backups
+- Backward compatible with old backups (backups without sessions still import successfully)
+- CampaignBackup type extended with optional combatSessions and montageSessions fields
+
 ## [1.1.1] - 2026-01-23
 
 ### Added

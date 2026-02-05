@@ -169,6 +169,10 @@
 			const storedModel = localStorage.getItem('dm-assist-selected-model');
 			const modelToExport = storedModel?.trim() || undefined;
 
+			// Issue #310: Get combat and montage sessions
+			const combatSessions = await db.combatSessions.toArray();
+			const montageSessions = await db.montageSessions.toArray();
+
 			const exportDate = new Date();
 			const backup: CampaignBackup = {
 				version: '2.0.0', // New format version
@@ -176,7 +180,9 @@
 				entities, // Campaign is now included in entities
 				chatHistory,
 				activeCampaignId: activeCampaignId ?? undefined,
-				selectedModel: modelToExport
+				selectedModel: modelToExport,
+				combatSessions,
+				montageSessions
 			};
 
 			const json = JSON.stringify(backup, null, 2);
@@ -266,12 +272,14 @@
 				// Import data
 				await db.transaction(
 					'rw',
-					[db.campaign, db.entities, db.chatMessages, db.appConfig],
+					[db.campaign, db.entities, db.chatMessages, db.appConfig, db.combatSessions, db.montageSessions],
 					async () => {
 						await db.campaign.clear();
 						await db.entities.clear();
 						await db.chatMessages.clear();
 						await db.appConfig.clear();
+						await db.combatSessions.clear();
+						await db.montageSessions.clear();
 
 						// Handle old format: convert campaign to entity
 						let entitiesToImport = [...backup.entities];
@@ -287,6 +295,15 @@
 
 						if (backup.chatHistory) {
 							await db.chatMessages.bulkAdd(backup.chatHistory);
+						}
+
+						// Issue #310: Restore combat and montage sessions
+						if (backup.combatSessions && backup.combatSessions.length > 0) {
+							await db.combatSessions.bulkAdd(backup.combatSessions);
+						}
+
+						if (backup.montageSessions && backup.montageSessions.length > 0) {
+							await db.montageSessions.bulkAdd(backup.montageSessions);
 						}
 
 						// Set active campaign

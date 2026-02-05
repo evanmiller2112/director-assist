@@ -2524,6 +2524,8 @@ When you export a backup, the app records the timestamp. This resets the backup 
 - All relationships between entities
 - Campaign information (name, setting, system)
 - Chat history (if you've used AI chat)
+- Combat sessions (active and completed combats)
+- Montage sessions (active and completed montages)
 - Your selected AI provider and model preferences
 
 ### What's NOT Included in Backups

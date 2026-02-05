@@ -436,6 +436,24 @@ When creating or editing entities, you can add custom fields directly from the f
 
 The new field immediately appears at the end of the form and is added to the entity type definition for all entities of that type. This streamlines your workflow by allowing you to extend entity types as you work, without breaking your creative flow to navigate to Settings.
 
+**Quick Field Reordering: Inline "Reorder Fields" Section**
+
+When editing entities, you can reorder fields directly from the form without navigating to Settings:
+
+1. On any entity edit page, scroll to the bottom of the form to find the "Reorder Fields" section
+2. You'll see all type-specific fields listed with up/down arrow buttons
+3. Click the up arrow to move a field higher in the form
+4. Click the down arrow to move a field lower in the form
+5. Changes save automatically and apply immediately
+6. Click "Reset Order" to restore the default field ordering
+
+The reordered fields apply to the entity type definition, so all entities of that type display fields in the new order. This allows you to adjust field presentation as you work, organizing forms to match your workflow without navigating away from your entity.
+
+**When to Use Each Approach:**
+
+- **Inline Reordering**: Quick adjustments while editing entities, testing different field orders, one-off reorganizations
+- **Settings Page**: Bulk changes to multiple entity types, hiding fields, adding multiple custom fields at once, exporting/importing entity type definitions
+
 ### Custom Type Examples
 
 **Example 1: Spell Entity Type**

@@ -461,4 +461,71 @@ describe('CampaignLinkingSettings Component', () => {
 			expect(toggle).toHaveAttribute('aria-disabled', 'true');
 		});
 	});
+
+	describe('Dark Mode Text Styling - Issue #306', () => {
+		it('should have proper dark mode text classes on the h3 heading', () => {
+			const { container } = render(CampaignLinkingSettings);
+
+			const heading = screen.getByRole('heading', { name: /campaign linking/i });
+
+			// Should have both light and dark mode text color classes
+			expect(heading).toHaveClass('text-slate-900');
+			expect(heading).toHaveClass('dark:text-white');
+		});
+
+		it('should use global .label class for enforce campaign linking label', () => {
+			const { container } = render(CampaignLinkingSettings);
+
+			// Find the label element for the enforce-campaign-linking checkbox
+			const label = container.querySelector('label[for="enforce-campaign-linking"]');
+			expect(label).toBeTruthy();
+
+			// Should use the global .label class which includes dark mode styling
+			expect(label).toHaveClass('label');
+		});
+
+		it('should use global .label class for default campaign label', () => {
+			// Setup multiple campaigns to show the default campaign selector
+			const campaign2 = {
+				...mockCampaignStore.current!.campaign,
+				id: 'campaign-2',
+				name: 'Another Campaign'
+			};
+
+			mockCampaignStore.current!.allCampaigns = [mockCampaignStore.current!.campaign, campaign2];
+
+			const { container } = render(CampaignLinkingSettings);
+
+			// Find the label element for the default-campaign select
+			const label = container.querySelector('label[for="default-campaign"]');
+			expect(label).toBeTruthy();
+
+			// Should use the global .label class which includes dark mode styling
+			expect(label).toHaveClass('label');
+		});
+
+		it('should ensure all labels have proper text color in dark mode', () => {
+			// Setup multiple campaigns to test all labels
+			const campaign2 = {
+				...mockCampaignStore.current!.campaign,
+				id: 'campaign-2',
+				name: 'Another Campaign'
+			};
+
+			mockCampaignStore.current!.allCampaigns = [mockCampaignStore.current!.campaign, campaign2];
+
+			const { container } = render(CampaignLinkingSettings);
+
+			// Get all label elements
+			const labels = container.querySelectorAll('label');
+
+			// Should have at least 2 labels (enforce and default campaign)
+			expect(labels.length).toBeGreaterThanOrEqual(2);
+
+			// All labels should have the .label class for consistent dark mode styling
+			labels.forEach((label) => {
+				expect(label).toHaveClass('label');
+			});
+		});
+	});
 });

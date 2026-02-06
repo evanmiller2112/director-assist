@@ -89,17 +89,11 @@
 <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <li
-	role="listitem"
 	data-active={isActive}
-	class="group relative px-3 py-2 rounded-lg cursor-pointer transition-colors
+	class="group relative px-3 py-2 rounded-lg transition-colors
 		{isActive
 			? 'bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800'
 			: 'hover:bg-slate-50 dark:hover:bg-slate-700'}"
-	onclick={handleClick}
-	ondblclick={handleDoubleClick}
-	onkeydown={handleKeyDown}
-	tabindex="0"
-	aria-label="{conversation.name}, {conversation.messageCount} messages, {relativeTime}"
 >
 	<div class="flex items-start gap-2">
 		<!-- Icon -->
@@ -108,7 +102,15 @@
 		</div>
 
 		<!-- Content -->
-		<div class="flex-1 min-w-0">
+		<div
+			class="flex-1 min-w-0 cursor-pointer"
+			onclick={handleClick}
+			ondblclick={handleDoubleClick}
+			onkeydown={handleKeyDown}
+			role="button"
+			tabindex="0"
+			aria-label="{conversation.name}, {conversation.messageCount} messages, {relativeTime}"
+		>
 			{#if isEditing}
 				<!-- svelte-ignore a11y_autofocus -->
 				<input
@@ -120,22 +122,9 @@
 					autofocus
 				/>
 			{:else}
-				<div class="flex items-center justify-between gap-2">
-					<span class="text-sm font-medium text-slate-900 dark:text-white truncate">
-						{conversation.name}
-					</span>
-					<!-- Delete button (visible on hover or when active) -->
-					<button
-						type="button"
-						onclick={handleDelete}
-						class="flex-shrink-0 p-1 text-slate-400 hover:text-red-500 dark:text-slate-500 dark:hover:text-red-400 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
-						title="Delete conversation"
-						aria-label="Delete conversation"
-						tabindex="-1"
-					>
-						<Trash2 class="w-3.5 h-3.5" />
-					</button>
-				</div>
+				<span class="text-sm font-medium text-slate-900 dark:text-white truncate block">
+					{conversation.name}
+				</span>
 			{/if}
 
 			<!-- Metadata -->
@@ -155,11 +144,24 @@
 				{/if}
 			</div>
 		</div>
+
+		<!-- Delete button (visible on hover or when active) - outside clickable area -->
+		{#if !isEditing}
+			<button
+				type="button"
+				onclick={handleDelete}
+				class="flex-shrink-0 p-1 text-slate-400 hover:text-red-500 dark:text-slate-500 dark:hover:text-red-400 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
+				title="Delete conversation"
+				aria-label="Delete conversation"
+			>
+				<Trash2 class="w-3.5 h-3.5" />
+			</button>
+		{/if}
 	</div>
 </li>
 
 <style>
-	li:focus {
+	[role="button"]:focus {
 		outline: 2px solid rgb(59 130 246 / 0.5);
 		outline-offset: 2px;
 	}

@@ -173,6 +173,7 @@
 			role="dialog"
 			aria-modal="true"
 			aria-labelledby="relate-command-title"
+			tabindex="-1"
 		>
 			<!-- Header -->
 			<div class="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700">
@@ -193,12 +194,13 @@
 				{#if !selectedEntity}
 					<!-- Search for entity -->
 					<div class="mb-4">
-						<label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+						<label for="entity-search-input" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
 							Search for entity to link
 						</label>
 						<div class="relative">
 							<Search class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
 							<input
+								id="entity-search-input"
 								type="text"
 								bind:value={searchQuery}
 								placeholder="Search entities..."

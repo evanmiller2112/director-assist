@@ -263,11 +263,11 @@
 
 			<div class="grid grid-cols-2 gap-4">
 				<div>
-					<label class="label">Icon</label>
+					<span class="label">Icon</span>
 					<IconPicker bind:value={icon} />
 				</div>
 				<div>
-					<label class="label">Color</label>
+					<span class="label">Color</span>
 					<ColorPicker bind:value={color} />
 				</div>
 			</div>

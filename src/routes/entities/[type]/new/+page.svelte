@@ -928,10 +928,11 @@
 
 		<!-- Player Visibility -->
 		<div>
-			<label class="label">Player Visibility</label>
+			<label for="player-visibility-checkbox" class="label">Player Visibility</label>
 			<div class="flex items-start gap-3">
-				<label class="flex items-center gap-2 cursor-pointer">
+				<label for="player-visibility-checkbox" class="flex items-center gap-2 cursor-pointer">
 					<input
+						id="player-visibility-checkbox"
 						type="checkbox"
 						class="w-4 h-4 rounded border-slate-300 text-slate-900 focus:ring-slate-500 dark:border-slate-600 dark:bg-slate-700 dark:checked:bg-slate-600"
 						checked={playerVisible === false}

@@ -397,7 +397,7 @@
 					<!-- Entity type selection for entity-ref and entity-refs -->
 					{#if field.type === 'entity-ref' || field.type === 'entity-refs'}
 						<div>
-							<label class="label">Allowed Entity Types</label>
+							<span class="label">Allowed Entity Types</span>
 							<div class="space-y-2">
 								<label for="entity-all-types-{index}" class="flex items-center gap-2 cursor-pointer">
 									<input
@@ -432,7 +432,7 @@
 					<!-- Computed field configuration -->
 					{#if field.type === 'computed'}
 						<div>
-							<label class="label">Formula Configuration</label>
+							<span class="label">Formula Configuration</span>
 							<ComputedFieldEditor
 								availableFields={fields.filter((f, i) => i !== index)}
 								config={field.computedConfig ?? { formula: '', dependencies: [], outputType: 'text' }}
@@ -553,17 +553,16 @@
 											<input
 												type="checkbox"
 												disabled
-												role="checkbox"
 												class="w-4 h-4 rounded border-slate-300 dark:border-slate-600"
 											/>
 											<span class="text-sm text-slate-700 dark:text-slate-300">{field.label}</span>
 										</div>
 									{:else if field.type === 'select'}
-										<select id="preview-{index}" class="input" disabled role="combobox">
+										<select id="preview-{index}" class="input" disabled>
 											<option value="">Select an option...</option>
 											{#if field.options}
 												{#each field.options as option}
-													<option value={option} role="option">{option}</option>
+													<option value={option}>{option}</option>
 												{/each}
 											{/if}
 										</select>

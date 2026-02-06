@@ -158,6 +158,11 @@
 	<div
 		class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
 		onclick={handleBackdropClick}
+		onkeydown={(e) => {
+			if (e.key === 'Enter' || e.key === ' ') {
+				e.stopPropagation();
+			}
+		}}
 		role="dialog"
 		aria-modal="true"
 		aria-labelledby="edit-relationship-title"
@@ -166,6 +171,13 @@
 		<div
 			class="bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto"
 			onclick={(e) => e.stopPropagation()}
+			onkeydown={(e) => {
+				if (e.key === 'Enter' || e.key === ' ') {
+					e.stopPropagation();
+				}
+			}}
+			role="button"
+			tabindex="0"
 		>
 			<!-- Header -->
 			<div class="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700">

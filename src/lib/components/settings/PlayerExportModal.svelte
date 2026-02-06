@@ -127,6 +127,13 @@
 		<div
 			class="bg-white dark:bg-slate-800 rounded-lg shadow-xl max-h-[90vh] overflow-auto"
 			onclick={(e) => e.stopPropagation()}
+			onkeydown={(e) => {
+				if (e.key === 'Enter' || e.key === ' ') {
+					e.stopPropagation();
+				}
+			}}
+			role="button"
+			tabindex="0"
 		>
 			<!-- Header -->
 			<div class="flex items-start gap-3 p-6 border-b border-slate-200 dark:border-slate-700">
@@ -163,8 +170,8 @@
 
 				<!-- Format selection -->
 				<div>
-					<label class="label mb-2">Export Format</label>
-					<div class="grid grid-cols-3 gap-3">
+					<label for="export-format-group" class="label mb-2">Export Format</label>
+					<div id="export-format-group" role="group" aria-labelledby="export-format-group" class="grid grid-cols-3 gap-3">
 						{#each (['json', 'html', 'markdown'] as const) as format}
 							{@const Icon = getFormatIcon(format)}
 							<button
@@ -189,26 +196,29 @@
 
 				<!-- Options -->
 				<div>
-					<label class="label mb-2">Options</label>
+					<span class="label mb-2">Options</span>
 					<div class="space-y-3">
-						<label class="flex items-center gap-3">
+						<label for="option-group-by-type" class="flex items-center gap-3">
 							<input
+								id="option-group-by-type"
 								type="checkbox"
 								bind:checked={groupByType}
 								class="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500"
 							/>
 							<span class="text-sm text-slate-700 dark:text-slate-300">Group entities by type</span>
 						</label>
-						<label class="flex items-center gap-3">
+						<label for="option-include-timestamps" class="flex items-center gap-3">
 							<input
+								id="option-include-timestamps"
 								type="checkbox"
 								bind:checked={includeTimestamps}
 								class="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500"
 							/>
 							<span class="text-sm text-slate-700 dark:text-slate-300">Include timestamps</span>
 						</label>
-						<label class="flex items-center gap-3">
+						<label for="option-include-images" class="flex items-center gap-3">
 							<input
+								id="option-include-images"
 								type="checkbox"
 								bind:checked={includeImages}
 								class="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500"
@@ -220,7 +230,7 @@
 
 				<!-- Preview -->
 				<div>
-					<label class="label mb-2">Export Preview</label>
+					<span class="label mb-2">Export Preview</span>
 					<div class="p-4 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700">
 						{#if isLoadingPreview}
 							<p class="text-sm text-slate-500 dark:text-slate-400">Loading preview...</p>

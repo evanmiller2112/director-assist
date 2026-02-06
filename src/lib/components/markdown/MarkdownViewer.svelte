@@ -65,6 +65,7 @@
 	{@html processedHtml}
 </div>
 
+<!-- svelte-ignore css_unused_selector -->
 <style>
 	/* Additional markdown-specific styles */
 	.markdown-viewer :global(code) {

@@ -86,6 +86,8 @@
 	const relativeTime = $derived(formatRelativeTime(conversation.lastMessageTime));
 </script>
 
+<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <li
 	role="listitem"
 	data-active={isActive}
@@ -108,6 +110,7 @@
 		<!-- Content -->
 		<div class="flex-1 min-w-0">
 			{#if isEditing}
+				<!-- svelte-ignore a11y_autofocus -->
 				<input
 					type="text"
 					bind:value={editValue}

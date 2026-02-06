@@ -177,7 +177,7 @@
 							bind:value={description}
 							placeholder="Brief description of what this template is for"
 							rows="2"
-						/>
+						></textarea>
 					</div>
 
 					<!-- Category -->

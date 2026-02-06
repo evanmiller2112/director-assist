@@ -21,6 +21,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Example: generating an NPC who is "mentor to Kira" now includes Kira's full backstory, personality, goals, and custom fields in the generation prompt
 - Backward compatible: generation still works for entities without player character relationships
 
+**Table Map Seating Chart (Issue #318)**
+- New Table Map feature for visualizing in-person session seating arrangements
+- Configure table with 4-10 seats in oval or rectangular shape
+- Assign characters to seats with player names displayed from character's playerName field
+- Director/DM position indicator with crown icon
+- Integrated configuration toolbar directly on table visualization
+- Automatic backup/restore with campaign data
+
 ## [1.1.2] - TBD
 
 ### Added

@@ -110,6 +110,7 @@
 			role="dialog"
 			aria-modal="true"
 			aria-labelledby={titleId}
+			tabindex="-1"
 		>
 			<!-- Header -->
 			<div class="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700">

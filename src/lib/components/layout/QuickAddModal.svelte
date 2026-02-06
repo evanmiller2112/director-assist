@@ -87,6 +87,7 @@
 			role="dialog"
 			aria-modal="true"
 			aria-labelledby="quick-add-modal-title"
+			tabindex="-1"
 		>
 			<!-- Header -->
 			<div

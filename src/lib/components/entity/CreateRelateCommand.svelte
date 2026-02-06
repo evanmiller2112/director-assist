@@ -168,6 +168,7 @@
 			role="dialog"
 			aria-modal="true"
 			aria-labelledby="create-relate-command-title"
+			tabindex="-1"
 		>
 			<!-- Header -->
 			<div
@@ -194,6 +195,7 @@
 					<!-- Search for entity -->
 					<div class="mb-4">
 						<label
+							for="create-entity-search-input"
 							class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2"
 						>
 							Search for entity to link
@@ -203,6 +205,7 @@
 								class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400"
 							/>
 							<input
+								id="create-entity-search-input"
 								type="text"
 								bind:value={searchQuery}
 								placeholder="Search entities..."

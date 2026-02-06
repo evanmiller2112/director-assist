@@ -325,7 +325,7 @@
 
 	<!-- Available Fields -->
 	<div>
-		<label class="label">Available Fields</label>
+		<span class="label">Available Fields</span>
 		{#if selectableFields.length === 0}
 			<p class="text-sm text-slate-500 dark:text-slate-400">
 				No fields available. Add other fields first.
@@ -355,7 +355,7 @@
 		{@const dependencies = detectDependencies(formula)}
 		{#if dependencies.length > 0}
 			<div>
-				<label class="label text-sm">Dependencies</label>
+				<span class="label text-sm">Dependencies</span>
 				<div class="text-sm text-slate-600 dark:text-slate-400">
 					{dependencies.join(', ')}
 				</div>
@@ -365,7 +365,7 @@
 
 	<!-- Preview -->
 	<div>
-		<label class="label">Preview</label>
+		<span class="label">Preview</span>
 		<div class="p-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-sm">
 			{previewResult || 'Enter a formula to see preview'}
 		</div>

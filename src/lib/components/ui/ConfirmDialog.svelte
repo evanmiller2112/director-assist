@@ -138,14 +138,25 @@
 		bind:this={dialogRef}
 		class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
 		onclick={handleBackdropClick}
+		onkeydown={(e) => {
+			if (e.key === 'Enter' || e.key === ' ') {
+				e.stopPropagation();
+			}
+		}}
 		role="dialog"
 		aria-modal="true"
 		aria-labelledby={titleId}
 		aria-describedby={messageId}
+		tabindex="-1"
 	>
 		<div
 			class="bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-md w-full"
 			onclick={(e) => e.stopPropagation()}
+			onkeydown={(e) => {
+				if (e.key === 'Enter' || e.key === ' ') {
+					e.stopPropagation();
+				}
+			}}
 		>
 			<!-- Content -->
 			<div class="p-6">

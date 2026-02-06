@@ -104,6 +104,13 @@
 		<div
 			class="bg-white dark:bg-slate-800 rounded-lg shadow-xl max-h-[90vh] overflow-hidden flex flex-col"
 			onclick={(e) => e.stopPropagation()}
+			onkeydown={(e) => {
+				if (e.key === 'Enter' || e.key === ' ') {
+					e.stopPropagation();
+				}
+			}}
+			role="button"
+			tabindex="0"
 		>
 			<!-- Header -->
 			<div class="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-700">

@@ -19,6 +19,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Preserves concept field for backward compatibility while enabling more detailed character information
 - Example usage: ancestry="Human", culture="Nomadic", career="Soldier", heroClass="Fury", subclass="Reaver"
 
+## [1.1.5] - 2026-02-06
+
+### Added
+
+**ESLint 9 Flat Configuration (Issue #355)**
+- Migrated from legacy ESLint configuration to ESLint 9 flat config format
+- Modern, streamlined linting setup for improved developer experience
+- Maintained all existing TypeScript and Svelte linting rules
+
+**Suggestions Store Stub for TDD (Issue #43)**
+- Added placeholder suggestions store structure to support test-driven development workflow
+- Foundation for future AI suggestion features
+- Enables testing of components that depend on suggestions functionality
+
+### Fixed
+
+**TypeScript Error Resolution (Issues #332, #346-354, PR #332)**
+- Resolved 442 TypeScript errors across 53 files that were breaking CI/CD pipeline
+- Fixed mock function typing in test files for better type safety
+- Resolved Svelte 5 reactivity type narrowing issues in components
+- Added proper null checks and type guards throughout the codebase
+- Renamed `ImportValidationResult` to `ForgeSteelImportValidationResult` for clarity and consistency
+- Improved type safety for entity references and relationship handling
+- Fixed type mismatches in computed field evaluation
+- Enhanced error handling with proper type annotations
+- Comprehensive TypeScript strict mode compliance
+
+**Sub-issues resolved:**
+- Issues #333-341: Original TypeScript error fixes
+- Issues #346-354: Additional TypeScript error fixes
+
 ## [1.1.3] - 2026-02-06
 
 ### Added

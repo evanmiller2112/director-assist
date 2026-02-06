@@ -99,7 +99,7 @@
 
 <div class="space-y-4">
 	<div>
-		<h3 class="text-lg font-semibold mb-2">Campaign Linking</h3>
+		<h3 class="text-lg font-semibold mb-2 text-slate-900 dark:text-white">Campaign Linking</h3>
 		<p class="text-sm text-slate-600 dark:text-slate-400 mb-4">
 			Automatically link all new entities to campaigns when this setting is enabled.
 		</p>
@@ -116,7 +116,7 @@
 			aria-label="Enforce Campaign Linking"
 			aria-disabled={hasNoCampaigns ? 'true' : 'false'}
 		/>
-		<label for="enforce-campaign-linking" class="text-sm font-medium">
+		<label for="enforce-campaign-linking" class="label">
 			Enforce Campaign Linking
 		</label>
 	</div>
@@ -129,7 +129,7 @@
 
 	{#if hasMultipleCampaigns && !hasNoCampaigns}
 		<div class="space-y-2">
-			<label for="default-campaign" class="text-sm font-medium">Default Campaign</label>
+			<label for="default-campaign" class="label">Default Campaign</label>
 			<select
 				id="default-campaign"
 				class="input w-full"

@@ -7,6 +7,63 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.3] - 2026-02-06
+
+### Added
+
+**Table Map Seating Chart Feature (Issue #318, PR #323)**
+- New Table Map feature for visualizing in-person session seating arrangements
+- Configure table with 4-10 seats in oval or rectangular shape
+- Assign characters to seats with player names displayed from character's playerName field
+- Director/DM position indicator with crown icon
+- Integrated configuration toolbar directly on table visualization
+- Automatic backup/restore with campaign data
+
+**Full Player Character Context in AI Generation (Issue #319, PR #321)**
+- AI generation now includes complete player character information when generating content for related entities
+- New `playerCharacterContextService` automatically detects relationships to player characters
+- When generating fields, summaries, or descriptions for entities linked to PCs, the AI receives the full character context including all custom fields
+- Privacy protected: hidden section fields (secrets) are excluded from context
+- Works bidirectionally: detects both outgoing and incoming relationships to characters
+- Provides richer, more personalized AI-generated content that references specific character details
+- Example: generating an NPC who is "mentor to Kira" now includes Kira's full backstory, personality, goals, and custom fields in the generation prompt
+- Backward compatible: generation still works for entities without player character relationships
+
+### Fixed
+
+**Svelte 5 Reactivity Warnings in Components (Issue #327, PR #342)**
+- Fixed `state_referenced_locally` and `non_reactive_update` warnings in 4 components
+- Updated prop synchronization pattern to prevent reactive loops
+- Components fixed: MarkdownEditor, CustomEntityTypeForm, EditRelationshipModal, ComputedFieldEditor
+- Initialize state with defaults instead of capturing prop values in `$state()` initializers
+- Use `$effect()` with `untrack()` to sync props to state without creating reactive loops
+- Added comprehensive reactivity test suites for all fixed components (60 total tests)
+
+**Accessibility Warnings (Issue #329)**
+- Resolved TypeScript and remaining accessibility warnings across the application
+- Fixed 43 accessibility warnings across 19 components
+- Updated FieldTemplateFormModal to use proper HTML closing tag for textarea element
+- Improved ARIA labels, roles, and keyboard navigation throughout
+
+**CSS Unused Selector Warnings (Issue #328)**
+- Suppressed false positive CSS unused selector warnings in MarkdownViewer component
+- Added svelte-ignore comments for legitimate dynamic class usage
+
+**AI Field Generation Length Constraints (Issue #313, PR #324)**
+- Fixed AI field generation to respect field type length constraints
+- Text fields now properly limited to configured maximum lengths
+- Prevents validation errors from overly long AI-generated content
+
+**Dark Mode Text Colors in Settings (Issue #322)**
+- Added dark mode text colors to CampaignLinkingSettings component
+- Improved readability in dark theme
+
+### Documentation
+
+**Special Thanks (Issue #320)**
+- Added special thanks to scottTomaszewski and SteelCompendium in documentation
+- Acknowledged community contributions to the project
+
 ## [1.2.0] - TBD
 
 ### Added

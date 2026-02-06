@@ -40,21 +40,14 @@
 		onchange
 	}: Props = $props();
 
-	let textareaRef: HTMLTextAreaElement;
+	let textareaRef = $state<HTMLTextAreaElement>();
 	// Initialize internal mode based on the mode prop, defaulting to 'edit' for non-split modes
-	let internalMode = $state<'edit' | 'preview'>(mode === 'preview' ? 'preview' : 'edit');
+	let internalMode = $state<'edit' | 'preview'>('edit');
 
-	// Track previous mode to detect when it changes
-	let previousMode = $state<'edit' | 'preview' | 'split'>(mode);
-
-	// Update internal mode when mode prop changes (for non-split modes)
+	// Sync internalMode with mode prop changes
 	$effect(() => {
-		// Only update if the mode prop actually changed
-		if (mode !== previousMode && mode !== 'split') {
+		if (mode !== 'split') {
 			internalMode = mode;
-			previousMode = mode;
-		} else if (mode !== previousMode) {
-			previousMode = mode;
 		}
 	});
 

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import { X, EyeOff } from 'lucide-svelte';
 	import type { BaseEntity, EntityLink } from '$lib/types';
 
@@ -21,30 +22,42 @@
 	let { sourceEntity, targetEntity, link, open = $bindable(false), onClose, onSave }: Props = $props();
 
 	// Form state
-	let relationship = $state(link.relationship);
-	let strength = $state<'' | 'strong' | 'moderate' | 'weak'>(link.strength ?? '');
-	let notes = $state(link.notes ?? '');
-	let tension = $state(link.metadata?.tension ?? 0);
-	let tags = $state<string[]>(link.metadata?.tags ?? []);
+	let relationship = $state('');
+	let strength = $state<'' | 'strong' | 'moderate' | 'weak'>('');
+	let notes = $state('');
+	let tension = $state(0);
+	let tags = $state<string[]>([]);
 	let tagInput = $state('');
-	let bidirectional = $state(link.bidirectional);
-	let playerVisible = $state<boolean | undefined>(link.playerVisible);
+	let bidirectional = $state(false);
+	let playerVisible = $state<boolean | undefined>(undefined);
 	let isSubmitting = $state(false);
 	let errorMessage = $state('');
 	let validationError = $state('');
 
-	// Reset form when link changes
+	// Track the previous link to detect real changes
+	// Use a simple value (not reactive) to avoid proxy comparison issues
+	let previousLinkRef: typeof link | undefined = undefined;
+
+	// Sync form state when link prop changes
 	$effect(() => {
-		relationship = link.relationship;
-		strength = link.strength ?? '';
-		notes = link.notes ?? '';
-		tension = link.metadata?.tension ?? 0;
-		tags = link.metadata?.tags ?? [];
-		tagInput = '';
-		bidirectional = link.bidirectional;
-		playerVisible = link.playerVisible;
-		errorMessage = '';
-		validationError = '';
+		// Only sync if link actually changed (different object reference OR different ID)
+		// This catches both: switching to a different link, and refreshing the same link with new data
+		if (link !== previousLinkRef || link.id !== previousLinkRef?.id) {
+			previousLinkRef = link;
+			// Use untrack to prevent triggering reactive dependencies when updating state
+			untrack(() => {
+				relationship = link.relationship;
+				strength = link.strength ?? '';
+				notes = link.notes ?? '';
+				tension = link.metadata?.tension ?? 0;
+				tags = link.metadata?.tags ?? [];
+				tagInput = '';
+				bidirectional = link.bidirectional;
+				playerVisible = link.playerVisible;
+				errorMessage = '';
+				validationError = '';
+			});
+		}
 	});
 
 	function handleClose() {

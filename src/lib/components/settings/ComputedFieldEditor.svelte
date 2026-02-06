@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import type { ComputedFieldConfig, FieldDefinition } from '$lib/types';
 	import { DRAW_STEEL_EXAMPLES, type ComputedFieldExample } from '$lib/config/computedFieldExamples';
 
@@ -11,11 +12,30 @@
 	let { availableFields = [], config, onchange }: Props = $props();
 
 	// Local state
-	let formula = $state(config?.formula ?? '');
-	let outputType = $state<'text' | 'number' | 'boolean'>(config?.outputType ?? 'text');
+	let formula = $state('');
+	let outputType = $state<'text' | 'number' | 'boolean'>('text');
 	let validationError = $state<string | null>(null);
 	let previewResult = $state<string>('');
 	let showExamples = $state(false);
+
+	// Track the previous config to detect real changes
+	// Use a simple value (not reactive) to avoid proxy comparison issues
+	let previousConfigRef: typeof config | undefined = undefined;
+
+	// Sync state with config prop changes
+	$effect(() => {
+		// Only sync if config actually changed (different object reference or formula/outputType changed)
+		if (config !== previousConfigRef) {
+			previousConfigRef = config;
+			// Use untrack to prevent reading $derived state inside the effect
+			untrack(() => {
+				formula = config?.formula ?? '';
+				outputType = config?.outputType ?? 'text';
+				validationError = validateFormula(formula);
+				previewResult = computePreview(formula);
+			});
+		}
+	});
 
 	// Group examples by category
 	const examplesByCategory = $derived(() => {
@@ -203,16 +223,6 @@
 				return 'ABC';
 		}
 	}
-
-	// Initialize preview
-	$effect(() => {
-		if (config?.formula) {
-			formula = config.formula;
-			outputType = config.outputType ?? 'text';
-			validationError = validateFormula(formula);
-			previewResult = computePreview(formula);
-		}
-	});
 </script>
 
 <div class="space-y-4">

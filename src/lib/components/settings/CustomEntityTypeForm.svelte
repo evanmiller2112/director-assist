@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import { Save, ArrowLeft, Users, MapPin, Shield, Clock, FileText } from 'lucide-svelte';
 	import type { EntityTypeDefinition, FieldDefinition } from '$lib/types';
 	import IconPicker from './IconPicker.svelte';
@@ -20,21 +21,76 @@
 
 	let { initialValue, isEditing = false, templateName, onChangeTemplate, onDirtyChange, onsubmit, oncancel }: Props = $props();
 
-	// Form state
-	let typeKey = $state(initialValue?.type ?? '');
-	let label = $state(initialValue?.label ?? '');
-	let labelPlural = $state(initialValue?.labelPlural ?? '');
-	let description = $state(initialValue?.description ?? '');
-	let icon = $state(initialValue?.icon ?? 'user');
-	let color = $state(initialValue?.color ?? 'character');
-	let fieldDefinitions = $state<FieldDefinition[]>(initialValue?.fieldDefinitions ?? []);
-	let selectedRelationships = $state<string[]>(initialValue?.defaultRelationships ?? []);
+	// Form state - initialize with defaults, let $effect handle prop values
+	let typeKey = $state('');
+	let label = $state('');
+	let labelPlural = $state('');
+	let description = $state('');
+	let icon = $state('user');
+	let color = $state('character');
+	let fieldDefinitions = $state<FieldDefinition[]>([]);
+	let selectedRelationships = $state<string[]>([]);
+
+	// Track the previous initialValue to detect real changes
+	// Use a simple value (not reactive) to avoid proxy comparison issues
+	let previousInitialValueRef: typeof initialValue | undefined = undefined;
+
+	// Sync form state with initialValue prop changes
+	$effect(() => {
+		// Only sync if initialValue actually changed (different object reference)
+		if (initialValue !== previousInitialValueRef) {
+			// Extract values outside of untrack so we track the initialValue prop
+			const newTypeKey = initialValue?.type ?? '';
+			const newLabel = initialValue?.label ?? '';
+			const newLabelPlural = initialValue?.labelPlural ?? '';
+			const newDescription = initialValue?.description ?? '';
+			const newIcon = initialValue?.icon ?? 'user';
+			const newColor = initialValue?.color ?? 'character';
+			const newFieldDefinitions = initialValue?.fieldDefinitions ?? [];
+			const newSelectedRelationships = initialValue?.defaultRelationships ?? [];
+
+			previousInitialValueRef = initialValue;
+
+			// Use untrack to prevent triggering reactive dependencies when updating state
+			untrack(() => {
+				typeKey = newTypeKey;
+				label = newLabel;
+				labelPlural = newLabelPlural;
+				description = newDescription;
+				icon = newIcon;
+				color = newColor;
+				fieldDefinitions = newFieldDefinitions;
+				selectedRelationships = newSelectedRelationships;
+				// Also reset initialFormState to prevent false dirty state
+				initialFormState = JSON.stringify({
+					label: newLabel,
+					labelPlural: newLabelPlural,
+					description: newDescription,
+					typeKey: newTypeKey,
+					icon: newIcon,
+					color: newColor,
+					fieldDefinitions: newFieldDefinitions,
+					selectedRelationships: newSelectedRelationships
+				});
+			});
+		}
+	});
 
 	let isSaving = $state(false);
 	let errors = $state<Record<string, string>>({});
 	let submitError = $state<string | null>(null);
 	let tipsPanelDismissed = $state(false);
-	let initialFormState = $state<string>('');
+	// Initialize with empty state - $effect will set the actual initial values
+	let initialFormState = $state<string>(JSON.stringify({
+		label: '',
+		labelPlural: '',
+		description: '',
+		typeKey: '',
+		icon: 'user',
+		color: 'character',
+		fieldDefinitions: [],
+		selectedRelationships: []
+	}));
 	let currentFormState = $derived(JSON.stringify({ label, labelPlural, description, typeKey, icon, color, fieldDefinitions, selectedRelationships }));
 
 	// Known entity types (built-in) for duplicate checking
@@ -42,13 +98,6 @@
 
 	// Track if user has manually edited the plural
 	let userEditedPlural = $state(false);
-
-	// Initialize form state snapshot on mount
-	$effect(() => {
-		if (!initialFormState) {
-			initialFormState = JSON.stringify({ label, labelPlural, description, typeKey, icon, color, fieldDefinitions, selectedRelationships });
-		}
-	});
 
 	// Track dirty state and notify parent
 	$effect(() => {

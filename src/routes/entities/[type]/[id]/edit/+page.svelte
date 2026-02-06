@@ -3,7 +3,7 @@
 	import { goto } from '$app/navigation';
 	import { aiSettings, entitiesStore, notificationStore, campaignStore } from '$lib/stores';
 	import { getEntityTypeDefinition } from '$lib/config/entityTypes';
-	import { hasGenerationApiKey, buildFieldRelationshipContext } from '$lib/services';
+	import { hasGenerationApiKey, buildFieldRelationshipContext, buildPlayerCharacterContext } from '$lib/services';
 	import { generateField, generateSummaryContent, generateDescriptionContent, isGeneratableField } from '$lib/services/fieldGenerationService';
 	import { buildRelationshipContext, formatRelationshipContextForPrompt, getRelationshipContextStats } from '$lib/services/relationshipContextBuilder';
 	import { getRelationshipContextSettings } from '$lib/services/relationshipContextSettingsService';
@@ -257,13 +257,23 @@
 				}
 			}
 
+			// Build player character context (Issue #319)
+			let playerCharacterContextStr: string | undefined = undefined;
+			if (entityId) {
+				const pcContextResult = await buildPlayerCharacterContext(entityId);
+				if (pcContextResult.hasContext) {
+					playerCharacterContextStr = pcContextResult.formattedContext;
+				}
+			}
+
 			const result = await generateField({
 				entityType,
 				typeDefinition,
 				targetField,
 				currentValues,
 				campaignContext,
-				relationshipContext: relationshipContextStr
+				relationshipContext: relationshipContextStr,
+				playerCharacterContext: playerCharacterContextStr
 			});
 
 			if (result.success && result.value !== undefined) {
@@ -532,12 +542,27 @@
 				}
 			}
 
+			// Build player character context (Issue #319)
+			let playerCharacterContextStr: string | undefined = undefined;
+			if (entityId) {
+				try {
+					const pcContextResult = await buildPlayerCharacterContext(entityId);
+					if (pcContextResult.hasContext) {
+						playerCharacterContextStr = pcContextResult.formattedContext;
+					}
+				} catch (error) {
+					console.error('Failed to build player character context:', error);
+					// Continue without player character context if it fails
+				}
+			}
+
 			const result = await generateSummaryContent({
 				entityType,
 				typeDefinition,
 				currentValues,
 				campaignContext,
-				relationshipContext: relationshipContextStr
+				relationshipContext: relationshipContextStr,
+				playerCharacterContext: playerCharacterContextStr
 			});
 
 			if (result.success && result.value !== undefined) {
@@ -616,12 +641,27 @@
 				}
 			}
 
+			// Build player character context (Issue #319)
+			let playerCharacterContextStr: string | undefined = undefined;
+			if (entityId) {
+				try {
+					const pcContextResult = await buildPlayerCharacterContext(entityId);
+					if (pcContextResult.hasContext) {
+						playerCharacterContextStr = pcContextResult.formattedContext;
+					}
+				} catch (error) {
+					console.error('Failed to build player character context:', error);
+					// Continue without player character context if it fails
+				}
+			}
+
 			const result = await generateDescriptionContent({
 				entityType,
 				typeDefinition,
 				currentValues,
 				campaignContext,
-				relationshipContext: relationshipContextStr
+				relationshipContext: relationshipContextStr,
+				playerCharacterContext: playerCharacterContextStr
 			});
 
 			if (result.success && result.value !== undefined) {

@@ -2080,9 +2080,68 @@ When generating content, the AI looks at:
 - Your campaign setting and system
 - Field hints and placeholders
 - **Related entities** (for existing entities with relationships, when enabled)
+- **Full player character details** (when entity is linked to player characters)
 
 **Example**:
 If you create an NPC named "Grimwald the Wise" with the description "elderly wizard" and role "apothecary owner", then click generate on the Personality field, the AI will create a personality that fits an elderly wizard who runs an apothecary.
+
+### Player Character Context in Generation
+
+When generating content for an entity that has a relationship to a player character, Director Assist automatically includes the full character information in the AI context. This enables more personalized, contextually rich content that references specific character details.
+
+**How It Works:**
+
+The system automatically detects when an entity is linked to a player character (type: "character") through relationships. When you generate content for that entity, the AI receives complete information about the linked character including:
+
+- Full description and summary
+- All standard fields (backstory, personality, goals, etc.)
+- All custom fields you've defined for characters
+- Character-specific details like ancestry, class, and background
+
+**Privacy Protection:**
+
+Fields in the "Hidden" section (typically used for secrets or DM-only notes) are automatically excluded from the generation context to maintain player privacy.
+
+**Bidirectional Detection:**
+
+The system finds player character relationships in both directions:
+- **Outgoing links**: NPC has "mentor to Kira" relationship
+- **Incoming links**: Kira has "student of" relationship to the NPC
+
+Both cases will include Kira's full context when generating content for the NPC.
+
+**Example:**
+
+Creating an NPC with a "mentor to Kira" relationship:
+
+*Without player character context:*
+"Generate a backstory for this NPC. They are mentor to Kira (Human Tactician)."
+
+*With player character context:*
+"Generate a backstory for this NPC. They are mentor to Kira.
+
+**Full Character Context - Kira:**
+- Name: Kira Thorne
+- Ancestry: Human
+- Class: Tactician
+- Backstory: [Kira's complete backstory]
+- Personality: [Kira's personality traits]
+- Goals: [Kira's character goals]
+- Custom Fields: [All custom field values]"
+
+The AI can now generate a mentor who specifically references Kira's past, complements their tactical abilities, or has opinions about their goals.
+
+**Use Cases:**
+
+- **NPCs related to PCs**: Mentors, rivals, family members, allies get personalized content
+- **Locations**: A character's hometown can reference their specific background
+- **Factions**: Organizations linked to PCs can acknowledge character-specific relationships
+- **Items**: Personal belongings can reflect the character's history and abilities
+- **Scenes**: Encounters involving PCs become more personalized and relevant
+
+**Token Usage:**
+
+Including full character context uses more API tokens per generation. This provides higher quality, more personalized content at a slightly higher cost. The feature is automatically enabled for all player character relationships.
 
 ### Relationship Context in Field Generation
 

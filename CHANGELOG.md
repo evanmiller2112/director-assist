@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - TBD
+
+### Added
+
+**Full Player Character Context in AI Generation (Issue #319)**
+- AI generation now includes complete player character information when generating content for related entities
+- New `playerCharacterContextService` automatically detects relationships to player characters
+- When generating fields, summaries, or descriptions for entities linked to PCs, the AI receives the full character context including all custom fields
+- Privacy protected: hidden section fields (secrets) are excluded from context
+- Works bidirectionally: detects both outgoing and incoming relationships to characters
+- Provides richer, more personalized AI-generated content that references specific character details
+- Example: generating an NPC who is "mentor to Kira" now includes Kira's full backstory, personality, goals, and custom fields in the generation prompt
+- Backward compatible: generation still works for entities without player character relationships
+
 ## [1.1.2] - TBD
 
 ### Added

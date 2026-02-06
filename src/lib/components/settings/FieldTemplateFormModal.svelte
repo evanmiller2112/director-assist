@@ -34,7 +34,7 @@
 		if (template) {
 			name = template.name;
 			description = template.description || '';
-			category = template.category;
+			category = (template.category === 'draw-steel' ? 'draw-steel' : 'user') as 'user' | 'draw-steel';
 			fieldDefinitions = structuredClone(template.fieldDefinitions);
 		}
 	});

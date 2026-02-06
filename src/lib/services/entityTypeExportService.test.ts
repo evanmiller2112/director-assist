@@ -239,7 +239,7 @@ describe('entityTypeExportService', () => {
 
 			const exported = exportEntityType(type);
 
-			expect(exported.data.defaultRelationships).toEqual([]);
+			expect((exported.data as any).defaultRelationships).toEqual([]);
 		});
 	});
 

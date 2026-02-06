@@ -71,8 +71,9 @@
 
 	// Update selected combatant when combat changes
 	$effect(() => {
-		if (combat && selectedCombatant) {
-			const updated = combat.combatants.find((c) => c.id === selectedCombatant.id);
+		const current = selectedCombatant;
+		if (combat && current) {
+			const updated = combat.combatants.find((c) => c.id === current.id);
 			if (updated) {
 				selectedCombatant = updated;
 			}

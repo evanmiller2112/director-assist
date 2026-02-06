@@ -306,7 +306,7 @@ describe('Built-in Entities List Page', () => {
 		it('should show message when no campaign is loaded', () => {
 			// Test will fail until page is implemented
 			// Arrange: No active campaign
-			mockCampaignStore.campaign = null;
+			mockCampaignStore.campaign = null as any;
 
 			// Expected: Message instructing to create or select a campaign
 			expect(true).toBe(false); // Placeholder
@@ -315,7 +315,7 @@ describe('Built-in Entities List Page', () => {
 		it('should disable customize buttons when no campaign is loaded', () => {
 			// Test will fail until page is implemented
 			// Arrange: No active campaign
-			mockCampaignStore.campaign = null;
+			mockCampaignStore.campaign = null as any;
 
 			// Expected: Buttons are disabled
 			expect(true).toBe(false); // Placeholder

@@ -379,10 +379,10 @@ describe('EntityTypeExportModal - Download Action (Issue #210)', () => {
 
 	it('should create valid JSON blob', async () => {
 		let blobContent: string | null = null;
-		vi.spyOn(global, 'Blob').mockImplementation((content: any[]) => {
+		vi.spyOn(global, 'Blob').mockImplementation(function(this: Blob, content: any[]) {
 			blobContent = content[0];
 			return new Blob(content, { type: 'application/json' });
-		});
+		} as any);
 
 		render(EntityTypeExportModal, {
 			props: {
@@ -402,10 +402,10 @@ describe('EntityTypeExportModal - Download Action (Issue #210)', () => {
 
 	it('should include version and generator info in export', async () => {
 		let blobContent: string | null = null;
-		vi.spyOn(global, 'Blob').mockImplementation((content: any[]) => {
+		vi.spyOn(global, 'Blob').mockImplementation(function(this: Blob, content: any[]) {
 			blobContent = content[0];
 			return new Blob(content, { type: 'application/json' });
-		});
+		} as any);
 
 		render(EntityTypeExportModal, {
 			props: {

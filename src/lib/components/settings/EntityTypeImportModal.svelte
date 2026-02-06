@@ -19,13 +19,27 @@
 	let importData: any = $state(null);
 	let newTypeKey = $state('');
 
+	// Helper functions to avoid type narrowing issues with $derived
+	function getIsValid(result: ImportValidationResult | null): boolean {
+		return result?.valid ?? false;
+	}
+	function getHasErrors(result: ImportValidationResult | null): boolean {
+		return (result?.errors?.length ?? 0) > 0;
+	}
+	function getHasWarnings(result: ImportValidationResult | null): boolean {
+		return (result?.warnings?.length ?? 0) > 0;
+	}
+	function getHasConflict(result: ImportValidationResult | null): boolean {
+		return result?.preview?.conflictsWithExisting ?? false;
+	}
+
 	// Derived states
 	const hasFile = $derived(!!selectedFile);
 	const hasValidation = $derived(!!validationResult);
-	const isValid = $derived(validationResult?.valid || false);
-	const hasErrors = $derived((validationResult?.errors.length || 0) > 0);
-	const hasWarnings = $derived((validationResult?.warnings.length || 0) > 0);
-	const hasConflict = $derived(validationResult?.preview?.conflictsWithExisting || false);
+	const isValid = $derived(getIsValid(validationResult));
+	const hasErrors = $derived(getHasErrors(validationResult));
+	const hasWarnings = $derived(getHasWarnings(validationResult));
+	const hasConflict = $derived(getHasConflict(validationResult));
 	const canImport = $derived(
 		isValid && (!hasConflict || (hasConflict && newTypeKey.trim().length > 0))
 	);
@@ -217,7 +231,7 @@
 						<!-- Errors -->
 						{#if hasErrors}
 							<div class="p-4 bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800 rounded-lg space-y-2">
-								{#each validationResult.errors as error}
+								{#each validationResult!.errors as error}
 									<p class="text-sm text-red-900 dark:text-red-200 flex items-start gap-2">
 										<AlertTriangle class="w-4 h-4 flex-shrink-0 mt-0.5" />
 										<span>{error}</span>
@@ -229,7 +243,7 @@
 						<!-- Warnings -->
 						{#if hasWarnings}
 							<div class="p-4 bg-yellow-50 dark:bg-yellow-900/10 border border-yellow-200 dark:border-yellow-800 rounded-lg space-y-2">
-								{#each validationResult.warnings as warning}
+								{#each validationResult!.warnings as warning}
 									<p class="text-sm text-yellow-900 dark:text-yellow-200 flex items-start gap-2">
 										<AlertTriangle class="w-4 h-4 flex-shrink-0 mt-0.5" />
 										<span>{warning}</span>
@@ -239,7 +253,7 @@
 						{/if}
 
 						<!-- Preview (if valid) -->
-						{#if isValid && validationResult.preview}
+						{#if isValid && validationResult?.preview}
 							<div>
 								<h3 class="text-sm font-semibold text-slate-900 dark:text-white mb-3">
 									Preview
@@ -250,7 +264,7 @@
 											Name:
 										</span>
 										<span class="text-sm text-slate-900 dark:text-white">
-											{validationResult.preview.name}
+											{validationResult.preview!.name}
 										</span>
 									</div>
 									<div class="flex items-center justify-between">
@@ -258,7 +272,7 @@
 											Fields:
 										</span>
 										<span class="text-sm text-slate-900 dark:text-white">
-											{validationResult.preview.fieldCount}
+											{validationResult.preview!.fieldCount}
 										</span>
 									</div>
 								</div>

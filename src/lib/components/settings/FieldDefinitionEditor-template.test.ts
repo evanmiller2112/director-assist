@@ -121,7 +121,7 @@ describe('FieldDefinitionEditor - Adding Fields from Template (Issue #210)', () 
 
 		render(FieldDefinitionEditor, {
 			fields,
-			onChange: mockOnChange
+			onchange: mockOnChange
 		});
 
 		const addTemplateButton = screen.getByRole('button', { name: /add from template/i });
@@ -147,7 +147,7 @@ describe('FieldDefinitionEditor - Adding Fields from Template (Issue #210)', () 
 
 		render(FieldDefinitionEditor, {
 			fields: existingFields,
-			onChange: mockOnChange
+			onchange: mockOnChange
 		});
 
 		const addTemplateButton = screen.getByRole('button', { name: /add from template/i });
@@ -187,7 +187,7 @@ describe('FieldDefinitionEditor - Adding Fields from Template (Issue #210)', () 
 
 		render(FieldDefinitionEditor, {
 			fields,
-			onChange: mockOnChange
+			onchange: mockOnChange
 		});
 
 		const addTemplateButton = screen.getByRole('button', { name: /add from template/i });
@@ -220,7 +220,7 @@ describe('FieldDefinitionEditor - Adding Fields from Template (Issue #210)', () 
 
 		render(FieldDefinitionEditor, {
 			fields: existingFields,
-			onChange: mockOnChange
+			onchange: mockOnChange
 		});
 
 		const addTemplateButton = screen.getByRole('button', { name: /add from template/i });
@@ -251,7 +251,7 @@ describe('FieldDefinitionEditor - Field Key Conflict Resolution (Issue #210)', (
 
 		render(FieldDefinitionEditor, {
 			fields: existingFields,
-			onChange: mockOnChange
+			onchange: mockOnChange
 		});
 
 		const addTemplateButton = screen.getByRole('button', { name: /add from template/i });
@@ -284,7 +284,7 @@ describe('FieldDefinitionEditor - Field Key Conflict Resolution (Issue #210)', (
 
 		render(FieldDefinitionEditor, {
 			fields: existingFields,
-			onChange: mockOnChange
+			onchange: mockOnChange
 		});
 
 		const addTemplateButton = screen.getByRole('button', { name: /add from template/i });
@@ -315,7 +315,7 @@ describe('FieldDefinitionEditor - Field Key Conflict Resolution (Issue #210)', (
 
 		render(FieldDefinitionEditor, {
 			fields: existingFields,
-			onChange: mockOnChange
+			onchange: mockOnChange
 		});
 
 		const addTemplateButton = screen.getByRole('button', { name: /add from template/i });
@@ -388,7 +388,7 @@ describe('FieldDefinitionEditor - Template Feature Integration (Issue #210)', ()
 
 		render(FieldDefinitionEditor, {
 			fields,
-			onChange: mockOnChange
+			onchange: mockOnChange
 		});
 
 		// Add from template
@@ -413,7 +413,7 @@ describe('FieldDefinitionEditor - Template Feature Integration (Issue #210)', ()
 
 		render(FieldDefinitionEditor, {
 			fields,
-			onChange: mockOnChange
+			onchange: mockOnChange
 		});
 
 		const addTemplateButton = screen.getByRole('button', { name: /add from template/i });
@@ -436,7 +436,7 @@ describe('FieldDefinitionEditor - Template Feature Integration (Issue #210)', ()
 
 		render(FieldDefinitionEditor, {
 			fields,
-			onChange: mockOnChange
+			onchange: mockOnChange
 		});
 
 		const addTemplateButton = screen.getByRole('button', { name: /add from template/i });
@@ -482,7 +482,7 @@ describe('FieldDefinitionEditor - Edge Cases (Issue #210)', () => {
 
 		render(FieldDefinitionEditor, {
 			fields,
-			onChange: mockOnChange
+			onchange: mockOnChange
 		});
 
 		const addTemplateButton = screen.getByRole('button', { name: /add from template/i });

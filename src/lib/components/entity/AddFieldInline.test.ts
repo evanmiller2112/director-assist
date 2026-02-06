@@ -719,7 +719,8 @@ describe('AddFieldInline Component - Built-in Type Detection', () => {
 					icon: 'target',
 					color: 'custom',
 					isBuiltIn: false,
-					fieldDefinitions: []
+					fieldDefinitions: [],
+				defaultRelationships: []
 				}
 			],
 			configurable: true
@@ -942,7 +943,8 @@ describe('AddFieldInline Component - Save Functionality for Custom Types', () =>
 			icon: 'target',
 			color: 'custom',
 			isBuiltIn: false,
-			fieldDefinitions: []
+			fieldDefinitions: [],
+		defaultRelationships: []
 		};
 
 		Object.defineProperty(campaignStore, 'customEntityTypes', {
@@ -994,7 +996,8 @@ describe('AddFieldInline Component - Save Functionality for Custom Types', () =>
 			isBuiltIn: false,
 			fieldDefinitions: [
 				{ key: 'existing', label: 'Existing', type: 'text', required: false, order: 1 }
-			]
+			],
+			defaultRelationships: []
 		};
 
 		Object.defineProperty(campaignStore, 'customEntityTypes', {
@@ -1314,7 +1317,8 @@ describe('AddFieldInline Component - Error Handling', () => {
 			isBuiltIn: false,
 			fieldDefinitions: [
 				{ key: 'goal', label: 'Goal', type: 'text', required: false, order: 1 }
-			]
+			],
+			defaultRelationships: []
 		};
 
 		Object.defineProperty(campaignStore, 'customEntityTypes', {

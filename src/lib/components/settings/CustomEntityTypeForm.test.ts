@@ -1638,8 +1638,8 @@ describe('CustomEntityTypeForm - DrawSteelTipsPanel Integration (Issue #168 Phas
 		expect(tipsPanel).toBeTruthy();
 
 		// Should be within the form
-		const form = container.querySelector('form');
-		expect(form).toContainElement(tipsPanel);
+		const form = container.querySelector('form') as HTMLElement;
+		expect(form).toContainElement(tipsPanel as HTMLElement);
 	});
 });
 

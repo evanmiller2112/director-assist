@@ -30,7 +30,7 @@ import {
 	applySystemModifications
 } from './entityTypes';
 import type { EntityTypeDefinition, EntityTypeOverride, FieldDefinition } from '$lib/types';
-import type { SystemProfile } from '$lib/types/systems';
+import type { SystemProfile, SystemEntityModification } from '$lib/types/systems';
 
 // =============================================================================
 // System-Aware Entity Type Resolution Tests (Issue #5)
@@ -478,9 +478,9 @@ describe('entityTypes.ts - System-Aware Entity Type Resolution', () => {
 					{ key: 'name', label: 'Name', type: 'text', required: true, order: 1 }
 				];
 
-				const modifications = {
+				const modifications: SystemEntityModification = {
 					additionalFields: [
-						{ key: 'newField', label: 'New Field', type: 'text', required: false, order: 2 }
+						{ key: 'newField', label: 'New Field', type: 'text' as const, required: false, order: 2 }
 					]
 				};
 
@@ -496,9 +496,9 @@ describe('entityTypes.ts - System-Aware Entity Type Resolution', () => {
 					{ key: 'field2', label: 'Field 2', type: 'text', required: false, order: 2 }
 				];
 
-				const modifications = {
+				const modifications: SystemEntityModification = {
 					additionalFields: [
-						{ key: 'field3', label: 'Field 3', type: 'text', required: false, order: 3 }
+						{ key: 'field3', label: 'Field 3', type: 'text' as const, required: false, order: 3 }
 					]
 				};
 
@@ -518,7 +518,7 @@ describe('entityTypes.ts - System-Aware Entity Type Resolution', () => {
 					{ key: 'field3', label: 'Field 3', type: 'text', required: false, order: 3 }
 				];
 
-				const modifications = {
+				const modifications: SystemEntityModification = {
 					hiddenFields: ['field2']
 				};
 
@@ -533,7 +533,7 @@ describe('entityTypes.ts - System-Aware Entity Type Resolution', () => {
 					{ key: 'field1', label: 'Field 1', type: 'text', required: true, order: 1 }
 				];
 
-				const modifications = {
+				const modifications: SystemEntityModification = {
 					hiddenFields: ['nonExistent']
 				};
 
@@ -557,7 +557,7 @@ describe('entityTypes.ts - System-Aware Entity Type Resolution', () => {
 					}
 				];
 
-				const modifications = {
+				const modifications: SystemEntityModification = {
 					fieldOptionOverrides: {
 						type: ['newOption1', 'newOption2']
 					}
@@ -625,9 +625,9 @@ describe('entityTypes.ts - System-Aware Entity Type Resolution', () => {
 					{ key: 'field2', label: 'Field 2', type: 'text', required: false, order: 2 }
 				];
 
-				const modifications = {
+				const modifications: SystemEntityModification = {
 					additionalFields: [
-						{ key: 'field3', label: 'Field 3', type: 'text', required: false, order: 3 }
+						{ key: 'field3', label: 'Field 3', type: 'text' as const, required: false, order: 3 }
 					]
 				};
 
@@ -666,9 +666,9 @@ describe('entityTypes.ts - System-Aware Entity Type Resolution', () => {
 					}
 				];
 
-				const modifications = {
+				const modifications: SystemEntityModification = {
 					additionalFields: [
-						{ key: 'newField', label: 'New Field', type: 'text', required: false, order: 4 }
+						{ key: 'newField', label: 'New Field', type: 'text' as const, required: false, order: 4 }
 					],
 					hiddenFields: ['field2'],
 					fieldOptionOverrides: {
@@ -724,9 +724,9 @@ describe('entityTypes.ts - System-Aware Entity Type Resolution', () => {
 				const originalLength = baseFields.length;
 				const originalFirstField = { ...baseFields[0] };
 
-				const modifications = {
+				const modifications: SystemEntityModification = {
 					additionalFields: [
-						{ key: 'field2', label: 'Field 2', type: 'text', required: false, order: 2 }
+						{ key: 'field2', label: 'Field 2', type: 'text' as const, required: false, order: 2 }
 					]
 				};
 

@@ -22,7 +22,7 @@ describe('RelationshipsTable Component - Basic Rendering', () => {
 		render(RelationshipsTable, {
 			props: {
 				relationships: [],
-				selectedIds: new Set(),
+				selectedIds: new Set<string>(),
 				sortOptions: { field: 'targetName', direction: 'asc' },
 				onSelect: vi.fn(),
 				onSelectAll: vi.fn(),
@@ -39,7 +39,7 @@ describe('RelationshipsTable Component - Basic Rendering', () => {
 		render(RelationshipsTable, {
 			props: {
 				relationships: [],
-				selectedIds: new Set(),
+				selectedIds: new Set<string>(),
 				sortOptions: { field: 'targetName', direction: 'asc' },
 				onSelect: vi.fn(),
 				onSelectAll: vi.fn(),
@@ -59,7 +59,7 @@ describe('RelationshipsTable Component - Basic Rendering', () => {
 		render(RelationshipsTable, {
 			props: {
 				relationships: [],
-				selectedIds: new Set(),
+				selectedIds: new Set<string>(),
 				sortOptions: { field: 'targetName', direction: 'asc' },
 				onSelect: vi.fn(),
 				onSelectAll: vi.fn(),
@@ -76,7 +76,7 @@ describe('RelationshipsTable Component - Basic Rendering', () => {
 		render(RelationshipsTable, {
 			props: {
 				relationships: [],
-				selectedIds: new Set(),
+				selectedIds: new Set<string>(),
 				sortOptions: { field: 'targetName', direction: 'asc' },
 				onSelect: vi.fn(),
 				onSelectAll: vi.fn(),
@@ -124,7 +124,7 @@ describe('RelationshipsTable Component - Rendering Rows', () => {
 		const { container } = render(RelationshipsTable, {
 			props: {
 				relationships,
-				selectedIds: new Set(),
+				selectedIds: new Set<string>(),
 				sortOptions: { field: 'targetName', direction: 'asc' },
 				onSelect: vi.fn(),
 				onSelectAll: vi.fn(),
@@ -141,7 +141,7 @@ describe('RelationshipsTable Component - Rendering Rows', () => {
 		render(RelationshipsTable, {
 			props: {
 				relationships,
-				selectedIds: new Set(),
+				selectedIds: new Set<string>(),
 				sortOptions: { field: 'targetName', direction: 'asc' },
 				onSelect: vi.fn(),
 				onSelectAll: vi.fn(),
@@ -158,7 +158,7 @@ describe('RelationshipsTable Component - Rendering Rows', () => {
 		render(RelationshipsTable, {
 			props: {
 				relationships,
-				selectedIds: new Set(),
+				selectedIds: new Set<string>(),
 				sortOptions: { field: 'targetName', direction: 'asc' },
 				onSelect: vi.fn(),
 				onSelectAll: vi.fn(),
@@ -175,7 +175,7 @@ describe('RelationshipsTable Component - Rendering Rows', () => {
 		render(RelationshipsTable, {
 			props: {
 				relationships,
-				selectedIds: new Set(),
+				selectedIds: new Set<string>(),
 				sortOptions: { field: 'targetName', direction: 'asc' },
 				onSelect: vi.fn(),
 				onSelectAll: vi.fn(),
@@ -192,7 +192,7 @@ describe('RelationshipsTable Component - Rendering Rows', () => {
 		render(RelationshipsTable, {
 			props: {
 				relationships,
-				selectedIds: new Set(),
+				selectedIds: new Set<string>(),
 				sortOptions: { field: 'targetName', direction: 'asc' },
 				onSelect: vi.fn(),
 				onSelectAll: vi.fn(),
@@ -239,7 +239,7 @@ describe('RelationshipsTable Component - Select All Checkbox', () => {
 		render(RelationshipsTable, {
 			props: {
 				relationships,
-				selectedIds: new Set(),
+				selectedIds: new Set<string>(),
 				sortOptions: { field: 'targetName', direction: 'asc' },
 				onSelect: vi.fn(),
 				onSelectAll: vi.fn(),
@@ -292,7 +292,7 @@ describe('RelationshipsTable Component - Select All Checkbox', () => {
 		render(RelationshipsTable, {
 			props: {
 				relationships,
-				selectedIds: new Set(),
+				selectedIds: new Set<string>(),
 				sortOptions: { field: 'targetName', direction: 'asc' },
 				onSelect: vi.fn(),
 				onSelectAll,
@@ -372,7 +372,7 @@ describe('RelationshipsTable Component - Individual Row Selection', () => {
 		render(RelationshipsTable, {
 			props: {
 				relationships,
-				selectedIds: new Set(),
+				selectedIds: new Set<string>(),
 				sortOptions: { field: 'targetName', direction: 'asc' },
 				onSelect,
 				onSelectAll: vi.fn(),
@@ -435,7 +435,7 @@ describe('RelationshipsTable Component - Sorting', () => {
 		render(RelationshipsTable, {
 			props: {
 				relationships,
-				selectedIds: new Set(),
+				selectedIds: new Set<string>(),
 				sortOptions: { field: 'targetName', direction: 'asc' },
 				onSelect: vi.fn(),
 				onSelectAll: vi.fn(),
@@ -455,7 +455,7 @@ describe('RelationshipsTable Component - Sorting', () => {
 		render(RelationshipsTable, {
 			props: {
 				relationships,
-				selectedIds: new Set(),
+				selectedIds: new Set<string>(),
 				sortOptions: { field: 'relationship', direction: 'asc' },
 				onSelect: vi.fn(),
 				onSelectAll: vi.fn(),
@@ -480,7 +480,7 @@ describe('RelationshipsTable Component - Sorting', () => {
 		render(RelationshipsTable, {
 			props: {
 				relationships,
-				selectedIds: new Set(),
+				selectedIds: new Set<string>(),
 				sortOptions: { field: 'targetName', direction: 'asc' },
 				onSelect: vi.fn(),
 				onSelectAll: vi.fn(),
@@ -505,7 +505,7 @@ describe('RelationshipsTable Component - Sorting', () => {
 		render(RelationshipsTable, {
 			props: {
 				relationships,
-				selectedIds: new Set(),
+				selectedIds: new Set<string>(),
 				sortOptions: { field: 'targetName', direction: 'asc' },
 				onSelect: vi.fn(),
 				onSelectAll: vi.fn(),
@@ -530,7 +530,7 @@ describe('RelationshipsTable Component - Sorting', () => {
 		render(RelationshipsTable, {
 			props: {
 				relationships,
-				selectedIds: new Set(),
+				selectedIds: new Set<string>(),
 				sortOptions: { field: 'targetName', direction: 'asc' },
 				onSelect: vi.fn(),
 				onSelectAll: vi.fn(),
@@ -554,7 +554,7 @@ describe('RelationshipsTable Component - Sorting', () => {
 		const { container } = render(RelationshipsTable, {
 			props: {
 				relationships,
-				selectedIds: new Set(),
+				selectedIds: new Set<string>(),
 				sortOptions: { field: 'targetName', direction: 'asc' },
 				onSelect: vi.fn(),
 				onSelectAll: vi.fn(),
@@ -571,7 +571,7 @@ describe('RelationshipsTable Component - Sorting', () => {
 		render(RelationshipsTable, {
 			props: {
 				relationships,
-				selectedIds: new Set(),
+				selectedIds: new Set<string>(),
 				sortOptions: { field: 'targetName', direction: 'desc' },
 				onSelect: vi.fn(),
 				onSelectAll: vi.fn(),
@@ -610,7 +610,7 @@ describe('RelationshipsTable Component - Remove Action', () => {
 		render(RelationshipsTable, {
 			props: {
 				relationships,
-				selectedIds: new Set(),
+				selectedIds: new Set<string>(),
 				sortOptions: { field: 'targetName', direction: 'asc' },
 				onSelect: vi.fn(),
 				onSelectAll: vi.fn(),
@@ -643,7 +643,7 @@ describe('RelationshipsTable Component - Remove Action', () => {
 		render(RelationshipsTable, {
 			props: {
 				relationships: reverseRelationships,
-				selectedIds: new Set(),
+				selectedIds: new Set<string>(),
 				sortOptions: { field: 'targetName', direction: 'asc' },
 				onSelect: vi.fn(),
 				onSelectAll: vi.fn(),
@@ -680,7 +680,7 @@ describe('RelationshipsTable Component - Accessibility', () => {
 		const { container } = render(RelationshipsTable, {
 			props: {
 				relationships,
-				selectedIds: new Set(),
+				selectedIds: new Set<string>(),
 				sortOptions: { field: 'targetName', direction: 'asc' },
 				onSelect: vi.fn(),
 				onSelectAll: vi.fn(),
@@ -697,7 +697,7 @@ describe('RelationshipsTable Component - Accessibility', () => {
 		render(RelationshipsTable, {
 			props: {
 				relationships,
-				selectedIds: new Set(),
+				selectedIds: new Set<string>(),
 				sortOptions: { field: 'targetName', direction: 'asc' },
 				onSelect: vi.fn(),
 				onSelectAll: vi.fn(),
@@ -717,7 +717,7 @@ describe('RelationshipsTable Component - Accessibility', () => {
 		render(RelationshipsTable, {
 			props: {
 				relationships,
-				selectedIds: new Set(),
+				selectedIds: new Set<string>(),
 				sortOptions: { field: 'targetName', direction: 'asc' },
 				onSelect: vi.fn(),
 				onSelectAll: vi.fn(),
@@ -737,7 +737,7 @@ describe('RelationshipsTable Component - Edge Cases', () => {
 		render(RelationshipsTable, {
 			props: {
 				relationships: [],
-				selectedIds: new Set(),
+				selectedIds: new Set<string>(),
 				sortOptions: { field: 'targetName', direction: 'asc' },
 				onSelect: vi.fn(),
 				onSelectAll: vi.fn(),
@@ -765,7 +765,7 @@ describe('RelationshipsTable Component - Edge Cases', () => {
 		const { container } = render(RelationshipsTable, {
 			props: {
 				relationships: manyRelationships,
-				selectedIds: new Set(),
+				selectedIds: new Set<string>(),
 				sortOptions: { field: 'targetName', direction: 'asc' },
 				onSelect: vi.fn(),
 				onSelectAll: vi.fn(),
@@ -797,7 +797,7 @@ describe('RelationshipsTable Component - Edge Cases', () => {
 		render(RelationshipsTable, {
 			props: {
 				relationships,
-				selectedIds: new Set(),
+				selectedIds: new Set<string>(),
 				sortOptions: { field: 'targetName', direction: 'asc' },
 				onSelect: vi.fn(),
 				onSelectAll: vi.fn(),

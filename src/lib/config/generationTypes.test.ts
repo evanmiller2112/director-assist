@@ -19,7 +19,7 @@
  * These tests are expected to FAIL initially (RED phase).
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import type { GenerationType } from '$lib/types';
 
 // Import the functions and types we're testing

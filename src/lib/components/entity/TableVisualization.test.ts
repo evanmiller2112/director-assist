@@ -104,7 +104,8 @@ describe('TableVisualization Component - Character and Player Name Display', () 
 			links: [],
 			notes: '',
 			createdAt: new Date(),
-			updatedAt: new Date()
+			updatedAt: new Date(),
+			metadata: {}
 		},
 		{
 			id: 'char-2',
@@ -116,7 +117,8 @@ describe('TableVisualization Component - Character and Player Name Display', () 
 			links: [],
 			notes: '',
 			createdAt: new Date(),
-			updatedAt: new Date()
+			updatedAt: new Date(),
+			metadata: {}
 		}
 	];
 
@@ -217,7 +219,8 @@ describe('TableVisualization Component - Character and Player Name Display', () 
 				links: [],
 				notes: '',
 				createdAt: new Date(),
-				updatedAt: new Date()
+				updatedAt: new Date(),
+				metadata: {}
 			}
 		];
 
@@ -488,7 +491,8 @@ describe('TableVisualization Component - Seat Click Interaction', () => {
 				links: [],
 				notes: '',
 				createdAt: new Date(),
-				updatedAt: new Date()
+				updatedAt: new Date(),
+				metadata: {}
 			}
 		];
 

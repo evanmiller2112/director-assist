@@ -23,10 +23,7 @@
 	// Configure marked for better rendering
 	marked.setOptions({
 		gfm: true, // GitHub Flavored Markdown
-		breaks: true, // Convert \n to <br>
-		headerIds: true,
-		mangle: false,
-		silent: false
+		breaks: true // Convert \n to <br>
 	});
 
 	// Derive HTML from markdown content

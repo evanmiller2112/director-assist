@@ -9,7 +9,7 @@
  * These are FAILING tests written following TDD principles (RED phase).
  * They define the expected behavior before implementation.
  */
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { formatRelativeTime } from './timeFormat';
 
 describe('formatRelativeTime', () => {

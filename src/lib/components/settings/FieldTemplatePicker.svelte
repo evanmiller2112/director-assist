@@ -20,7 +20,7 @@
 		campaignStore.fieldTemplates.filter(
 			(template) =>
 				template.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-				template.description.toLowerCase().includes(searchQuery.toLowerCase())
+				(template.description?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false)
 		)
 	);
 

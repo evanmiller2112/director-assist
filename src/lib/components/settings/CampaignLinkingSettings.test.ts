@@ -108,7 +108,7 @@ describe('CampaignLinkingSettings Component', () => {
 		});
 
 		it('should display the toggle in checked state when setting is enabled', () => {
-			mockCampaignStore.current!.campaign.metadata.settings.enforceCampaignLinking = true;
+			(mockCampaignStore.current as any).campaign.metadata.settings.enforceCampaignLinking = true;
 
 			render(CampaignLinkingSettings);
 
@@ -120,7 +120,7 @@ describe('CampaignLinkingSettings Component', () => {
 	describe('No Campaigns Scenario', () => {
 		it('should disable the toggle when no campaigns exist', () => {
 			mockCampaignStore.current!.allCampaigns = [];
-			mockCampaignStore.current!.campaign = null;
+			mockCampaignStore.current!.campaign = null as any;
 
 			render(CampaignLinkingSettings);
 
@@ -130,7 +130,7 @@ describe('CampaignLinkingSettings Component', () => {
 
 		it('should show explanatory text when no campaigns exist', () => {
 			mockCampaignStore.current!.allCampaigns = [];
-			mockCampaignStore.current!.campaign = null;
+			mockCampaignStore.current!.campaign = null as any;
 
 			render(CampaignLinkingSettings);
 
@@ -169,9 +169,9 @@ describe('CampaignLinkingSettings Component', () => {
 		});
 
 		it('should call setEnforceCampaignLinking when toggled off', async () => {
-			mockCampaignStore.current!.campaign.metadata.settings.enforceCampaignLinking = true;
+			(mockCampaignStore.current as any).campaign.metadata.settings.enforceCampaignLinking = true;
 			const setEnforceCampaignLinking = vi.fn();
-			mockCampaignStore.current!.setEnforceCampaignLinking = setEnforceCampaignLinking;
+			(mockCampaignStore.current as any).setEnforceCampaignLinking = setEnforceCampaignLinking;
 
 			render(CampaignLinkingSettings);
 
@@ -211,7 +211,7 @@ describe('CampaignLinkingSettings Component', () => {
 		});
 
 		it('should select active campaign by default', () => {
-			mockCampaignStore.current!.campaign.metadata.settings.defaultCampaignId = 'campaign-2';
+			(mockCampaignStore.current as any).campaign.metadata.settings.defaultCampaignId = 'campaign-2';
 
 			render(CampaignLinkingSettings);
 
@@ -233,8 +233,8 @@ describe('CampaignLinkingSettings Component', () => {
 
 		it('should call setEnforceCampaignLinking with selected default campaign', async () => {
 			const setEnforceCampaignLinking = vi.fn();
-			mockCampaignStore.current!.setEnforceCampaignLinking = setEnforceCampaignLinking;
-			mockCampaignStore.current!.campaign.metadata.settings.defaultCampaignId = 'campaign-2';
+			(mockCampaignStore.current as any).setEnforceCampaignLinking = setEnforceCampaignLinking;
+			(mockCampaignStore.current as any).campaign.metadata.settings.defaultCampaignId = 'campaign-2';
 
 			render(CampaignLinkingSettings);
 
@@ -453,7 +453,7 @@ describe('CampaignLinkingSettings Component', () => {
 
 		it('should have descriptive aria-label for disabled state', () => {
 			mockCampaignStore.current!.allCampaigns = [];
-			mockCampaignStore.current!.campaign = null;
+			mockCampaignStore.current!.campaign = null as any;
 
 			render(CampaignLinkingSettings);
 

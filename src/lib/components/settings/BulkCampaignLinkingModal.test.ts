@@ -48,7 +48,8 @@ describe('BulkCampaignLinkingModal Component', () => {
 				links: [],
 				notes: '',
 				createdAt: new Date(),
-				updatedAt: new Date()
+				updatedAt: new Date(),
+				metadata: {}
 			},
 			{
 				id: 'char-2',
@@ -60,7 +61,8 @@ describe('BulkCampaignLinkingModal Component', () => {
 				links: [],
 				notes: '',
 				createdAt: new Date(),
-				updatedAt: new Date()
+				updatedAt: new Date(),
+				metadata: {}
 			},
 			{
 				id: 'npc-1',
@@ -72,7 +74,8 @@ describe('BulkCampaignLinkingModal Component', () => {
 				links: [],
 				notes: '',
 				createdAt: new Date(),
-				updatedAt: new Date()
+				updatedAt: new Date(),
+				metadata: {}
 			}
 		];
 
@@ -87,7 +90,8 @@ describe('BulkCampaignLinkingModal Component', () => {
 				links: [],
 				notes: '',
 				createdAt: new Date(),
-				updatedAt: new Date()
+				updatedAt: new Date(),
+				metadata: {}
 			}
 		];
 
@@ -179,7 +183,8 @@ describe('BulkCampaignLinkingModal Component', () => {
 				links: [],
 				notes: '',
 				createdAt: new Date(),
-				updatedAt: new Date()
+				updatedAt: new Date(),
+				metadata: {}
 			};
 
 			defaultProps.campaigns = [campaigns[0], campaign2];
@@ -500,7 +505,8 @@ describe('BulkCampaignLinkingModal Component', () => {
 				links: [],
 				notes: '',
 				createdAt: new Date(),
-				updatedAt: new Date()
+				updatedAt: new Date(),
+				metadata: {}
 			}));
 
 			render(BulkCampaignLinkingModal, {
@@ -542,7 +548,8 @@ describe('BulkCampaignLinkingModal Component', () => {
 				links: [],
 				notes: '',
 				createdAt: new Date(),
-				updatedAt: new Date()
+				updatedAt: new Date(),
+				metadata: {}
 			};
 
 			defaultProps.campaigns = [campaigns[0], campaign2];

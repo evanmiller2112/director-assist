@@ -138,9 +138,9 @@ describe('Combat Types - Type Safety', () => {
 			expect(hero.tempHp).toBe(0);
 			expect(hero.conditions).toEqual([]);
 			expect(hero.heroicResource).toBeDefined();
-			expect(hero.heroicResource.current).toBe(3);
-			expect(hero.heroicResource.max).toBe(5);
-			expect(hero.heroicResource.name).toBe('Victories');
+			expect(hero.heroicResource?.current).toBe(3);
+			expect(hero.heroicResource?.max).toBe(5);
+			expect(hero.heroicResource?.name).toBe('Victories');
 		});
 
 		it('should allow optional ac field', () => {

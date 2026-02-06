@@ -9,7 +9,7 @@ import type { NewEntity } from '$lib/types';
 import type { ForgeSteelHero } from '$lib/types/forgeSteel';
 import { validateForgeSteelHeroStructure } from '$lib/types/forgeSteel';
 
-export interface ImportValidationResult {
+export interface ForgeSteelImportValidationResult {
 	valid: boolean;
 	errors: string[];
 	warnings: string[];
@@ -24,7 +24,7 @@ export interface ImportValidationResult {
 export function validateForgeSteelImport(
 	data: unknown,
 	existingCharacterNames: string[]
-): ImportValidationResult {
+): ForgeSteelImportValidationResult {
 	const errors: string[] = [];
 	const warnings: string[] = [];
 

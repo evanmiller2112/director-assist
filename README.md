@@ -248,6 +248,7 @@ Director Assist is built on the shoulders of excellent community projects:
 
 - **[Forge Steel](https://github.com/andyaiken/forgesteel)** by [andyaiken](https://github.com/andyaiken) - The character builder that powers our Forge Steel import feature
 - **[Draw Steel Montage Challenge Tracker](https://github.com/docMurk/Draw-Steel-Montage-Challenge-Tracker)** by [docMurk](https://github.com/docMurk) - A fantastic resource for Draw Steel montage challenges
+- **[SteelCompendium](https://github.com/SteelCompendium)** by [scottTomaszewski](https://github.com/scottTomaszewski) - A comprehensive Draw Steel resource and data repository
 
 Thank you for your contributions to the Draw Steel community!
 

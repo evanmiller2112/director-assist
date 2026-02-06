@@ -134,6 +134,11 @@
 		await combatStore.addTemporaryHp(combat.id, selectedCombatant.id, amount);
 	}
 
+	async function handleUpdateMaxHp(newMaxHp: number) {
+		if (!combat || !selectedCombatant) return;
+		await combatStore.updateMaxHp(combat.id, selectedCombatant.id, newMaxHp);
+	}
+
 	async function handleAddCondition(condition: any) {
 		if (!combat || !selectedCombatant) return;
 		await combatStore.addCondition(combat.id, selectedCombatant.id, condition);
@@ -432,6 +437,7 @@
 								onApplyDamage={handleApplyDamage}
 								onApplyHealing={handleApplyHealing}
 								onSetTempHp={handleSetTempHp}
+								onUpdateMaxHp={handleUpdateMaxHp}
 								showQuickActions={true}
 							/>
 						</div>

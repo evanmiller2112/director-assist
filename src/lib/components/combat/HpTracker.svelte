@@ -1,12 +1,14 @@
 <script lang="ts">
-	import { Heart, Skull } from 'lucide-svelte';
+	import { Heart, Skull, Pencil } from 'lucide-svelte';
 	import type { Combatant } from '$lib/types/combat';
+	import { tick } from 'svelte';
 
 	interface Props {
 		combatant: Combatant;
 		onApplyDamage: (amount: number) => void | Promise<void>;
 		onApplyHealing: (amount: number) => void | Promise<void>;
 		onSetTempHp: (amount: number) => void | Promise<void>;
+		onUpdateMaxHp?: (newMaxHp: number) => void | Promise<void>;
 		showQuickActions?: boolean;
 		showPreview?: boolean;
 	}
@@ -16,6 +18,7 @@
 		onApplyDamage,
 		onApplyHealing,
 		onSetTempHp,
+		onUpdateMaxHp,
 		showQuickActions = false,
 		showPreview = false
 	}: Props = $props();
@@ -23,6 +26,9 @@
 	let damageValue = $state('');
 	let healingValue = $state('');
 	let tempHpValue = $state('');
+	let isEditingMaxHp = $state(false);
+	let maxHpEditValue = $state('');
+	let maxHpInputElement = $state<HTMLInputElement | undefined>(undefined);
 
 	// Only calculate bloodied/critical if maxHp is defined
 	const isBloodied = $derived(
@@ -89,6 +95,46 @@
 		const amount = parseInt(healingValue, 10);
 		return Math.min(combatant.hp + amount, combatant.maxHp);
 	});
+
+	// Max HP editing functions
+	async function startEditingMaxHp() {
+		maxHpEditValue = combatant.maxHp?.toString() ?? '';
+		isEditingMaxHp = true;
+		await tick();
+		maxHpInputElement?.focus();
+	}
+
+	function cancelEditingMaxHp() {
+		isEditingMaxHp = false;
+		maxHpEditValue = '';
+	}
+
+	async function saveMaxHp() {
+		const newMaxHp = parseInt(maxHpEditValue, 10);
+		if (newMaxHp > 0 && onUpdateMaxHp) {
+			await onUpdateMaxHp(newMaxHp);
+			isEditingMaxHp = false;
+			maxHpEditValue = '';
+		}
+	}
+
+	function handleMaxHpKeydown(event: KeyboardEvent) {
+		if (event.key === 'Enter') {
+			event.preventDefault();
+			saveMaxHp();
+		} else if (event.key === 'Escape') {
+			event.preventDefault();
+			cancelEditingMaxHp();
+		}
+	}
+
+	const saveMaxHpButtonDisabled = $derived(
+		!maxHpEditValue || parseInt(maxHpEditValue, 10) <= 0
+	);
+
+	// Show edit/add button based on whether maxHp exists and onUpdateMaxHp is provided
+	const showMaxHpEditButton = $derived(onUpdateMaxHp && combatant.maxHp !== undefined);
+	const showAddMaxHpButton = $derived(onUpdateMaxHp && combatant.maxHp === undefined);
 </script>
 
 <div class="hp-tracker p-4 space-y-4">
@@ -102,13 +148,65 @@
 			: `${Math.max(0, combatant.hp)} stamina`}
 	>
 		<div class="flex items-center justify-between mb-2">
-			<div class="text-lg font-semibold text-slate-900 dark:text-white">
-				{#if combatant.maxHp !== undefined}
+			<div class="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+				{#if isEditingMaxHp}
+					<!-- Editing Max HP -->
+					<div class="flex items-center gap-2">
+						<span>{Math.max(0, combatant.hp)} /</span>
+						<label for="max-hp-input" class="sr-only">Max Stamina</label>
+						<input
+							bind:this={maxHpInputElement}
+							id="max-hp-input"
+							type="number"
+							min="1"
+							step="1"
+							class="input w-20 text-sm"
+							bind:value={maxHpEditValue}
+							onkeydown={handleMaxHpKeydown}
+						/>
+						<button
+							class="btn btn-primary text-xs py-1 px-2"
+							onclick={saveMaxHp}
+							disabled={saveMaxHpButtonDisabled}
+							aria-label="Save"
+						>
+							Save
+						</button>
+						<button
+							class="btn btn-secondary text-xs py-1 px-2"
+							onclick={cancelEditingMaxHp}
+							aria-label="Cancel"
+						>
+							Cancel
+						</button>
+					</div>
+				{:else if combatant.maxHp !== undefined}
+					<!-- Display with Edit Button -->
 					<span>{Math.max(0, combatant.hp)} / {combatant.maxHp}</span>
 					<span class="text-xs text-slate-500 dark:text-slate-400 ml-2">Stamina</span>
+					{#if showMaxHpEditButton}
+						<button
+							class="p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded"
+							onclick={startEditingMaxHp}
+							data-icon="edit-max-hp"
+						>
+							<Pencil class="w-4 h-4 text-slate-500 dark:text-slate-400" aria-hidden="true" />
+							<span class="sr-only">Edit max HP</span>
+						</button>
+					{/if}
 				{:else}
+					<!-- No Max HP -->
 					<span>{Math.max(0, combatant.hp)}</span>
 					<span class="text-xs text-slate-500 dark:text-slate-400 ml-2">Stamina</span>
+					{#if showAddMaxHpButton}
+						<button
+							class="btn btn-secondary text-xs py-1 px-2"
+							onclick={startEditingMaxHp}
+							aria-label="Add Max HP"
+						>
+							Add Max HP
+						</button>
+					{/if}
 				{/if}
 			</div>
 			{#if isBloodied && !isDefeated}

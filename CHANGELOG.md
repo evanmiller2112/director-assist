@@ -19,6 +19,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Preserves concept field for backward compatibility while enabling more detailed character information
 - Example usage: ancestry="Human", culture="Nomadic", career="Soldier", heroClass="Fury", subclass="Reaver"
 
+## [1.2.0] - TBD
+
+### Added
+
+**Threat Level Selector for Quick-Add Creatures (Issue #240)**
+- Quick-add creature form now includes threat level dropdown
+- Options: Standard, Elite, Boss (defaults to Standard)
+- Only appears for creatures, not heroes
+- Simplifies combat setup with proper threat assignment
+
+**Token Indicator Field for Combatants (Issue #300)**
+- Added optional `tokenIndicator` string field to all combatants
+- Purple badge displays indicator in CombatantCard
+- Available in both quick-add and entity-based combatant creation
+- Useful for identifying specific creatures (e.g., "A", "Boss", "Red")
+- Persists through all combat operations
+
+**Inline Max HP Editing During Combat (Issue #301)**
+- Edit maxHP directly in HpTracker during active combat
+- Edit button with pencil icon toggles inline editing
+- Keyboard shortcuts: Enter to save, Escape to cancel
+- Current HP automatically clamped if maxHP reduced below it
+- All changes logged to combat log with metadata
+- Eliminates need to remove and re-add combatants when HP changes
+
+### Fixed
+
+**Uncapped Healing for Quick-Add Combatants (Issue #241)**
+- Healing now properly capped at starting HP for quick-add combatants
+- Added `startingHp` field to track effective maximum when maxHP undefined
+- Negative healing values now have no effect (treat as zero)
+- Prevents infinite HP growth on creatures added with quick-add form
+
 ## [1.1.5] - 2026-02-06
 
 ### Added
@@ -106,38 +139,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 **Special Thanks (Issue #320)**
 - Added special thanks to scottTomaszewski and SteelCompendium in documentation
 - Acknowledged community contributions to the project
-
-## [1.2.0] - TBD
-
-### Added
-
-**Full Player Character Context in AI Generation (Issue #319)**
-- AI generation now includes complete player character information when generating content for related entities
-- New `playerCharacterContextService` automatically detects relationships to player characters
-- When generating fields, summaries, or descriptions for entities linked to PCs, the AI receives the full character context including all custom fields
-- Privacy protected: hidden section fields (secrets) are excluded from context
-- Works bidirectionally: detects both outgoing and incoming relationships to characters
-- Provides richer, more personalized AI-generated content that references specific character details
-- Example: generating an NPC who is "mentor to Kira" now includes Kira's full backstory, personality, goals, and custom fields in the generation prompt
-- Backward compatible: generation still works for entities without player character relationships
-
-**Table Map Seating Chart (Issue #318)**
-- New Table Map feature for visualizing in-person session seating arrangements
-- Configure table with 4-10 seats in oval or rectangular shape
-- Assign characters to seats with player names displayed from character's playerName field
-- Director/DM position indicator with crown icon
-- Integrated configuration toolbar directly on table visualization
-- Automatic backup/restore with campaign data
-
-### Fixed
-
-**Svelte 5 Reactivity Warnings in Components (Issue #327)**
-- Fixed `state_referenced_locally` and `non_reactive_update` warnings in 4 components
-- Updated prop synchronization pattern to prevent reactive loops
-- Components fixed: MarkdownEditor, CustomEntityTypeForm, EditRelationshipModal, ComputedFieldEditor
-- Initialize state with defaults instead of capturing prop values in `$state()` initializers
-- Use `$effect()` with `untrack()` to sync props to state without creating reactive loops
-- Added comprehensive reactivity test suites for all fixed components (60 total tests)
 
 ## [1.1.2] - TBD
 

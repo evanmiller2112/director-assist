@@ -33,32 +33,72 @@ export const BUILT_IN_ENTITY_TYPES: EntityTypeDefinition[] = [
 				placeholder: 'e.g., Grizzled veteran seeking redemption'
 			},
 			{
+				key: 'ancestry',
+				label: 'Ancestry',
+				type: 'text',
+				required: false,
+				order: 3,
+				placeholder: 'e.g., Human, Elf, Dwarf'
+			},
+			{
+				key: 'culture',
+				label: 'Culture',
+				type: 'text',
+				required: false,
+				order: 4,
+				placeholder: 'e.g., Nomadic, Urban, Monastic'
+			},
+			{
+				key: 'career',
+				label: 'Career',
+				type: 'text',
+				required: false,
+				order: 5,
+				placeholder: 'e.g., Soldier, Scholar, Craftsperson'
+			},
+			{
+				key: 'heroClass',
+				label: 'Class',
+				type: 'text',
+				required: false,
+				order: 6,
+				placeholder: 'e.g., Fury, Tactician, Shadow'
+			},
+			{
+				key: 'subclass',
+				label: 'Subclass',
+				type: 'text',
+				required: false,
+				order: 7,
+				placeholder: 'e.g., Reaver, Vanguard, Stormwight'
+			},
+			{
 				key: 'background',
 				label: 'Background',
 				type: 'richtext',
 				required: false,
-				order: 3
+				order: 8
 			},
 			{
 				key: 'personality',
 				label: 'Personality',
 				type: 'richtext',
 				required: false,
-				order: 4
+				order: 9
 			},
 			{
 				key: 'goals',
 				label: 'Goals & Motivations',
 				type: 'richtext',
 				required: false,
-				order: 5
+				order: 10
 			},
 			{
 				key: 'secrets',
 				label: 'Secrets',
 				type: 'richtext',
 				required: false,
-				order: 6,
+				order: 11,
 				section: 'hidden'
 			},
 			{
@@ -68,7 +108,7 @@ export const BUILT_IN_ENTITY_TYPES: EntityTypeDefinition[] = [
 				options: ['active', 'inactive', 'deceased'],
 				required: true,
 				defaultValue: 'active',
-				order: 7
+				order: 12
 			}
 		],
 		defaultRelationships: ['knows', 'allied_with', 'enemy_of', 'member_of']

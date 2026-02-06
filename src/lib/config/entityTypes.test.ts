@@ -740,6 +740,152 @@ describe('entityTypes.ts - System-Aware Entity Type Resolution', () => {
 });
 
 // =============================================================================
+// Base Character Entity Type Tests (Issue #247)
+// =============================================================================
+
+describe('entityTypes.ts - Base Character Fields (Issue #247)', () => {
+	describe('Character Entity Type - Forge Steel Hero Fields', () => {
+		it('should have ancestry field as text type', () => {
+			const characterType = BUILT_IN_ENTITY_TYPES.find((t) => t.type === 'character');
+			const ancestryField = characterType?.fieldDefinitions.find((f) => f.key === 'ancestry');
+
+			expect(ancestryField).toBeDefined();
+			expect(ancestryField?.label).toBe('Ancestry');
+			expect(ancestryField?.type).toBe('text');
+			expect(ancestryField?.required).toBe(false);
+			expect(ancestryField?.placeholder).toBeTruthy();
+		});
+
+		it('should have culture field as text type', () => {
+			const characterType = BUILT_IN_ENTITY_TYPES.find((t) => t.type === 'character');
+			const cultureField = characterType?.fieldDefinitions.find((f) => f.key === 'culture');
+
+			expect(cultureField).toBeDefined();
+			expect(cultureField?.label).toBe('Culture');
+			expect(cultureField?.type).toBe('text');
+			expect(cultureField?.required).toBe(false);
+			expect(cultureField?.placeholder).toBeTruthy();
+		});
+
+		it('should have career field as text type', () => {
+			const characterType = BUILT_IN_ENTITY_TYPES.find((t) => t.type === 'character');
+			const careerField = characterType?.fieldDefinitions.find((f) => f.key === 'career');
+
+			expect(careerField).toBeDefined();
+			expect(careerField?.label).toBe('Career');
+			expect(careerField?.type).toBe('text');
+			expect(careerField?.required).toBe(false);
+			expect(careerField?.placeholder).toBeTruthy();
+		});
+
+		it('should have heroClass field as text type', () => {
+			const characterType = BUILT_IN_ENTITY_TYPES.find((t) => t.type === 'character');
+			const heroClassField = characterType?.fieldDefinitions.find((f) => f.key === 'heroClass');
+
+			expect(heroClassField).toBeDefined();
+			expect(heroClassField?.label).toBe('Class');
+			expect(heroClassField?.type).toBe('text');
+			expect(heroClassField?.required).toBe(false);
+			expect(heroClassField?.placeholder).toBeTruthy();
+		});
+
+		it('should have subclass field as text type', () => {
+			const characterType = BUILT_IN_ENTITY_TYPES.find((t) => t.type === 'character');
+			const subclassField = characterType?.fieldDefinitions.find((f) => f.key === 'subclass');
+
+			expect(subclassField).toBeDefined();
+			expect(subclassField?.label).toBe('Subclass');
+			expect(subclassField?.type).toBe('text');
+			expect(subclassField?.required).toBe(false);
+			expect(subclassField?.placeholder).toBeTruthy();
+		});
+
+		it('should have all 5 new fields in consecutive order', () => {
+			const characterType = BUILT_IN_ENTITY_TYPES.find((t) => t.type === 'character');
+			const fields = characterType?.fieldDefinitions ?? [];
+
+			const ancestryField = fields.find((f) => f.key === 'ancestry');
+			const cultureField = fields.find((f) => f.key === 'culture');
+			const careerField = fields.find((f) => f.key === 'career');
+			const heroClassField = fields.find((f) => f.key === 'heroClass');
+			const subclassField = fields.find((f) => f.key === 'subclass');
+
+			// Check they exist and have consecutive orders
+			expect(ancestryField?.order).toBeDefined();
+			expect(cultureField?.order).toBeDefined();
+			expect(careerField?.order).toBeDefined();
+			expect(heroClassField?.order).toBeDefined();
+			expect(subclassField?.order).toBeDefined();
+
+			// Verify consecutive ordering
+			const orders = [
+				ancestryField?.order ?? 0,
+				cultureField?.order ?? 0,
+				careerField?.order ?? 0,
+				heroClassField?.order ?? 0,
+				subclassField?.order ?? 0
+			];
+
+			// Check that orders are consecutive and in this sequence
+			for (let i = 1; i < orders.length; i++) {
+				expect(orders[i]).toBe(orders[i - 1] + 1);
+			}
+		});
+
+		it('should place new fields after concept field', () => {
+			const characterType = BUILT_IN_ENTITY_TYPES.find((t) => t.type === 'character');
+			const fields = characterType?.fieldDefinitions ?? [];
+
+			const conceptField = fields.find((f) => f.key === 'concept');
+			const ancestryField = fields.find((f) => f.key === 'ancestry');
+
+			expect(conceptField?.order).toBeDefined();
+			expect(ancestryField?.order).toBeDefined();
+			expect(ancestryField!.order).toBeGreaterThan(conceptField!.order);
+		});
+
+		it('should place new fields before background field', () => {
+			const characterType = BUILT_IN_ENTITY_TYPES.find((t) => t.type === 'character');
+			const fields = characterType?.fieldDefinitions ?? [];
+
+			const subclassField = fields.find((f) => f.key === 'subclass');
+			const backgroundField = fields.find((f) => f.key === 'background');
+
+			expect(subclassField?.order).toBeDefined();
+			expect(backgroundField?.order).toBeDefined();
+			expect(subclassField!.order).toBeLessThan(backgroundField!.order);
+		});
+
+		it('should have appropriate labels for all new fields', () => {
+			const characterType = BUILT_IN_ENTITY_TYPES.find((t) => t.type === 'character');
+
+			const ancestryField = characterType?.fieldDefinitions.find((f) => f.key === 'ancestry');
+			const cultureField = characterType?.fieldDefinitions.find((f) => f.key === 'culture');
+			const careerField = characterType?.fieldDefinitions.find((f) => f.key === 'career');
+			const heroClassField = characterType?.fieldDefinitions.find((f) => f.key === 'heroClass');
+			const subclassField = characterType?.fieldDefinitions.find((f) => f.key === 'subclass');
+
+			expect(ancestryField?.label).toBe('Ancestry');
+			expect(cultureField?.label).toBe('Culture');
+			expect(careerField?.label).toBe('Career');
+			expect(heroClassField?.label).toBe('Class');
+			expect(subclassField?.label).toBe('Subclass');
+		});
+
+		it('should have all new fields as optional (required: false)', () => {
+			const characterType = BUILT_IN_ENTITY_TYPES.find((t) => t.type === 'character');
+
+			const newFieldKeys = ['ancestry', 'culture', 'career', 'heroClass', 'subclass'];
+
+			newFieldKeys.forEach((key) => {
+				const field = characterType?.fieldDefinitions.find((f) => f.key === key);
+				expect(field?.required).toBe(false);
+			});
+		});
+	});
+});
+
+// =============================================================================
 // Entity Type Ordering Functions Tests (Issue #121)
 // =============================================================================
 

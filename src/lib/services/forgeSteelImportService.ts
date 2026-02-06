@@ -102,16 +102,28 @@ export function mapForgeSteelHeroToEntity(hero: ForgeSteelHero): NewEntity {
 	// Map defeated status
 	const status = hero.state.defeated ? 'deceased' : 'active';
 
+	// Build fields object
+	const fields: Record<string, any> = {
+		concept,
+		background: hero.state.notes,
+		status
+	};
+
+	// Map new Forge Steel hero fields (Issue #247)
+	if (hero.ancestry?.name) {
+		fields.ancestry = hero.ancestry.name;
+	}
+
+	if (hero.class?.name) {
+		fields.heroClass = hero.class.name;
+	}
+
 	return {
 		type: 'character',
 		name: hero.name.trim(),
 		description: '',
 		tags: ['forge-steel-import'],
-		fields: {
-			concept,
-			background: hero.state.notes,
-			status
-		},
+		fields,
 		links: [],
 		notes: 'Imported from Forge Steel',
 		metadata: {}

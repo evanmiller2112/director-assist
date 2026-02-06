@@ -69,7 +69,7 @@ See [DEPLOYMENT.md](./docs/DEPLOYMENT.md) for detailed deployment instructions i
 ### First Steps
 
 1. Create a campaign with a name, game system (Draw Steel or System Agnostic), and setting description
-   - **Draw Steel**: Adds system-specific fields (ancestry, class, threat levels, victory points) and uses "Director" terminology
+   - **Draw Steel**: Adds system-specific fields (ancestry, culture, career, class, subclass, threat levels, victory points) and uses "Director" terminology
    - **System Agnostic**: Generic fields suitable for any TTRPG system
 2. Add an AI provider API key in Settings to enable AI features (optional)
 3. Start adding entities using the sidebar or dashboard
@@ -176,8 +176,8 @@ Each entity type has custom fields relevant to its purpose. When you select a ga
 
 **Draw Steel System Enhancements:**
 - **Characters**:
-  - Identity: Ancestry, Heritage, Ancestry Trait
-  - Class: Class, Kit, Heroic Resource, Class Features
+  - Identity: Ancestry (select dropdown), Culture, Career, Heritage, Ancestry Trait
+  - Class: Class (select dropdown), Subclass, Kit, Heroic Resource, Class Features
   - Characteristics: Might, Agility, Reason, Intuition, Presence
   - Skills with training levels (Trained, Expert, Master)
   - Health: Max Stamina, Current Stamina, Vitality, Conditions

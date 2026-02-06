@@ -95,7 +95,7 @@ Director Assist includes 12 built-in entity types to help you organize your camp
 ### Entity Types
 
 **Player Characters**
-Track your players' characters with background, goals, and secrets. Include the player's name so you remember who plays whom.
+Track your players' characters with comprehensive information including player name, character concept, and detailed identity fields. Standard fields include ancestry, culture, career, class, subclass, background, personality, goals, and secrets. When using the Draw Steel system profile, ancestry and class fields become dropdowns with game-specific options.
 
 **NPCs**
 The heart of your campaign! NPCs have fields for role, personality, appearance, voice, greetings, motivation, secrets, status, and importance. Perfect for everyone from quest-givers to villains.
@@ -1676,8 +1676,8 @@ When you select a game system, entity forms automatically adapt to show system-a
 
 **Draw Steel System Adds:**
 - **Characters**:
-  - Identity: Ancestry, Heritage, Ancestry Trait
-  - Class: Class, Kit, Heroic Resource, Class Features
+  - Identity: Ancestry (select dropdown), Culture, Career, Heritage, Ancestry Trait
+  - Class: Class (select dropdown), Subclass, Kit, Heroic Resource, Class Features
   - Characteristics: Might, Agility, Reason, Intuition, Presence
   - Skills with training levels (Trained, Expert, Master)
   - Health: Max Stamina, Current Stamina, Vitality, Conditions
@@ -2632,7 +2632,8 @@ Director Assist can import character data directly from Forge Steel, the officia
 
 **What Gets Imported**:
 - Character name
-- Ancestry and Class (combined into the "concept" field)
+- Ancestry (imported to both "ancestry" field and combined into "concept" field)
+- Class (imported to both "heroClass" field and combined into "concept" field)
 - Character notes (imported as "background")
 - Defeated status (becomes "active" or "deceased")
 
@@ -2646,7 +2647,9 @@ Director Assist can import character data directly from Forge Steel, the officia
 4. Select your `.ds-hero` or `.json` file
 5. Review the import preview:
    - Character name
-   - Concept (Ancestry + Class)
+   - Ancestry (imported to dedicated field)
+   - Class (imported to dedicated heroClass field)
+   - Concept (Ancestry + Class combined for backward compatibility)
    - Background (notes)
    - Status (active or deceased)
 7. Click "Import Character" to save
@@ -2659,8 +2662,8 @@ Director Assist validates the file before importing and shows:
   - Missing required fields (name, id, state)
   - Duplicate character name (a character with this name already exists)
 - **Warnings** (yellow): Non-critical issues that won't block import
-  - Missing ancestry (concept field will be incomplete)
-  - Missing class (concept field will be incomplete)
+  - Missing ancestry (ancestry and concept fields will be incomplete)
+  - Missing class (heroClass and concept fields will be incomplete)
 
 **What Happens After Import**:
 

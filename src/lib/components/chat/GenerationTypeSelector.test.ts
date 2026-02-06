@@ -145,7 +145,7 @@ describe('GenerationTypeSelector Component', () => {
 				'npc',
 				'location',
 				'plot_hook',
-				'encounter',
+				'combat',
 				'item',
 				'faction',
 				'session_prep'
@@ -554,10 +554,10 @@ describe('GenerationTypeSelector Component', () => {
 			// Rapid changes
 			await fireEvent.change(select, { target: { value: 'npc' } });
 			await fireEvent.change(select, { target: { value: 'location' } });
-			await fireEvent.change(select, { target: { value: 'encounter' } });
+			await fireEvent.change(select, { target: { value: 'combat' } });
 
 			expect(onChange).toHaveBeenCalledTimes(3);
-			expect(onChange).toHaveBeenLastCalledWith('encounter');
+			expect(onChange).toHaveBeenLastCalledWith('combat');
 		});
 
 		it('should handle selecting same value multiple times', async () => {
@@ -583,7 +583,7 @@ describe('GenerationTypeSelector Component', () => {
 				'npc',
 				'location',
 				'plot_hook',
-				'encounter',
+				'combat',
 				'item',
 				'faction',
 				'session_prep'

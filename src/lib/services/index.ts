@@ -142,3 +142,16 @@ export {
 	resetAllStores,
 	refreshAfterCampaignSwitch
 } from './stateRefreshService';
+
+// Player character context service (Issue #319)
+export {
+	findLinkedPlayerCharacters,
+	buildFullCharacterContext,
+	formatPlayerCharacterContextForPrompt,
+	buildPlayerCharacterContext
+} from './playerCharacterContextService';
+export type {
+	LinkedCharacterInfo,
+	PlayerCharacterContext,
+	PlayerCharacterContextResult
+} from './playerCharacterContextService';

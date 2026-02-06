@@ -143,6 +143,7 @@ src/
 │   │   ├── fieldGenerationService.ts              # AI field generation
 │   │   ├── fieldRelationshipContextService.ts     # Per-field relationship context
 │   │   ├── modelService.ts                        # AI model selection
+│   │   ├── playerCharacterContextService.ts       # Full player character context for AI
 │   │   ├── relationshipContextBuilder.ts          # Relationship context building for AI
 │   │   ├── relationshipContextSettingsService.ts  # Relationship context settings
 │   │   ├── relationshipSummaryService.ts          # AI relationship summary generation
@@ -5351,6 +5352,99 @@ const result = await buildFieldRelationshipContext({
 **Integration:**
 
 The field relationship context service integrates with the field generation service to automatically enhance AI generation with relationship awareness. It's called during the generation process for edit pages when generating fields on existing entities.
+
+#### Player Character Context Service
+
+**Location:** `/src/lib/services/playerCharacterContextService.ts`
+
+**Purpose:** Builds comprehensive player character context for AI generation when generating content for entities linked to player characters. Provides full character information including all custom fields to enable personalized, contextually rich AI-generated content.
+
+**Key Functions:**
+
+```typescript
+// Find all player characters linked to an entity
+findLinkedPlayerCharacters(entityId: EntityId): Promise<LinkedCharacterInfo[]>
+
+// Build full context for a player character
+buildFullCharacterContext(linkedChar: LinkedCharacterInfo): Promise<PlayerCharacterContext>
+
+// Format player character contexts for AI prompt injection
+formatPlayerCharacterContextForPrompt(contexts: PlayerCharacterContext[]): string
+
+// Main entry point: build complete player character context
+buildPlayerCharacterContext(entityId: EntityId): Promise<PlayerCharacterContextResult>
+```
+
+**Interfaces:**
+
+```typescript
+interface LinkedCharacterInfo {
+  character: BaseEntity;        // The player character entity
+  relationship: string;         // The relationship type (e.g., 'mentor_to')
+  direction?: 'outgoing' | 'incoming';  // Relationship direction
+}
+
+interface PlayerCharacterContext {
+  characterName: string;        // Character name
+  relationship: string;         // Relationship to the entity
+  description?: string;         // Character description
+  summary?: string;             // Character summary
+  fields: Record<string, any>;  // All character fields (excluding hidden/secrets)
+  fieldLabels: Record<string, string>;  // Field labels for formatting
+}
+
+interface PlayerCharacterContextResult {
+  hasContext: boolean;          // Whether any player character context exists
+  linkedCharacters?: LinkedCharacterInfo[];  // List of linked characters
+  contexts?: PlayerCharacterContext[];       // Full context for each character
+  formattedContext: string;     // Formatted context string for AI prompt
+  characterCount?: number;      // Number of linked characters
+}
+```
+
+**Behavior:**
+
+1. **Bidirectional Detection**: Finds player characters linked both as outgoing relationships (entity → character) and incoming relationships (character → entity)
+2. **Complete Field Inclusion**: Includes all standard and custom fields defined for the character
+3. **Privacy Protection**: Automatically excludes fields in the "hidden" section (typically used for secrets or DM-only notes)
+4. **Formatted Output**: Creates clearly labeled context sections for AI prompt injection
+
+**Example Flow:**
+
+```typescript
+// Generating content for an NPC linked to a player character "Kira"
+const result = await buildPlayerCharacterContext('npc-123');
+
+// Result:
+// hasContext: true
+// characterCount: 1
+// linkedCharacters: [{character: {name: 'Kira', ...}, relationship: 'mentor_to'}]
+// formattedContext:
+// "=== Player Character Context ===\n
+//  Character: Kira Thorne\n
+//  Relationship: mentor_to\n
+//  Description: A tactical prodigy from the northern reaches...\n
+//  Ancestry: Human\n
+//  Class: Tactician\n
+//  Backstory: [full backstory text]\n
+//  Personality: [personality details]\n
+//  ..."
+```
+
+**Integration:**
+
+The player character context service integrates with field generation services (`fieldGenerationService.ts`, `generateSummaryContent()`, `generateDescriptionContent()`) on entity edit pages. When generating content for an entity, the service is called to detect and include player character context automatically. The formatted context is appended to AI prompts to provide rich, personalized generation.
+
+**Use Cases:**
+
+- Generating mentor NPCs linked to player characters (includes PC background and abilities)
+- Creating faction descriptions for organizations the PCs belong to
+- Generating locations relevant to PC backstories (hometown, training ground)
+- Crafting personalized items or artifacts connected to player characters
+
+**Token Consideration:**
+
+Including full player character context increases API token usage per generation. This provides higher quality, more personalized content by giving the AI complete information about the player character, including all custom fields defined by the campaign.
 
 #### Relationship Context Settings Service
 

@@ -40,8 +40,10 @@ export interface FieldGenerationContext {
 	};
 	/** Campaign information for additional context */
 	campaignContext?: { name: string; setting: string; system: string };
-/** Formatted relationship context to include in prompt (optional, Issues #59/#60) */
+	/** Formatted relationship context to include in prompt (optional, Issues #59/#60) */
 	relationshipContext?: string;
+	/** Formatted player character context to include in prompt (optional, Issue #319) */
+	playerCharacterContext?: string;
 }
 
 /**
@@ -114,7 +116,7 @@ export function isGeneratableField(fieldTypeOrDefinition: FieldType | FieldDefin
  * @private
  */
 function buildFieldPrompt(context: FieldGenerationContext): string {
-	const { entityType, typeDefinition, targetField, currentValues, campaignContext, relationshipContext } = context;
+	const { entityType, typeDefinition, targetField, currentValues, campaignContext, relationshipContext, playerCharacterContext } = context;
 
 	// Build context from existing values (EXCLUDING hidden fields)
 	let existingContext = '';
@@ -158,10 +160,16 @@ function buildFieldPrompt(context: FieldGenerationContext): string {
 `;
 	}
 
-// Build relationship context section (Issues #59/#60)
+	// Build relationship context section (Issues #59/#60)
 	let relationshipInfo = '';
 	if (relationshipContext && relationshipContext.trim()) {
 		relationshipInfo = `\n${relationshipContext}\n`;
+	}
+
+	// Build player character context section (Issue #319)
+	let pcInfo = '';
+	if (playerCharacterContext && playerCharacterContext.trim()) {
+		pcInfo = `\n${playerCharacterContext}\n`;
 	}
 
 	// Build field-specific hints
@@ -178,7 +186,7 @@ function buildFieldPrompt(context: FieldGenerationContext): string {
 
 	return `You are a TTRPG campaign assistant. Generate content for a single field of a ${entityLabel}.
 ${campaignInfo}
-${existingContext ? `\nExisting Context:\n${existingContext}` : ''}${relationshipInfo}
+${existingContext ? `\nExisting Context:\n${existingContext}` : ''}${relationshipInfo}${pcInfo}
 FIELD TO GENERATE: ${fieldLabel} (${targetField.key})
 Field Type: ${targetField.type}${fieldHints}
 
@@ -400,6 +408,8 @@ export interface CoreFieldGenerationContext {
 	campaignContext?: { name: string; setting: string; system: string };
 	/** Relationship context for this entity (Issue #59) */
 	relationshipContext?: string;
+	/** Player character context for this entity (Issue #319) */
+	playerCharacterContext?: string;
 }
 
 /**
@@ -413,7 +423,7 @@ export interface CoreFieldGenerationContext {
  * @private
  */
 function buildSummaryPrompt(context: CoreFieldGenerationContext): string {
-	const { entityType, typeDefinition, currentValues, campaignContext, relationshipContext } = context;
+	const { entityType, typeDefinition, currentValues, campaignContext, relationshipContext, playerCharacterContext } = context;
 
 	// Build context from existing values (EXCLUDING hidden fields)
 	let existingContext = '';
@@ -463,11 +473,17 @@ function buildSummaryPrompt(context: CoreFieldGenerationContext): string {
 		relationshipInfo = `\nRelationships:\n${relationshipContext}\n`;
 	}
 
+	// Build player character context (Issue #319)
+	let pcInfo = '';
+	if (playerCharacterContext && playerCharacterContext.trim()) {
+		pcInfo = `\n${playerCharacterContext}\n`;
+	}
+
 	const entityLabel = typeDefinition.label;
 
 	return `You are a TTRPG campaign assistant. Generate a brief summary for a ${entityLabel}.
 ${campaignInfo}
-${existingContext ? `\nExisting Context:\n${existingContext}` : ''}${relationshipInfo}
+${existingContext ? `\nExisting Context:\n${existingContext}` : ''}${relationshipInfo}${pcInfo}
 TASK: Generate a concise summary (1-2 sentences) that captures the essence of this ${entityLabel}.
 
 IMPORTANT RULES:
@@ -491,7 +507,7 @@ Respond with ONLY the summary text (no JSON, no markdown formatting, no explanat
  * @private
  */
 function buildDescriptionPrompt(context: CoreFieldGenerationContext): string {
-	const { entityType, typeDefinition, currentValues, campaignContext, relationshipContext } = context;
+	const { entityType, typeDefinition, currentValues, campaignContext, relationshipContext, playerCharacterContext } = context;
 
 	// Build context from existing values (EXCLUDING hidden fields)
 	let existingContext = '';
@@ -541,11 +557,17 @@ function buildDescriptionPrompt(context: CoreFieldGenerationContext): string {
 		relationshipInfo = `\nRelationships:\n${relationshipContext}\n`;
 	}
 
+	// Build player character context (Issue #319)
+	let pcInfo = '';
+	if (playerCharacterContext && playerCharacterContext.trim()) {
+		pcInfo = `\n${playerCharacterContext}\n`;
+	}
+
 	const entityLabel = typeDefinition.label;
 
 	return `You are a TTRPG campaign assistant. Generate a detailed description for a ${entityLabel}.
 ${campaignInfo}
-${existingContext ? `\nExisting Context:\n${existingContext}` : ''}${relationshipInfo}
+${existingContext ? `\nExisting Context:\n${existingContext}` : ''}${relationshipInfo}${pcInfo}
 TASK: Generate a rich, evocative description (1-3 paragraphs) for this ${entityLabel}.
 
 IMPORTANT RULES:

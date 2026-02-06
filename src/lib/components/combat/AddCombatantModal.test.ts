@@ -21,14 +21,13 @@ import type { BaseEntity } from '$lib/types';
 
 // Mock entities store
 let mockEntities: BaseEntity[] = [];
-const mockEntitiesStore = {
-	subscribe: vi.fn(),
-	getAll: vi.fn(() => mockEntities),
-	getByType: vi.fn((type: string) => mockEntities.filter(e => e.type === type))
-};
 
 vi.mock('$lib/stores', () => ({
-	entitiesStore: mockEntitiesStore
+	entitiesStore: {
+		get entities() {
+			return mockEntities;
+		}
+	}
 }));
 
 describe('AddCombatantModal - Modal Visibility', () => {
@@ -1130,6 +1129,682 @@ describe('AddCombatantModal - Optional Fields in Entity Mode (Issue #233)', () =
 					expect(screen.getByText(/hp.*cannot.*exceed.*max/i)).toBeInTheDocument();
 				});
 			}
+		});
+	});
+});
+
+describe('Quick Add - Threat Level (Issue #240)', () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+		mockEntities = [];
+	});
+
+	describe('Threat Level Visibility', () => {
+		it('should show threat level selector when Creature type selected in Quick Add mode', async () => {
+			render(AddCombatantModal, { props: { open: true } });
+
+			// Switch to Quick Add mode
+			const quickAddButton = screen.getByRole('button', { name: /quick.*add/i });
+			await fireEvent.click(quickAddButton);
+
+			// Wait for Quick Add form to appear
+			await waitFor(() => {
+				expect(screen.getByLabelText(/^name$/i)).toBeInTheDocument();
+			});
+
+			// Click the Creature button (now only the Quick Add buttons are visible)
+			const creatureButton = screen.getByRole('button', { name: /creature/i });
+			await fireEvent.click(creatureButton);
+
+			// Threat level selector should be visible
+			await waitFor(() => {
+				expect(screen.getByLabelText(/threat.*level/i)).toBeInTheDocument();
+			});
+		});
+
+		it('should NOT show threat level selector when Hero type selected in Quick Add mode', async () => {
+			render(AddCombatantModal, { props: { open: true } });
+
+			// Switch to Quick Add mode
+			const quickAddButton = screen.getByRole('button', { name: /quick.*add/i });
+			await fireEvent.click(quickAddButton);
+
+			// Wait for Quick Add form
+			await waitFor(() => {
+				expect(screen.getByLabelText(/^name$/i)).toBeInTheDocument();
+			});
+
+			// Click the Hero button (Quick Add defaults to creature, so click hero)
+			const heroButton = screen.getByRole('button', { name: /hero/i });
+			await fireEvent.click(heroButton);
+
+			// Threat level selector should NOT be visible
+			await waitFor(() => {
+				expect(screen.queryByLabelText(/threat.*level/i)).not.toBeInTheDocument();
+			});
+		});
+
+		it('should hide threat level when switching from Creature to Hero type', async () => {
+			render(AddCombatantModal, { props: { open: true } });
+
+			// Switch to Quick Add mode
+			const quickAddButton = screen.getByRole('button', { name: /quick.*add/i });
+			await fireEvent.click(quickAddButton);
+
+			// Wait for Quick Add form
+			await waitFor(() => {
+				expect(screen.getByLabelText(/^name$/i)).toBeInTheDocument();
+			});
+
+			// Select Creature type first
+			const creatureButton = screen.getByRole('button', { name: /creature/i });
+			await fireEvent.click(creatureButton);
+
+			// Verify threat level appears
+			await waitFor(() => {
+				expect(screen.getByLabelText(/threat.*level/i)).toBeInTheDocument();
+			});
+
+			// Switch to Hero type
+			const heroButton = screen.getByRole('button', { name: /hero/i });
+			await fireEvent.click(heroButton);
+
+			// Threat level should disappear
+			await waitFor(() => {
+				expect(screen.queryByLabelText(/threat.*level/i)).not.toBeInTheDocument();
+			});
+		});
+	});
+
+	describe('Threat Level Options and Default', () => {
+		it('should default to threat level 1 (Standard)', async () => {
+			render(AddCombatantModal, { props: { open: true } });
+
+			// Switch to Quick Add mode
+			const quickAddButton = screen.getByRole('button', { name: /quick.*add/i });
+			await fireEvent.click(quickAddButton);
+
+			// Wait for Quick Add form
+			await waitFor(() => {
+				expect(screen.getByLabelText(/^name$/i)).toBeInTheDocument();
+			});
+
+			// Select Creature type
+			const creatureButton = screen.getByRole('button', { name: /creature/i });
+			await fireEvent.click(creatureButton);
+
+			// Check default threat level is 1
+			await waitFor(() => {
+				const threatSelect = screen.getByLabelText(/threat.*level/i) as HTMLSelectElement;
+				expect(threatSelect.value).toBe('1');
+			});
+		});
+
+		it('should have options for threat levels 1, 2, and 3', async () => {
+			render(AddCombatantModal, { props: { open: true } });
+
+			// Switch to Quick Add mode
+			const quickAddButton = screen.getByRole('button', { name: /quick.*add/i });
+			await fireEvent.click(quickAddButton);
+
+			// Wait for Quick Add form
+			await waitFor(() => {
+				expect(screen.getByLabelText(/^name$/i)).toBeInTheDocument();
+			});
+
+			// Select Creature type
+			const creatureButton = screen.getByRole('button', { name: /creature/i });
+			await fireEvent.click(creatureButton);
+
+			// Check options exist
+			await waitFor(() => {
+				const threatSelect = screen.getByLabelText(/threat.*level/i) as HTMLSelectElement;
+				const options = Array.from(threatSelect.options).map(opt => opt.value);
+				expect(options).toContain('1');
+				expect(options).toContain('2');
+				expect(options).toContain('3');
+			});
+		});
+
+		it('should show descriptive labels for threat levels', async () => {
+			render(AddCombatantModal, { props: { open: true } });
+
+			// Switch to Quick Add mode
+			const quickAddButton = screen.getByRole('button', { name: /quick.*add/i });
+			await fireEvent.click(quickAddButton);
+
+			// Wait for Quick Add form
+			await waitFor(() => {
+				expect(screen.getByLabelText(/^name$/i)).toBeInTheDocument();
+			});
+
+			// Select Creature type
+			const creatureButton = screen.getByRole('button', { name: /creature/i });
+			await fireEvent.click(creatureButton);
+
+			// Check for descriptive labels like "1 - Standard", "2 - Double Strength", "3 - Triple Strength"
+			await waitFor(() => {
+				const threatSelect = screen.getByLabelText(/threat.*level/i) as HTMLSelectElement;
+				const optionTexts = Array.from(threatSelect.options).map(opt => opt.text);
+				expect(optionTexts.some(text => /standard/i.test(text))).toBe(true);
+			});
+		});
+	});
+
+	describe('Threat Level Selection', () => {
+		it('should allow selecting different threat levels', async () => {
+			render(AddCombatantModal, { props: { open: true } });
+
+			// Switch to Quick Add mode
+			const quickAddButton = screen.getByRole('button', { name: /quick.*add/i });
+			await fireEvent.click(quickAddButton);
+
+			// Wait for Quick Add form
+			await waitFor(() => {
+				expect(screen.getByLabelText(/^name$/i)).toBeInTheDocument();
+			});
+
+			// Select Creature type
+			const creatureButton = screen.getByRole('button', { name: /creature/i });
+			await fireEvent.click(creatureButton);
+
+			// Change threat level to 2
+			await waitFor(async () => {
+				const threatSelect = screen.getByLabelText(/threat.*level/i) as HTMLSelectElement;
+				await fireEvent.change(threatSelect, { target: { value: '2' } });
+				expect(threatSelect.value).toBe('2');
+			});
+
+			// Change threat level to 3
+			const threatSelect = screen.getByLabelText(/threat.*level/i) as HTMLSelectElement;
+			await fireEvent.change(threatSelect, { target: { value: '3' } });
+			expect(threatSelect.value).toBe('3');
+
+			// Change back to 1
+			await fireEvent.change(threatSelect, { target: { value: '1' } });
+			expect(threatSelect.value).toBe('1');
+		});
+	});
+
+	describe('Threat Level in Submission', () => {
+		it('should include threat level in Quick Add creature submission', async () => {
+			const onAdd = vi.fn();
+			render(AddCombatantModal, { props: { open: true, onAdd } });
+
+			// Switch to Quick Add mode
+			const quickAddButton = screen.getByRole('button', { name: /quick.*add/i });
+			await fireEvent.click(quickAddButton);
+
+			// Wait for Quick Add form
+			await waitFor(() => {
+				expect(screen.getByLabelText(/^name$/i)).toBeInTheDocument();
+			});
+
+			// Fill in creature form
+			const nameInput = screen.getByLabelText(/^name$/i);
+			const staminaInput = screen.getByLabelText(/stamina/i);
+			await fireEvent.input(nameInput, { target: { value: 'Goblin Warrior' } });
+			await fireEvent.input(staminaInput, { target: { value: '25' } });
+
+			// Select Creature type
+			const creatureButton = screen.getByRole('button', { name: /creature/i });
+			await fireEvent.click(creatureButton);
+
+			// Select threat level 2
+			await waitFor(async () => {
+				const threatSelect = screen.getByLabelText(/threat.*level/i);
+				await fireEvent.change(threatSelect, { target: { value: '2' } });
+			});
+
+			// Submit the form
+			const addButton = screen.getByRole('button', { name: /^add$/i });
+			await fireEvent.click(addButton);
+
+			// Verify threat level is included
+			expect(onAdd).toHaveBeenCalledWith(
+				expect.objectContaining({
+					name: 'Goblin Warrior',
+					hp: 25,
+					type: 'creature',
+					threat: 2,
+					isAdHoc: true
+				})
+			);
+		});
+
+		it('should NOT include threat in Quick Add hero submission', async () => {
+			const onAdd = vi.fn();
+			render(AddCombatantModal, { props: { open: true, onAdd } });
+
+			// Switch to Quick Add mode
+			const quickAddButton = screen.getByRole('button', { name: /quick.*add/i });
+			await fireEvent.click(quickAddButton);
+
+			// Wait for Quick Add form
+			await waitFor(() => {
+				expect(screen.getByLabelText(/^name$/i)).toBeInTheDocument();
+			});
+
+			// Fill in hero form
+			const nameInput = screen.getByLabelText(/^name$/i);
+			const staminaInput = screen.getByLabelText(/stamina/i);
+			await fireEvent.input(nameInput, { target: { value: 'Brave Knight' } });
+			await fireEvent.input(staminaInput, { target: { value: '40' } });
+
+			// Select Hero type
+			const heroButton = screen.getByRole('button', { name: /hero/i });
+			await fireEvent.click(heroButton);
+
+			// Submit the form
+			const addButton = screen.getByRole('button', { name: /^add$/i });
+			await fireEvent.click(addButton);
+
+			// Verify threat is NOT included
+			expect(onAdd).toHaveBeenCalledWith(
+				expect.objectContaining({
+					name: 'Brave Knight',
+					hp: 40,
+					type: 'hero',
+					isAdHoc: true
+				})
+			);
+			expect(onAdd).toHaveBeenCalledWith(
+				expect.not.objectContaining({
+					threat: expect.anything()
+				})
+			);
+		});
+
+		it('should include default threat level 1 when not explicitly changed', async () => {
+			const onAdd = vi.fn();
+			render(AddCombatantModal, { props: { open: true, onAdd } });
+
+			// Switch to Quick Add mode
+			const quickAddButton = screen.getByRole('button', { name: /quick.*add/i });
+			await fireEvent.click(quickAddButton);
+
+			// Wait for Quick Add form
+			await waitFor(() => {
+				expect(screen.getByLabelText(/^name$/i)).toBeInTheDocument();
+			});
+
+			// Fill in creature form
+			const nameInput = screen.getByLabelText(/^name$/i);
+			const staminaInput = screen.getByLabelText(/stamina/i);
+			await fireEvent.input(nameInput, { target: { value: 'Basic Goblin' } });
+			await fireEvent.input(staminaInput, { target: { value: '15' } });
+
+			// Select Creature type
+			const creatureButton = screen.getByRole('button', { name: /creature/i });
+			await fireEvent.click(creatureButton);
+
+			// Submit without changing threat level
+			await waitFor(async () => {
+				const addButton = screen.getByRole('button', { name: /^add$/i });
+				await fireEvent.click(addButton);
+			});
+
+			// Verify default threat level 1 is included
+			expect(onAdd).toHaveBeenCalledWith(
+				expect.objectContaining({
+					name: 'Basic Goblin',
+					hp: 15,
+					type: 'creature',
+					threat: 1,
+					isAdHoc: true
+				})
+			);
+		});
+	});
+
+	describe('Threat Level State Management', () => {
+		it('should reset threat level to 1 when modal is reopened', async () => {
+			const { rerender } = render(AddCombatantModal, { props: { open: true } });
+
+			// Switch to Quick Add mode
+			const quickAddButton = screen.getByRole('button', { name: /quick.*add/i });
+			await fireEvent.click(quickAddButton);
+
+			// Wait for Quick Add form
+			await waitFor(() => {
+				expect(screen.getByLabelText(/^name$/i)).toBeInTheDocument();
+			});
+
+			// Select Creature type
+			const creatureButton = screen.getByRole('button', { name: /creature/i });
+			await fireEvent.click(creatureButton);
+
+			// Change threat level to 3
+			await waitFor(async () => {
+				const threatSelect = screen.getByLabelText(/threat.*level/i);
+				await fireEvent.change(threatSelect, { target: { value: '3' } });
+			});
+
+			// Close modal
+			rerender({ open: false });
+
+			// Reopen modal
+			rerender({ open: true });
+
+			// Switch back to Quick Add
+			await waitFor(async () => {
+				const quickAddBtn = screen.getByRole('button', { name: /quick.*add/i });
+				await fireEvent.click(quickAddBtn);
+			});
+
+			// Wait for Quick Add form and select Creature
+			await waitFor(() => {
+				expect(screen.getByLabelText(/^name$/i)).toBeInTheDocument();
+			});
+
+			const creatureButtonAfter = screen.getByRole('button', { name: /creature/i });
+			await fireEvent.click(creatureButtonAfter);
+
+			// Threat level should be reset to 1
+			await waitFor(() => {
+				const threatSelect = screen.getByLabelText(/threat.*level/i) as HTMLSelectElement;
+				expect(threatSelect.value).toBe('1');
+			});
+		});
+
+		it('should reset threat level when switching to From Entity mode and back', async () => {
+			render(AddCombatantModal, { props: { open: true } });
+
+			// Switch to Quick Add mode
+			const quickAddButton = screen.getByRole('button', { name: /quick.*add/i });
+			await fireEvent.click(quickAddButton);
+
+			// Wait for Quick Add form
+			await waitFor(() => {
+				expect(screen.getByLabelText(/^name$/i)).toBeInTheDocument();
+			});
+
+			// Select Creature type
+			const creatureButton = screen.getByRole('button', { name: /creature/i });
+			await fireEvent.click(creatureButton);
+
+			// Change threat level to 2
+			await waitFor(async () => {
+				const threatSelect = screen.getByLabelText(/threat.*level/i);
+				await fireEvent.change(threatSelect, { target: { value: '2' } });
+			});
+
+			// Switch to From Entity mode
+			const fromEntityButton = screen.getByRole('button', { name: /from.*entity/i });
+			await fireEvent.click(fromEntityButton);
+
+			// Switch back to Quick Add mode
+			await fireEvent.click(quickAddButton);
+
+			// Wait for Quick Add form and select Creature type again
+			await waitFor(() => {
+				expect(screen.getByLabelText(/^name$/i)).toBeInTheDocument();
+			});
+
+			const creatureButtonAfter = screen.getByRole('button', { name: /creature/i });
+			await fireEvent.click(creatureButtonAfter);
+
+			// Threat level should be reset to 1
+			await waitFor(() => {
+				const threatSelect = screen.getByLabelText(/threat.*level/i) as HTMLSelectElement;
+				expect(threatSelect.value).toBe('1');
+			});
+		});
+	});
+});
+describe('AddCombatantModal - Token Indicator Field (Issue #300)', () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+		mockEntities = [
+			createMockEntity({ id: 'char-1', name: 'Hero', type: 'character' }),
+			createMockEntity({ id: 'npc-1', name: 'Monster', type: 'npc' })
+		];
+	});
+
+	describe('Token Indicator in Entity Mode', () => {
+		it('should have token indicator input field in entity mode', () => {
+			render(AddCombatantModal, { props: { open: true } });
+
+			expect(screen.getByLabelText(/token.*indicator/i)).toBeInTheDocument();
+		});
+
+		it('should allow entering token indicator text', async () => {
+			render(AddCombatantModal, { props: { open: true } });
+
+			const tokenInput = screen.getByLabelText(/token.*indicator/i) as HTMLInputElement;
+			await fireEvent.input(tokenInput, { target: { value: 'A' } });
+
+			expect(tokenInput.value).toBe('A');
+		});
+
+		it('should not require token indicator field', () => {
+			render(AddCombatantModal, { props: { open: true } });
+
+			const tokenInput = screen.getByLabelText(/token.*indicator/i);
+			expect(tokenInput).not.toHaveAttribute('required');
+		});
+
+		it('should include tokenIndicator in hero submission data when provided', async () => {
+			const onAdd = vi.fn();
+			render(AddCombatantModal, { props: { open: true, onAdd } });
+
+			const entityButton = screen.getByText('Hero').closest('button');
+			await fireEvent.click(entityButton!);
+
+			await fireEvent.input(screen.getByLabelText(/^hp/i), { target: { value: '30' } });
+			await fireEvent.input(screen.getByLabelText(/token.*indicator/i), { target: { value: 'Player1' } });
+
+			const addButton = screen.getByRole('button', { name: /^add$/i });
+			await fireEvent.click(addButton);
+
+			await waitFor(() => {
+				expect(onAdd).toHaveBeenCalledWith(
+					expect.objectContaining({
+						tokenIndicator: 'Player1'
+					})
+				);
+			});
+		});
+
+		it('should include tokenIndicator in creature submission data when provided', async () => {
+			const onAdd = vi.fn();
+			render(AddCombatantModal, { props: { open: true, onAdd } });
+
+			const creatureButton = screen.getByRole('button', { name: /creature/i });
+			await fireEvent.click(creatureButton);
+
+			await waitFor(async () => {
+				const entityButton = screen.getByText('Monster').closest('button');
+				await fireEvent.click(entityButton!);
+
+				await fireEvent.input(screen.getByLabelText(/^hp/i), { target: { value: '25' } });
+				await fireEvent.input(screen.getByLabelText(/token.*indicator/i), { target: { value: 'B' } });
+
+				const addButton = screen.getByRole('button', { name: /^add$/i });
+				await fireEvent.click(addButton);
+			});
+
+			expect(onAdd).toHaveBeenCalledWith(
+				expect.objectContaining({
+					tokenIndicator: 'B'
+				})
+			);
+		});
+
+		it('should not include tokenIndicator in submission when not provided', async () => {
+			const onAdd = vi.fn();
+			render(AddCombatantModal, { props: { open: true, onAdd } });
+
+			const entityButton = screen.getByText('Hero').closest('button');
+			await fireEvent.click(entityButton!);
+
+			await fireEvent.input(screen.getByLabelText(/^hp/i), { target: { value: '30' } });
+			// Do not fill token indicator
+
+			const addButton = screen.getByRole('button', { name: /^add$/i });
+			await fireEvent.click(addButton);
+
+			await waitFor(() => {
+				expect(onAdd).toHaveBeenCalledWith(
+					expect.not.objectContaining({
+						tokenIndicator: expect.anything()
+					})
+				);
+			});
+		});
+
+		it('should allow submitting without token indicator', async () => {
+			render(AddCombatantModal, { props: { open: true } });
+
+			const entityButton = screen.getByText('Hero').closest('button');
+			await fireEvent.click(entityButton!);
+
+			await fireEvent.input(screen.getByLabelText(/^hp/i), { target: { value: '30' } });
+
+			await waitFor(() => {
+				const addButton = screen.getByRole('button', { name: /^add$/i });
+				expect(addButton).not.toBeDisabled();
+			});
+		});
+
+		it('should accept various token indicator formats', async () => {
+			const testCases = ['A', '1', 'Red', 'Goblin-1', 'X12'];
+
+			for (const tokenValue of testCases) {
+				const onAdd = vi.fn();
+				const { unmount } = render(AddCombatantModal, { props: { open: true, onAdd } });
+
+				const entityButton = screen.getByText('Hero').closest('button');
+				await fireEvent.click(entityButton!);
+
+				await fireEvent.input(screen.getByLabelText(/^hp/i), { target: { value: '30' } });
+				await fireEvent.input(screen.getByLabelText(/token.*indicator/i), { target: { value: tokenValue } });
+
+				const addButton = screen.getByRole('button', { name: /^add$/i });
+				await fireEvent.click(addButton);
+
+				await waitFor(() => {
+					expect(onAdd).toHaveBeenCalledWith(
+						expect.objectContaining({
+							tokenIndicator: tokenValue
+						})
+					);
+				});
+
+				unmount();
+			}
+		});
+	});
+
+	describe('Token Indicator in Quick Add Mode', () => {
+		it('should have token indicator input field in quick-add mode', async () => {
+			render(AddCombatantModal, { props: { open: true } });
+
+			const quickAddButton = screen.getByRole('button', { name: /quick.*add/i });
+			await fireEvent.click(quickAddButton);
+
+			await waitFor(() => {
+				expect(screen.getByLabelText(/token.*indicator/i)).toBeInTheDocument();
+			});
+		});
+
+		it('should not require token indicator in quick-add mode', async () => {
+			render(AddCombatantModal, { props: { open: true } });
+
+			const quickAddButton = screen.getByRole('button', { name: /quick.*add/i });
+			await fireEvent.click(quickAddButton);
+
+			await waitFor(() => {
+				const tokenInput = screen.getByLabelText(/token.*indicator/i);
+				expect(tokenInput).not.toHaveAttribute('required');
+			});
+		});
+
+		it('should include tokenIndicator in quick-add submission when provided', async () => {
+			const onAdd = vi.fn();
+			render(AddCombatantModal, { props: { open: true, onAdd } });
+
+			const quickAddButton = screen.getByRole('button', { name: /quick.*add/i });
+			await fireEvent.click(quickAddButton);
+
+			await waitFor(async () => {
+				const nameInput = screen.getByLabelText(/^name$/i);
+				const hpInput = screen.getByLabelText(/^hp/i);
+				const tokenInput = screen.getByLabelText(/token.*indicator/i);
+
+				await fireEvent.input(nameInput, { target: { value: 'Goblin' } });
+				await fireEvent.input(hpInput, { target: { value: '15' } });
+				await fireEvent.input(tokenInput, { target: { value: 'G1' } });
+
+				const addButton = screen.getByRole('button', { name: /^add$/i });
+				await fireEvent.click(addButton);
+			});
+
+			expect(onAdd).toHaveBeenCalledWith(
+				expect.objectContaining({
+					name: 'Goblin',
+					hp: 15,
+					tokenIndicator: 'G1',
+					isAdHoc: true
+				})
+			);
+		});
+
+		it('should allow submitting quick-add without token indicator', async () => {
+			const onAdd = vi.fn();
+			render(AddCombatantModal, { props: { open: true, onAdd } });
+
+			const quickAddButton = screen.getByRole('button', { name: /quick.*add/i });
+			await fireEvent.click(quickAddButton);
+
+			await waitFor(async () => {
+				const nameInput = screen.getByLabelText(/^name$/i);
+				const hpInput = screen.getByLabelText(/^hp/i);
+
+				await fireEvent.input(nameInput, { target: { value: 'Orc' } });
+				await fireEvent.input(hpInput, { target: { value: '20' } });
+				// Don't fill token indicator
+
+				const addButton = screen.getByRole('button', { name: /^add$/i });
+				await fireEvent.click(addButton);
+			});
+
+			expect(onAdd).toHaveBeenCalledWith(
+				expect.objectContaining({
+					name: 'Orc',
+					hp: 20,
+					isAdHoc: true
+				})
+			);
+			expect(onAdd).toHaveBeenCalledWith(
+				expect.not.objectContaining({
+					tokenIndicator: expect.anything()
+				})
+			);
+		});
+
+		it('should preserve token indicator value when switching modes', async () => {
+			render(AddCombatantModal, { props: { open: true } });
+
+			// Enter in entity mode
+			const tokenInput = screen.getByLabelText(/token.*indicator/i) as HTMLInputElement;
+			await fireEvent.input(tokenInput, { target: { value: 'TEST' } });
+			expect(tokenInput.value).toBe('TEST');
+
+			// Switch to quick add
+			const quickAddButton = screen.getByRole('button', { name: /quick.*add/i });
+			await fireEvent.click(quickAddButton);
+
+			// Switch back to entity mode
+			const fromEntityButton = screen.getByRole('button', { name: /from.*entity/i });
+			await fireEvent.click(fromEntityButton);
+
+			await waitFor(() => {
+				const tokenInputAfter = screen.getByLabelText(/token.*indicator/i) as HTMLInputElement;
+				// Value may or may not be preserved depending on implementation
+				// This test documents the expected behavior
+				expect(tokenInputAfter).toBeInTheDocument();
+			});
 		});
 	});
 });

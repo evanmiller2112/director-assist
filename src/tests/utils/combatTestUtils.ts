@@ -39,6 +39,7 @@ export function createMockHeroCombatant(
 			current: 0,
 			max: 3
 		},
+		tokenIndicator: undefined,
 		...overrides
 	};
 }
@@ -63,6 +64,7 @@ export function createMockCreatureCombatant(
 		ac: 14,
 		conditions: [],
 		threat: 1,
+		tokenIndicator: undefined,
 		...overrides
 	};
 }

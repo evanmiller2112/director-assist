@@ -403,7 +403,8 @@ export const combatRepository = {
 			tempHp: 0,
 			ac: input.ac,
 			conditions: [],
-			heroicResource: input.heroicResource
+			heroicResource: input.heroicResource,
+			tokenIndicator: input.tokenIndicator
 		};
 
 		const updated: CombatSession = {
@@ -453,7 +454,8 @@ export const combatRepository = {
 			ac: input.ac,
 			conditions: [],
 			threat: input.threat ?? 1,
-			isAdHoc: !input.entityId // Mark as ad-hoc when no entityId provided
+			isAdHoc: !input.entityId, // Mark as ad-hoc when no entityId provided
+			tokenIndicator: input.tokenIndicator
 		};
 
 		const updated: CombatSession = {
@@ -535,10 +537,12 @@ export const combatRepository = {
 			turnOrder: combat.combatants.length + 1,
 			hp: input.hp,
 			maxHp: undefined as number | undefined,
+			startingHp: input.hp, // Track starting HP for healing cap when maxHp is undefined
 			tempHp: 0,
 			ac: input.ac,
 			conditions: [],
-			isAdHoc: true
+			isAdHoc: true,
+			tokenIndicator: input.tokenIndicator
 		};
 
 		let newCombatant: Combatant;
@@ -1034,10 +1038,25 @@ export const combatRepository = {
 		}
 
 		const combatant = combat.combatants[combatantIndex];
-		// Only cap at maxHp if maxHp is defined
-		const newHp = combatant.maxHp !== undefined
-			? Math.min(combatant.hp + healing, combatant.maxHp)
-			: combatant.hp + healing;
+
+		// Treat negative healing as no healing (not damage)
+		const effectiveHealing = Math.max(0, healing);
+
+		// Determine the effective maximum HP for capping
+		let effectiveMaxHp: number;
+		if (combatant.maxHp !== undefined) {
+			// Standard combatants: use maxHp
+			effectiveMaxHp = combatant.maxHp;
+		} else if (combatant.startingHp !== undefined) {
+			// Quick-add combatants: use startingHp as cap
+			effectiveMaxHp = combatant.startingHp;
+		} else {
+			// Fallback: no cap (shouldn't happen with proper quick-add setup)
+			effectiveMaxHp = combatant.hp + effectiveHealing;
+		}
+
+		// Apply healing with cap
+		const newHp = Math.min(combatant.hp + effectiveHealing, effectiveMaxHp);
 
 		const updatedCombatants = [...combat.combatants];
 		updatedCombatants[combatantIndex] = {
@@ -1104,6 +1123,89 @@ export const combatRepository = {
 					combatantId
 				)
 			],
+			updatedAt: new Date()
+		};
+
+		await db.combatSessions.put(updated);
+		return updated;
+	},
+
+	/**
+	 * Update max HP for combatant (Issue #301).
+	 * Validates newMaxHp > 0 and clamps current HP if necessary.
+	 */
+	async updateMaxHp(
+		combatId: string,
+		combatantId: string,
+		newMaxHp: number
+	): Promise<CombatSession> {
+		await ensureDbReady();
+
+		// Validate newMaxHp is positive
+		if (newMaxHp <= 0) {
+			throw new Error('Max HP must be greater than 0');
+		}
+
+		const combat = await db.combatSessions.get(combatId);
+		if (!combat) {
+			throw new Error(`Combat session ${combatId} not found`);
+		}
+
+		const combatantIndex = combat.combatants.findIndex((c) => c.id === combatantId);
+		if (combatantIndex === -1) {
+			throw new Error(`Combatant ${combatantId} not found`);
+		}
+
+		const combatant = combat.combatants[combatantIndex];
+		const oldMaxHp = combatant.maxHp;
+		const oldHp = combatant.hp;
+
+		// Clamp current HP if new max is lower than current HP
+		const newHp = Math.min(combatant.hp, newMaxHp);
+
+		const updatedCombatants = [...combat.combatants];
+		updatedCombatants[combatantIndex] = {
+			...combatant,
+			maxHp: newMaxHp,
+			hp: newHp
+		};
+
+		// Create log entries
+		const logEntries: CombatLogEntry[] = [];
+
+		// Determine if HP was clamped
+		const wasClamped = newHp < oldHp;
+
+		// Log max HP change with optional clamping info
+		const maxHpMessage = wasClamped
+			? `${combatant.name}'s max HP changed from ${oldMaxHp ?? 'none'} to ${newMaxHp} (HP clamped from ${oldHp} to ${newHp})`
+			: `${combatant.name}'s max HP changed from ${oldMaxHp ?? 'none'} to ${newMaxHp}`;
+
+		const metadata: Record<string, unknown> = {
+			oldMaxHp,
+			newMaxHp
+		};
+
+		// Include HP clamping info in metadata if it occurred
+		if (wasClamped) {
+			metadata.oldHp = oldHp;
+			metadata.newHp = newHp;
+		}
+
+		logEntries.push(
+			createLogEntry(
+				combat,
+				maxHpMessage,
+				'system',
+				combatantId,
+				metadata
+			)
+		);
+
+		const updated: CombatSession = {
+			...combat,
+			combatants: updatedCombatants,
+			log: [...combat.log, ...logEntries],
 			updatedAt: new Date()
 		};
 

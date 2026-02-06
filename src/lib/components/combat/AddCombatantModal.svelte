@@ -24,6 +24,10 @@
 	let quickName = $state('');
 	let quickHp = $state('');
 	let quickType = $state<'hero' | 'creature'>('creature');
+	let quickThreat = $state('1');
+
+	// Token indicator field (shared between modes)
+	let tokenIndicator = $state('');
 
 	// Hero-specific fields
 	let resourceName = $state('');
@@ -123,6 +127,8 @@
 		threat = '1';
 		quickName = '';
 		quickHp = '';
+		quickThreat = '1';
+		tokenIndicator = '';
 		errors = {};
 	}
 
@@ -134,25 +140,42 @@
 		if (!canSubmit) return;
 
 		if (addMode === 'quick') {
-			onAdd?.({
+			const quickData: any = {
 				type: quickType,
 				name: quickName.trim(),
 				hp: parseInt(quickHp, 10),
 				isAdHoc: true
-			});
+			};
+
+			if (quickType === 'creature') {
+				// Read from DOM to ensure we get the latest value even if binding hasn't updated
+				const threatElement = document.getElementById('quick-threat-level') as HTMLSelectElement;
+				const threatValue = threatElement ? threatElement.value : quickThreat;
+				quickData.threat = parseInt(threatValue, 10);
+			}
+
+			if (tokenIndicator.trim()) {
+				quickData.tokenIndicator = tokenIndicator.trim();
+			}
+
+			onAdd?.(quickData);
 			onClose?.();
 			return;
 		}
 
 		if (!selectedEntity) return;
 
-		const baseData = {
+		const baseData: any = {
 			name: selectedEntity.name,
 			entityId: selectedEntity.id,
 			hp: parseInt(hp, 10),
 			maxHp: maxHp ? parseInt(maxHp, 10) : undefined,
 			ac: ac ? parseInt(ac, 10) : undefined
 		};
+
+		if (tokenIndicator.trim()) {
+			baseData.tokenIndicator = tokenIndicator.trim();
+		}
 
 		if (combatantType === 'hero') {
 			onAdd?.({
@@ -316,6 +339,31 @@
 								step="1"
 								placeholder="Current Stamina"
 								aria-label="Stamina"
+							/>
+						</div>
+
+						<!-- Quick Threat Level (for creatures only) -->
+						{#if quickType === 'creature'}
+							<div>
+								<label for="quick-threat-level" class="label">Threat Level</label>
+								<select id="quick-threat-level" class="input" bind:value={quickThreat} aria-label="Threat level">
+									<option value="1">1 - Standard</option>
+									<option value="2">2 - Elite</option>
+									<option value="3">3 - Boss</option>
+								</select>
+							</div>
+						{/if}
+
+						<!-- Token Indicator -->
+						<div>
+							<label for="quick-token-indicator" class="label">Token Indicator (optional)</label>
+							<input
+								id="quick-token-indicator"
+								type="text"
+								class="input"
+								bind:value={tokenIndicator}
+								placeholder="e.g., 1, A, red base"
+								aria-label="Token Indicator"
 							/>
 						</div>
 					</div>
@@ -528,6 +576,19 @@
 							{/if}
 						</div>
 					{/if}
+
+					<!-- Token Indicator (always visible in entity mode) -->
+					<div>
+						<label for="token-indicator" class="label">Token Indicator (optional)</label>
+						<input
+							id="token-indicator"
+							type="text"
+							class="input"
+							bind:value={tokenIndicator}
+							placeholder="e.g., 1, A, red base"
+							aria-label="Token Indicator"
+						/>
+					</div>
 				{/if}
 			</div>
 

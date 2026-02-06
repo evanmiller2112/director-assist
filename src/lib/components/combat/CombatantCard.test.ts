@@ -602,6 +602,158 @@ describe('CombatantCard Component - Accessibility', () => {
 	});
 });
 
+describe('CombatantCard Component - Token Indicator Display (Issue #300)', () => {
+	it('should display token indicator badge when present', () => {
+		const combatant = createMockCreatureCombatant({
+			tokenIndicator: 'A'
+		});
+
+		render(CombatantCard, {
+			props: { combatant }
+		});
+
+		expect(screen.getByTestId('token-indicator-badge')).toBeInTheDocument();
+		expect(screen.getByText('A')).toBeInTheDocument();
+	});
+
+	it('should NOT display token indicator when not present', () => {
+		const combatant = createMockCreatureCombatant({
+			tokenIndicator: undefined
+		});
+
+		render(CombatantCard, {
+			props: { combatant }
+		});
+
+		expect(screen.queryByTestId('token-indicator-badge')).not.toBeInTheDocument();
+	});
+
+	it('should display token indicator badge for heroes', () => {
+		const combatant = createMockHeroCombatant({
+			tokenIndicator: '1'
+		});
+
+		render(CombatantCard, {
+			props: { combatant }
+		});
+
+		expect(screen.getByTestId('token-indicator-badge')).toBeInTheDocument();
+		expect(screen.getByText('1')).toBeInTheDocument();
+	});
+
+	it('should display different token indicators correctly', () => {
+		const combatant1 = createMockCreatureCombatant({ tokenIndicator: 'Red' });
+		const combatant2 = createMockCreatureCombatant({ tokenIndicator: 'Blue' });
+
+		const { container: container1 } = render(CombatantCard, {
+			props: { combatant: combatant1 }
+		});
+
+		const { container: container2 } = render(CombatantCard, {
+			props: { combatant: combatant2 }
+		});
+
+		expect(container1.textContent).toContain('Red');
+		expect(container2.textContent).toContain('Blue');
+	});
+
+	it('should have proper accessibility label for token indicator', () => {
+		const combatant = createMockCreatureCombatant({
+			name: 'Goblin',
+			tokenIndicator: 'A'
+		});
+
+		render(CombatantCard, {
+			props: { combatant }
+		});
+
+		const badge = screen.getByTestId('token-indicator-badge');
+		expect(badge).toHaveAttribute('aria-label', expect.stringMatching(/token.*A/i));
+	});
+
+	it('should display token indicator alongside other badges', () => {
+		const combatant = createMockCreatureCombatant({
+			tokenIndicator: 'B',
+			threat: 2
+		});
+
+		render(CombatantCard, {
+			props: { combatant }
+		});
+
+		// Both badges should be present
+		expect(screen.getByTestId('token-indicator-badge')).toBeInTheDocument();
+		expect(screen.getByTestId('threat-badge')).toBeInTheDocument();
+	});
+
+	it('should handle empty string token indicator', () => {
+		const combatant = createMockCreatureCombatant({
+			tokenIndicator: ''
+		});
+
+		render(CombatantCard, {
+			props: { combatant }
+		});
+
+		// Empty string should not show badge
+		expect(screen.queryByTestId('token-indicator-badge')).not.toBeInTheDocument();
+	});
+
+	it('should display long token indicator text', () => {
+		const combatant = createMockCreatureCombatant({
+			tokenIndicator: 'Goblin-Alpha-12'
+		});
+
+		render(CombatantCard, {
+			props: { combatant }
+		});
+
+		const badge = screen.getByTestId('token-indicator-badge');
+		expect(badge).toHaveTextContent('Goblin-Alpha-12');
+	});
+
+	it('should handle single character token indicators', () => {
+		const combatant = createMockCreatureCombatant({
+			tokenIndicator: 'X'
+		});
+
+		render(CombatantCard, {
+			props: { combatant }
+		});
+
+		expect(screen.getByTestId('token-indicator-badge')).toHaveTextContent('X');
+	});
+
+	it('should handle numeric token indicators', () => {
+		const combatant = createMockCreatureCombatant({
+			tokenIndicator: '42'
+		});
+
+		render(CombatantCard, {
+			props: { combatant }
+		});
+
+		expect(screen.getByTestId('token-indicator-badge')).toHaveTextContent('42');
+	});
+
+	it('should style token indicator badge distinctly from other badges', () => {
+		const combatant = createMockCreatureCombatant({
+			tokenIndicator: 'Z',
+			threat: 1
+		});
+
+		const { container } = render(CombatantCard, {
+			props: { combatant }
+		});
+
+		const tokenBadge = container.querySelector('[data-testid="token-indicator-badge"]');
+		const threatBadge = container.querySelector('[data-testid="threat-badge"]');
+
+		// Badges should have different styling
+		expect(tokenBadge?.className).not.toEqual(threatBadge?.className);
+	});
+});
+
 describe('CombatantCard Component - Edge Cases', () => {
 	it('should handle very long combatant names', () => {
 		const combatant = createMockHeroCombatant({

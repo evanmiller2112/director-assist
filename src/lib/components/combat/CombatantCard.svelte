@@ -94,6 +94,15 @@
 				>
 					{combatant.name}
 				</h3>
+				{#if combatant.tokenIndicator}
+					<span
+						class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200"
+						data-testid="token-indicator-badge"
+						aria-label={`Token ${combatant.tokenIndicator}`}
+					>
+						{combatant.tokenIndicator}
+					</span>
+				{/if}
 				{#if isCurrent}
 					<span
 						class="text-blue-600 dark:text-blue-400"

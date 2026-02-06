@@ -1853,3 +1853,545 @@ describe('CombatRepository - Optional Max HP Healing (Issue #233)', () => {
 		});
 	});
 });
+
+describe('CombatRepository - Update Max HP (Issue #301)', () => {
+	let combatId: string;
+	let heroId: string;
+
+	beforeEach(async () => {
+		await db.combatSessions.clear();
+		const combat = await combatRepository.create({ name: 'Max HP Update Test' });
+		combatId = combat.id;
+
+		const withHero = await combatRepository.addHeroCombatant(combatId, {
+			name: 'Test Hero',
+			entityId: 'entity-1',
+			hp: 30,
+			maxHp: 40,
+			heroicResource: { current: 2, max: 3, name: 'Focus' }
+		});
+		heroId = withHero.combatants[0].id;
+	});
+
+	afterEach(async () => {
+		await db.combatSessions.clear();
+	});
+
+	describe('updateMaxHp', () => {
+		it('should update maxHp for combatant', async () => {
+			const updated = await combatRepository.updateMaxHp(combatId, heroId, 50);
+
+			const hero = updated.combatants.find(c => c.id === heroId);
+			expect(hero?.maxHp).toBe(50);
+		});
+
+		it('should clamp currentHP when maxHP reduced below it', async () => {
+			// Hero has 30/40 HP
+			// Reduce maxHP to 25 (below current HP of 30)
+			const updated = await combatRepository.updateMaxHp(combatId, heroId, 25);
+
+			const hero = updated.combatants.find(c => c.id === heroId);
+			expect(hero?.maxHp).toBe(25);
+			expect(hero?.hp).toBe(25); // Clamped from 30 to 25
+		});
+
+		it('should not change currentHP when maxHP increased', async () => {
+			// Hero has 30/40 HP
+			const updated = await combatRepository.updateMaxHp(combatId, heroId, 60);
+
+			const hero = updated.combatants.find(c => c.id === heroId);
+			expect(hero?.maxHp).toBe(60);
+			expect(hero?.hp).toBe(30); // Unchanged
+		});
+
+		it('should not change currentHP when maxHP reduced but still above current', async () => {
+			// Hero has 30/40 HP
+			// Reduce maxHP to 35 (still above current HP of 30)
+			const updated = await combatRepository.updateMaxHp(combatId, heroId, 35);
+
+			const hero = updated.combatants.find(c => c.id === heroId);
+			expect(hero?.maxHp).toBe(35);
+			expect(hero?.hp).toBe(30); // Unchanged
+		});
+
+		it('should log maxHP change', async () => {
+			const updated = await combatRepository.updateMaxHp(combatId, heroId, 50);
+
+			const maxHpLog = updated.log.find(
+				l => l.combatantId === heroId && l.message.includes('max')
+			);
+			expect(maxHpLog).toBeDefined();
+			expect(maxHpLog?.message).toContain('50');
+		});
+
+		it('should log HP clamping when maxHP reduced below current', async () => {
+			const updated = await combatRepository.updateMaxHp(combatId, heroId, 25);
+
+			const clampLog = updated.log.find(
+				l => l.combatantId === heroId && (
+					l.message.includes('clamped') ||
+					l.message.includes('reduced') ||
+					l.message.includes('adjusted')
+				)
+			);
+			expect(clampLog).toBeDefined();
+		});
+
+		it('should allow setting maxHP for combatant with undefined maxHP', async () => {
+			// Add ad-hoc combatant without maxHP
+			const withAdHoc = await combatRepository.addQuickCombatant(combatId, {
+				name: 'Ad-hoc Monster',
+				hp: 20,
+				type: 'creature'
+			});
+			const adHocId = withAdHoc.combatants[1].id;
+
+			const updated = await combatRepository.updateMaxHp(combatId, adHocId, 30);
+
+			const combatant = updated.combatants.find(c => c.id === adHocId);
+			expect(combatant?.maxHp).toBe(30);
+			expect(combatant?.hp).toBe(20); // Unchanged
+		});
+
+		it('should validate maxHP must be positive', async () => {
+			await expect(
+				combatRepository.updateMaxHp(combatId, heroId, 0)
+			).rejects.toThrow(/positive|greater than 0/i);
+		});
+
+		it('should validate maxHP must not be negative', async () => {
+			await expect(
+				combatRepository.updateMaxHp(combatId, heroId, -10)
+			).rejects.toThrow(/positive|greater than 0/i);
+		});
+
+		it('should throw error for non-existent combatant', async () => {
+			await expect(
+				combatRepository.updateMaxHp(combatId, 'non-existent', 50)
+			).rejects.toThrow('not found');
+		});
+
+		it('should update timestamp on maxHP change', async () => {
+			const before = await combatRepository.getById(combatId);
+			await new Promise(resolve => setTimeout(resolve, 10));
+
+			const updated = await combatRepository.updateMaxHp(combatId, heroId, 50);
+
+			expect(updated.updatedAt.getTime()).toBeGreaterThan(before!.updatedAt.getTime());
+		});
+
+		it('should include old and new maxHP values in log metadata', async () => {
+			const updated = await combatRepository.updateMaxHp(combatId, heroId, 50);
+
+			const maxHpLog = updated.log.find(
+				l => l.combatantId === heroId && l.message.includes('max')
+			);
+			expect(maxHpLog?.metadata).toBeDefined();
+			expect(maxHpLog?.metadata?.oldMaxHp).toBe(40);
+			expect(maxHpLog?.metadata?.newMaxHp).toBe(50);
+		});
+
+		it('should include clamped HP value in log metadata when HP reduced', async () => {
+			const updated = await combatRepository.updateMaxHp(combatId, heroId, 25);
+
+			const clampLog = updated.log.find(
+				l => l.combatantId === heroId && l.message.includes('max')
+			);
+			expect(clampLog?.metadata).toBeDefined();
+			expect(clampLog?.metadata?.oldHp).toBe(30);
+			expect(clampLog?.metadata?.newHp).toBe(25);
+		});
+
+		it('should allow multiple maxHP updates', async () => {
+			await combatRepository.updateMaxHp(combatId, heroId, 45);
+			await combatRepository.updateMaxHp(combatId, heroId, 50);
+			const updated = await combatRepository.updateMaxHp(combatId, heroId, 55);
+
+			const hero = updated.combatants.find(c => c.id === heroId);
+			expect(hero?.maxHp).toBe(55);
+		});
+
+		it('should handle edge case of setting maxHP equal to current HP', async () => {
+			// Hero has 30/40 HP
+			const updated = await combatRepository.updateMaxHp(combatId, heroId, 30);
+
+			const hero = updated.combatants.find(c => c.id === heroId);
+			expect(hero?.maxHp).toBe(30);
+			expect(hero?.hp).toBe(30); // Equal, not clamped
+		});
+
+		it('should clamp HP to maxHP when combatant is at 0 HP', async () => {
+			// Damage hero to 0 HP
+			await combatRepository.applyDamage(combatId, heroId, 30);
+
+			// Update maxHP to 20
+			const updated = await combatRepository.updateMaxHp(combatId, heroId, 20);
+
+			const hero = updated.combatants.find(c => c.id === heroId);
+			expect(hero?.maxHp).toBe(20);
+			expect(hero?.hp).toBe(0); // Still 0, can't go negative
+		});
+
+		it('should work with creature combatants', async () => {
+			const withCreature = await combatRepository.addCreatureCombatant(combatId, {
+				name: 'Orc',
+				entityId: 'entity-2',
+				hp: 25,
+				maxHp: 30,
+				threat: 1
+			});
+			const creatureId = withCreature.combatants[1].id;
+
+			const updated = await combatRepository.updateMaxHp(combatId, creatureId, 40);
+
+			const creature = updated.combatants.find(c => c.id === creatureId);
+			expect(creature?.maxHp).toBe(40);
+		});
+
+		it('should preserve other combatant properties when updating maxHP', async () => {
+			const updated = await combatRepository.updateMaxHp(combatId, heroId, 50);
+
+			const hero = updated.combatants.find(c => c.id === heroId) as HeroCombatant;
+			expect(hero.name).toBe('Test Hero');
+			expect(hero.type).toBe('hero');
+			expect(hero.entityId).toBe('entity-1');
+			expect(hero.tempHp).toBe(0);
+			expect(hero.conditions).toEqual([]);
+			expect(hero.heroicResource).toBeDefined();
+		});
+	});
+});
+
+describe('CombatRepository - Token Indicator Support (Issue #300)', () => {
+	let combatId: string;
+
+	beforeEach(async () => {
+		await db.combatSessions.clear();
+		const combat = await combatRepository.create({ name: 'Token Test Combat' });
+		combatId = combat.id;
+	});
+
+	afterEach(async () => {
+		await db.combatSessions.clear();
+	});
+
+	describe('addHeroCombatant with tokenIndicator', () => {
+		it('should save hero with tokenIndicator', async () => {
+			const combat = await combatRepository.addHeroCombatant(combatId, {
+				name: 'Hero with Token',
+				hp: 30,
+				maxHp: 40,
+				tokenIndicator: 'A'
+			});
+
+			expect(combat.combatants).toHaveLength(1);
+			const hero = combat.combatants[0] as HeroCombatant;
+			expect(hero.tokenIndicator).toBe('A');
+		});
+
+		it('should save hero without tokenIndicator when not provided', async () => {
+			const combat = await combatRepository.addHeroCombatant(combatId, {
+				name: 'Hero without Token',
+				hp: 30,
+				maxHp: 40
+			});
+
+			expect(combat.combatants).toHaveLength(1);
+			const hero = combat.combatants[0] as HeroCombatant;
+			expect(hero.tokenIndicator).toBeUndefined();
+		});
+
+		it('should accept numeric tokenIndicator', async () => {
+			const combat = await combatRepository.addHeroCombatant(combatId, {
+				name: 'Player 1',
+				hp: 35,
+				tokenIndicator: '1'
+			});
+
+			const hero = combat.combatants[0] as HeroCombatant;
+			expect(hero.tokenIndicator).toBe('1');
+		});
+
+		it('should accept complex tokenIndicator strings', async () => {
+			const combat = await combatRepository.addHeroCombatant(combatId, {
+				name: 'Special Hero',
+				hp: 30,
+				tokenIndicator: 'Red-Alpha-12'
+			});
+
+			const hero = combat.combatants[0] as HeroCombatant;
+			expect(hero.tokenIndicator).toBe('Red-Alpha-12');
+		});
+	});
+
+	describe('addCreatureCombatant with tokenIndicator', () => {
+		it('should save creature with tokenIndicator', async () => {
+			const combat = await combatRepository.addCreatureCombatant(combatId, {
+				name: 'Goblin',
+				hp: 15,
+				threat: 1,
+				tokenIndicator: 'G1'
+			});
+
+			expect(combat.combatants).toHaveLength(1);
+			const creature = combat.combatants[0] as CreatureCombatant;
+			expect(creature.tokenIndicator).toBe('G1');
+		});
+
+		it('should save creature without tokenIndicator when not provided', async () => {
+			const combat = await combatRepository.addCreatureCombatant(combatId, {
+				name: 'Dragon',
+				hp: 100,
+				threat: 3
+			});
+
+			expect(combat.combatants).toHaveLength(1);
+			const creature = combat.combatants[0] as CreatureCombatant;
+			expect(creature.tokenIndicator).toBeUndefined();
+		});
+
+		it('should support single-character tokenIndicator', async () => {
+			const combat = await combatRepository.addCreatureCombatant(combatId, {
+				name: 'Orc',
+				hp: 20,
+				tokenIndicator: 'B'
+			});
+
+			const creature = combat.combatants[0] as CreatureCombatant;
+			expect(creature.tokenIndicator).toBe('B');
+		});
+	});
+
+	describe('addQuickCombatant with tokenIndicator', () => {
+		it('should save quick combatant with tokenIndicator', async () => {
+			const combat = await combatRepository.addQuickCombatant(combatId, {
+				name: 'Quick Enemy',
+				type: 'creature',
+				hp: 12,
+				tokenIndicator: 'Q1'
+			});
+
+			expect(combat.combatants).toHaveLength(1);
+			const combatant = combat.combatants[0];
+			expect(combatant.tokenIndicator).toBe('Q1');
+			expect(combatant.isAdHoc).toBe(true);
+		});
+
+		it('should save quick combatant without tokenIndicator when not provided', async () => {
+			const combat = await combatRepository.addQuickCombatant(combatId, {
+				name: 'Simple Minion',
+				type: 'creature',
+				hp: 10
+			});
+
+			expect(combat.combatants).toHaveLength(1);
+			const combatant = combat.combatants[0];
+			expect(combatant.tokenIndicator).toBeUndefined();
+		});
+
+		it('should preserve tokenIndicator through auto-numbering', async () => {
+			await combatRepository.addQuickCombatant(combatId, {
+				name: 'Goblin',
+				type: 'creature',
+				hp: 12,
+				tokenIndicator: 'G'
+			});
+
+			const combat = await combatRepository.addQuickCombatant(combatId, {
+				name: 'Goblin',
+				type: 'creature',
+				hp: 12,
+				tokenIndicator: 'H'
+			});
+
+			expect(combat.combatants).toHaveLength(2);
+			expect(combat.combatants[0].name).toBe('Goblin');
+			expect(combat.combatants[0].tokenIndicator).toBe('G');
+			expect(combat.combatants[1].name).toBe('Goblin 1');
+			expect(combat.combatants[1].tokenIndicator).toBe('H');
+		});
+	});
+
+	describe('updateCombatant with tokenIndicator', () => {
+		it('should update tokenIndicator on existing combatant', async () => {
+			const created = await combatRepository.addCreatureCombatant(combatId, {
+				name: 'Orc',
+				hp: 25,
+				tokenIndicator: 'O1'
+			});
+
+			const combatantId = created.combatants[0].id;
+
+			const updated = await combatRepository.updateCombatant(combatId, combatantId, {
+				tokenIndicator: 'O-Updated'
+			});
+
+			const combatant = updated.combatants.find(c => c.id === combatantId);
+			expect(combatant?.tokenIndicator).toBe('O-Updated');
+		});
+
+		it('should add tokenIndicator to combatant that did not have one', async () => {
+			const created = await combatRepository.addCreatureCombatant(combatId, {
+				name: 'Troll',
+				hp: 50
+			});
+
+			const combatantId = created.combatants[0].id;
+
+			const updated = await combatRepository.updateCombatant(combatId, combatantId, {
+				tokenIndicator: 'T1'
+			});
+
+			const combatant = updated.combatants.find(c => c.id === combatantId);
+			expect(combatant?.tokenIndicator).toBe('T1');
+		});
+
+		it('should remove tokenIndicator when set to undefined', async () => {
+			const created = await combatRepository.addCreatureCombatant(combatId, {
+				name: 'Zombie',
+				hp: 18,
+				tokenIndicator: 'Z1'
+			});
+
+			const combatantId = created.combatants[0].id;
+
+			const updated = await combatRepository.updateCombatant(combatId, combatantId, {
+				tokenIndicator: undefined
+			});
+
+			const combatant = updated.combatants.find(c => c.id === combatantId);
+			expect(combatant?.tokenIndicator).toBeUndefined();
+		});
+
+		it('should preserve tokenIndicator when updating other fields', async () => {
+			const created = await combatRepository.addCreatureCombatant(combatId, {
+				name: 'Skeleton',
+				hp: 15,
+				tokenIndicator: 'SK1'
+			});
+
+			const combatantId = created.combatants[0].id;
+
+			const updated = await combatRepository.updateCombatant(combatId, combatantId, {
+				hp: 10
+			});
+
+			const combatant = updated.combatants.find(c => c.id === combatantId);
+			expect(combatant?.tokenIndicator).toBe('SK1');
+			expect(combatant?.hp).toBe(10);
+		});
+	});
+
+	describe('tokenIndicator persistence', () => {
+		it('should persist tokenIndicator through damage', async () => {
+			const created = await combatRepository.addCreatureCombatant(combatId, {
+				name: 'Goblin Archer',
+				hp: 20,
+				tokenIndicator: 'GA1'
+			});
+
+			const combatantId = created.combatants[0].id;
+
+			const damaged = await combatRepository.applyDamage(combatId, combatantId, 5);
+
+			const combatant = damaged.combatants.find(c => c.id === combatantId);
+			expect(combatant?.tokenIndicator).toBe('GA1');
+			expect(combatant?.hp).toBe(15);
+		});
+
+		it('should persist tokenIndicator through healing', async () => {
+			const created = await combatRepository.addHeroCombatant(combatId, {
+				name: 'Cleric',
+				hp: 25,
+				maxHp: 40,
+				tokenIndicator: 'PC1'
+			});
+
+			const combatantId = created.combatants[0].id;
+
+			const healed = await combatRepository.applyHealing(combatId, combatantId, 10);
+
+			const combatant = healed.combatants.find(c => c.id === combatantId);
+			expect(combatant?.tokenIndicator).toBe('PC1');
+			expect(combatant?.hp).toBe(35);
+		});
+
+		it('should persist tokenIndicator through initiative roll', async () => {
+			const created = await combatRepository.addCreatureCombatant(combatId, {
+				name: 'Wolf',
+				hp: 18,
+				tokenIndicator: 'W1'
+			});
+
+			const combatantId = created.combatants[0].id;
+
+			const rolled = await combatRepository.rollInitiative(combatId, combatantId, 2);
+
+			const combatant = rolled.combatants.find(c => c.id === combatantId);
+			expect(combatant?.tokenIndicator).toBe('W1');
+			expect(combatant?.initiative).toBeGreaterThan(0);
+		});
+
+		it('should persist tokenIndicator through combat lifecycle', async () => {
+			const created = await combatRepository.addCreatureCombatant(combatId, {
+				name: 'Boss',
+				hp: 100,
+				threat: 3,
+				tokenIndicator: 'BOSS'
+			});
+
+			const combatantId = created.combatants[0].id;
+
+			await combatRepository.startCombat(combatId);
+			await combatRepository.pauseCombat(combatId);
+			const resumed = await combatRepository.resumeCombat(combatId);
+
+			const combatant = resumed.combatants.find(c => c.id === combatantId);
+			expect(combatant?.tokenIndicator).toBe('BOSS');
+		});
+	});
+
+	describe('multiple combatants with tokenIndicators', () => {
+		it('should maintain different tokenIndicators for multiple combatants', async () => {
+			await combatRepository.addCreatureCombatant(combatId, {
+				name: 'Goblin A',
+				hp: 12,
+				tokenIndicator: 'A'
+			});
+
+			await combatRepository.addCreatureCombatant(combatId, {
+				name: 'Goblin B',
+				hp: 12,
+				tokenIndicator: 'B'
+			});
+
+			const combat = await combatRepository.addCreatureCombatant(combatId, {
+				name: 'Goblin C',
+				hp: 12,
+				tokenIndicator: 'C'
+			});
+
+			expect(combat.combatants).toHaveLength(3);
+			expect(combat.combatants[0].tokenIndicator).toBe('A');
+			expect(combat.combatants[1].tokenIndicator).toBe('B');
+			expect(combat.combatants[2].tokenIndicator).toBe('C');
+		});
+
+		it('should handle mix of combatants with and without tokenIndicators', async () => {
+			await combatRepository.addCreatureCombatant(combatId, {
+				name: 'Marked Enemy',
+				hp: 15,
+				tokenIndicator: 'M1'
+			});
+
+			const combat = await combatRepository.addCreatureCombatant(combatId, {
+				name: 'Unmarked Enemy',
+				hp: 15
+			});
+
+			expect(combat.combatants).toHaveLength(2);
+			expect(combat.combatants[0].tokenIndicator).toBe('M1');
+			expect(combat.combatants[1].tokenIndicator).toBeUndefined();
+		});
+	});
+});

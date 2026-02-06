@@ -490,6 +490,22 @@ function createCombatStore() {
 		}
 	}
 
+	async function updateMaxHp(
+		combatId: string,
+		combatantId: string,
+		newMaxHp: number
+	): Promise<CombatSession> {
+		try {
+			error = null;
+			const updated = await combatRepository.updateMaxHp(combatId, combatantId, newMaxHp);
+			updateActiveCombatIfMatch(updated);
+			return updated;
+		} catch (err: any) {
+			error = err.message;
+			throw err;
+		}
+	}
+
 	// ========================================================================
 	// Condition Management
 	// ========================================================================
@@ -706,6 +722,7 @@ function createCombatStore() {
 		applyDamage,
 		applyHealing,
 		addTemporaryHp,
+		updateMaxHp,
 
 		// Conditions
 		addCondition,

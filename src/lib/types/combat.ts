@@ -73,10 +73,12 @@ interface BaseCombatant {
 	turnOrder: number; // Float for flexible ordering (e.g., 2.1, 2.2, 2.3 for grouped combatants)
 	hp: number;
 	maxHp?: number; // Optional for ad-hoc combatants and uncapped healing
+	startingHp?: number; // Used for healing cap when maxHp is undefined (quick-add combatants)
 	tempHp: number;
 	ac?: number;
 	conditions: CombatCondition[];
 	isAdHoc?: boolean; // Flag for ad-hoc combatants added without entity template
+	tokenIndicator?: string; // Optional token marker for physical tracking (e.g., "A", "1", "red base")
 }
 
 /**
@@ -219,6 +221,7 @@ export interface AddHeroCombatantInput {
 	maxHp?: number; // Optional for ad-hoc combatants and uncapped healing
 	ac?: number;
 	heroicResource?: HeroicResource; // Optional for simplified heroes
+	tokenIndicator?: string; // Optional token marker
 }
 
 /**
@@ -231,6 +234,7 @@ export interface AddCreatureCombatantInput {
 	maxHp?: number; // Optional for ad-hoc combatants
 	ac?: number;
 	threat?: number; // Optional for ad-hoc combatants (defaults to 1)
+	tokenIndicator?: string; // Optional token marker
 }
 
 /**
@@ -243,6 +247,7 @@ export interface AddQuickCombatantInput {
 	type: CombatantType;
 	ac?: number;
 	threat?: number; // For creatures, defaults to 1
+	tokenIndicator?: string; // Optional token marker
 }
 
 /**
@@ -258,6 +263,7 @@ export interface UpdateCombatantInput {
 	tempHp?: number;
 	ac?: number;
 	conditions?: CombatCondition[];
+	tokenIndicator?: string; // Optional token marker
 }
 
 /**

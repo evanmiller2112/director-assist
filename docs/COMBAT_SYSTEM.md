@@ -96,9 +96,11 @@ interface BaseCombatant {
   initiativeRoll: [number, number]; // Draw Steel uses 2d10
   stamina: number;
   maxStamina?: number;             // Optional - allows tracking current Stamina without a cap
+  startingHp?: number;             // Issue #241: Tracks initial HP for healing cap when maxStamina undefined
   tempStamina: number;
   ac?: number;
   conditions: CombatCondition[];
+  tokenIndicator?: string;         // Issue #300: Optional indicator for identifying combatants (e.g., "A", "Boss")
 }
 ```
 
@@ -429,12 +431,13 @@ addTemporaryStamina(combatId: string, combatantId: string, tempStamina: number):
 3. Stamina cannot go below 0
 4. Logs damage to combat log
 
-**Healing rules:**
+**Healing rules (Issue #241):**
 1. Adds healing to current Stamina
 2. Cannot exceed maxStamina (if maxStamina is defined)
-3. No cap if maxStamina is undefined
-4. Does not affect temporary Stamina
-5. Logs healing to combat log
+3. For quick-add combatants without maxStamina, capped at startingHp
+4. Negative healing values treated as zero (no effect)
+5. Does not affect temporary Stamina
+6. Logs healing to combat log
 
 **Temporary Stamina rules:**
 1. Replaces existing temp Stamina if new value is higher
@@ -447,6 +450,28 @@ function applyDamageToCombatant(combatant: Combatant, damage: number): Combatant
   // Absorb with temp Stamina first, then apply to Stamina
 }
 ```
+
+### Inline Max HP Editing
+
+**Issue #301:** Max HP can now be edited directly during combat without removing and re-adding combatants.
+
+```typescript
+// Update combatant with new maxStamina
+updateCombatant(combatId: string, combatantId: string, input: UpdateCombatantInput): Promise<CombatSession>
+```
+
+**Editing behavior:**
+- Edit button with pencil icon appears in HpTracker component
+- Click to toggle inline editing mode
+- Enter new maxHP value and press Enter to save
+- Press Escape to cancel editing
+- Current HP automatically clamped if new maxHP is lower than current HP
+- All changes logged to combat log with metadata
+- Useful for level-ups, temporary effects, or corrections during combat
+
+**Keyboard shortcuts:**
+- Enter: Save changes
+- Escape: Cancel editing
 
 ### Condition Management
 
@@ -790,10 +815,12 @@ dispatch('applyHealing', { combatantId, healing });
 **Features:**
 - Display all combatant stats (Stamina, AC, initiative)
 - Inline Stamina adjustment
+- Inline maxHP editing with keyboard shortcuts (Issue #301)
 - Condition badges
 - Initiative re-roll button
 - Heroic resource tracking (for heroes)
 - Threat level display (for creatures)
+- Token indicator badge in purple (Issue #300)
 - Remove combatant button
 
 **Usage:**
@@ -1064,8 +1091,12 @@ Issue #233 introduced simplified combatant entry for faster combat setup.
 
 Allows adding combatants with minimal information:
 - **Required:** Name and current Stamina only
-- **Optional:** AC and threat level (for creatures)
+- **Optional:** AC, threat level (for creatures), and token indicator
 - **Auto-numbering:** Duplicate names get numbered automatically
+
+**Issue #240:** Threat level selector now available in quick-add form for creatures (Standard, Elite, Boss)
+
+**Issue #300:** Token indicators can be added to identify specific combatants (e.g., "A", "Boss", "Red")
 
 **Usage:**
 ```typescript
@@ -1138,6 +1169,34 @@ Heroes can now be added with minimal information:
 - **Required:** Name, entityId, and current Stamina
 - **Optional:** maxStamina, heroicResource, AC
 - Allows quick setup for casual games or temporary heroes
+
+### Token Indicators
+
+**Issue #300:** Token indicators help identify specific combatants in combat.
+
+**Features:**
+- Optional string field on all combatants
+- Purple badge displays in CombatantCard
+- Useful for distinguishing multiple creatures of the same type
+- Common patterns: "A", "B", "C" or "Boss", "Minion 1", "Red", "Blue"
+- Persists through all combat operations
+- Available in quick-add, entity-based, and inline editing
+
+**Usage:**
+```typescript
+// Add combatant with token indicator
+await combatStore.addQuickCombatant(combatId, {
+  name: 'Goblin',
+  type: 'creature',
+  stamina: 12,
+  tokenIndicator: 'A'
+});
+
+// Update existing combatant
+await combatStore.updateCombatant(combatId, combatantId, {
+  tokenIndicator: 'Boss'
+});
+```
 
 ## Draw Steel Mechanics
 

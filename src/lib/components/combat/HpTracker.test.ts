@@ -976,3 +976,388 @@ describe('HpTracker Component - Optional Max HP (Issue #233)', () => {
 		expect(screen.getByText(/30.*\/.*40/)).toBeInTheDocument();
 	});
 });
+
+describe('HpTracker Component - Max HP Editing (Issue #301)', () => {
+	it('should display edit button next to maxHP display', () => {
+		const combatant = createMockHeroCombatant({ hp: 25, maxHp: 40 });
+
+		render(HpTracker, {
+			props: {
+				combatant,
+				onApplyDamage: vi.fn(),
+				onApplyHealing: vi.fn(),
+				onSetTempHp: vi.fn(),
+				onUpdateMaxHp: vi.fn()
+			}
+		});
+
+		// Should have an edit button or icon for maxHP
+		const editButton = screen.getByRole('button', { name: /edit.*max.*hp/i });
+		expect(editButton).toBeInTheDocument();
+	});
+
+	it('should show input field when edit button is clicked', async () => {
+		const combatant = createMockHeroCombatant({ hp: 25, maxHp: 40 });
+
+		render(HpTracker, {
+			props: {
+				combatant,
+				onApplyDamage: vi.fn(),
+				onApplyHealing: vi.fn(),
+				onSetTempHp: vi.fn(),
+				onUpdateMaxHp: vi.fn()
+			}
+		});
+
+		const editButton = screen.getByRole('button', { name: /edit.*max.*hp/i });
+		await fireEvent.click(editButton);
+
+		// Should show input field for editing maxHP
+		const maxHpInput = screen.getByLabelText(/max.*hp|max.*stamina/i);
+		expect(maxHpInput).toBeInTheDocument();
+	});
+
+	it('should populate input with current maxHP value', async () => {
+		const combatant = createMockHeroCombatant({ hp: 25, maxHp: 40 });
+
+		render(HpTracker, {
+			props: {
+				combatant,
+				onApplyDamage: vi.fn(),
+				onApplyHealing: vi.fn(),
+				onSetTempHp: vi.fn(),
+				onUpdateMaxHp: vi.fn()
+			}
+		});
+
+		const editButton = screen.getByRole('button', { name: /edit.*max.*hp/i });
+		await fireEvent.click(editButton);
+
+		const maxHpInput = screen.getByLabelText(/max.*hp|max.*stamina/i) as HTMLInputElement;
+		expect(maxHpInput.value).toBe('40');
+	});
+
+	it('should allow changing maxHP value in input', async () => {
+		const combatant = createMockHeroCombatant({ hp: 25, maxHp: 40 });
+
+		render(HpTracker, {
+			props: {
+				combatant,
+				onApplyDamage: vi.fn(),
+				onApplyHealing: vi.fn(),
+				onSetTempHp: vi.fn(),
+				onUpdateMaxHp: vi.fn()
+			}
+		});
+
+		const editButton = screen.getByRole('button', { name: /edit.*max.*hp/i });
+		await fireEvent.click(editButton);
+
+		const maxHpInput = screen.getByLabelText(/max.*hp|max.*stamina/i) as HTMLInputElement;
+		await fireEvent.input(maxHpInput, { target: { value: '50' } });
+
+		expect(maxHpInput.value).toBe('50');
+	});
+
+	it('should call onUpdateMaxHp with new value when save/confirm clicked', async () => {
+		const onUpdateMaxHp = vi.fn();
+		const combatant = createMockHeroCombatant({ hp: 25, maxHp: 40 });
+
+		render(HpTracker, {
+			props: {
+				combatant,
+				onApplyDamage: vi.fn(),
+				onApplyHealing: vi.fn(),
+				onSetTempHp: vi.fn(),
+				onUpdateMaxHp
+			}
+		});
+
+		const editButton = screen.getByRole('button', { name: /edit.*max.*hp/i });
+		await fireEvent.click(editButton);
+
+		const maxHpInput = screen.getByLabelText(/max.*hp|max.*stamina/i);
+		await fireEvent.input(maxHpInput, { target: { value: '50' } });
+
+		const saveButton = screen.getByRole('button', { name: /save|confirm/i });
+		await fireEvent.click(saveButton);
+
+		expect(onUpdateMaxHp).toHaveBeenCalledWith(50);
+	});
+
+	it('should validate maxHP must be greater than 0', async () => {
+		const combatant = createMockHeroCombatant({ hp: 25, maxHp: 40 });
+
+		render(HpTracker, {
+			props: {
+				combatant,
+				onApplyDamage: vi.fn(),
+				onApplyHealing: vi.fn(),
+				onSetTempHp: vi.fn(),
+				onUpdateMaxHp: vi.fn()
+			}
+		});
+
+		const editButton = screen.getByRole('button', { name: /edit.*max.*hp/i });
+		await fireEvent.click(editButton);
+
+		const maxHpInput = screen.getByLabelText(/max.*hp|max.*stamina/i) as HTMLInputElement;
+		await fireEvent.input(maxHpInput, { target: { value: '0' } });
+
+		const saveButton = screen.getByRole('button', { name: /save|confirm/i });
+		expect(saveButton).toBeDisabled();
+	});
+
+	it('should validate maxHP must be a positive number', async () => {
+		const combatant = createMockHeroCombatant({ hp: 25, maxHp: 40 });
+
+		render(HpTracker, {
+			props: {
+				combatant,
+				onApplyDamage: vi.fn(),
+				onApplyHealing: vi.fn(),
+				onSetTempHp: vi.fn(),
+				onUpdateMaxHp: vi.fn()
+			}
+		});
+
+		const editButton = screen.getByRole('button', { name: /edit.*max.*hp/i });
+		await fireEvent.click(editButton);
+
+		const maxHpInput = screen.getByLabelText(/max.*hp|max.*stamina/i) as HTMLInputElement;
+		await fireEvent.input(maxHpInput, { target: { value: '-10' } });
+
+		expect(maxHpInput).toHaveAttribute('min', '1');
+		expect(maxHpInput.validity.valid).toBe(false);
+	});
+
+	it('should cancel edit on Escape key', async () => {
+		const combatant = createMockHeroCombatant({ hp: 25, maxHp: 40 });
+
+		render(HpTracker, {
+			props: {
+				combatant,
+				onApplyDamage: vi.fn(),
+				onApplyHealing: vi.fn(),
+				onSetTempHp: vi.fn(),
+				onUpdateMaxHp: vi.fn()
+			}
+		});
+
+		const editButton = screen.getByRole('button', { name: /edit.*max.*hp/i });
+		await fireEvent.click(editButton);
+
+		const maxHpInput = screen.getByLabelText(/max.*hp|max.*stamina/i);
+		await fireEvent.input(maxHpInput, { target: { value: '50' } });
+
+		await fireEvent.keyDown(maxHpInput, { key: 'Escape', code: 'Escape' });
+
+		// Should close edit mode and return to display
+		expect(screen.queryByLabelText(/max.*hp|max.*stamina/i)).not.toBeInTheDocument();
+		expect(screen.getByText(/40/)).toBeInTheDocument(); // Original value shown
+	});
+
+	it('should confirm edit on Enter key', async () => {
+		const onUpdateMaxHp = vi.fn();
+		const combatant = createMockHeroCombatant({ hp: 25, maxHp: 40 });
+
+		render(HpTracker, {
+			props: {
+				combatant,
+				onApplyDamage: vi.fn(),
+				onApplyHealing: vi.fn(),
+				onSetTempHp: vi.fn(),
+				onUpdateMaxHp
+			}
+		});
+
+		const editButton = screen.getByRole('button', { name: /edit.*max.*hp/i });
+		await fireEvent.click(editButton);
+
+		const maxHpInput = screen.getByLabelText(/max.*hp|max.*stamina/i);
+		await fireEvent.input(maxHpInput, { target: { value: '45' } });
+
+		await fireEvent.keyDown(maxHpInput, { key: 'Enter', code: 'Enter' });
+
+		expect(onUpdateMaxHp).toHaveBeenCalledWith(45);
+	});
+
+	it('should have cancel button to exit edit mode', async () => {
+		const combatant = createMockHeroCombatant({ hp: 25, maxHp: 40 });
+
+		render(HpTracker, {
+			props: {
+				combatant,
+				onApplyDamage: vi.fn(),
+				onApplyHealing: vi.fn(),
+				onSetTempHp: vi.fn(),
+				onUpdateMaxHp: vi.fn()
+			}
+		});
+
+		const editButton = screen.getByRole('button', { name: /edit.*max.*hp/i });
+		await fireEvent.click(editButton);
+
+		const cancelButton = screen.getByRole('button', { name: /cancel/i });
+		expect(cancelButton).toBeInTheDocument();
+
+		await fireEvent.click(cancelButton);
+
+		// Should exit edit mode
+		expect(screen.queryByLabelText(/max.*hp|max.*stamina/i)).not.toBeInTheDocument();
+	});
+
+	it('should show edit icon next to maxHP when not editing', () => {
+		const combatant = createMockHeroCombatant({ hp: 25, maxHp: 40 });
+
+		const { container } = render(HpTracker, {
+			props: {
+				combatant,
+				onApplyDamage: vi.fn(),
+				onApplyHealing: vi.fn(),
+				onSetTempHp: vi.fn(),
+				onUpdateMaxHp: vi.fn()
+			}
+		});
+
+		// Should have edit icon/button visible near maxHP display
+		const editIcon = container.querySelector('[data-icon="edit-max-hp"]') ||
+						 screen.getByRole('button', { name: /edit.*max.*hp/i });
+		expect(editIcon).toBeInTheDocument();
+	});
+
+	it('should hide edit button when onUpdateMaxHp is not provided', () => {
+		const combatant = createMockHeroCombatant({ hp: 25, maxHp: 40 });
+
+		render(HpTracker, {
+			props: {
+				combatant,
+				onApplyDamage: vi.fn(),
+				onApplyHealing: vi.fn(),
+				onSetTempHp: vi.fn()
+				// No onUpdateMaxHp provided
+			}
+		});
+
+		// Should not show edit button if callback not provided
+		const editButton = screen.queryByRole('button', { name: /edit.*max.*hp/i });
+		expect(editButton).not.toBeInTheDocument();
+	});
+
+	it('should not show edit button when maxHp is undefined', () => {
+		const combatant = createMockHeroCombatant({ hp: 30, maxHp: undefined });
+
+		render(HpTracker, {
+			props: {
+				combatant,
+				onApplyDamage: vi.fn(),
+				onApplyHealing: vi.fn(),
+				onSetTempHp: vi.fn(),
+				onUpdateMaxHp: vi.fn()
+			}
+		});
+
+		// No edit button when maxHp doesn't exist
+		const editButton = screen.queryByRole('button', { name: /edit.*max.*hp/i });
+		expect(editButton).not.toBeInTheDocument();
+	});
+
+	it('should allow setting maxHP for combatant with undefined maxHP', async () => {
+		const onUpdateMaxHp = vi.fn();
+		const combatant = createMockHeroCombatant({ hp: 30, maxHp: undefined });
+
+		render(HpTracker, {
+			props: {
+				combatant,
+				onApplyDamage: vi.fn(),
+				onApplyHealing: vi.fn(),
+				onSetTempHp: vi.fn(),
+				onUpdateMaxHp
+			}
+		});
+
+		// Should have "Add Max HP" button instead of edit
+		const addMaxHpButton = screen.getByRole('button', { name: /add.*max.*hp|set.*max.*hp/i });
+		await fireEvent.click(addMaxHpButton);
+
+		const maxHpInput = screen.getByLabelText(/max.*hp|max.*stamina/i);
+		await fireEvent.input(maxHpInput, { target: { value: '40' } });
+
+		const saveButton = screen.getByRole('button', { name: /save|confirm/i });
+		await fireEvent.click(saveButton);
+
+		expect(onUpdateMaxHp).toHaveBeenCalledWith(40);
+	});
+
+	it('should exit edit mode after successful save', async () => {
+		const onUpdateMaxHp = vi.fn().mockResolvedValue(undefined);
+		const combatant = createMockHeroCombatant({ hp: 25, maxHp: 40 });
+
+		render(HpTracker, {
+			props: {
+				combatant,
+				onApplyDamage: vi.fn(),
+				onApplyHealing: vi.fn(),
+				onSetTempHp: vi.fn(),
+				onUpdateMaxHp
+			}
+		});
+
+		const editButton = screen.getByRole('button', { name: /edit.*max.*hp/i });
+		await fireEvent.click(editButton);
+
+		const maxHpInput = screen.getByLabelText(/max.*hp|max.*stamina/i);
+		await fireEvent.input(maxHpInput, { target: { value: '45' } });
+
+		const saveButton = screen.getByRole('button', { name: /save|confirm/i });
+		await fireEvent.click(saveButton);
+
+		await waitFor(() => {
+			expect(screen.queryByLabelText(/max.*hp|max.*stamina/i)).not.toBeInTheDocument();
+		});
+	});
+
+	it('should accept only integer values for maxHP', async () => {
+		const combatant = createMockHeroCombatant({ hp: 25, maxHp: 40 });
+
+		render(HpTracker, {
+			props: {
+				combatant,
+				onApplyDamage: vi.fn(),
+				onApplyHealing: vi.fn(),
+				onSetTempHp: vi.fn(),
+				onUpdateMaxHp: vi.fn()
+			}
+		});
+
+		const editButton = screen.getByRole('button', { name: /edit.*max.*hp/i });
+		await fireEvent.click(editButton);
+
+		const maxHpInput = screen.getByLabelText(/max.*hp|max.*stamina/i) as HTMLInputElement;
+		expect(maxHpInput).toHaveAttribute('step', '1');
+		expect(maxHpInput).toHaveAttribute('type', 'number');
+	});
+
+	it('should focus input field when entering edit mode', async () => {
+		const combatant = createMockHeroCombatant({ hp: 25, maxHp: 40 });
+
+		render(HpTracker, {
+			props: {
+				combatant,
+				onApplyDamage: vi.fn(),
+				onApplyHealing: vi.fn(),
+				onSetTempHp: vi.fn(),
+				onUpdateMaxHp: vi.fn()
+			}
+		});
+
+		const editButton = screen.getByRole('button', { name: /edit.*max.*hp/i });
+		await fireEvent.click(editButton);
+
+		const maxHpInput = screen.getByLabelText(/max.*hp|max.*stamina/i);
+
+		await waitFor(() => {
+			expect(document.activeElement).toBe(maxHpInput);
+		});
+	});
+});

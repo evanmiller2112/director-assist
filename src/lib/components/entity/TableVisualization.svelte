@@ -41,7 +41,7 @@
 	// Check if a seat has any assignment
 	function hasAssignment(seatIndex: number): boolean {
 		const assignment = tableMap.assignments.find((a) => a.seatIndex === seatIndex);
-		return Boolean(assignment?.playerId || assignment?.characterId);
+		return Boolean(assignment?.characterId);
 	}
 
 	// Calculate seat position with 1 seat at each short end (left/right), rest split on long sides (top/bottom)

@@ -170,16 +170,16 @@ export function createMockCombatStore(initialSessions: CombatSession[] = []) {
 				id: `hero-${Date.now()}`,
 				type: 'hero',
 				name: input.name,
-				entityId: input.entityId,
+				entityId: input.entityId ?? '',
 				initiative: 0,
 				initiativeRoll: [0, 0],
-				hp: input.maxHp,
-				maxHp: input.maxHp,
+				hp: input.maxHp ?? 0,
+				maxHp: input.maxHp ?? 0,
 				tempHp: 0,
-				ac: input.ac,
+				ac: typeof input.ac === 'number' ? input.ac : undefined,
 				conditions: [],
 				heroicResource: input.heroicResource
-			};
+			} as unknown as Combatant;
 
 			combat.combatants.push(hero);
 			combat.updatedAt = new Date();
@@ -194,16 +194,16 @@ export function createMockCombatStore(initialSessions: CombatSession[] = []) {
 				id: `creature-${Date.now()}`,
 				type: 'creature',
 				name: input.name,
-				entityId: input.entityId,
+				entityId: input.entityId ?? '',
 				initiative: 0,
 				initiativeRoll: [0, 0],
-				hp: input.maxHp,
-				maxHp: input.maxHp,
+				hp: input.maxHp ?? 0,
+				maxHp: input.maxHp ?? 0,
 				tempHp: 0,
-				ac: input.ac,
+				ac: typeof input.ac === 'number' ? input.ac : undefined,
 				conditions: [],
-				threat: input.threat
-			};
+				threat: (input.threat as 'boss' | 'captain' | 'troop' | undefined) ?? 'troop'
+			} as unknown as Combatant;
 
 			combat.combatants.push(creature);
 			combat.updatedAt = new Date();
@@ -279,7 +279,7 @@ export function createMockCombatStore(initialSessions: CombatSession[] = []) {
 			if (combat) {
 				const combatant = combat.combatants.find(c => c.id === combatantId);
 				if (combatant) {
-					combatant.hp = Math.min(combatant.maxHp, combatant.hp + amount);
+					combatant.hp = Math.min(combatant.maxHp ?? 0, (combatant.hp ?? 0) + amount);
 					combat.updatedAt = new Date();
 				}
 			}

@@ -28,8 +28,15 @@ import { createMockEntity } from '../../../tests/utils/testUtils';
 describe('EditRelationshipModal - Reactivity: Link Prop Changes', () => {
 	let sourceEntity: BaseEntity;
 	let targetEntity: BaseEntity;
-	let onClose: ReturnType<typeof vi.fn>;
-	let onSave: ReturnType<typeof vi.fn>;
+	let onClose: () => void;
+	let onSave: (changes: {
+		relationship: string;
+		notes?: string;
+		strength?: 'strong' | 'moderate' | 'weak';
+		metadata?: { tags?: string[]; tension?: number };
+		bidirectional?: boolean;
+		playerVisible?: boolean;
+	}) => Promise<void>;
 
 	beforeEach(() => {
 		sourceEntity = createMockEntity({
@@ -45,7 +52,14 @@ describe('EditRelationshipModal - Reactivity: Link Prop Changes', () => {
 		});
 
 		onClose = vi.fn();
-		onSave = vi.fn().mockResolvedValue(undefined);
+		onSave = vi.fn().mockResolvedValue(undefined) as (changes: {
+			relationship: string;
+			notes?: string;
+			strength?: 'strong' | 'moderate' | 'weak';
+			metadata?: { tags?: string[]; tension?: number };
+			bidirectional?: boolean;
+			playerVisible?: boolean;
+		}) => Promise<void>;
 	});
 
 	it('should initially populate form with link prop values', () => {
@@ -402,8 +416,15 @@ describe('EditRelationshipModal - Reactivity: Link Prop Changes', () => {
 describe('EditRelationshipModal - Reactivity: Link Changes After User Edits', () => {
 	let sourceEntity: BaseEntity;
 	let targetEntity: BaseEntity;
-	let onClose: ReturnType<typeof vi.fn>;
-	let onSave: ReturnType<typeof vi.fn>;
+	let onClose: () => void;
+	let onSave: (changes: {
+		relationship: string;
+		notes?: string;
+		strength?: 'strong' | 'moderate' | 'weak';
+		metadata?: { tags?: string[]; tension?: number };
+		bidirectional?: boolean;
+		playerVisible?: boolean;
+	}) => Promise<void>;
 
 	beforeEach(() => {
 		sourceEntity = createMockEntity({
@@ -419,7 +440,14 @@ describe('EditRelationshipModal - Reactivity: Link Changes After User Edits', ()
 		});
 
 		onClose = vi.fn();
-		onSave = vi.fn().mockResolvedValue(undefined);
+		onSave = vi.fn().mockResolvedValue(undefined) as (changes: {
+			relationship: string;
+			notes?: string;
+			strength?: 'strong' | 'moderate' | 'weak';
+			metadata?: { tags?: string[]; tension?: number };
+			bidirectional?: boolean;
+			playerVisible?: boolean;
+		}) => Promise<void>;
 	});
 
 	it('should discard user edits when link prop changes to a different link', async () => {
@@ -595,8 +623,15 @@ describe('EditRelationshipModal - Reactivity: Link Changes After User Edits', ()
 describe('EditRelationshipModal - Reactivity: Edge Cases', () => {
 	let sourceEntity: BaseEntity;
 	let targetEntity: BaseEntity;
-	let onClose: ReturnType<typeof vi.fn>;
-	let onSave: ReturnType<typeof vi.fn>;
+	let onClose: () => void;
+	let onSave: (changes: {
+		relationship: string;
+		notes?: string;
+		strength?: 'strong' | 'moderate' | 'weak';
+		metadata?: { tags?: string[]; tension?: number };
+		bidirectional?: boolean;
+		playerVisible?: boolean;
+	}) => Promise<void>;
 
 	beforeEach(() => {
 		sourceEntity = createMockEntity({
@@ -612,7 +647,14 @@ describe('EditRelationshipModal - Reactivity: Edge Cases', () => {
 		});
 
 		onClose = vi.fn();
-		onSave = vi.fn().mockResolvedValue(undefined);
+		onSave = vi.fn().mockResolvedValue(undefined) as (changes: {
+			relationship: string;
+			notes?: string;
+			strength?: 'strong' | 'moderate' | 'weak';
+			metadata?: { tags?: string[]; tension?: number };
+			bidirectional?: boolean;
+			playerVisible?: boolean;
+		}) => Promise<void>;
 	});
 
 	it('should handle rapid link prop changes', async () => {
@@ -836,12 +878,26 @@ describe('EditRelationshipModal - Reactivity: Edge Cases', () => {
 });
 
 describe('EditRelationshipModal - Reactivity: Source/Target Entity Changes', () => {
-	let onClose: ReturnType<typeof vi.fn>;
-	let onSave: ReturnType<typeof vi.fn>;
+	let onClose: () => void;
+	let onSave: (changes: {
+		relationship: string;
+		notes?: string;
+		strength?: 'strong' | 'moderate' | 'weak';
+		metadata?: { tags?: string[]; tension?: number };
+		bidirectional?: boolean;
+		playerVisible?: boolean;
+	}) => Promise<void>;
 
 	beforeEach(() => {
 		onClose = vi.fn();
-		onSave = vi.fn().mockResolvedValue(undefined);
+		onSave = vi.fn().mockResolvedValue(undefined) as (changes: {
+			relationship: string;
+			notes?: string;
+			strength?: 'strong' | 'moderate' | 'weak';
+			metadata?: { tags?: string[]; tension?: number };
+			bidirectional?: boolean;
+			playerVisible?: boolean;
+		}) => Promise<void>;
 	});
 
 	it('should update displayed entity names when sourceEntity prop changes', async () => {

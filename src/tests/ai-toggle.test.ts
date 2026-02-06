@@ -180,7 +180,8 @@ describe('AI Toggle Integration Tests (Issue #122)', () => {
 			links: [],
 			notes: '',
 			createdAt: new Date(),
-			updatedAt: new Date()
+			updatedAt: new Date(),
+			metadata: {}
 		};
 
 		// Note: These two tests are skipped due to module import timing issues in the test environment.

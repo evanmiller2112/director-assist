@@ -203,7 +203,9 @@ export function createCombatWithConditions(): CombatSession {
 		]
 	});
 
-	return createActiveCombatSession().combatants = [hero, creature];
+	const session = createActiveCombatSession();
+	session.combatants = [hero, creature];
+	return session;
 }
 
 /**

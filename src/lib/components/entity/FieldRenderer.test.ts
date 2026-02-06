@@ -81,7 +81,7 @@ describe('FieldRenderer Component - Text Field Types', () => {
 		const shortTextField: FieldDefinition = {
 			key: 'title',
 			label: 'Title',
-			type: 'short-text',
+			type: 'text',
 			required: false,
 			order: 1
 		};
@@ -130,7 +130,7 @@ describe('FieldRenderer Component - Text Field Types', () => {
 		const longTextField: FieldDefinition = {
 			key: 'notes',
 			label: 'Notes',
-			type: 'long-text',
+			type: 'textarea',
 			required: false,
 			order: 1
 		};

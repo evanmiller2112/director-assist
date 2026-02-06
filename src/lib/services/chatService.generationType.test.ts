@@ -622,7 +622,7 @@ describe('chatService - Generation Type Integration', () => {
 				npc: /npc|character|personality/i,
 				location: /location|place|atmosphere/i,
 				plot_hook: /plot|hook|story/i,
-				encounter: /encounter|combat|battle/i,
+				combat: /encounter|combat|battle/i,
 				item: /item|artifact|equipment/i,
 				faction: /faction|organization|guild/i,
 				session_prep: /session|prep|planning/i

@@ -132,7 +132,7 @@
 			changes.notes = notes.trim();
 
 			// Add strength if not empty
-			if (strength && strength !== '') {
+			if (strength) {
 				changes.strength = strength as 'strong' | 'moderate' | 'weak';
 			}
 

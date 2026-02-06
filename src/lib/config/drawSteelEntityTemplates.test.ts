@@ -700,7 +700,7 @@ describe('Cross-Template Validation', () => {
 					if (field.type === 'select' || field.type === 'multi-select') {
 						expect(field.options).toBeDefined();
 						expect(Array.isArray(field.options)).toBe(true);
-						expect(field.options.length).toBeGreaterThan(0);
+						expect(field.options?.length).toBeGreaterThan(0);
 					}
 				});
 			});

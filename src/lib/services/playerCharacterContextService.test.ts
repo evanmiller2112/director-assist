@@ -272,7 +272,7 @@ describe('playerCharacterContextService', () => {
 
 		it('should handle entity not found error', async () => {
 			const { entityRepository } = await import('$lib/db/repositories');
-			vi.mocked(entityRepository.getById).mockResolvedValue(null);
+			vi.mocked(entityRepository.getById).mockResolvedValue(undefined);
 
 			await expect(findLinkedPlayerCharacters('nonexistent-id')).rejects.toThrow(
 				'Entity not found'

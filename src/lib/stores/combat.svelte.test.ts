@@ -254,8 +254,8 @@ describe('CombatStore - Derived Values', () => {
 		});
 
 		it('should return null when no active combat', () => {
-			const activeCombat = null;
-			const currentCombatant = activeCombat?.combatants[activeCombat.currentTurn] ?? null;
+			const activeCombat = null as CombatSession | null;
+			const currentCombatant = activeCombat ? activeCombat.combatants[activeCombat.currentTurn] : null;
 
 			expect(currentCombatant).toBeNull();
 		});
@@ -813,8 +813,8 @@ describe('CombatStore - Helper Methods', () => {
 		});
 
 		it('should return undefined if combatant not found', () => {
-			const mockActiveCombat: CombatSession | null = null;
-			const combatant = mockActiveCombat?.combatants.find(c => c.id === 'non-existent');
+			const mockActiveCombat = null as CombatSession | null;
+			const combatant = mockActiveCombat ? mockActiveCombat.combatants.find((c) => c.id === 'non-existent') : undefined;
 
 			expect(combatant).toBeUndefined();
 		});

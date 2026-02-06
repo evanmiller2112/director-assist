@@ -225,7 +225,7 @@ describe('CustomEntityTypeForm - Reactivity: InitialValue Prop Changes', () => {
 					type: 'select',
 					required: false,
 					order: 1,
-					selectOptions: ['common', 'rare', 'legendary']
+					options: ['common', 'rare', 'legendary']
 				}
 			],
 			defaultRelationships: []
@@ -658,7 +658,7 @@ describe('CustomEntityTypeForm - Reactivity: Edge Cases', () => {
 					type: 'select',
 					required: false,
 					order: 1,
-					selectOptions: ['a', 'b', 'c']
+					options: ['a', 'b', 'c']
 				}
 			],
 			defaultRelationships: ['rel3']
@@ -704,7 +704,7 @@ describe('CustomEntityTypeForm - Reactivity: Edge Cases', () => {
 					type: 'select',
 					required: false,
 					order: 1,
-					selectOptions: ['active', 'inactive']
+					options: ['active', 'inactive']
 				}
 			],
 			defaultRelationships: ['contains', 'part_of']

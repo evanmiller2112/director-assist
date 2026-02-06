@@ -234,7 +234,8 @@ describe('Sidebar Drag and Drop (Issue #205 - RED Phase)', () => {
 						key: 'title',
 						label: 'Title',
 						type: 'text',
-						required: true
+						required: true,
+						order: 0
 					}
 				],
 				defaultRelationships: ['character', 'location']
@@ -448,7 +449,6 @@ describe('Sidebar Drag and Drop (Issue #205 - RED Phase)', () => {
 			};
 
 			// Act & Assert: This will FAIL because EntityTypeDefinition doesn't have id
-			// @ts-expect-error - Testing that id property doesn't exist
 			expect(entityType).toHaveProperty('id');
 		});
 	});

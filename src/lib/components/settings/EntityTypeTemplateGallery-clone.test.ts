@@ -19,7 +19,8 @@ describe('EntityTypeTemplateGallery - Clone Existing Type Option (Issue #210)', 
 	it('should display "Clone Existing Type" option', () => {
 		render(EntityTypeTemplateGallery, {
 			props: {
-				onSelect: vi.fn(),
+				onSelectTemplate: vi.fn(),
+				onStartFromScratch: vi.fn(),
 				onCloneExisting: vi.fn()
 			}
 		});
@@ -30,7 +31,8 @@ describe('EntityTypeTemplateGallery - Clone Existing Type Option (Issue #210)', 
 	it('should render Clone option alongside template options', () => {
 		render(EntityTypeTemplateGallery, {
 			props: {
-				onSelect: vi.fn(),
+				onSelectTemplate: vi.fn(),
+				onStartFromScratch: vi.fn(),
 				onCloneExisting: vi.fn()
 			}
 		});
@@ -43,7 +45,8 @@ describe('EntityTypeTemplateGallery - Clone Existing Type Option (Issue #210)', 
 	it('should render Clone option as a selectable card', () => {
 		render(EntityTypeTemplateGallery, {
 			props: {
-				onSelect: vi.fn(),
+				onSelectTemplate: vi.fn(),
+				onStartFromScratch: vi.fn(),
 				onCloneExisting: vi.fn()
 			}
 		});
@@ -55,7 +58,8 @@ describe('EntityTypeTemplateGallery - Clone Existing Type Option (Issue #210)', 
 	it('should display appropriate icon for Clone option', () => {
 		const { container } = render(EntityTypeTemplateGallery, {
 			props: {
-				onSelect: vi.fn(),
+				onSelectTemplate: vi.fn(),
+				onStartFromScratch: vi.fn(),
 				onCloneExisting: vi.fn()
 			}
 		});
@@ -71,7 +75,8 @@ describe('EntityTypeTemplateGallery - Clone Existing Type Option (Issue #210)', 
 	it('should display helpful description for Clone option', () => {
 		render(EntityTypeTemplateGallery, {
 			props: {
-				onSelect: vi.fn(),
+				onSelectTemplate: vi.fn(),
+				onStartFromScratch: vi.fn(),
 				onCloneExisting: vi.fn()
 			}
 		});
@@ -85,7 +90,8 @@ describe('EntityTypeTemplateGallery - Clone Option Interaction (Issue #210)', ()
 		const onCloneExisting = vi.fn();
 		render(EntityTypeTemplateGallery, {
 			props: {
-				onSelect: vi.fn(),
+				onSelectTemplate: vi.fn(),
+				onStartFromScratch: vi.fn(),
 				onCloneExisting
 			}
 		});
@@ -98,12 +104,13 @@ describe('EntityTypeTemplateGallery - Clone Option Interaction (Issue #210)', ()
 		expect(onCloneExisting).toHaveBeenCalledTimes(1);
 	});
 
-	it('should not call onSelect when Clone option is clicked', async () => {
-		const onSelect = vi.fn();
+	it('should not call onSelectTemplate when Clone option is clicked', async () => {
+		const onSelectTemplate = vi.fn();
 		const onCloneExisting = vi.fn();
 		render(EntityTypeTemplateGallery, {
 			props: {
-				onSelect,
+				onSelectTemplate,
+				onStartFromScratch: vi.fn(),
 				onCloneExisting
 			}
 		});
@@ -112,13 +119,14 @@ describe('EntityTypeTemplateGallery - Clone Option Interaction (Issue #210)', ()
 		await fireEvent.click(cloneCard!);
 
 		expect(onCloneExisting).toHaveBeenCalled();
-		expect(onSelect).not.toHaveBeenCalled();
+		expect(onSelectTemplate).not.toHaveBeenCalled();
 	});
 
 	it('should handle missing onCloneExisting callback gracefully', async () => {
 		render(EntityTypeTemplateGallery, {
 			props: {
-				onSelect: vi.fn()
+				onSelectTemplate: vi.fn(),
+				onStartFromScratch: vi.fn()
 				// onCloneExisting not provided
 			}
 		});
@@ -135,7 +143,8 @@ describe('EntityTypeTemplateGallery - Clone Option Interaction (Issue #210)', ()
 		const onCloneExisting = vi.fn();
 		render(EntityTypeTemplateGallery, {
 			props: {
-				onSelect: vi.fn(),
+				onSelectTemplate: vi.fn(),
+				onStartFromScratch: vi.fn(),
 				onCloneExisting
 			}
 		});
@@ -153,7 +162,8 @@ describe('EntityTypeTemplateGallery - Clone Option Placement (Issue #210)', () =
 	it('should place Clone option prominently (first or second position)', () => {
 		const { container } = render(EntityTypeTemplateGallery, {
 			props: {
-				onSelect: vi.fn(),
+				onSelectTemplate: vi.fn(),
+				onStartFromScratch: vi.fn(),
 				onCloneExisting: vi.fn()
 			}
 		});
@@ -172,7 +182,8 @@ describe('EntityTypeTemplateGallery - Clone Option Placement (Issue #210)', () =
 	it('should visually distinguish Clone option from other templates', () => {
 		render(EntityTypeTemplateGallery, {
 			props: {
-				onSelect: vi.fn(),
+				onSelectTemplate: vi.fn(),
+				onStartFromScratch: vi.fn(),
 				onCloneExisting: vi.fn()
 			}
 		});
@@ -190,7 +201,8 @@ describe('EntityTypeTemplateGallery - Clone Option Accessibility (Issue #210)', 
 	it('should have accessible name for Clone option', () => {
 		render(EntityTypeTemplateGallery, {
 			props: {
-				onSelect: vi.fn(),
+				onSelectTemplate: vi.fn(),
+				onStartFromScratch: vi.fn(),
 				onCloneExisting: vi.fn()
 			}
 		});
@@ -202,7 +214,8 @@ describe('EntityTypeTemplateGallery - Clone Option Accessibility (Issue #210)', 
 	it('should allow keyboard navigation to Clone option', () => {
 		render(EntityTypeTemplateGallery, {
 			props: {
-				onSelect: vi.fn(),
+				onSelectTemplate: vi.fn(),
+				onStartFromScratch: vi.fn(),
 				onCloneExisting: vi.fn()
 			}
 		});
@@ -215,7 +228,8 @@ describe('EntityTypeTemplateGallery - Clone Option Accessibility (Issue #210)', 
 		const onCloneExisting = vi.fn();
 		render(EntityTypeTemplateGallery, {
 			props: {
-				onSelect: vi.fn(),
+				onSelectTemplate: vi.fn(),
+				onStartFromScratch: vi.fn(),
 				onCloneExisting
 			}
 		});
@@ -231,7 +245,8 @@ describe('EntityTypeTemplateGallery - Clone Option Accessibility (Issue #210)', 
 	it('should have appropriate ARIA label for Clone option', () => {
 		render(EntityTypeTemplateGallery, {
 			props: {
-				onSelect: vi.fn(),
+				onSelectTemplate: vi.fn(),
+				onStartFromScratch: vi.fn(),
 				onCloneExisting: vi.fn()
 			}
 		});
@@ -245,10 +260,11 @@ describe('EntityTypeTemplateGallery - Clone Option Accessibility (Issue #210)', 
 
 describe('EntityTypeTemplateGallery - Integration with Existing Templates (Issue #210)', () => {
 	it('should maintain existing template selection functionality', async () => {
-		const onSelect = vi.fn();
+		const onStartFromScratch = vi.fn();
 		render(EntityTypeTemplateGallery, {
 			props: {
-				onSelect,
+				onSelectTemplate: vi.fn(),
+				onStartFromScratch,
 				onCloneExisting: vi.fn()
 			}
 		});
@@ -257,13 +273,14 @@ describe('EntityTypeTemplateGallery - Integration with Existing Templates (Issue
 		const blankTemplate = screen.getByText(/blank|start from scratch/i).closest('button');
 		await fireEvent.click(blankTemplate!);
 
-		expect(onSelect).toHaveBeenCalled();
+		expect(onStartFromScratch).toHaveBeenCalled();
 	});
 
 	it('should not affect existing template options', () => {
 		render(EntityTypeTemplateGallery, {
 			props: {
-				onSelect: vi.fn(),
+				onSelectTemplate: vi.fn(),
+				onStartFromScratch: vi.fn(),
 				onCloneExisting: vi.fn()
 			}
 		});
@@ -275,7 +292,8 @@ describe('EntityTypeTemplateGallery - Integration with Existing Templates (Issue
 	it('should display Clone option alongside all other templates', () => {
 		const { container } = render(EntityTypeTemplateGallery, {
 			props: {
-				onSelect: vi.fn(),
+				onSelectTemplate: vi.fn(),
+				onStartFromScratch: vi.fn(),
 				onCloneExisting: vi.fn()
 			}
 		});
@@ -292,7 +310,8 @@ describe('EntityTypeTemplateGallery - Edge Cases for Clone Option (Issue #210)',
 		const onCloneExisting = vi.fn();
 		render(EntityTypeTemplateGallery, {
 			props: {
-				onSelect: vi.fn(),
+				onSelectTemplate: vi.fn(),
+				onStartFromScratch: vi.fn(),
 				onCloneExisting
 			}
 		});
@@ -310,7 +329,8 @@ describe('EntityTypeTemplateGallery - Edge Cases for Clone Option (Issue #210)',
 	it('should show Clone option even when no built-in templates are available', () => {
 		render(EntityTypeTemplateGallery, {
 			props: {
-				onSelect: vi.fn(),
+				onSelectTemplate: vi.fn(),
+				onStartFromScratch: vi.fn(),
 				onCloneExisting: vi.fn()
 			}
 		});

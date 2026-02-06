@@ -15,7 +15,7 @@
  *
  * Implementation will be added in the GREEN phase to make these tests pass.
  */
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import type { BaseEntity } from '$lib/types';
 
 // Mock the model service
@@ -196,7 +196,7 @@ describe('sceneGenerationService', () => {
 			it('should return content as a string on success', async () => {
 				const result = await generateSceneSettingText(mockLocation, mockNPCs);
 
-				if (result.success) {
+				if (result.success && result.content) {
 					expect(typeof result.content).toBe('string');
 					expect(result.content.length).toBeGreaterThan(0);
 				}
@@ -274,7 +274,7 @@ describe('sceneGenerationService', () => {
 			it('should generate descriptive text', async () => {
 				const result = await generateSceneSettingText(mockLocation, mockNPCs);
 
-				if (result.success) {
+				if (result.success && result.content) {
 					// Generated text should be substantial
 					expect(result.content.length).toBeGreaterThan(50);
 				}
@@ -343,8 +343,8 @@ describe('sceneGenerationService', () => {
 				const result = await generatePreSceneSummary(mockSceneContext);
 
 				if (result.success) {
-					expect(typeof result.summary).toBe('string');
-					expect(result.summary.length).toBeGreaterThan(0);
+					expect(typeof result.summary!).toBe('string');
+					expect(result.summary!.length).toBeGreaterThan(0);
 				}
 			});
 		});
@@ -383,7 +383,7 @@ describe('sceneGenerationService', () => {
 				const result = await generatePreSceneSummary(mockSceneContext);
 
 				if (result.success) {
-					const sentenceCount = (result.summary.match(/[.!?]+/g) || []).length;
+					const sentenceCount = (result.summary!.match(/[.!?]+/g) || []).length;
 					expect(sentenceCount).toBeLessThanOrEqual(3);
 				}
 			});
@@ -393,7 +393,7 @@ describe('sceneGenerationService', () => {
 
 				if (result.success) {
 					// Summary should be forward-looking (setup for scene)
-					expect(result.summary.length).toBeGreaterThan(10);
+					expect(result.summary!.length).toBeGreaterThan(10);
 				}
 			});
 		});
@@ -461,8 +461,8 @@ describe('sceneGenerationService', () => {
 				const result = await generatePostSceneSummary(mockSceneData);
 
 				if (result.success) {
-					expect(typeof result.summary).toBe('string');
-					expect(result.summary.length).toBeGreaterThan(0);
+					expect(typeof result.summary!).toBe('string');
+					expect(result.summary!.length).toBeGreaterThan(0);
 				}
 			});
 		});
@@ -507,7 +507,7 @@ describe('sceneGenerationService', () => {
 
 				if (result.success) {
 					// Summary should be shorter than original whatHappened
-					expect(result.summary.length).toBeLessThanOrEqual(mockSceneData.whatHappened.length);
+					expect(result.summary!.length).toBeLessThanOrEqual(mockSceneData.whatHappened.length);
 				}
 			});
 
@@ -515,7 +515,7 @@ describe('sceneGenerationService', () => {
 				const result = await generatePostSceneSummary(mockSceneData);
 
 				if (result.success) {
-					expect(result.summary.length).toBeGreaterThan(20);
+					expect(result.summary!.length).toBeGreaterThan(20);
 				}
 			});
 

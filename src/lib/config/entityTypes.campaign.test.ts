@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import {
 	BUILT_IN_ENTITY_TYPES,
 	getEntityTypeDefinition,

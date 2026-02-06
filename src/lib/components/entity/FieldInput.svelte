@@ -24,7 +24,6 @@
 	import type { FieldDefinition, FieldValue } from '$lib/types';
 	import { normalizeFieldType, evaluateComputedField } from '$lib/utils/fieldTypes';
 	import MarkdownEditor from '$lib/components/markdown/MarkdownEditor.svelte';
-	import FieldGenerateButton from './FieldGenerateButton.svelte';
 	import { Check, X, ExternalLink, Upload, Trash2 } from 'lucide-svelte';
 	import { entitiesStore } from '$lib/stores';
 
@@ -289,7 +288,7 @@
 	{:else if normalizedType === 'textarea'}
 		<textarea
 			id={inputId}
-			value={value || ''}
+			value={typeof value === 'string' ? value : ''}
 			placeholder={field.placeholder || ''}
 			{disabled}
 			oninput={handleTextInput}
@@ -299,11 +298,11 @@
 		></textarea>
 	{:else if normalizedType === 'richtext'}
 		<MarkdownEditor
-			bind:value
+			value={typeof value === 'string' ? value : ''}
 			placeholder={field.placeholder || ''}
 			{disabled}
 			{error}
-			onchange={onchange}
+			onchange={(v: string) => onchange(v)}
 		/>
 	{:else if normalizedType === 'number'}
 		<input
@@ -490,7 +489,7 @@
 			{#if value}
 				<div class="relative inline-block">
 					<img
-						src={value}
+						src={typeof value === 'string' ? value : ''}
 						alt={field.label}
 						class="max-w-xs max-h-64 rounded-md border border-slate-300 dark:border-slate-600"
 					/>
@@ -544,15 +543,8 @@
 		</div>
 	{/if}
 
-	<!-- AI Generation Button -->
-	{#if field.aiGenerate !== false && (normalizedType === 'text' || normalizedType === 'textarea' || normalizedType === 'richtext')}
-		<div class="mt-2">
-			<FieldGenerateButton
-				{field}
-				onGenerated={(generatedValue) => onchange(generatedValue)}
-			/>
-		</div>
-	{/if}
+	<!-- AI Generation Button: Not included in FieldInput component.
+	     Use FieldGenerateButton separately in the parent component if needed. -->
 
 	<!-- Error message -->
 	{#if error}

@@ -164,7 +164,7 @@
 	</div>
 
 	<!-- Type-Specific Info -->
-	{#if isHero && combatant.heroicResource}
+	{#if isHero && isHeroCombatant(combatant) && combatant.heroicResource}
 		<div class="hero-resource mb-3 p-2 rounded bg-blue-50 dark:bg-blue-900/20">
 			<div class="text-xs font-medium text-blue-900 dark:text-blue-100 mb-1">
 				{combatant.heroicResource.name}
@@ -175,7 +175,7 @@
 		</div>
 	{/if}
 
-	{#if isCreature && combatant.threat}
+	{#if isCreature && isCreatureCombatant(combatant)}
 		<div class="mb-3">
 			<span
 				class={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${getThreatClass(combatant.threat)}`}

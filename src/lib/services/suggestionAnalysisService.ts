@@ -60,11 +60,14 @@ function buildContext(entities: BaseEntity[]): EntityAnalysisContext {
 			}
 
 			// Add to relationship map
-			relationshipMap.edges.push({
-				source: link.sourceId,
-				target: link.targetId,
-				relationship: link.relationship || 'related_to'
-			});
+			if (link.sourceId && link.targetId) {
+				const relationship: string = link.relationship || 'related_to';
+				relationshipMap.edges.push({
+					source: link.sourceId,
+					target: link.targetId,
+					relationship
+				});
+			}
 		}
 		if (locations.length > 0) {
 			locationsByEntity.set(entity.id, locations);
@@ -117,18 +120,16 @@ type SuggestionItem = FullAnalysisResult['results'][0]['suggestions'][0];
  * Deduplicate suggestions, keeping highest relevance score
  */
 function deduplicateSuggestions(
-	suggestions: FullAnalysisResult['results'][0]['suggestions'][]
+	suggestions: SuggestionItem[]
 ): SuggestionItem[] {
 	const seen = new Map<string, SuggestionItem>();
 
-	for (const suggestionList of suggestions) {
-		for (const suggestion of suggestionList) {
-			const key = getSuggestionKey(suggestion);
-			const existing = seen.get(key);
+	for (const suggestion of suggestions) {
+		const key = getSuggestionKey(suggestion);
+		const existing = seen.get(key);
 
-			if (!existing || suggestion.relevanceScore > existing.relevanceScore) {
-				seen.set(key, suggestion);
-			}
+		if (!existing || suggestion.relevanceScore > existing.relevanceScore) {
+			seen.set(key, suggestion);
 		}
 	}
 
@@ -139,7 +140,7 @@ function deduplicateSuggestions(
  * Convert analyzer suggestions to full AISuggestion objects with IDs and timestamps
  */
 function toFullSuggestions(
-	suggestions: FullAnalysisResult['results'][0]['suggestions'][],
+	suggestions: Omit<AISuggestion, 'id' | 'status' | 'createdAt' | 'expiresAt'>[],
 	expirationDays: number
 ): AISuggestion[] {
 	const now = new Date();
@@ -223,7 +224,7 @@ export const suggestionAnalysisService = {
 		}
 
 		// Deduplicate suggestions across all analyzers
-		const allSuggestions = results.map((r) => r.suggestions);
+		const allSuggestions = results.flatMap((r) => r.suggestions);
 		const uniqueSuggestions = deduplicateSuggestions(allSuggestions);
 
 		// Convert to full suggestions with IDs and store

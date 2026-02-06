@@ -15,7 +15,7 @@ import {
 	type FieldGenerationContext,
 	type FieldGenerationResult
 } from './fieldGenerationService';
-import type { EntityTypeDefinition, FieldDefinition, FieldType } from '$lib/types';
+import type { EntityType, EntityTypeDefinition, FieldDefinition, FieldType } from '$lib/types';
 
 // Mock the model service
 vi.mock('./modelService', () => ({

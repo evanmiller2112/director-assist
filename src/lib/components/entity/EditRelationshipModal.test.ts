@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import type { MockedFunction } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/svelte';
 import EditRelationshipModal from './EditRelationshipModal.svelte';
 import { createMockEntity } from '../../../tests/utils/testUtils';
@@ -20,8 +21,15 @@ describe('EditRelationshipModal - Basic Rendering', () => {
 	let sourceEntity: BaseEntity;
 	let targetEntity: BaseEntity;
 	let link: EntityLink;
-	let onClose: ReturnType<typeof vi.fn>;
-	let onSave: ReturnType<typeof vi.fn>;
+	let onClose: () => void;
+	let onSave: MockedFunction<(changes: {
+		relationship: string;
+		notes?: string;
+		strength?: 'strong' | 'moderate' | 'weak';
+		metadata?: { tags?: string[]; tension?: number };
+		bidirectional?: boolean;
+		playerVisible?: boolean;
+	}) => Promise<void>>;
 
 	beforeEach(() => {
 		sourceEntity = createMockEntity({
@@ -105,8 +113,15 @@ describe('EditRelationshipModal - Form Fields Pre-population', () => {
 	let sourceEntity: BaseEntity;
 	let targetEntity: BaseEntity;
 	let link: EntityLink;
-	let onClose: ReturnType<typeof vi.fn>;
-	let onSave: ReturnType<typeof vi.fn>;
+	let onClose: () => void;
+	let onSave: MockedFunction<(changes: {
+		relationship: string;
+		notes?: string;
+		strength?: 'strong' | 'moderate' | 'weak';
+		metadata?: { tags?: string[]; tension?: number };
+		bidirectional?: boolean;
+		playerVisible?: boolean;
+	}) => Promise<void>>;
 
 	beforeEach(() => {
 		sourceEntity = createMockEntity({
@@ -212,8 +227,15 @@ describe('EditRelationshipModal - Form Editing', () => {
 	let sourceEntity: BaseEntity;
 	let targetEntity: BaseEntity;
 	let link: EntityLink;
-	let onClose: ReturnType<typeof vi.fn>;
-	let onSave: ReturnType<typeof vi.fn>;
+	let onClose: () => void;
+	let onSave: MockedFunction<(changes: {
+		relationship: string;
+		notes?: string;
+		strength?: 'strong' | 'moderate' | 'weak';
+		metadata?: { tags?: string[]; tension?: number };
+		bidirectional?: boolean;
+		playerVisible?: boolean;
+	}) => Promise<void>>;
 
 	beforeEach(() => {
 		sourceEntity = createMockEntity({
@@ -340,7 +362,7 @@ describe('EditRelationshipModal - Form Editing', () => {
 		// onSave should either not be called or should clamp the value
 		if (onSave.mock.calls.length > 0) {
 			const savedData = onSave.mock.calls[0][0];
-			expect(savedData.metadata.tension).toBeLessThanOrEqual(100);
+			expect(savedData.metadata?.tension).toBeLessThanOrEqual(100);
 		}
 	});
 });
@@ -349,8 +371,15 @@ describe('EditRelationshipModal - Save Functionality', () => {
 	let sourceEntity: BaseEntity;
 	let targetEntity: BaseEntity;
 	let link: EntityLink;
-	let onClose: ReturnType<typeof vi.fn>;
-	let onSave: ReturnType<typeof vi.fn>;
+	let onClose: () => void;
+	let onSave: MockedFunction<(changes: {
+		relationship: string;
+		notes?: string;
+		strength?: 'strong' | 'moderate' | 'weak';
+		metadata?: { tags?: string[]; tension?: number };
+		bidirectional?: boolean;
+		playerVisible?: boolean;
+	}) => Promise<void>>;
 
 	beforeEach(() => {
 		sourceEntity = createMockEntity({
@@ -478,8 +507,15 @@ describe('EditRelationshipModal - Save Functionality', () => {
 	it('should show loading state while saving', async () => {
 		// Mock slow save operation
 		const slowSave = vi.fn(
-			() =>
-				new Promise((resolve) => {
+			(_changes: {
+				relationship: string;
+				notes?: string;
+				strength?: 'strong' | 'moderate' | 'weak';
+				metadata?: { tags?: string[]; tension?: number };
+				bidirectional?: boolean;
+				playerVisible?: boolean;
+			}) =>
+				new Promise<void>((resolve) => {
 					setTimeout(resolve, 100);
 				})
 		);
@@ -497,7 +533,7 @@ describe('EditRelationshipModal - Save Functionality', () => {
 	});
 
 	it('should handle save errors gracefully', async () => {
-		const errorSave = vi.fn().mockRejectedValue(new Error('Database error'));
+		const errorSave = vi.fn().mockRejectedValue(new Error('Database error')) as typeof onSave;
 
 		render(EditRelationshipModal, {
 			props: { open: true, sourceEntity, targetEntity, link, onClose, onSave: errorSave }
@@ -520,8 +556,15 @@ describe('EditRelationshipModal - Cancel Functionality', () => {
 	let sourceEntity: BaseEntity;
 	let targetEntity: BaseEntity;
 	let link: EntityLink;
-	let onClose: ReturnType<typeof vi.fn>;
-	let onSave: ReturnType<typeof vi.fn>;
+	let onClose: () => void;
+	let onSave: MockedFunction<(changes: {
+		relationship: string;
+		notes?: string;
+		strength?: 'strong' | 'moderate' | 'weak';
+		metadata?: { tags?: string[]; tension?: number };
+		bidirectional?: boolean;
+		playerVisible?: boolean;
+	}) => Promise<void>>;
 
 	beforeEach(() => {
 		sourceEntity = createMockEntity({
@@ -644,8 +687,15 @@ describe('EditRelationshipModal - Strength Field Options', () => {
 	let sourceEntity: BaseEntity;
 	let targetEntity: BaseEntity;
 	let link: EntityLink;
-	let onClose: ReturnType<typeof vi.fn>;
-	let onSave: ReturnType<typeof vi.fn>;
+	let onClose: () => void;
+	let onSave: MockedFunction<(changes: {
+		relationship: string;
+		notes?: string;
+		strength?: 'strong' | 'moderate' | 'weak';
+		metadata?: { tags?: string[]; tension?: number };
+		bidirectional?: boolean;
+		playerVisible?: boolean;
+	}) => Promise<void>>;
 
 	beforeEach(() => {
 		sourceEntity = createMockEntity({
@@ -734,8 +784,15 @@ describe('EditRelationshipModal - Accessibility', () => {
 	let sourceEntity: BaseEntity;
 	let targetEntity: BaseEntity;
 	let link: EntityLink;
-	let onClose: ReturnType<typeof vi.fn>;
-	let onSave: ReturnType<typeof vi.fn>;
+	let onClose: () => void;
+	let onSave: MockedFunction<(changes: {
+		relationship: string;
+		notes?: string;
+		strength?: 'strong' | 'moderate' | 'weak';
+		metadata?: { tags?: string[]; tension?: number };
+		bidirectional?: boolean;
+		playerVisible?: boolean;
+	}) => Promise<void>>;
 
 	beforeEach(() => {
 		sourceEntity = createMockEntity({
@@ -843,8 +900,15 @@ describe('EditRelationshipModal - Form Validation', () => {
 	let sourceEntity: BaseEntity;
 	let targetEntity: BaseEntity;
 	let link: EntityLink;
-	let onClose: ReturnType<typeof vi.fn>;
-	let onSave: ReturnType<typeof vi.fn>;
+	let onClose: () => void;
+	let onSave: MockedFunction<(changes: {
+		relationship: string;
+		notes?: string;
+		strength?: 'strong' | 'moderate' | 'weak';
+		metadata?: { tags?: string[]; tension?: number };
+		bidirectional?: boolean;
+		playerVisible?: boolean;
+	}) => Promise<void>>;
 
 	beforeEach(() => {
 		sourceEntity = createMockEntity({
@@ -922,8 +986,15 @@ describe('EditRelationshipModal - Bidirectional Toggle', () => {
 	let sourceEntity: BaseEntity;
 	let targetEntity: BaseEntity;
 	let link: EntityLink;
-	let onClose: ReturnType<typeof vi.fn>;
-	let onSave: ReturnType<typeof vi.fn>;
+	let onClose: () => void;
+	let onSave: MockedFunction<(changes: {
+		relationship: string;
+		notes?: string;
+		strength?: 'strong' | 'moderate' | 'weak';
+		metadata?: { tags?: string[]; tension?: number };
+		bidirectional?: boolean;
+		playerVisible?: boolean;
+	}) => Promise<void>>;
 
 	beforeEach(() => {
 		sourceEntity = createMockEntity({
@@ -1075,8 +1146,15 @@ describe('EditRelationshipModal - Bidirectional Toggle', () => {
 describe('EditRelationshipModal - Edge Cases', () => {
 	let sourceEntity: BaseEntity;
 	let targetEntity: BaseEntity;
-	let onClose: ReturnType<typeof vi.fn>;
-	let onSave: ReturnType<typeof vi.fn>;
+	let onClose: () => void;
+	let onSave: MockedFunction<(changes: {
+		relationship: string;
+		notes?: string;
+		strength?: 'strong' | 'moderate' | 'weak';
+		metadata?: { tags?: string[]; tension?: number };
+		bidirectional?: boolean;
+		playerVisible?: boolean;
+	}) => Promise<void>>;
 
 	beforeEach(() => {
 		sourceEntity = createMockEntity({

@@ -24,7 +24,9 @@ import type {
 	MontageSession,
 	MontageDifficulty,
 	MontageOutcome,
-	ChallengeResult
+	ChallengeResult,
+	MontageChallenge,
+	MontageStatus
 } from '$lib/types/montage';
 
 // Mock the montage repository
@@ -434,7 +436,7 @@ describe('MontageStore - Derived Values', () => {
 				{ id: 'pc-1', name: 'Predefined Challenge' }
 			];
 
-			const challenges = [
+			const challenges: MontageChallenge[] = [
 				{
 					id: 'c-1',
 					round: 1 as const,
@@ -787,8 +789,23 @@ describe('MontageStore - Helper Methods', () => {
 		});
 
 		it('should return undefined if challenge not found', () => {
-			const mockActiveMontage: MontageSession | null = null;
-			const challenge = mockActiveMontage?.challenges.find((c: any) => c.id === 'non-existent');
+			const mockActiveMontage: MontageSession | null = {
+				id: 'm-1',
+				name: 'Test Montage',
+				status: 'active',
+				difficulty: 'moderate',
+				playerCount: 4,
+				successLimit: 5,
+				failureLimit: 3,
+				challenges: [],
+				successCount: 0,
+				failureCount: 0,
+				currentRound: 1,
+				victoryPoints: 0,
+				createdAt: new Date(),
+				updatedAt: new Date()
+			};
+			const challenge = mockActiveMontage?.challenges.find((c) => c.id === 'non-existent');
 
 			expect(challenge).toBeUndefined();
 		});
@@ -796,17 +813,17 @@ describe('MontageStore - Helper Methods', () => {
 
 	describe('canRecordChallenge', () => {
 		it('should return true if montage is active', () => {
-			const status: 'active' = 'active';
+			const status: MontageStatus = 'active';
 			expect(status === 'active').toBe(true);
 		});
 
 		it('should return false if montage is preparing', () => {
-			const status = 'preparing' as const;
+			const status: MontageStatus = 'preparing' as MontageStatus;
 			expect(status === 'active').toBe(false);
 		});
 
 		it('should return false if montage is completed', () => {
-			const status = 'completed' as const;
+			const status: MontageStatus = 'completed' as MontageStatus;
 			expect(status === 'active').toBe(false);
 		});
 	});

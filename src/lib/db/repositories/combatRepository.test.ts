@@ -419,7 +419,7 @@ describe('CombatRepository - Combatant Management', () => {
 			expect(hero.maxHp).toBe(45);
 			expect(hero.tempHp).toBe(0);
 			expect(hero.conditions).toEqual([]);
-			expect(hero.heroicResource.current).toBe(3);
+			expect(hero.heroicResource?.current).toBe(3);
 		});
 
 		it('should generate unique ID for combatant', async () => {

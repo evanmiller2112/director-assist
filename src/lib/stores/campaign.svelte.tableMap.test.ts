@@ -11,7 +11,7 @@
  * - seats: number (4-10 seats)
  * - shape: 'oval' | 'rectangular'
  * - dmPosition: number (optional)
- * - assignments: SeatAssignment[] (seatIndex, playerId?, characterId?)
+ * - assignments: SeatAssignment[] (seatIndex, characterId)
  *
  * Key Test Scenarios:
  * 1. tableMap getter returns undefined when no table map exists
@@ -147,8 +147,8 @@ describe('campaignStore - Table Map Feature (Issue #318)', () => {
 				shape: 'oval',
 				dmPosition: 0,
 				assignments: [
-					{ seatIndex: 1, playerId: 'player-1', characterId: 'char-1' },
-					{ seatIndex: 2, playerId: 'player-2', characterId: 'char-2' }
+					{ seatIndex: 1, characterId: 'char-1' },
+					{ seatIndex: 2, characterId: 'char-2' }
 				]
 			};
 
@@ -198,7 +198,7 @@ describe('campaignStore - Table Map Feature (Issue #318)', () => {
 				seats: 4,
 				shape: 'rectangular',
 				dmPosition: 0,
-				assignments: [{ seatIndex: 1, playerId: 'player-1' }]
+				assignments: [{ seatIndex: 1, characterId: 'char-1' }]
 			};
 
 			const mockCampaign: BaseEntity = {
@@ -308,8 +308,8 @@ describe('campaignStore - Table Map Feature (Issue #318)', () => {
 				shape: 'oval',
 				dmPosition: 0,
 				assignments: [
-					{ seatIndex: 1, playerId: 'player-1', characterId: 'char-1' },
-					{ seatIndex: 2, playerId: 'player-2', characterId: 'char-2' }
+					{ seatIndex: 1, characterId: 'char-1' },
+					{ seatIndex: 2, characterId: 'char-2' }
 				]
 			};
 
@@ -340,7 +340,8 @@ describe('campaignStore - Table Map Feature (Issue #318)', () => {
 						icon: 'target',
 						color: 'custom',
 						isBuiltIn: false,
-						fieldDefinitions: []
+						fieldDefinitions: [],
+					defaultRelationships: []
 					}
 				],
 				entityTypeOverrides: [
@@ -414,7 +415,7 @@ describe('campaignStore - Table Map Feature (Issue #318)', () => {
 				seats: 5,
 				shape: 'oval',
 				dmPosition: 0,
-				assignments: [{ seatIndex: 1, playerId: 'player-1' }]
+				assignments: [{ seatIndex: 1, characterId: 'char-1' }]
 			};
 
 			// Act: Update table map
@@ -459,7 +460,7 @@ describe('campaignStore - Table Map Feature (Issue #318)', () => {
 				shape: 'oval',
 				dmPosition: 1,
 				assignments: [
-					{ seatIndex: 2, playerId: 'player-1', characterId: 'char-1' }
+					{ seatIndex: 2, characterId: 'char-1' }
 				]
 			};
 
@@ -495,7 +496,7 @@ describe('campaignStore - Table Map Feature (Issue #318)', () => {
 				seats: 6,
 				shape: 'oval',
 				dmPosition: 0,
-				assignments: [{ seatIndex: 1, playerId: 'player-1' }]
+				assignments: [{ seatIndex: 1, characterId: 'char-1' }]
 			};
 
 			// Act: Update table map
@@ -533,15 +534,15 @@ describe('campaignStore - Table Map Feature (Issue #318)', () => {
 				shape: 'oval',
 				dmPosition: 5,
 				assignments: [
-					{ seatIndex: 0, playerId: 'player-1' },
-					{ seatIndex: 1, playerId: 'player-2' },
-					{ seatIndex: 2, playerId: 'player-3' },
-					{ seatIndex: 3, playerId: 'player-4' },
-					{ seatIndex: 4, playerId: 'player-5' },
-					{ seatIndex: 6, playerId: 'player-6' },
-					{ seatIndex: 7, playerId: 'player-7' },
-					{ seatIndex: 8, playerId: 'player-8' },
-					{ seatIndex: 9, playerId: 'player-9' }
+					{ seatIndex: 0, characterId: 'char-1' },
+					{ seatIndex: 1, characterId: 'char-2' },
+					{ seatIndex: 2, characterId: 'char-3' },
+					{ seatIndex: 3, characterId: 'char-4' },
+					{ seatIndex: 4, characterId: 'char-5' },
+					{ seatIndex: 6, characterId: 'char-6' },
+					{ seatIndex: 7, characterId: 'char-7' },
+					{ seatIndex: 8, characterId: 'char-8' },
+					{ seatIndex: 9, characterId: 'char-9' }
 				]
 			};
 
@@ -607,25 +608,20 @@ describe('campaignStore - Table Map Feature (Issue #318)', () => {
 			expect(campaignStore.tableMap.assignments).toEqual([]);
 		});
 
-		it('should handle seat assignments with only playerId', async () => {
-			// Arrange: Assignment with just player
-			const playerOnlyTableMap: TableMap = {
+		it('should handle seat assignments with only seatIndex', async () => {
+			// Arrange: Assignment with just seatIndex (no character assigned yet)
+			const minimalTableMap: TableMap = {
 				seats: 6,
 				shape: 'oval',
 				dmPosition: 0,
-				assignments: [
-					{ seatIndex: 1, playerId: 'player-1' }
-				]
+				assignments: []
 			};
 
 			// Act: Update table map
-			await campaignStore.updateTableMap(playerOnlyTableMap);
+			await campaignStore.updateTableMap(minimalTableMap);
 
 			// Assert: Should save successfully
-			expect(campaignStore.tableMap.assignments[0]).toEqual({
-				seatIndex: 1,
-				playerId: 'player-1'
-			});
+			expect(campaignStore.tableMap.assignments).toEqual([]);
 		});
 
 		it('should handle seat assignments with only characterId', async () => {
@@ -649,14 +645,14 @@ describe('campaignStore - Table Map Feature (Issue #318)', () => {
 			});
 		});
 
-		it('should handle seat assignments with both playerId and characterId', async () => {
-			// Arrange: Assignment with both player and character
+		it('should handle seat assignments with characterId', async () => {
+			// Arrange: Assignment with character
 			const fullAssignmentTableMap: TableMap = {
 				seats: 6,
 				shape: 'oval',
 				dmPosition: 0,
 				assignments: [
-					{ seatIndex: 3, playerId: 'player-1', characterId: 'char-1' }
+					{ seatIndex: 3, characterId: 'char-1' }
 				]
 			};
 
@@ -666,7 +662,6 @@ describe('campaignStore - Table Map Feature (Issue #318)', () => {
 			// Assert: Should save successfully
 			expect(campaignStore.tableMap.assignments[0]).toEqual({
 				seatIndex: 3,
-				playerId: 'player-1',
 				characterId: 'char-1'
 			});
 		});

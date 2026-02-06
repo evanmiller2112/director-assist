@@ -145,6 +145,7 @@
 	}
 
 	function makeCode() {
+		if (!textareaRef) return;
 		const start = textareaRef.selectionStart;
 		const end = textareaRef.selectionEnd;
 		const selectedText = value.substring(start, end);

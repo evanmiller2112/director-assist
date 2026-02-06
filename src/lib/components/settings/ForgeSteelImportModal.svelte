@@ -4,7 +4,7 @@
 	import { notificationStore } from '$lib/stores/notifications.svelte';
 	import { validateForgeSteelImport, mapForgeSteelHeroToEntity } from '$lib/services/forgeSteelImportService';
 	import type { ForgeSteelHero } from '$lib/types/forgeSteel';
-	import type { ImportValidationResult } from '$lib/services/forgeSteelImportService';
+	import type { ForgeSteelImportValidationResult } from '$lib/services/forgeSteelImportService';
 
 	interface Props {
 		open: boolean;
@@ -12,21 +12,32 @@
 		oncancel?: () => void;
 	}
 
-	let { open = false, onimport, oncancel }: Props = $props();
+	let { open = $bindable(false), onimport, oncancel }: Props = $props();
 
 	let dialogElement: HTMLDialogElement | null = $state(null);
 	let fileInput: HTMLInputElement | null = $state(null);
 	let selectedFile: File | null = $state(null);
-	let validationResult: ImportValidationResult | null = $state(null);
+	let validationResult: ForgeSteelImportValidationResult | null = $state(null);
 	let importData: ForgeSteelHero | null = $state(null);
 	let isImporting = $state(false);
+
+	// Helper functions to avoid type narrowing issues with $derived
+	function getIsValid(result: ForgeSteelImportValidationResult | null): boolean {
+		return result?.valid ?? false;
+	}
+	function getHasErrors(result: ForgeSteelImportValidationResult | null): boolean {
+		return (result?.errors?.length ?? 0) > 0;
+	}
+	function getHasWarnings(result: ForgeSteelImportValidationResult | null): boolean {
+		return (result?.warnings?.length ?? 0) > 0;
+	}
 
 	// Derived states
 	const hasFile = $derived(!!selectedFile);
 	const hasValidation = $derived(!!validationResult);
-	const isValid = $derived(validationResult?.valid || false);
-	const hasErrors = $derived((validationResult?.errors.length || 0) > 0);
-	const hasWarnings = $derived((validationResult?.warnings.length || 0) > 0);
+	const isValid = $derived(getIsValid(validationResult));
+	const hasErrors = $derived(getHasErrors(validationResult));
+	const hasWarnings = $derived(getHasWarnings(validationResult));
 	const canImport = $derived(isValid && !isImporting);
 
 	// Handle modal open/close
@@ -227,7 +238,7 @@
 								<p class="text-sm font-semibold text-red-900 dark:text-red-200 mb-2">
 									Validation Errors
 								</p>
-								{#each validationResult.errors as error}
+								{#each validationResult!.errors as error}
 									<p class="text-sm text-red-900 dark:text-red-200 flex items-start gap-2">
 										<AlertTriangle class="w-4 h-4 flex-shrink-0 mt-0.5" />
 										<span>{error}</span>
@@ -242,7 +253,7 @@
 								<p class="text-sm font-semibold text-yellow-900 dark:text-yellow-200 mb-2">
 									Warnings
 								</p>
-								{#each validationResult.warnings as warning}
+								{#each validationResult!.warnings as warning}
 									<p class="text-sm text-yellow-900 dark:text-yellow-200 flex items-start gap-2">
 										<AlertTriangle class="w-4 h-4 flex-shrink-0 mt-0.5" />
 										<span>{warning}</span>

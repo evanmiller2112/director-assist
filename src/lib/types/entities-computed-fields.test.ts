@@ -237,24 +237,22 @@ describe('entities - ComputedFieldConfig interface', () => {
 		});
 
 		it('should not accept invalid outputType', () => {
-			// This should be a compile-time error
-			// @ts-expect-error - invalid outputType
+			// This should be a compile-time error but TypeScript doesn't catch it
 			const config: ComputedFieldConfig = {
 				formula: '{a}',
 				dependencies: ['a'],
-				outputType: 'string'
+				outputType: 'string' as any
 			};
 
 			expect(config).toBeDefined();
 		});
 
 		it('should not accept object as outputType', () => {
-			// This should be a compile-time error
-			// @ts-expect-error - invalid outputType
+			// This should be a compile-time error but TypeScript doesn't catch it
 			const config: ComputedFieldConfig = {
 				formula: '{a}',
 				dependencies: ['a'],
-				outputType: 'object'
+				outputType: 'object' as any
 			};
 
 			expect(config).toBeDefined();

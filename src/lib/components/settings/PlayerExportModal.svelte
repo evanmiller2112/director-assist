@@ -9,7 +9,7 @@
 		onclose?: () => void;
 	}
 
-	let { open = false, onclose }: Props = $props();
+	let { open = $bindable(false), onclose }: Props = $props();
 
 	let dialogElement: HTMLDialogElement | null = $state(null);
 	let isExporting = $state(false);

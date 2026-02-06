@@ -137,7 +137,7 @@
 		{:else if normalizedType === 'textarea'}
 			<div class="whitespace-pre-wrap">{value}</div>
 		{:else if normalizedType === 'richtext'}
-			<MarkdownViewer content={value || ''} />
+			<MarkdownViewer content={typeof value === 'string' ? value : ''} />
 		{:else if normalizedType === 'number'}
 			<div>{formatNumber(value as number)}</div>
 		{:else if normalizedType === 'boolean'}
@@ -198,14 +198,14 @@
 				<span class="text-slate-400 dark:text-slate-500">{emptyStateText}</span>
 			{/if}
 		{:else if normalizedType === 'url'}
-			{#if value && isSafeUrl(value as string)}
+			{#if value && typeof value === 'string' && isSafeUrl(value)}
 				<a
 					href={value}
 					target="_blank"
 					rel="noopener noreferrer"
 					class="text-blue-600 dark:text-blue-400 hover:underline inline-flex items-center gap-1"
 				>
-					{truncateUrl(value as string)}
+					{truncateUrl(value)}
 					<ExternalLink size={14} />
 				</a>
 			{:else if value}
@@ -214,16 +214,17 @@
 				<span class="text-slate-400 dark:text-slate-500">{emptyStateText}</span>
 			{/if}
 		{:else if normalizedType === 'image'}
-			{#if value && isSafeUrl(value as string)}
+			{#if value && typeof value === 'string' && isSafeUrl(value)}
 				<div class="image-container">
 					<img
 						src={value}
 						alt={field.label}
 						class="max-w-md max-h-96 rounded-md border border-slate-300 dark:border-slate-600 cursor-pointer hover:opacity-90 transition-opacity"
-						onclick={() => window.open(value as string, '_blank', 'noopener,noreferrer')}
+						onclick={() => window.open(value, '_blank', 'noopener,noreferrer')}
 						onerror={(e) => {
-							e.currentTarget.style.display = 'none';
-							e.currentTarget.insertAdjacentHTML(
+							const target = e.currentTarget as HTMLImageElement;
+							target.style.display = 'none';
+							target.insertAdjacentHTML(
 								'afterend',
 								'<span class="text-slate-400">Image not available</span>'
 							);

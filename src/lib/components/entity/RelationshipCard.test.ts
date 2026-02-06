@@ -1019,8 +1019,8 @@ describe('RelationshipCard Component - Accessibility', () => {
 describe('RelationshipCard Component - Edit Button (Issue #75)', () => {
 	let linkedEntity: BaseEntity;
 	let link: EntityLink;
-	let onRemove: ReturnType<typeof vi.fn>;
-	let onEdit: ReturnType<typeof vi.fn>;
+	let onRemove: (linkId: string) => void;
+	let onEdit: (linkId: string) => void;
 
 	beforeEach(() => {
 		linkedEntity = createMockEntity({

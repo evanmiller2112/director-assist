@@ -85,7 +85,7 @@ describe('Sidebar - Combat Link Display', () => {
 		render(Sidebar);
 
 		const combatLink = screen.getByRole('link', { name: /combat/i });
-		const icon = within(combatLink).querySelector('[data-icon="swords"], [data-icon="combat"]');
+		const icon = combatLink.querySelector('[data-icon="swords"], [data-icon="combat"]');
 		expect(icon).toBeInTheDocument();
 	});
 
@@ -401,7 +401,7 @@ describe('Sidebar - Combat Link Hover and Visual Feedback', () => {
 		render(Sidebar);
 
 		const combatLink = screen.getByRole('link', { name: /combat/i });
-		const icon = within(combatLink).querySelector('svg, [data-icon]');
+		const icon = combatLink.querySelector('svg, [data-icon]');
 
 		expect(icon).toBeInTheDocument();
 	});

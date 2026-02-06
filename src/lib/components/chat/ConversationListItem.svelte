@@ -110,6 +110,7 @@
 			aria-label="{conversation.name}, {conversation.messageCount} messages, {relativeTime}"
 		>
 			{#if isEditing}
+				<!-- svelte-ignore a11y_autofocus -->
 				<input
 					type="text"
 					bind:value={editValue}

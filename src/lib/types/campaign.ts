@@ -55,6 +55,30 @@ export interface FieldTemplate {
 }
 
 /**
+ * Seat Assignment Interface (GitHub Issue #318)
+ *
+ * Represents the assignment of a character to a specific seat at the table map.
+ * The player name is retrieved from the character's 'playerName' field.
+ */
+export interface SeatAssignment {
+	seatIndex: number; // Index of the seat (0-9)
+	characterId: string; // ID of the character assigned to this seat
+}
+
+/**
+ * Table Map Interface (GitHub Issue #318)
+ *
+ * Represents a visual seating chart for in-person sessions showing
+ * player/character assignments at each seat.
+ */
+export interface TableMap {
+	seats: number; // Number of seats (4-10)
+	shape: 'oval' | 'rectangular'; // Shape of the table
+	dmPosition?: number; // Seat index where the DM sits (optional)
+	assignments: SeatAssignment[]; // Array of seat assignments
+}
+
+/**
  * Campaign-specific metadata stored in the entity's metadata field.
  * This is used when Campaign is stored as a BaseEntity.
  * Index signature added to satisfy Record<string, unknown> compatibility for BaseEntity.metadata
@@ -66,6 +90,7 @@ export interface CampaignMetadata {
 	entityTypeOverrides: EntityTypeOverride[];
 	fieldTemplates?: FieldTemplate[]; // User-created field templates (Issue #210)
 	settings: CampaignSettings;
+	tableMap?: TableMap; // Visual seating chart for in-person sessions (Issue #318)
 }
 
 // For backup/restore

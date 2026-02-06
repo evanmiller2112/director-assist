@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Plus, Home, ChevronUp, ChevronDown, Pencil, Swords, Theater } from 'lucide-svelte';
+	import { Plus, Home, ChevronUp, ChevronDown, Pencil, Swords, Theater, Users } from 'lucide-svelte';
 	import { page } from '$app/stores';
 	import { getOrderedEntityTypes } from '$lib/config/entityTypes';
 	import { entitiesStore, campaignStore, combatStore, montageStore } from '$lib/stores';
@@ -152,6 +152,19 @@
 					{activeMontagesCount}
 				</span>
 			{/if}
+		</a>
+
+		<!-- Table -->
+		<a
+			href="/table"
+			class="flex items-center gap-3 px-3 py-2 rounded-lg mb-2 transition-colors
+				{isActive('/table')
+				? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
+				: 'hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300'}"
+			aria-current={isActive('/table') ? 'page' : undefined}
+		>
+			<Users class="w-5 h-5" data-icon="users" />
+			<span class="flex-1 font-medium">Table</span>
 		</a>
 
 		<div class="border-t border-slate-200 dark:border-slate-700 my-4"></div>

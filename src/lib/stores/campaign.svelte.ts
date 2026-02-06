@@ -41,7 +41,8 @@ function getCampaignMetadata(entity: BaseEntity | null): CampaignMetadata {
 		customEntityTypes: metadata?.customEntityTypes ?? [],
 		entityTypeOverrides: metadata?.entityTypeOverrides ?? [],
 		fieldTemplates: metadata?.fieldTemplates ?? [],
-		settings: metadata?.settings ?? { ...DEFAULT_CAMPAIGN_SETTINGS }
+		settings: metadata?.settings ?? { ...DEFAULT_CAMPAIGN_SETTINGS },
+		tableMap: metadata?.tableMap
 	};
 }
 
@@ -804,6 +805,57 @@ function createCampaignStore() {
 			} catch (e) {
 				error = e instanceof Error ? e.message : 'Failed to delete field template';
 				console.error('Failed to delete field template:', e);
+				throw e;
+			}
+		},
+
+		// Table Map methods (GitHub Issue #318)
+
+		/**
+		 * Get the table map for the current campaign
+		 * Returns undefined if no table map exists
+		 */
+		get tableMap() {
+			if (!campaign) return undefined;
+			const metadata = getCampaignMetadata(campaign);
+			// Return deep clone to prevent mutation
+			return metadata.tableMap ? deepClone(metadata.tableMap) : undefined;
+		},
+
+		/**
+		 * Update the table map for the current campaign
+		 * Pass undefined to remove the table map
+		 */
+		async updateTableMap(tableMap?: import('$lib/types').TableMap): Promise<void> {
+			if (!campaign) {
+				throw new Error('No campaign loaded');
+			}
+
+			try {
+				const currentMetadata = getCampaignMetadata(campaign);
+				const updatedMetadata: CampaignMetadata = {
+					...currentMetadata,
+					tableMap
+				};
+
+				// Deep clone to remove Svelte 5 Proxy wrappers
+				const clonedMetadata = deepClone(updatedMetadata);
+
+				await db.entities.update(campaign.id, {
+					metadata: clonedMetadata,
+					updatedAt: new Date()
+				});
+
+				// Update local state
+				campaign = {
+					...campaign,
+					metadata: clonedMetadata,
+					updatedAt: new Date()
+				};
+				allCampaigns = allCampaigns.map((c) => (c.id === campaign!.id ? campaign! : c));
+			} catch (e) {
+				error = e instanceof Error ? e.message : 'Failed to update table map';
+				console.error('Failed to update table map:', e);
 				throw e;
 			}
 		},

@@ -7,3 +7,5 @@ export { default as PendingRelationshipList } from './PendingRelationshipList.sv
 export { default as CreateRelateCommand } from './CreateRelateCommand.svelte';
 export { default as AddFieldInline } from './AddFieldInline.svelte';
 export { default as FieldReorderInline } from './FieldReorderInline.svelte';
+export { default as TableVisualization } from './TableVisualization.svelte';
+export { default as SeatAssignmentModal } from './SeatAssignmentModal.svelte';

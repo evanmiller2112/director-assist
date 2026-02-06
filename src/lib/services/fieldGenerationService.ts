@@ -193,7 +193,7 @@ Field Type: ${targetField.type}${fieldHints}
 IMPORTANT RULES:
 1. Generate ONLY the content for this specific field
 2. Keep the content consistent with any existing context provided
-3. For "text" fields: Write concise, descriptive text (1-2 sentences max)
+3. For "text" fields: Write concise, descriptive text (~50-100 characters, 1-2 sentences maximum)
 4. For "textarea" fields: Write 1-2 paragraphs of content
 5. For "richtext" fields: Write 1-3 paragraphs of evocative content
 6. Make the content interesting, memorable, and game-ready

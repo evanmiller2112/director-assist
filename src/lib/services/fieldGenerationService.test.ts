@@ -22,25 +22,25 @@ vi.mock('./modelService', () => ({
 	getSelectedModel: vi.fn().mockReturnValue('claude-3-5-sonnet-20241022')
 }));
 
+// Create a mockCreate function that will be shared across tests
+const mockCreate = vi.fn().mockResolvedValue({
+	content: [
+		{
+			type: 'text',
+			text: 'Generated field content here'
+		}
+	],
+	usage: { input_tokens: 100, output_tokens: 50 }
+});
+
 // Mock the Anthropic SDK
 vi.mock('@anthropic-ai/sdk', () => {
-	const mockCreate = vi.fn().mockResolvedValue({
-		content: [
-			{
-				type: 'text',
-				text: 'Generated field content here'
-			}
-		]
-	});
-
-	const MockAnthropic = function(this: any, config: any) {
-		this.messages = {
-			create: mockCreate
-		};
-	};
-
 	return {
-		default: MockAnthropic
+		default: class MockAnthropic {
+			messages = {
+				create: mockCreate
+			};
+		}
 	};
 });
 
@@ -2137,6 +2137,497 @@ describe('fieldGenerationService', () => {
 
 				// The generated content might be different due to relationship context
 				// But we can't test the actual content easily with mocked API
+			});
+		});
+	});
+
+	describe('Field Type Length Constraints (Issue #313)', () => {
+		/**
+		 * Tests for appropriate length constraints based on field type.
+		 *
+		 * When generating content for fields, the AI should receive explicit guidance
+		 * about the expected length based on the field type:
+		 * - text: Brief content (1-2 sentences max, ~50-100 characters)
+		 * - textarea: Moderate content (1-2 paragraphs)
+		 * - richtext: Longer content (1-3 paragraphs)
+		 *
+		 * These tests verify that the prompt construction includes appropriate
+		 * length constraints for each field type.
+		 */
+
+		const mockTypeDefinition: EntityTypeDefinition = {
+			type: 'npc',
+			label: 'NPC',
+			labelPlural: 'NPCs',
+			icon: 'users',
+			color: 'npc',
+			isBuiltIn: true,
+			fieldDefinitions: [
+				{
+					key: 'role',
+					label: 'Role/Occupation',
+					type: 'text',
+					required: false,
+					order: 1
+				},
+				{
+					key: 'notes',
+					label: 'Notes',
+					type: 'textarea',
+					required: false,
+					order: 2
+				},
+				{
+					key: 'personality',
+					label: 'Personality',
+					type: 'richtext',
+					required: false,
+					order: 3
+				}
+			],
+			defaultRelationships: []
+		};
+
+		beforeEach(() => {
+			// Mock localStorage for API key
+			global.localStorage = {
+				getItem: vi.fn((key: string) => {
+					if (key === 'dm-assist-api-key') return 'test-api-key';
+					return null;
+				}),
+				setItem: vi.fn(),
+				removeItem: vi.fn(),
+				clear: vi.fn(),
+				length: 0,
+				key: vi.fn()
+			};
+		});
+
+		describe('Text Field Length Constraints', () => {
+			it('should include explicit brief length constraint for text fields (~50-100 characters)', async () => {
+				const textField: FieldDefinition = {
+					key: 'role',
+					label: 'Role/Occupation',
+					type: 'text',
+					required: false,
+					order: 1
+				};
+
+				const context: FieldGenerationContext = {
+					entityType: 'npc',
+					typeDefinition: mockTypeDefinition,
+					targetField: textField,
+					currentValues: {
+						name: 'Guard Captain',
+						fields: {}
+					}
+				};
+
+				// Clear any previous calls
+				mockCreate.mockClear();
+
+				await generateField(context);
+
+				// Verify the Anthropic API was called
+				expect(mockCreate).toHaveBeenCalled();
+
+				// Extract the prompt from the API call
+				const callArgs = mockCreate.mock.calls[0][0];
+				const prompt = callArgs.messages[0].content;
+
+				// The prompt should include specific guidance for text fields
+				// Should mention brief/concise content with character limit guidance
+				expect(prompt).toMatch(/text.*brief|concise|short/i);
+				expect(prompt).toMatch(/50[-–~]?100|~?50[-–]?100\s*characters?|1-2 sentences.*max/i);
+			});
+
+			it('should specify 1-2 sentences maximum for text fields', async () => {
+				const textField: FieldDefinition = {
+					key: 'occupation',
+					label: 'Occupation',
+					type: 'text',
+					required: false,
+					order: 1
+				};
+
+				const context: FieldGenerationContext = {
+					entityType: 'npc',
+					typeDefinition: mockTypeDefinition,
+					targetField: textField,
+					currentValues: {
+						name: 'Craftsman',
+						fields: {}
+					}
+				};
+
+				mockCreate.mockClear();
+				await generateField(context);
+
+				expect(mockCreate).toHaveBeenCalled();
+				const prompt = mockCreate.mock.calls[0][0].messages[0].content;
+
+				// Should explicitly mention "1-2 sentences max" or similar
+				expect(prompt).toMatch(/1-2 sentences.*max|maximum.*1-2 sentences/i);
+			});
+
+			it('should mention approximate character count for text fields', async () => {
+				const textField: FieldDefinition = {
+					key: 'title',
+					label: 'Title',
+					type: 'text',
+					required: false,
+					order: 1
+				};
+
+				const context: FieldGenerationContext = {
+					entityType: 'npc',
+					typeDefinition: mockTypeDefinition,
+					targetField: textField,
+					currentValues: {
+						name: 'Noble Warrior',
+						fields: {}
+					}
+				};
+
+				mockCreate.mockClear();
+				await generateField(context);
+
+				expect(mockCreate).toHaveBeenCalled();
+				const prompt = mockCreate.mock.calls[0][0].messages[0].content;
+
+				// Should mention character count range (~50-100 characters)
+				expect(prompt).toMatch(/~?50[-–~]?100\s*characters?|approximately.*characters?/i);
+			});
+		});
+
+		describe('Textarea Field Length Constraints', () => {
+			it('should specify 1-2 paragraphs for textarea fields', async () => {
+				const textareaField: FieldDefinition = {
+					key: 'notes',
+					label: 'Notes',
+					type: 'textarea',
+					required: false,
+					order: 1
+				};
+
+				const context: FieldGenerationContext = {
+					entityType: 'npc',
+					typeDefinition: mockTypeDefinition,
+					targetField: textareaField,
+					currentValues: {
+						name: 'Test NPC',
+						fields: {}
+					}
+				};
+
+				mockCreate.mockClear();
+				await generateField(context);
+
+				expect(mockCreate).toHaveBeenCalled();
+				const prompt = mockCreate.mock.calls[0][0].messages[0].content;
+
+				// Should explicitly mention "1-2 paragraphs"
+				expect(prompt).toMatch(/1-2 paragraphs/i);
+			});
+
+			it('should differentiate textarea constraints from text field constraints', async () => {
+				const textareaField: FieldDefinition = {
+					key: 'background',
+					label: 'Background',
+					type: 'textarea',
+					required: false,
+					order: 1
+				};
+
+				const context: FieldGenerationContext = {
+					entityType: 'npc',
+					typeDefinition: mockTypeDefinition,
+					targetField: textareaField,
+					currentValues: {
+						name: 'Adventurer',
+						fields: {}
+					}
+				};
+
+				mockCreate.mockClear();
+				await generateField(context);
+
+				expect(mockCreate).toHaveBeenCalled();
+				const prompt = mockCreate.mock.calls[0][0].messages[0].content;
+
+				// Should mention paragraphs for textarea
+				expect(prompt).toMatch(/paragraph/i);
+				// Should specify 1-2 paragraphs for textarea fields (not 1-3 like richtext)
+				expect(prompt).toMatch(/1-2 paragraphs/i);
+				// The prompt includes all field type rules, but for a textarea field
+				// it should indicate this is a textarea field
+				expect(prompt).toMatch(/Field Type: textarea/i);
+			});
+		});
+
+		describe('Richtext Field Length Constraints', () => {
+			it('should specify 1-3 paragraphs for richtext fields', async () => {
+				const richtextField: FieldDefinition = {
+					key: 'personality',
+					label: 'Personality',
+					type: 'richtext',
+					required: false,
+					order: 1
+				};
+
+				const context: FieldGenerationContext = {
+					entityType: 'npc',
+					typeDefinition: mockTypeDefinition,
+					targetField: richtextField,
+					currentValues: {
+						name: 'Complex Character',
+						fields: {}
+					}
+				};
+
+				mockCreate.mockClear();
+				await generateField(context);
+
+				expect(mockCreate).toHaveBeenCalled();
+				const prompt = mockCreate.mock.calls[0][0].messages[0].content;
+
+				// Should explicitly mention "1-3 paragraphs"
+				expect(prompt).toMatch(/1-3 paragraphs/i);
+			});
+
+			it('should allow longer content for richtext than textarea', async () => {
+				const richtextField: FieldDefinition = {
+					key: 'description',
+					label: 'Detailed Description',
+					type: 'richtext',
+					required: false,
+					order: 1
+				};
+
+				const context: FieldGenerationContext = {
+					entityType: 'location',
+					typeDefinition: {
+						type: 'location',
+						label: 'Location',
+						labelPlural: 'Locations',
+						icon: 'map-pin',
+						color: 'location',
+						isBuiltIn: true,
+						fieldDefinitions: [richtextField],
+						defaultRelationships: []
+					},
+					targetField: richtextField,
+					currentValues: {
+						name: 'Ancient Temple',
+						fields: {}
+					}
+				};
+
+				mockCreate.mockClear();
+				await generateField(context);
+
+				expect(mockCreate).toHaveBeenCalled();
+				const prompt = mockCreate.mock.calls[0][0].messages[0].content;
+
+				// Should mention "1-3 paragraphs" for richtext (more than textarea's "1-2")
+				expect(prompt).toMatch(/1-3 paragraphs/i);
+			});
+		});
+
+		describe('Prompt Structure and Format', () => {
+			it('should include length constraints in the IMPORTANT RULES section', async () => {
+				const textField: FieldDefinition = {
+					key: 'role',
+					label: 'Role',
+					type: 'text',
+					required: false,
+					order: 1
+				};
+
+				const context: FieldGenerationContext = {
+					entityType: 'npc',
+					typeDefinition: mockTypeDefinition,
+					targetField: textField,
+					currentValues: {
+						name: 'Soldier',
+						fields: {}
+					}
+				};
+
+				mockCreate.mockClear();
+				await generateField(context);
+
+				expect(mockCreate).toHaveBeenCalled();
+				const prompt = mockCreate.mock.calls[0][0].messages[0].content;
+
+				// Should have length constraints in the IMPORTANT RULES section
+				expect(prompt).toMatch(/IMPORTANT RULES:/);
+				// The rule about text fields should be near the IMPORTANT RULES section
+				const rulesSection = prompt.substring(prompt.indexOf('IMPORTANT RULES:'));
+				expect(rulesSection).toMatch(/text.*field/i);
+			});
+
+			it('should provide clear, actionable length guidance', async () => {
+				const fields = [
+					{ key: 'short', type: 'text' as FieldType },
+					{ key: 'medium', type: 'textarea' as FieldType },
+					{ key: 'long', type: 'richtext' as FieldType }
+				];
+
+				for (const field of fields) {
+					const fieldDef: FieldDefinition = {
+						key: field.key,
+						label: field.key,
+						type: field.type,
+						required: false,
+						order: 1
+					};
+
+					const context: FieldGenerationContext = {
+						entityType: 'npc',
+						typeDefinition: {
+							...mockTypeDefinition,
+							fieldDefinitions: [fieldDef]
+						},
+						targetField: fieldDef,
+						currentValues: {
+							name: 'Test',
+							fields: {}
+						}
+					};
+
+					mockCreate.mockClear();
+					await generateField(context);
+
+					expect(mockCreate).toHaveBeenCalled();
+					const prompt = mockCreate.mock.calls[0][0].messages[0].content;
+
+					// Each field type should have specific, measurable guidance
+					if (field.type === 'text') {
+						expect(prompt).toMatch(/brief|concise|short/i);
+						expect(prompt).toMatch(/sentence|character/i);
+					} else if (field.type === 'textarea') {
+						expect(prompt).toMatch(/paragraph/i);
+					} else if (field.type === 'richtext') {
+						expect(prompt).toMatch(/paragraph/i);
+					}
+				}
+			});
+		});
+
+		describe('Consistency Across Field Types', () => {
+			it('should consistently apply length constraints regardless of entity type', async () => {
+				const entityTypes = [
+					{ type: 'npc' as EntityType, label: 'NPC' },
+					{ type: 'location' as EntityType, label: 'Location' },
+					{ type: 'faction' as EntityType, label: 'Faction' }
+				];
+
+				for (const entityTypeInfo of entityTypes) {
+					const textField: FieldDefinition = {
+						key: 'name_prefix',
+						label: 'Name Prefix',
+						type: 'text',
+						required: false,
+						order: 1
+					};
+
+					const context: FieldGenerationContext = {
+						entityType: entityTypeInfo.type,
+						typeDefinition: {
+							type: entityTypeInfo.type,
+							label: entityTypeInfo.label,
+							labelPlural: `${entityTypeInfo.label}s`,
+							icon: 'icon',
+							color: 'color',
+							isBuiltIn: true,
+							fieldDefinitions: [textField],
+							defaultRelationships: []
+						},
+						targetField: textField,
+						currentValues: {
+							name: 'Test',
+							fields: {}
+						}
+					};
+
+					mockCreate.mockClear();
+					await generateField(context);
+
+					expect(mockCreate).toHaveBeenCalled();
+					const prompt = mockCreate.mock.calls[0][0].messages[0].content;
+
+					// Text field constraints should be consistent across entity types
+					expect(prompt).toMatch(/text.*brief|concise|short/i);
+					expect(prompt).toMatch(/50[-–]?100\s*characters?|1-2 sentences/i);
+				}
+			});
+
+			it('should apply field-specific constraints even with campaign context', async () => {
+				const textField: FieldDefinition = {
+					key: 'epithet',
+					label: 'Epithet',
+					type: 'text',
+					required: false,
+					order: 1
+				};
+
+				const context: FieldGenerationContext = {
+					entityType: 'npc',
+					typeDefinition: mockTypeDefinition,
+					targetField: textField,
+					currentValues: {
+						name: 'Hero',
+						fields: {}
+					},
+					campaignContext: {
+						name: 'Epic Quest',
+						setting: 'High Fantasy',
+						system: 'Draw Steel'
+					}
+				};
+
+				mockCreate.mockClear();
+				await generateField(context);
+
+				expect(mockCreate).toHaveBeenCalled();
+				const prompt = mockCreate.mock.calls[0][0].messages[0].content;
+
+				// Should include both campaign context AND length constraints
+				expect(prompt).toMatch(/Campaign Context:/i);
+				expect(prompt).toMatch(/text.*brief|concise/i);
+				expect(prompt).toMatch(/50[-–]?100\s*characters?|1-2 sentences/i);
+			});
+
+			it('should apply field-specific constraints even with relationship context', async () => {
+				const textField: FieldDefinition = {
+					key: 'title',
+					label: 'Title',
+					type: 'text',
+					required: false,
+					order: 1
+				};
+
+				const context: FieldGenerationContext = {
+					entityType: 'npc',
+					typeDefinition: mockTypeDefinition,
+					targetField: textField,
+					currentValues: {
+						name: 'Leader',
+						fields: {}
+					},
+					relationshipContext: '=== Relationships ===\n[member_of] Merchants Guild (Faction)'
+				};
+
+				mockCreate.mockClear();
+				await generateField(context);
+
+				expect(mockCreate).toHaveBeenCalled();
+				const prompt = mockCreate.mock.calls[0][0].messages[0].content;
+
+				// Should include both relationship context AND length constraints
+				expect(prompt).toMatch(/Relationship/i);
+				expect(prompt).toMatch(/text.*brief|concise/i);
 			});
 		});
 	});

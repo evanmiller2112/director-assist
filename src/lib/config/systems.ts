@@ -33,7 +33,7 @@ export const DRAW_STEEL_PROFILE: SystemProfile = {
 					order: 10
 				},
 				{
-					key: 'class',
+					key: 'heroClass',
 					label: 'Class',
 					type: 'select',
 					options: [

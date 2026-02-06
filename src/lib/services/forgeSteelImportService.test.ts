@@ -348,6 +348,132 @@ describe('forgeSteelImportService', () => {
 	});
 
 	describe('mapForgeSteelHeroToEntity', () => {
+		describe('Field Mapping - New Forge Steel Hero Fields (Issue #247)', () => {
+			it('should map ancestry.name to ancestry field', () => {
+				const hero: ForgeSteelHero = {
+					id: 'hero-123',
+					name: 'Test Character',
+					ancestry: { name: 'Human' },
+					class: { name: 'Fury', level: 1 },
+					state: { notes: '', defeated: false }
+				};
+				const entity = mapForgeSteelHeroToEntity(hero);
+
+				expect(entity.fields.ancestry).toBe('Human');
+			});
+
+			it('should map class.name to heroClass field', () => {
+				const hero: ForgeSteelHero = {
+					id: 'hero-123',
+					name: 'Test Character',
+					ancestry: { name: 'Human' },
+					class: { name: 'Fury', level: 1 },
+					state: { notes: '', defeated: false }
+				};
+				const entity = mapForgeSteelHeroToEntity(hero);
+
+				expect(entity.fields.heroClass).toBe('Fury');
+			});
+
+			it('should map ancestry.name to ancestry field when class is null', () => {
+				const hero: ForgeSteelHero = {
+					id: 'hero-123',
+					name: 'Test Character',
+					ancestry: { name: 'Dwarf' },
+					class: null,
+					state: { notes: '', defeated: false }
+				};
+				const entity = mapForgeSteelHeroToEntity(hero);
+
+				expect(entity.fields.ancestry).toBe('Dwarf');
+				expect(entity.fields.heroClass).toBeUndefined();
+			});
+
+			it('should map class.name to heroClass field when ancestry is null', () => {
+				const hero: ForgeSteelHero = {
+					id: 'hero-123',
+					name: 'Test Character',
+					ancestry: null,
+					class: { name: 'Shadow', level: 2 },
+					state: { notes: '', defeated: false }
+				};
+				const entity = mapForgeSteelHeroToEntity(hero);
+
+				expect(entity.fields.ancestry).toBeUndefined();
+				expect(entity.fields.heroClass).toBe('Shadow');
+			});
+
+			it('should not set ancestry or heroClass when both are null', () => {
+				const hero: ForgeSteelHero = {
+					id: 'hero-123',
+					name: 'Test Character',
+					ancestry: null,
+					class: null,
+					state: { notes: '', defeated: false }
+				};
+				const entity = mapForgeSteelHeroToEntity(hero);
+
+				expect(entity.fields.ancestry).toBeUndefined();
+				expect(entity.fields.heroClass).toBeUndefined();
+			});
+
+			it('should preserve existing concept field behavior alongside new fields', () => {
+				const hero: ForgeSteelHero = {
+					id: 'hero-123',
+					name: 'Aric',
+					ancestry: { name: 'Human' },
+					class: { name: 'Fury', level: 1 },
+					state: { notes: '', defeated: false }
+				};
+				const entity = mapForgeSteelHeroToEntity(hero);
+
+				// Verify both old and new mapping behavior
+				expect(entity.fields.concept).toBe('Human Fury');
+				expect(entity.fields.ancestry).toBe('Human');
+				expect(entity.fields.heroClass).toBe('Fury');
+			});
+
+			it('should handle multi-word ancestry names in new field mapping', () => {
+				const hero: ForgeSteelHero = {
+					id: 'hero-123',
+					name: 'Aric',
+					ancestry: { name: 'High Elf' },
+					class: { name: 'Conduit', level: 1 },
+					state: { notes: '', defeated: false }
+				};
+				const entity = mapForgeSteelHeroToEntity(hero);
+
+				expect(entity.fields.ancestry).toBe('High Elf');
+				expect(entity.fields.heroClass).toBe('Conduit');
+			});
+
+			it('should handle Draw Steel specific ancestries', () => {
+				const hero: ForgeSteelHero = {
+					id: 'hero-123',
+					name: 'Dragon Rider',
+					ancestry: { name: 'Dragon Knight' },
+					class: { name: 'Fury', level: 1 },
+					state: { notes: '', defeated: false }
+				};
+				const entity = mapForgeSteelHeroToEntity(hero);
+
+				expect(entity.fields.ancestry).toBe('Dragon Knight');
+			});
+
+			it('should handle Draw Steel specific classes', () => {
+				const hero: ForgeSteelHero = {
+					id: 'hero-123',
+					name: 'Tactical Genius',
+					ancestry: { name: 'Human' },
+					class: { name: 'Tactician', level: 1 },
+					state: { notes: '', defeated: false }
+				};
+				const entity = mapForgeSteelHeroToEntity(hero);
+
+				expect(entity.fields.heroClass).toBe('Tactician');
+			});
+		});
+
 		describe('Complete Hero Mapping', () => {
 			it('should map hero with all fields to NewEntity', () => {
 				const hero: ForgeSteelHero = {

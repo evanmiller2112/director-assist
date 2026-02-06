@@ -47,7 +47,7 @@ describe('systems.ts - System Profile Configuration', () => {
 				const fieldKeys = characterMods?.additionalFields?.map((f) => f.key) ?? [];
 
 				expect(fieldKeys).toContain('ancestry');
-				expect(fieldKeys).toContain('class');
+				expect(fieldKeys).toContain('heroClass');
 				expect(fieldKeys).toContain('kit');
 				expect(fieldKeys).toContain('heroicResource');
 			});
@@ -117,10 +117,10 @@ describe('systems.ts - System Profile Configuration', () => {
 				expect(ancestryField?.order).toBeGreaterThan(0);
 			});
 
-			it('should have class field as select type with Draw Steel classes', () => {
+			it('should have heroClass field as select type with Draw Steel classes', () => {
 				const profile = getSystemProfile('draw-steel');
 				const characterMods = profile?.entityTypeModifications?.character;
-				const classField = characterMods?.additionalFields?.find((f) => f.key === 'class');
+				const classField = characterMods?.additionalFields?.find((f) => f.key === 'heroClass');
 
 				expect(classField).toBeDefined();
 				expect(classField?.label).toBe('Class');
@@ -552,6 +552,101 @@ describe('systems.ts - System Profile Configuration', () => {
 
 				expect(negotiationDCField).toBeDefined();
 				expect(negotiationDCField?.type).toBe('number');
+			});
+
+			/**
+			 * Tests for Draw Steel Character Field Overrides (Issue #247)
+			 * These tests verify that Draw Steel profile can override base character fields
+			 * with select types for ancestry and heroClass
+			 */
+
+			describe('Character Field Overrides (Issue #247)', () => {
+				it('should override ancestry field from text to select type', () => {
+					const profile = getSystemProfile('draw-steel');
+					const characterMods = profile?.entityTypeModifications?.character;
+					const ancestryField = characterMods?.additionalFields?.find((f) => f.key === 'ancestry');
+
+					expect(ancestryField).toBeDefined();
+					expect(ancestryField?.type).toBe('select');
+					expect(ancestryField?.options).toBeDefined();
+					expect(Array.isArray(ancestryField?.options)).toBe(true);
+				});
+
+				it('should use heroClass key (not class) for consistency with base fields', () => {
+					const profile = getSystemProfile('draw-steel');
+					const characterMods = profile?.entityTypeModifications?.character;
+					const heroClassField = characterMods?.additionalFields?.find((f) => f.key === 'heroClass');
+
+					// Draw Steel should have heroClass, not class
+					expect(heroClassField).toBeDefined();
+					expect(heroClassField?.type).toBe('select');
+
+					// Verify no 'class' field exists
+					const classField = characterMods?.additionalFields?.find((f) => f.key === 'class');
+					expect(classField).toBeUndefined();
+				});
+
+				it('should override heroClass field from text to select type', () => {
+					const profile = getSystemProfile('draw-steel');
+					const characterMods = profile?.entityTypeModifications?.character;
+					const heroClassField = characterMods?.additionalFields?.find((f) => f.key === 'heroClass');
+
+					expect(heroClassField).toBeDefined();
+					expect(heroClassField?.label).toBe('Class');
+					expect(heroClassField?.type).toBe('select');
+					expect(heroClassField?.options).toBeDefined();
+					expect(Array.isArray(heroClassField?.options)).toBe(true);
+				});
+
+				it('should have ancestry select options matching Draw Steel ancestries', () => {
+					const profile = getSystemProfile('draw-steel');
+					const characterMods = profile?.entityTypeModifications?.character;
+					const ancestryField = characterMods?.additionalFields?.find((f) => f.key === 'ancestry');
+
+					expect(ancestryField?.options).toContain('Human');
+					expect(ancestryField?.options).toContain('Dwarf');
+					expect(ancestryField?.options).toContain('High Elf');
+					expect(ancestryField?.options).toContain('Wode Elf');
+					expect(ancestryField?.options).toContain('Orc');
+					expect(ancestryField?.options).toContain('Dragon Knight');
+					expect(ancestryField?.options).toContain('Revenant');
+					expect(ancestryField?.options).toContain('Devil');
+					expect(ancestryField?.options).toContain('Hakaan');
+					expect(ancestryField?.options).toContain('Memonek');
+					expect(ancestryField?.options).toContain('Polder');
+					expect(ancestryField?.options).toContain('Time Raider');
+				});
+
+				it('should have heroClass select options matching Draw Steel classes', () => {
+					const profile = getSystemProfile('draw-steel');
+					const characterMods = profile?.entityTypeModifications?.character;
+					const heroClassField = characterMods?.additionalFields?.find((f) => f.key === 'heroClass');
+
+					expect(heroClassField?.options).toContain('Tactician');
+					expect(heroClassField?.options).toContain('Fury');
+					expect(heroClassField?.options).toContain('Shadow');
+					expect(heroClassField?.options).toContain('Elementalist');
+					expect(heroClassField?.options).toContain('Talent');
+					expect(heroClassField?.options).toContain('Censor');
+					expect(heroClassField?.options).toContain('Conduit');
+					expect(heroClassField?.options).toContain('Null');
+					expect(heroClassField?.options).toContain('Troubadour');
+				});
+
+				it('should preserve culture, career, and subclass as text fields', () => {
+					const profile = getSystemProfile('draw-steel');
+					const characterMods = profile?.entityTypeModifications?.character;
+
+					// Draw Steel should NOT override these fields, so they shouldn't appear
+					// in additionalFields (base entity type defines them)
+					const cultureField = characterMods?.additionalFields?.find((f) => f.key === 'culture');
+					const careerField = characterMods?.additionalFields?.find((f) => f.key === 'career');
+					const subclassField = characterMods?.additionalFields?.find((f) => f.key === 'subclass');
+
+					expect(cultureField).toBeUndefined();
+					expect(careerField).toBeUndefined();
+					expect(subclassField).toBeUndefined();
+				});
 			});
 
 			/**

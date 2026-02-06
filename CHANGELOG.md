@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+**Character Identity Fields Aligned with Forge Steel Hero Format (Issue #247)**
+- Added 5 new character identity fields to Player Character entity type for better Draw Steel support
+- New fields: ancestry (text), culture (text), career (text), heroClass (text), subclass (text)
+- Fields appear on character creation, edit, and detail pages
+- Draw Steel system profile overrides ancestry and heroClass with select dropdowns containing Draw Steel-specific options
+- Forge Steel import now maps hero data to ancestry and heroClass fields
+- Backward compatible: existing characters without these fields work normally
+- Preserves concept field for backward compatibility while enabling more detailed character information
+- Example usage: ancestry="Human", culture="Nomadic", career="Soldier", heroClass="Fury", subclass="Reaver"
+
 ## [1.1.3] - 2026-02-06
 
 ### Added

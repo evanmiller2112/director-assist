@@ -29,6 +29,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Integrated configuration toolbar directly on table visualization
 - Automatic backup/restore with campaign data
 
+### Fixed
+
+**Svelte 5 Reactivity Warnings in Components (Issue #327)**
+- Fixed `state_referenced_locally` and `non_reactive_update` warnings in 4 components
+- Updated prop synchronization pattern to prevent reactive loops
+- Components fixed: MarkdownEditor, CustomEntityTypeForm, EditRelationshipModal, ComputedFieldEditor
+- Initialize state with defaults instead of capturing prop values in `$state()` initializers
+- Use `$effect()` with `untrack()` to sync props to state without creating reactive loops
+- Added comprehensive reactivity test suites for all fixed components (60 total tests)
+
 ## [1.1.2] - TBD
 
 ### Added

@@ -485,12 +485,39 @@ export const BUILT_IN_ENTITY_TYPES: EntityTypeDefinition[] = [
 				order: 2
 			},
 			{
+				key: 'encounterRef',
+				label: 'Encounter',
+				type: 'entity-ref',
+				entityTypes: ['encounter'],
+				required: false,
+				order: 3,
+				helpText: 'Link to an encounter entity for combat scenes'
+			},
+			{
+				key: 'currentRound',
+				label: 'Current Round',
+				type: 'number',
+				required: false,
+				order: 4,
+				placeholder: '1',
+				helpText: 'Track the current combat round'
+			},
+			{
+				key: 'initiativeOrder',
+				label: 'Initiative Order',
+				type: 'textarea',
+				required: false,
+				order: 5,
+				placeholder: 'Character 1 (15)\nEnemy A (12)\nCharacter 2 (8)',
+				helpText: 'Track turn order and initiative values'
+			},
+			{
 				key: 'location',
 				label: 'Location',
 				type: 'entity-ref',
 				entityTypes: ['location'],
 				required: false,
-				order: 3
+				order: 6
 			},
 			{
 				key: 'npcsPresent',
@@ -498,14 +525,14 @@ export const BUILT_IN_ENTITY_TYPES: EntityTypeDefinition[] = [
 				type: 'entity-refs',
 				entityTypes: ['npc'],
 				required: false,
-				order: 4
+				order: 7
 			},
 			{
 				key: 'sceneSettingText',
 				label: 'Scene Setting (Read-Aloud)',
 				type: 'richtext',
 				required: false,
-				order: 5,
+				order: 8,
 				helpText: 'Vivid description of the scene. Can be AI-generated from location and NPCs.'
 			},
 			{
@@ -513,7 +540,7 @@ export const BUILT_IN_ENTITY_TYPES: EntityTypeDefinition[] = [
 				label: 'What Happened',
 				type: 'richtext',
 				required: false,
-				order: 6,
+				order: 9,
 				helpText: 'Record what actually happened during the scene.'
 			},
 			{
@@ -521,7 +548,7 @@ export const BUILT_IN_ENTITY_TYPES: EntityTypeDefinition[] = [
 				label: 'Pre-Scene Summary',
 				type: 'richtext',
 				required: false,
-				order: 7,
+				order: 10,
 				helpText: 'Brief summary of the scene setup (1-2 sentences). Can be AI-generated.'
 			},
 			{
@@ -529,7 +556,7 @@ export const BUILT_IN_ENTITY_TYPES: EntityTypeDefinition[] = [
 				label: 'Post-Scene Summary',
 				type: 'richtext',
 				required: false,
-				order: 8,
+				order: 11,
 				helpText: 'Brief summary of what happened (1-2 sentences). Can be AI-generated.'
 			},
 			{
@@ -538,7 +565,7 @@ export const BUILT_IN_ENTITY_TYPES: EntityTypeDefinition[] = [
 				type: 'select',
 				options: ['tense', 'relaxed', 'mysterious', 'celebratory', 'somber', 'chaotic', 'peaceful', 'ominous', 'triumphant', 'desperate', 'exhilarating'],
 				required: false,
-				order: 9
+				order: 12
 			},
 			{
 				key: 'session',
@@ -546,7 +573,17 @@ export const BUILT_IN_ENTITY_TYPES: EntityTypeDefinition[] = [
 				type: 'entity-ref',
 				entityTypes: ['session'],
 				required: false,
-				order: 10
+				order: 13,
+				helpText: 'Link this scene to a game session for campaign timeline organization'
+			},
+			{
+				key: 'sceneOrder',
+				label: 'Scene Order',
+				type: 'number',
+				required: false,
+				order: 14,
+				placeholder: 'e.g., 1',
+				helpText: 'Order this scene within its session (only needed when linked to a session)'
 			}
 		],
 		defaultRelationships: ['occurred_at', 'featured', 'part_of', 'leads_to', 'follows']

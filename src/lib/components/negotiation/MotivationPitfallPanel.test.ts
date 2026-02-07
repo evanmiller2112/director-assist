@@ -39,7 +39,7 @@ describe('MotivationPitfallPanel Component - Basic Rendering (Issue #384)', () =
 			}
 		});
 
-		expect(screen.getByText(/motivations/i)).toBeInTheDocument();
+		expect(screen.getByRole('heading', { name: /motivations/i })).toBeInTheDocument();
 	});
 
 	it('should display Pitfalls section header', () => {
@@ -50,7 +50,7 @@ describe('MotivationPitfallPanel Component - Basic Rendering (Issue #384)', () =
 			}
 		});
 
-		expect(screen.getByText(/pitfalls/i)).toBeInTheDocument();
+		expect(screen.getByRole('heading', { name: /pitfalls/i })).toBeInTheDocument();
 	});
 
 	it('should show message when no motivations exist', () => {
@@ -828,10 +828,11 @@ describe('MotivationPitfallPanel Component - Edge Cases', () => {
 			}
 		});
 
-		const usedItems = container.querySelectorAll('[data-testid*="motivation"]');
-		usedItems.forEach(item => {
-			expect(item.className).toMatch(/opacity|line-through|used/i);
-		});
+		const justiceItem = container.querySelector('[data-testid="motivation-justice"]');
+		const powerItem = container.querySelector('[data-testid="motivation-power"]');
+
+		expect(justiceItem?.className).toMatch(/opacity|line-through|used/i);
+		expect(powerItem?.className).toMatch(/opacity|line-through|used/i);
 	});
 
 	it('should handle all motivations being unknown', () => {

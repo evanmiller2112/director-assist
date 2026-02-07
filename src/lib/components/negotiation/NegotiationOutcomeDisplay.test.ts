@@ -22,7 +22,7 @@ describe('NegotiationOutcomeDisplay Component - Basic Rendering (Issue #385)', (
 	it('should render without crashing', () => {
 		const { container } = render(NegotiationOutcomeDisplay, {
 			props: {
-				outcome: 'compromise'
+				outcome: 'major_favor'
 			}
 		});
 		expect(container).toBeInTheDocument();
@@ -79,9 +79,9 @@ describe('NegotiationOutcomeDisplay Component - Alliance Outcome', () => {
 			}
 		});
 
-		const outcomeElement = container.firstChild as HTMLElement;
-		// Should have bold, large text, or prominent styling
-		expect(outcomeElement.className).toMatch(/font-bold|text-lg|text-xl|font-semibold/);
+		// Check the title element for bold/large text styling
+		const titleElement = container.querySelector('h2');
+		expect(titleElement?.className).toMatch(/font-bold|text-lg|text-xl|font-semibold/);
 	});
 });
 
@@ -411,7 +411,7 @@ describe('NegotiationOutcomeDisplay Component - Additional Details', () => {
 describe('NegotiationOutcomeDisplay Component - Accessibility', () => {
 	it('should have accessible role', () => {
 		const { container } = render(NegotiationOutcomeDisplay, {
-			props: { outcome: 'success_full' }
+			props: { outcome: 'major_favor' }
 		});
 
 		const outcomeElement = container.querySelector('[role="status"], [role="alert"]');
@@ -518,7 +518,9 @@ describe('NegotiationOutcomeDisplay Component - Interest Level Mapping', () => {
 			props: { outcome: 'failure' }
 		});
 
-		expect(screen.getByText(/interest.*0|interest.*1|failure/i)).toBeInTheDocument();
+		// The component shows "0-1" in the interest range display
+		expect(screen.getByText(/0-1/i)).toBeInTheDocument();
+		expect(screen.getByText(/failure|failed/i)).toBeInTheDocument();
 	});
 });
 

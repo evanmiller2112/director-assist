@@ -110,6 +110,9 @@ describe('Negotiation Store - Initial State and Reactivity', () => {
 	beforeEach(async () => {
 		vi.clearAllMocks();
 
+		// Clear module cache to get fresh store instance
+		vi.resetModules();
+
 		// Dynamically import the store to get a fresh instance
 		const module = await import('./negotiation.svelte');
 		negotiationStore = module.negotiationStore;
@@ -178,6 +181,9 @@ describe('Negotiation Store - Derived Values', () => {
 				return { unsubscribe: vi.fn() };
 			})
 		});
+
+		// Clear module cache to get fresh store instance
+		vi.resetModules();
 
 		const module = await import('./negotiation.svelte');
 		negotiationStore = module.negotiationStore;
@@ -460,6 +466,9 @@ describe('Negotiation Store - CRUD Operations', () => {
 			})
 		});
 
+		// Clear module cache to get fresh store instance
+		vi.resetModules();
+
 		const module = await import('./negotiation.svelte');
 		negotiationStore = module.negotiationStore;
 	});
@@ -734,6 +743,9 @@ describe('Negotiation Store - Lifecycle Operations', () => {
 			})
 		});
 
+		// Clear module cache to get fresh store instance
+		vi.resetModules();
+
 		const module = await import('./negotiation.svelte');
 		negotiationStore = module.negotiationStore;
 	});
@@ -933,6 +945,9 @@ describe('Negotiation Store - Argument Recording', () => {
 			})
 		});
 
+		// Clear module cache to get fresh store instance
+		vi.resetModules();
+
 		const module = await import('./negotiation.svelte');
 		negotiationStore = module.negotiationStore;
 	});
@@ -1117,6 +1132,9 @@ describe('Negotiation Store - Motivation and Pitfall Revelation', () => {
 				return { unsubscribe: vi.fn() };
 			})
 		});
+
+		// Clear module cache to get fresh store instance
+		vi.resetModules();
 
 		const module = await import('./negotiation.svelte');
 		negotiationStore = module.negotiationStore;
@@ -1303,6 +1321,9 @@ describe('Negotiation Store - Helper Methods', () => {
 			})
 		});
 
+		// Clear module cache to get fresh store instance
+		vi.resetModules();
+
 		const module = await import('./negotiation.svelte');
 		negotiationStore = module.negotiationStore;
 	});
@@ -1352,6 +1373,9 @@ describe('Negotiation Store - Edge Cases and Error Handling', () => {
 				return { unsubscribe: vi.fn() };
 			})
 		});
+
+		// Clear module cache to get fresh store instance
+		vi.resetModules();
 
 		const module = await import('./negotiation.svelte');
 		negotiationStore = module.negotiationStore;
@@ -1481,6 +1505,9 @@ describe('Negotiation Store - Edge Cases and Error Handling', () => {
 					return { unsubscribe: vi.fn() };
 				})
 			});
+
+			// Clear module cache to get fresh store instance
+			vi.resetModules();
 
 			const module = await import('./negotiation.svelte');
 			const freshStore = module.negotiationStore;

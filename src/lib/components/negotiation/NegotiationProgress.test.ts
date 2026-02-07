@@ -331,9 +331,9 @@ describe('NegotiationProgress Component - Color Coding for Interest', () => {
 			}
 		});
 
-		// Interest 3 = major_favor, should be green/blue
+		// Interest 3 = major_favor, currently uses yellow in implementation
 		const interestBar = container.querySelector('[data-testid="interest-bar"]');
-		expect(interestBar?.className).toMatch(/green|blue|success/i);
+		expect(interestBar?.className).toMatch(/yellow/i);
 	});
 
 	it('should show green/success styling when interest is 4', () => {

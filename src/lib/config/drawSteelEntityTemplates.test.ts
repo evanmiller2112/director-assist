@@ -11,6 +11,7 @@
  * 3. Condition - Status effects and temporary states
  * 4. Negotiation Outcome - Negotiation encounter outcomes
  * 5. Spell/Ritual - Magic spells and rituals
+ * 6. Encounter - Encounter planning and management (Issue #219)
  *
  * Test Coverage:
  * - Template array structure and count
@@ -48,8 +49,8 @@ describe('drawSteelEntityTemplates.ts - DRAW_STEEL_ENTITY_TEMPLATES Array', () =
 			expect(Array.isArray(DRAW_STEEL_ENTITY_TEMPLATES)).toBe(true);
 		});
 
-		it('should contain exactly 5 templates', () => {
-			expect(DRAW_STEEL_ENTITY_TEMPLATES.length).toBe(5);
+		it('should contain exactly 6 templates', () => {
+			expect(DRAW_STEEL_ENTITY_TEMPLATES.length).toBe(6);
 		});
 
 		it('should have all templates with required properties', () => {
@@ -648,13 +649,310 @@ describe('Template 5: Spell/Ritual Entity', () => {
 });
 
 // =============================================================================
+// Template 6: Encounter Entity Template (Issue #219)
+// =============================================================================
+
+describe('Template 6: Encounter Entity', () => {
+	const getEncounterTemplate = () =>
+		DRAW_STEEL_ENTITY_TEMPLATES.find((t) => t.id === 'ds-encounter');
+
+	describe('Template Metadata', () => {
+		it('should exist with correct ID', () => {
+			const template = getEncounterTemplate();
+			expect(template).toBeDefined();
+			expect(template?.id).toBe('ds-encounter');
+		});
+
+		it('should have correct name', () => {
+			const template = getEncounterTemplate();
+			expect(template?.name).toBe('Encounter');
+		});
+
+		it('should have descriptive text explaining use case', () => {
+			const template = getEncounterTemplate();
+			expect(template?.description).toBeDefined();
+			expect(typeof template?.description).toBe('string');
+			expect(template?.description.length).toBeGreaterThan(20);
+		});
+
+		it('should be categorized as draw-steel', () => {
+			const template = getEncounterTemplate();
+			expect(template?.category).toBe('draw-steel');
+		});
+
+		it('should have swords icon for encounters', () => {
+			const template = getEncounterTemplate();
+			expect(template?.template.icon).toBe('swords');
+		});
+	});
+
+	describe('Entity Type Definition', () => {
+		it('should have complete EntityTypeDefinition', () => {
+			const template = getEncounterTemplate();
+			expect(template?.template).toBeDefined();
+			expect(template?.template).toHaveProperty('type');
+			expect(template?.template).toHaveProperty('label');
+			expect(template?.template).toHaveProperty('labelPlural');
+			expect(template?.template).toHaveProperty('icon');
+			expect(template?.template).toHaveProperty('color');
+			expect(template?.template).toHaveProperty('isBuiltIn');
+			expect(template?.template).toHaveProperty('fieldDefinitions');
+			expect(template?.template).toHaveProperty('defaultRelationships');
+		});
+
+		it('should have type matching template ID convention', () => {
+			const template = getEncounterTemplate();
+			expect(template?.template.type).toBe('ds-encounter');
+		});
+
+		it('should be marked as not built-in', () => {
+			const template = getEncounterTemplate();
+			expect(template?.template.isBuiltIn).toBe(false);
+		});
+
+		it('should have appropriate color scheme', () => {
+			const template = getEncounterTemplate();
+			expect(template?.template.color).toBeDefined();
+			expect(typeof template?.template.color).toBe('string');
+			expect(template?.template.color.length).toBeGreaterThan(0);
+		});
+
+		it('should have singular and plural labels', () => {
+			const template = getEncounterTemplate();
+			expect(template?.template.label).toBe('Encounter');
+			expect(template?.template.labelPlural).toBe('Encounters');
+		});
+	});
+
+	describe('Field Definitions - Encounter Planning', () => {
+		it('should have encounter_name field as text type', () => {
+			const template = getEncounterTemplate();
+			const field = template?.template.fieldDefinitions.find((f) => f.key === 'encounter_name');
+
+			expect(field).toBeDefined();
+			expect(field?.label).toBe('Encounter Name');
+			expect(field?.type).toBe('text');
+			expect(field?.required).toBe(false);
+		});
+
+		it('should have difficulty field as select type', () => {
+			const template = getEncounterTemplate();
+			const field = template?.template.fieldDefinitions.find((f) => f.key === 'difficulty');
+
+			expect(field).toBeDefined();
+			expect(field?.label).toBe('Difficulty');
+			expect(field?.type).toBe('select');
+			expect(field?.required).toBe(false);
+		});
+
+		it('should have difficulty options for encounter challenge levels', () => {
+			const template = getEncounterTemplate();
+			const field = template?.template.fieldDefinitions.find((f) => f.key === 'difficulty');
+
+			expect(field?.options).toBeDefined();
+			expect(field?.options).toContain('trivial');
+			expect(field?.options).toContain('easy');
+			expect(field?.options).toContain('medium');
+			expect(field?.options).toContain('hard');
+			expect(field?.options).toContain('deadly');
+		});
+
+		it('should have creatures field as richtext type', () => {
+			const template = getEncounterTemplate();
+			const field = template?.template.fieldDefinitions.find((f) => f.key === 'creatures');
+
+			expect(field).toBeDefined();
+			expect(field?.label).toBe('Creatures/Enemies');
+			expect(field?.type).toBe('richtext');
+			expect(field?.required).toBe(false);
+		});
+
+		it('should have environment field as textarea type', () => {
+			const template = getEncounterTemplate();
+			const field = template?.template.fieldDefinitions.find((f) => f.key === 'environment');
+
+			expect(field).toBeDefined();
+			expect(field?.label).toBe('Environment');
+			expect(field?.type).toBe('textarea');
+			expect(field?.required).toBe(false);
+		});
+
+		it('should have objectives field as richtext type', () => {
+			const template = getEncounterTemplate();
+			const field = template?.template.fieldDefinitions.find((f) => f.key === 'objectives');
+
+			expect(field).toBeDefined();
+			expect(field?.label).toBe('Objectives');
+			expect(field?.type).toBe('richtext');
+			expect(field?.required).toBe(false);
+		});
+
+		it('should have rewards field as richtext type', () => {
+			const template = getEncounterTemplate();
+			const field = template?.template.fieldDefinitions.find((f) => f.key === 'rewards');
+
+			expect(field).toBeDefined();
+			expect(field?.label).toBe('Rewards');
+			expect(field?.type).toBe('richtext');
+			expect(field?.required).toBe(false);
+		});
+
+		it('should have tactics_notes field as richtext type', () => {
+			const template = getEncounterTemplate();
+			const field = template?.template.fieldDefinitions.find((f) => f.key === 'tactics_notes');
+
+			expect(field).toBeDefined();
+			expect(field?.label).toBe('Tactics Notes');
+			expect(field?.type).toBe('richtext');
+			expect(field?.required).toBe(false);
+		});
+
+		it('should have all 7 required encounter fields', () => {
+			const template = getEncounterTemplate();
+			const fieldKeys = template?.template.fieldDefinitions.map((f) => f.key) ?? [];
+
+			expect(fieldKeys).toContain('encounter_name');
+			expect(fieldKeys).toContain('difficulty');
+			expect(fieldKeys).toContain('creatures');
+			expect(fieldKeys).toContain('environment');
+			expect(fieldKeys).toContain('objectives');
+			expect(fieldKeys).toContain('rewards');
+			expect(fieldKeys).toContain('tactics_notes');
+			expect(fieldKeys.length).toBeGreaterThanOrEqual(7);
+		});
+
+		it('should have fields with positive order values', () => {
+			const template = getEncounterTemplate();
+			template?.template.fieldDefinitions.forEach((field) => {
+				expect(field.order).toBeGreaterThan(0);
+			});
+		});
+
+		it('should have unique field keys', () => {
+			const template = getEncounterTemplate();
+			const fieldKeys = template?.template.fieldDefinitions.map((f) => f.key) ?? [];
+			const uniqueKeys = new Set(fieldKeys);
+			expect(uniqueKeys.size).toBe(fieldKeys.length);
+		});
+
+		it('should have sequential order values starting from 1', () => {
+			const template = getEncounterTemplate();
+			const orders = template?.template.fieldDefinitions.map((f) => f.order).sort((a, b) => a - b) ?? [];
+
+			expect(orders[0]).toBe(1);
+			// Each subsequent order should be the previous + 1
+			for (let i = 1; i < orders.length; i++) {
+				expect(orders[i]).toBe(orders[i - 1] + 1);
+			}
+		});
+	});
+
+	describe('Field Type Validation', () => {
+		it('should use appropriate field types for encounter data', () => {
+			const template = getEncounterTemplate();
+			const fields = template?.template.fieldDefinitions ?? [];
+
+			// Text fields for simple data
+			const nameField = fields.find((f) => f.key === 'encounter_name');
+			expect(nameField?.type).toBe('text');
+
+			// Select field for constrained choices
+			const difficultyField = fields.find((f) => f.key === 'difficulty');
+			expect(difficultyField?.type).toBe('select');
+
+			// Richtext fields for formatted content
+			const creaturesField = fields.find((f) => f.key === 'creatures');
+			expect(creaturesField?.type).toBe('richtext');
+
+			const objectivesField = fields.find((f) => f.key === 'objectives');
+			expect(objectivesField?.type).toBe('richtext');
+
+			const rewardsField = fields.find((f) => f.key === 'rewards');
+			expect(rewardsField?.type).toBe('richtext');
+
+			const tacticsField = fields.find((f) => f.key === 'tactics_notes');
+			expect(tacticsField?.type).toBe('richtext');
+
+			// Textarea for plain multiline text
+			const environmentField = fields.find((f) => f.key === 'environment');
+			expect(environmentField?.type).toBe('textarea');
+		});
+
+		it('should mark all fields as optional', () => {
+			const template = getEncounterTemplate();
+			template?.template.fieldDefinitions.forEach((field) => {
+				expect(field.required).toBe(false);
+			});
+		});
+	});
+
+	describe('Encounter Template Use Case', () => {
+		it('should have description mentioning encounter planning', () => {
+			const template = getEncounterTemplate();
+			const description = template?.description.toLowerCase() ?? '';
+
+			const hasEncounterKeyword =
+				description.includes('encounter') ||
+				description.includes('combat') ||
+				description.includes('battle');
+
+			expect(hasEncounterKeyword).toBe(true);
+		});
+
+		it('should support Directors in planning encounters', () => {
+			const template = getEncounterTemplate();
+			const fields = template?.template.fieldDefinitions ?? [];
+
+			// Should have fields relevant to encounter planning
+			const hasCreatures = fields.some((f) => f.key === 'creatures');
+			const hasDifficulty = fields.some((f) => f.key === 'difficulty');
+			const hasEnvironment = fields.some((f) => f.key === 'environment');
+			const hasTactics = fields.some((f) => f.key === 'tactics_notes');
+
+			expect(hasCreatures).toBe(true);
+			expect(hasDifficulty).toBe(true);
+			expect(hasEnvironment).toBe(true);
+			expect(hasTactics).toBe(true);
+		});
+	});
+
+	describe('Integration with Existing Templates', () => {
+		it('should have unique ID not conflicting with other templates', () => {
+			const encounterTemplate = getEncounterTemplate();
+			const otherTemplates = DRAW_STEEL_ENTITY_TEMPLATES.filter((t) => t.id !== 'ds-encounter');
+
+			const otherIds = otherTemplates.map((t) => t.id);
+			expect(otherIds).not.toContain(encounterTemplate?.id);
+		});
+
+		it('should have unique type key not conflicting with other templates', () => {
+			const encounterTemplate = getEncounterTemplate();
+			const otherTemplates = DRAW_STEEL_ENTITY_TEMPLATES.filter((t) => t.id !== 'ds-encounter');
+
+			const otherTypes = otherTemplates.map((t) => t.template.type);
+			expect(otherTypes).not.toContain(encounterTemplate?.template.type);
+		});
+
+		it('should follow naming convention of other templates', () => {
+			const template = getEncounterTemplate();
+
+			// ID should start with 'ds-'
+			expect(template?.id.startsWith('ds-')).toBe(true);
+
+			// Type should match ID
+			expect(template?.template.type).toBe(template?.id);
+		});
+	});
+});
+
+// =============================================================================
 // Cross-Template Validation Tests
 // =============================================================================
 
 describe('Cross-Template Validation', () => {
 	describe('Icon Validation', () => {
 		it('should use valid Lucide icon names across all templates', () => {
-			const validIcons = ['skull', 'zap', 'flame', 'drama', 'sparkles'];
+			const validIcons = ['skull', 'zap', 'flame', 'drama', 'sparkles', 'swords'];
 
 			DRAW_STEEL_ENTITY_TEMPLATES.forEach((template) => {
 				expect(validIcons).toContain(template.template.icon);

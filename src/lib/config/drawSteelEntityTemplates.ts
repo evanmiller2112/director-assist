@@ -11,6 +11,7 @@
  * 3. Condition - Status effects and temporary states
  * 4. Negotiation Outcome - Negotiation encounter outcomes
  * 5. Spell/Ritual - Magic spells and rituals
+ * 6. Encounter - Encounter planning and management (Issue #219)
  */
 
 import type { EntityTypeDefinition, FieldDefinition } from '$lib/types';
@@ -320,6 +321,79 @@ const spellRitualTemplate: EntityTypeTemplate = {
 };
 
 // =============================================================================
+// Template 6: Encounter Entity Template (Issue #219)
+// =============================================================================
+
+const encounterTemplate: EntityTypeTemplate = {
+	id: 'ds-encounter',
+	name: 'Encounter',
+	description:
+		'Plan and organize combat encounters for Draw Steel campaigns including difficulty ratings, creature lists, environmental features, objectives, rewards, and tactical notes for Directors.',
+	category: 'draw-steel',
+	template: {
+		type: 'ds-encounter',
+		label: 'Encounter',
+		labelPlural: 'Encounters',
+		icon: 'swords',
+		color: 'green',
+		isBuiltIn: false,
+		fieldDefinitions: [
+			{
+				key: 'encounter_name',
+				label: 'Encounter Name',
+				type: 'text',
+				required: false,
+				order: 1
+			},
+			{
+				key: 'difficulty',
+				label: 'Difficulty',
+				type: 'select',
+				required: false,
+				options: ['trivial', 'easy', 'medium', 'hard', 'deadly'],
+				order: 2
+			},
+			{
+				key: 'creatures',
+				label: 'Creatures/Enemies',
+				type: 'richtext',
+				required: false,
+				order: 3
+			},
+			{
+				key: 'environment',
+				label: 'Environment',
+				type: 'textarea',
+				required: false,
+				order: 4
+			},
+			{
+				key: 'objectives',
+				label: 'Objectives',
+				type: 'richtext',
+				required: false,
+				order: 5
+			},
+			{
+				key: 'rewards',
+				label: 'Rewards',
+				type: 'richtext',
+				required: false,
+				order: 6
+			},
+			{
+				key: 'tactics_notes',
+				label: 'Tactics Notes',
+				type: 'richtext',
+				required: false,
+				order: 7
+			}
+		],
+		defaultRelationships: []
+	}
+};
+
+// =============================================================================
 // Export All Templates
 // =============================================================================
 
@@ -328,5 +402,6 @@ export const DRAW_STEEL_ENTITY_TEMPLATES: EntityTypeTemplate[] = [
 	abilityPowerTemplate,
 	conditionTemplate,
 	negotiationOutcomeTemplate,
-	spellRitualTemplate
+	spellRitualTemplate,
+	encounterTemplate
 ];

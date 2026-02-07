@@ -19,7 +19,7 @@
  * - Description and summary fields across entities have helpful tooltips
  * - HelpText enhances user experience without being verbose
  */
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { BUILT_IN_ENTITY_TYPES, getEntityTypeDefinition } from '$lib/config/entityTypes';
 import type { EntityTypeDefinition, FieldDefinition } from '$lib/types/entities';
 

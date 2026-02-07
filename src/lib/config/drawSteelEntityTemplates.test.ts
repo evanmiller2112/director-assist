@@ -12,6 +12,7 @@
  * 4. Negotiation Outcome - Negotiation encounter outcomes
  * 5. Spell/Ritual - Magic spells and rituals
  * 6. Encounter - Encounter planning and management (Issue #219)
+ * 7. Treasure/Loot - Treasure and loot items for rewards (Issue #220)
  *
  * Test Coverage:
  * - Template array structure and count
@@ -49,8 +50,8 @@ describe('drawSteelEntityTemplates.ts - DRAW_STEEL_ENTITY_TEMPLATES Array', () =
 			expect(Array.isArray(DRAW_STEEL_ENTITY_TEMPLATES)).toBe(true);
 		});
 
-		it('should contain exactly 6 templates', () => {
-			expect(DRAW_STEEL_ENTITY_TEMPLATES.length).toBe(6);
+		it('should contain exactly 7 templates', () => {
+			expect(DRAW_STEEL_ENTITY_TEMPLATES.length).toBe(7);
 		});
 
 		it('should have all templates with required properties', () => {
@@ -946,13 +947,361 @@ describe('Template 6: Encounter Entity', () => {
 });
 
 // =============================================================================
+// Template 7: Treasure/Loot Entity Template (Issue #220)
+// =============================================================================
+
+describe('Template 7: Treasure/Loot Entity', () => {
+	const getTreasureTemplate = () =>
+		DRAW_STEEL_ENTITY_TEMPLATES.find((t) => t.id === 'ds-treasure-loot');
+
+	describe('Template Metadata', () => {
+		it('should exist with correct ID', () => {
+			const template = getTreasureTemplate();
+			expect(template).toBeDefined();
+			expect(template?.id).toBe('ds-treasure-loot');
+		});
+
+		it('should have correct name', () => {
+			const template = getTreasureTemplate();
+			expect(template?.name).toBe('Treasure/Loot');
+		});
+
+		it('should have descriptive text explaining use case', () => {
+			const template = getTreasureTemplate();
+			expect(template?.description).toBeDefined();
+			expect(typeof template?.description).toBe('string');
+			expect(template?.description.length).toBeGreaterThan(20);
+		});
+
+		it('should be categorized as draw-steel', () => {
+			const template = getTreasureTemplate();
+			expect(template?.category).toBe('draw-steel');
+		});
+
+		it('should have gem icon for treasure', () => {
+			const template = getTreasureTemplate();
+			expect(template?.template.icon).toBe('gem');
+		});
+	});
+
+	describe('Entity Type Definition', () => {
+		it('should have complete EntityTypeDefinition', () => {
+			const template = getTreasureTemplate();
+			expect(template?.template).toBeDefined();
+			expect(template?.template).toHaveProperty('type');
+			expect(template?.template).toHaveProperty('label');
+			expect(template?.template).toHaveProperty('labelPlural');
+			expect(template?.template).toHaveProperty('icon');
+			expect(template?.template).toHaveProperty('color');
+			expect(template?.template).toHaveProperty('isBuiltIn');
+			expect(template?.template).toHaveProperty('fieldDefinitions');
+			expect(template?.template).toHaveProperty('defaultRelationships');
+		});
+
+		it('should have type matching template ID convention', () => {
+			const template = getTreasureTemplate();
+			expect(template?.template.type).toBe('ds-treasure-loot');
+		});
+
+		it('should be marked as not built-in', () => {
+			const template = getTreasureTemplate();
+			expect(template?.template.isBuiltIn).toBe(false);
+		});
+
+		it('should have appropriate color scheme', () => {
+			const template = getTreasureTemplate();
+			expect(template?.template.color).toBeDefined();
+			expect(typeof template?.template.color).toBe('string');
+			expect(template?.template.color.length).toBeGreaterThan(0);
+		});
+
+		it('should have singular and plural labels', () => {
+			const template = getTreasureTemplate();
+			expect(template?.template.label).toBe('Treasure/Loot');
+			expect(template?.template.labelPlural).toBe('Treasure/Loot');
+		});
+	});
+
+	describe('Field Definitions - Treasure Properties', () => {
+		it('should have name field as text type', () => {
+			const template = getTreasureTemplate();
+			const field = template?.template.fieldDefinitions.find((f) => f.key === 'name');
+
+			expect(field).toBeDefined();
+			expect(field?.label).toBe('Name');
+			expect(field?.type).toBe('text');
+			expect(field?.required).toBe(false);
+		});
+
+		it('should have value field as text type', () => {
+			const template = getTreasureTemplate();
+			const field = template?.template.fieldDefinitions.find((f) => f.key === 'value');
+
+			expect(field).toBeDefined();
+			expect(field?.label).toBe('Value');
+			expect(field?.type).toBe('text');
+			expect(field?.required).toBe(false);
+		});
+
+		it('should have rarity field as select type', () => {
+			const template = getTreasureTemplate();
+			const field = template?.template.fieldDefinitions.find((f) => f.key === 'rarity');
+
+			expect(field).toBeDefined();
+			expect(field?.label).toBe('Rarity');
+			expect(field?.type).toBe('select');
+			expect(field?.required).toBe(false);
+		});
+
+		it('should have rarity options matching standard RPG rarity tiers', () => {
+			const template = getTreasureTemplate();
+			const field = template?.template.fieldDefinitions.find((f) => f.key === 'rarity');
+
+			expect(field?.options).toBeDefined();
+			expect(field?.options).toContain('common');
+			expect(field?.options).toContain('uncommon');
+			expect(field?.options).toContain('rare');
+			expect(field?.options).toContain('very rare');
+			expect(field?.options).toContain('legendary');
+			expect(field?.options?.length).toBe(5);
+		});
+
+		it('should have description field as richtext type', () => {
+			const template = getTreasureTemplate();
+			const field = template?.template.fieldDefinitions.find((f) => f.key === 'description');
+
+			expect(field).toBeDefined();
+			expect(field?.label).toBe('Description');
+			expect(field?.type).toBe('richtext');
+			expect(field?.required).toBe(false);
+		});
+
+		it('should have properties field as richtext type', () => {
+			const template = getTreasureTemplate();
+			const field = template?.template.fieldDefinitions.find((f) => f.key === 'properties');
+
+			expect(field).toBeDefined();
+			expect(field?.label).toBe('Properties');
+			expect(field?.type).toBe('richtext');
+			expect(field?.required).toBe(false);
+		});
+
+		it('should have origin field as textarea type', () => {
+			const template = getTreasureTemplate();
+			const field = template?.template.fieldDefinitions.find((f) => f.key === 'origin');
+
+			expect(field).toBeDefined();
+			expect(field?.label).toBe('Origin');
+			expect(field?.type).toBe('textarea');
+			expect(field?.required).toBe(false);
+		});
+
+		it('should have all 6 required treasure fields', () => {
+			const template = getTreasureTemplate();
+			const fieldKeys = template?.template.fieldDefinitions.map((f) => f.key) ?? [];
+
+			expect(fieldKeys).toContain('name');
+			expect(fieldKeys).toContain('value');
+			expect(fieldKeys).toContain('rarity');
+			expect(fieldKeys).toContain('description');
+			expect(fieldKeys).toContain('properties');
+			expect(fieldKeys).toContain('origin');
+			expect(fieldKeys.length).toBeGreaterThanOrEqual(6);
+		});
+
+		it('should have fields with positive order values', () => {
+			const template = getTreasureTemplate();
+			template?.template.fieldDefinitions.forEach((field) => {
+				expect(field.order).toBeGreaterThan(0);
+			});
+		});
+
+		it('should have unique field keys', () => {
+			const template = getTreasureTemplate();
+			const fieldKeys = template?.template.fieldDefinitions.map((f) => f.key) ?? [];
+			const uniqueKeys = new Set(fieldKeys);
+			expect(uniqueKeys.size).toBe(fieldKeys.length);
+		});
+
+		it('should have sequential order values starting from 1', () => {
+			const template = getTreasureTemplate();
+			const orders = template?.template.fieldDefinitions.map((f) => f.order).sort((a, b) => a - b) ?? [];
+
+			expect(orders[0]).toBe(1);
+			// Each subsequent order should be the previous + 1
+			for (let i = 1; i < orders.length; i++) {
+				expect(orders[i]).toBe(orders[i - 1] + 1);
+			}
+		});
+	});
+
+	describe('Field Type Validation', () => {
+		it('should use appropriate field types for treasure data', () => {
+			const template = getTreasureTemplate();
+			const fields = template?.template.fieldDefinitions ?? [];
+
+			// Text fields for simple data
+			const nameField = fields.find((f) => f.key === 'name');
+			expect(nameField?.type).toBe('text');
+
+			const valueField = fields.find((f) => f.key === 'value');
+			expect(valueField?.type).toBe('text');
+
+			// Select field for constrained choices
+			const rarityField = fields.find((f) => f.key === 'rarity');
+			expect(rarityField?.type).toBe('select');
+
+			// Richtext fields for formatted content
+			const descriptionField = fields.find((f) => f.key === 'description');
+			expect(descriptionField?.type).toBe('richtext');
+
+			const propertiesField = fields.find((f) => f.key === 'properties');
+			expect(propertiesField?.type).toBe('richtext');
+
+			// Textarea for plain multiline text
+			const originField = fields.find((f) => f.key === 'origin');
+			expect(originField?.type).toBe('textarea');
+		});
+
+		it('should mark all fields as optional', () => {
+			const template = getTreasureTemplate();
+			template?.template.fieldDefinitions.forEach((field) => {
+				expect(field.required).toBe(false);
+			});
+		});
+	});
+
+	describe('Field Labels', () => {
+		it('should have user-friendly field labels', () => {
+			const template = getTreasureTemplate();
+			const fields = template?.template.fieldDefinitions ?? [];
+
+			const nameField = fields.find((f) => f.key === 'name');
+			expect(nameField?.label).toBe('Name');
+
+			const valueField = fields.find((f) => f.key === 'value');
+			expect(valueField?.label).toBe('Value');
+
+			const rarityField = fields.find((f) => f.key === 'rarity');
+			expect(rarityField?.label).toBe('Rarity');
+
+			const descriptionField = fields.find((f) => f.key === 'description');
+			expect(descriptionField?.label).toBe('Description');
+
+			const propertiesField = fields.find((f) => f.key === 'properties');
+			expect(propertiesField?.label).toBe('Properties');
+
+			const originField = fields.find((f) => f.key === 'origin');
+			expect(originField?.label).toBe('Origin');
+		});
+	});
+
+	describe('Treasure Template Use Case', () => {
+		it('should have description mentioning treasure or loot', () => {
+			const template = getTreasureTemplate();
+			const description = template?.description.toLowerCase() ?? '';
+
+			const hasTreasureKeyword =
+				description.includes('treasure') ||
+				description.includes('loot') ||
+				description.includes('reward') ||
+				description.includes('item');
+
+			expect(hasTreasureKeyword).toBe(true);
+		});
+
+		it('should support Directors in tracking treasure and rewards', () => {
+			const template = getTreasureTemplate();
+			const fields = template?.template.fieldDefinitions ?? [];
+
+			// Should have fields relevant to treasure tracking
+			const hasValue = fields.some((f) => f.key === 'value');
+			const hasRarity = fields.some((f) => f.key === 'rarity');
+			const hasProperties = fields.some((f) => f.key === 'properties');
+			const hasDescription = fields.some((f) => f.key === 'description');
+
+			expect(hasValue).toBe(true);
+			expect(hasRarity).toBe(true);
+			expect(hasProperties).toBe(true);
+			expect(hasDescription).toBe(true);
+		});
+
+		it('should support magical properties field for magic items', () => {
+			const template = getTreasureTemplate();
+			const field = template?.template.fieldDefinitions.find((f) => f.key === 'properties');
+
+			expect(field).toBeDefined();
+			expect(field?.type).toBe('richtext'); // Allows formatted text for complex properties
+		});
+
+		it('should support origin tracking for narrative context', () => {
+			const template = getTreasureTemplate();
+			const field = template?.template.fieldDefinitions.find((f) => f.key === 'origin');
+
+			expect(field).toBeDefined();
+			expect(field?.type).toBe('textarea'); // Multiline text for backstory
+		});
+	});
+
+	describe('Integration with Existing Templates', () => {
+		it('should have unique ID not conflicting with other templates', () => {
+			const treasureTemplate = getTreasureTemplate();
+			const otherTemplates = DRAW_STEEL_ENTITY_TEMPLATES.filter((t) => t.id !== 'ds-treasure-loot');
+
+			const otherIds = otherTemplates.map((t) => t.id);
+			expect(otherIds).not.toContain(treasureTemplate?.id);
+		});
+
+		it('should have unique type key not conflicting with other templates', () => {
+			const treasureTemplate = getTreasureTemplate();
+			const otherTemplates = DRAW_STEEL_ENTITY_TEMPLATES.filter((t) => t.id !== 'ds-treasure-loot');
+
+			const otherTypes = otherTemplates.map((t) => t.template.type);
+			expect(otherTypes).not.toContain(treasureTemplate?.template.type);
+		});
+
+		it('should follow naming convention of other templates', () => {
+			const template = getTreasureTemplate();
+
+			// ID should start with 'ds-'
+			expect(template?.id.startsWith('ds-')).toBe(true);
+
+			// Type should match ID
+			expect(template?.template.type).toBe(template?.id);
+		});
+	});
+
+	describe('Rarity System Validation', () => {
+		it('should have rarity options in logical progression order', () => {
+			const template = getTreasureTemplate();
+			const field = template?.template.fieldDefinitions.find((f) => f.key === 'rarity');
+
+			const expectedOrder = ['common', 'uncommon', 'rare', 'very rare', 'legendary'];
+			expect(field?.options).toEqual(expectedOrder);
+		});
+
+		it('should support standard D&D/Draw Steel rarity tiers', () => {
+			const template = getTreasureTemplate();
+			const field = template?.template.fieldDefinitions.find((f) => f.key === 'rarity');
+
+			// These are the standard rarity tiers used in D&D and similar systems
+			const standardRarities = ['common', 'uncommon', 'rare', 'very rare', 'legendary'];
+
+			standardRarities.forEach((rarity) => {
+				expect(field?.options).toContain(rarity);
+			});
+		});
+	});
+});
+
+// =============================================================================
 // Cross-Template Validation Tests
 // =============================================================================
 
 describe('Cross-Template Validation', () => {
 	describe('Icon Validation', () => {
 		it('should use valid Lucide icon names across all templates', () => {
-			const validIcons = ['skull', 'zap', 'flame', 'drama', 'sparkles', 'swords'];
+			const validIcons = ['skull', 'zap', 'flame', 'drama', 'sparkles', 'swords', 'gem'];
 
 			DRAW_STEEL_ENTITY_TEMPLATES.forEach((template) => {
 				expect(validIcons).toContain(template.template.icon);

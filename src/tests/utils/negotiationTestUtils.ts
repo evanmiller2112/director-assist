@@ -184,7 +184,7 @@ export function createCompletedNegotiationSession(): NegotiationSession {
 	session.status = 'completed';
 	session.interest = 5;
 	session.patience = 0;
-	session.outcome = 'success_full';
+	session.outcome = 'alliance';
 	session.completedAt = new Date();
 	return session;
 }

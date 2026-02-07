@@ -45,12 +45,12 @@ function createMockNegotiation(overrides?: Partial<NegotiationSession>): Negotia
 		interest: 2,
 		patience: 3,
 		motivations: [
-			{ type: 'greed', isKnown: true, used: false },
-			{ type: 'power', isKnown: false, used: false }
+			{ type: 'greed', description: 'Motivated by greed', isKnown: true, timesUsed: 0 },
+			{ type: 'power', description: 'Motivated by power', isKnown: false, timesUsed: 0 }
 		],
 		pitfalls: [
-			{ type: 'justice', isKnown: true },
-			{ type: 'benevolence', isKnown: false }
+			{ description: 'Mentions of justice', isKnown: true },
+			{ description: 'Mentions of benevolence', isKnown: false }
 		],
 		arguments: [],
 		createdAt: now,
@@ -292,13 +292,13 @@ describe('Negotiation Store - Derived Values', () => {
 			const activeNeg = createMockNegotiation({
 				id: 'active-neg',
 				motivations: [
-					{ type: 'greed', isKnown: true, used: false },
-					{ type: 'power', isKnown: false, used: false },
-					{ type: 'justice', isKnown: true, used: true }
+					{ type: 'greed', description: 'Motivated by greed', isKnown: true, timesUsed: 0 },
+					{ type: 'power', description: 'Motivated by power', isKnown: false, timesUsed: 0 },
+					{ type: 'justice', description: 'Motivated by justice', isKnown: true, timesUsed: 2 }
 				],
 				pitfalls: [
-					{ type: 'benevolence', isKnown: true },
-					{ type: 'freedom', isKnown: false }
+					{ description: 'Mentions of benevolence', isKnown: true },
+					{ description: 'Mentions of freedom', isKnown: false }
 				]
 			});
 
@@ -326,7 +326,7 @@ describe('Negotiation Store - Derived Values', () => {
 			const known = negotiationStore.knownPitfalls;
 			expect(known).toHaveLength(1);
 			expect(known[0].isKnown).toBe(true);
-			expect(known[0].type).toBe('benevolence');
+			expect(known[0].description).toBeDefined();
 		});
 
 		it('should return empty array when no active negotiation', async () => {
@@ -343,9 +343,9 @@ describe('Negotiation Store - Derived Values', () => {
 			const activeNeg = createMockNegotiation({
 				id: 'active-neg',
 				motivations: [
-					{ type: 'greed', isKnown: true, used: false },
-					{ type: 'power', isKnown: true, used: true },
-					{ type: 'justice', isKnown: false, used: false }
+					{ type: 'greed', description: 'Motivated by greed', isKnown: true, timesUsed: 0 },
+					{ type: 'power', description: 'Motivated by power', isKnown: true, timesUsed: 1 },
+					{ type: 'justice', description: 'Motivated by justice', isKnown: false, timesUsed: 0 }
 				]
 			});
 
@@ -360,7 +360,7 @@ describe('Negotiation Store - Derived Values', () => {
 		it('should filter unused motivations correctly', () => {
 			const unused = negotiationStore.unusedMotivations;
 			expect(unused).toHaveLength(2);
-			expect(unused.every((m: any) => !m.used)).toBe(true);
+			expect(unused.every((m: any) => m.timesUsed === 0)).toBe(true);
 			expect(unused.some((m: any) => m.type === 'greed')).toBe(true);
 			expect(unused.some((m: any) => m.type === 'justice')).toBe(true);
 		});
@@ -375,8 +375,8 @@ describe('Negotiation Store - Derived Values', () => {
 			const allUsed = createMockNegotiation({
 				id: 'all-used',
 				motivations: [
-					{ type: 'greed', isKnown: true, used: true },
-					{ type: 'power', isKnown: true, used: true }
+					{ type: 'greed', description: 'Motivated by greed', isKnown: true, timesUsed: 1 },
+					{ type: 'power', description: 'Motivated by power', isKnown: true, timesUsed: 1 }
 				]
 			});
 			mockGetById.mockResolvedValue(allUsed);
@@ -393,21 +393,23 @@ describe('Negotiation Store - Derived Values', () => {
 				arguments: [
 					{
 						id: 'arg-1',
-						argumentType: 'motivation',
+						type: 'motivation',
+						description: 'First argument',
 						motivationType: 'greed',
 						tier: 2,
-						interestDelta: 2,
-						patienceDelta: -1,
+						interestChange: 2,
+						patienceChange: -1,
 						playerName: 'Hero A',
 						notes: 'First argument',
 						createdAt: new Date('2024-01-01')
 					},
 					{
 						id: 'arg-2',
-						argumentType: 'no_motivation',
+						type: 'no_motivation',
+						description: 'Test argument',
 						tier: 1,
-						interestDelta: 1,
-						patienceDelta: -1,
+						interestChange: 1,
+						patienceChange: -1,
 						playerName: 'Hero B',
 						createdAt: new Date('2024-01-02')
 					}
@@ -484,11 +486,11 @@ describe('Negotiation Store - CRUD Operations', () => {
 				name: 'New Negotiation',
 				npcName: 'NPC Name',
 				description: 'Test description',
-				interest: 3,
-				patience: 2
+				motivations: [],
+				pitfalls: []
 			};
 
-			const created = createMockNegotiation(input);
+			const created = createMockNegotiation({ name: input.name, npcName: input.npcName });
 			mockCreate.mockResolvedValue(created);
 
 			await negotiationStore.createNegotiation(input);
@@ -500,10 +502,12 @@ describe('Negotiation Store - CRUD Operations', () => {
 		it('should return the created negotiation', async () => {
 			const input: CreateNegotiationInput = {
 				name: 'New Negotiation',
-				npcName: 'NPC Name'
+				npcName: 'NPC Name',
+				motivations: [],
+				pitfalls: []
 			};
 
-			const created = createMockNegotiation(input);
+			const created = createMockNegotiation({ name: input.name, npcName: input.npcName });
 			mockCreate.mockResolvedValue(created);
 
 			const result = await negotiationStore.createNegotiation(input);
@@ -514,12 +518,14 @@ describe('Negotiation Store - CRUD Operations', () => {
 		it('should set isLoading during operation', async () => {
 			const input: CreateNegotiationInput = {
 				name: 'Test',
-				npcName: 'NPC'
+				npcName: 'NPC',
+				motivations: [],
+				pitfalls: []
 			};
 
 			mockCreate.mockImplementation(async () => {
 				expect(negotiationStore.isLoading).toBe(true);
-				return createMockNegotiation(input);
+				return createMockNegotiation({ name: input.name, npcName: input.npcName });
 			});
 
 			await negotiationStore.createNegotiation(input);
@@ -530,10 +536,12 @@ describe('Negotiation Store - CRUD Operations', () => {
 		it('should clear error on successful create', async () => {
 			const input: CreateNegotiationInput = {
 				name: 'Test',
-				npcName: 'NPC'
+				npcName: 'NPC',
+				motivations: [],
+				pitfalls: []
 			};
 
-			const created = createMockNegotiation(input);
+			const created = createMockNegotiation({ name: input.name, npcName: input.npcName });
 			mockCreate.mockResolvedValue(created);
 
 			await negotiationStore.createNegotiation(input);
@@ -544,7 +552,9 @@ describe('Negotiation Store - CRUD Operations', () => {
 		it('should handle errors and set error state', async () => {
 			const input: CreateNegotiationInput = {
 				name: 'Test',
-				npcName: 'NPC'
+				npcName: 'NPC',
+				motivations: [],
+				pitfalls: []
 			};
 
 			const errorMessage = 'Failed to create negotiation';
@@ -961,7 +971,8 @@ describe('Negotiation Store - Argument Recording', () => {
 		it('should call repository recordArgument with correct arguments', async () => {
 			const id = 'test-id';
 			const input: RecordArgumentInput = {
-				argumentType: 'motivation',
+				type: 'motivation',
+			description: 'Test argument',
 				motivationType: 'greed',
 				tier: 2,
 				playerName: 'Hero A',
@@ -979,7 +990,8 @@ describe('Negotiation Store - Argument Recording', () => {
 		it('should return updated negotiation with new argument', async () => {
 			const id = 'test-id';
 			const input: RecordArgumentInput = {
-				argumentType: 'motivation',
+				type: 'motivation',
+			description: 'Test argument',
 				motivationType: 'power',
 				tier: 3
 			};
@@ -989,11 +1001,12 @@ describe('Negotiation Store - Argument Recording', () => {
 				arguments: [
 					{
 						id: 'arg-1',
-						argumentType: 'motivation',
+						type: 'motivation',
+					description: 'Test argument',
 						motivationType: 'power',
 						tier: 3,
-						interestDelta: 3,
-						patienceDelta: -1,
+						interestChange: 3,
+						patienceChange: -1,
 						createdAt: new Date()
 					}
 				],
@@ -1013,7 +1026,8 @@ describe('Negotiation Store - Argument Recording', () => {
 			const id = 'test-id';
 			const initial = createMockNegotiation({ id, arguments: [] });
 			const input: RecordArgumentInput = {
-				argumentType: 'no_motivation',
+				type: 'no_motivation',
+			description: 'Test argument',
 				tier: 1
 			};
 
@@ -1022,10 +1036,11 @@ describe('Negotiation Store - Argument Recording', () => {
 				arguments: [
 					{
 						id: 'arg-1',
-						argumentType: 'no_motivation',
+						type: 'no_motivation',
+					description: 'Test argument',
 						tier: 1,
-						interestDelta: 1,
-						patienceDelta: -1,
+						interestChange: 1,
+						patienceChange: -1,
 						createdAt: new Date()
 					}
 				]
@@ -1042,7 +1057,8 @@ describe('Negotiation Store - Argument Recording', () => {
 
 		it('should handle motivation argument type', async () => {
 			const input: RecordArgumentInput = {
-				argumentType: 'motivation',
+				type: 'motivation',
+			description: 'Test argument',
 				motivationType: 'justice',
 				tier: 2
 			};
@@ -1057,7 +1073,8 @@ describe('Negotiation Store - Argument Recording', () => {
 
 		it('should handle no_motivation argument type', async () => {
 			const input: RecordArgumentInput = {
-				argumentType: 'no_motivation',
+				type: 'no_motivation',
+			description: 'Test argument',
 				tier: 1
 			};
 
@@ -1071,7 +1088,8 @@ describe('Negotiation Store - Argument Recording', () => {
 
 		it('should handle pitfall argument type', async () => {
 			const input: RecordArgumentInput = {
-				argumentType: 'pitfall',
+				type: 'pitfall',
+			description: 'Test argument',
 				motivationType: 'benevolence',
 				tier: 1
 			};
@@ -1089,7 +1107,8 @@ describe('Negotiation Store - Argument Recording', () => {
 
 			for (const tier of tiers) {
 				const input: RecordArgumentInput = {
-					argumentType: 'motivation',
+					type: 'motivation',
+					description: 'Test argument',
 					motivationType: 'greed',
 					tier
 				};
@@ -1108,7 +1127,8 @@ describe('Negotiation Store - Argument Recording', () => {
 			mockRecordArgument.mockRejectedValue(new Error(errorMessage));
 
 			const input: RecordArgumentInput = {
-				argumentType: 'motivation',
+				type: 'motivation',
+			description: 'Test argument',
 				motivationType: 'greed',
 				tier: 2
 			};
@@ -1153,8 +1173,8 @@ describe('Negotiation Store - Motivation and Pitfall Revelation', () => {
 			const updated = createMockNegotiation({
 				id,
 				motivations: [
-					{ type: 'greed', isKnown: true, used: false },
-					{ type: 'power', isKnown: true, used: false }
+					{ type: 'greed', description: 'Motivated by greed', isKnown: true, timesUsed: 0 },
+					{ type: 'power', description: 'Motivated by power', isKnown: true, timesUsed: 0 }
 				]
 			});
 
@@ -1170,8 +1190,8 @@ describe('Negotiation Store - Motivation and Pitfall Revelation', () => {
 			const updated = createMockNegotiation({
 				id,
 				motivations: [
-					{ type: 'greed', isKnown: false, used: false },
-					{ type: 'power', isKnown: true, used: false }
+					{ type: 'greed', description: 'Motivated by greed', isKnown: false, timesUsed: 0 },
+					{ type: 'power', description: 'Motivated by power', isKnown: true, timesUsed: 0 }
 				]
 			});
 
@@ -1186,12 +1206,12 @@ describe('Negotiation Store - Motivation and Pitfall Revelation', () => {
 			const id = 'test-id';
 			const initial = createMockNegotiation({
 				id,
-				motivations: [{ type: 'greed', isKnown: false, used: false }]
+				motivations: [{ type: 'greed', description: 'Motivated by greed', isKnown: false, timesUsed: 0 }]
 			});
 
 			const updated = createMockNegotiation({
 				id,
-				motivations: [{ type: 'greed', isKnown: true, used: false }]
+				motivations: [{ type: 'greed', description: 'Motivated by greed', isKnown: true, timesUsed: 0 }]
 			});
 
 			mockGetById.mockResolvedValue(initial);
@@ -1237,7 +1257,7 @@ describe('Negotiation Store - Motivation and Pitfall Revelation', () => {
 
 			const updated = createMockNegotiation({
 				id,
-				pitfalls: [{ type: 'justice', isKnown: true }]
+				pitfalls: [{ description: 'Mentions of justice', isKnown: true }]
 			});
 
 			mockRevealPitfall.mockResolvedValue(updated);
@@ -1252,8 +1272,8 @@ describe('Negotiation Store - Motivation and Pitfall Revelation', () => {
 			const updated = createMockNegotiation({
 				id,
 				pitfalls: [
-					{ type: 'justice', isKnown: true },
-					{ type: 'benevolence', isKnown: false }
+					{ description: 'Mentions of justice', isKnown: true },
+					{ description: 'Mentions of benevolence', isKnown: false }
 				]
 			});
 
@@ -1268,12 +1288,12 @@ describe('Negotiation Store - Motivation and Pitfall Revelation', () => {
 			const id = 'test-id';
 			const initial = createMockNegotiation({
 				id,
-				pitfalls: [{ type: 'justice', isKnown: false }]
+				pitfalls: [{ description: 'Mentions of justice', isKnown: false }]
 			});
 
 			const updated = createMockNegotiation({
 				id,
-				pitfalls: [{ type: 'justice', isKnown: true }]
+				pitfalls: [{ description: 'Mentions of justice', isKnown: true }]
 			});
 
 			mockGetById.mockResolvedValue(initial);

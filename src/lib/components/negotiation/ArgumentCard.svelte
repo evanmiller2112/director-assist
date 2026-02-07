@@ -15,18 +15,7 @@
 	 */
 
 	import { ThumbsUp, XCircle, MessageCircle } from 'lucide-svelte';
-
-	interface NegotiationArgument {
-		id: string;
-		argumentType: 'motivation' | 'no_motivation' | 'pitfall';
-		tier: 1 | 2 | 3;
-		interestDelta: number;
-		patienceDelta: number;
-		motivationType?: string;
-		playerName?: string;
-		notes?: string;
-		createdAt: Date;
-	}
+	import type { NegotiationArgument } from '$lib/types/negotiation';
 
 	interface Props {
 		argument: NegotiationArgument;
@@ -66,23 +55,23 @@
 
 	// Get card border color based on argument type
 	const cardBorderColor = $derived(() => {
-		if (argument.argumentType === 'pitfall') return 'border-red-300 dark:border-red-700';
-		if (argument.argumentType === 'motivation')
+		if (argument.type === 'pitfall') return 'border-red-300 dark:border-red-700';
+		if (argument.type === 'motivation')
 			return 'border-green-300 dark:border-green-700';
 		return 'border-blue-300 dark:border-blue-700';
 	});
 
 	// Get interest delta color
 	const interestDeltaColor = $derived(() => {
-		if (argument.interestDelta > 0) return 'text-green-600 dark:text-green-400';
-		if (argument.interestDelta < 0) return 'text-red-600 dark:text-red-400';
+		if (argument.interestChange > 0) return 'text-green-600 dark:text-green-400';
+		if (argument.interestChange < 0) return 'text-red-600 dark:text-red-400';
 		return 'text-gray-500 dark:text-gray-400';
 	});
 
 	// Get patience delta color
 	const patienceDeltaColor = $derived(() => {
-		if (argument.patienceDelta > 0) return 'text-green-600 dark:text-green-400';
-		if (argument.patienceDelta < 0) return 'text-red-600 dark:text-red-400';
+		if (argument.patienceChange > 0) return 'text-green-600 dark:text-green-400';
+		if (argument.patienceChange < 0) return 'text-red-600 dark:text-red-400';
 		return 'text-gray-500 dark:text-gray-400';
 	});
 
@@ -96,9 +85,9 @@
 	const ariaLabel = $derived(() => {
 		const parts: string[] = [];
 		parts.push(
-			argument.argumentType === 'motivation'
+			argument.type === 'motivation'
 				? 'Motivation'
-				: argument.argumentType === 'pitfall'
+				: argument.type === 'pitfall'
 					? 'Pitfall'
 					: 'No Motivation'
 		);
@@ -117,10 +106,10 @@
 	<div class="flex items-start justify-between gap-3">
 		<!-- Icon and Type -->
 		<div class="flex items-center gap-2">
-			{#if argument.argumentType === 'motivation'}
+			{#if argument.type === 'motivation'}
 				<ThumbsUp class="h-5 w-5 text-green-600 dark:text-green-400" aria-hidden="true" />
 				<span class="font-medium">Motivation</span>
-			{:else if argument.argumentType === 'pitfall'}
+			{:else if argument.type === 'pitfall'}
 				<XCircle
 					class="h-5 w-5 text-red-600 dark:text-red-400 lucide-alert-circle"
 					aria-hidden="true"
@@ -142,7 +131,7 @@
 	</div>
 
 	<!-- Motivation Type (if applicable) -->
-	{#if argument.motivationType && (argument.argumentType === 'motivation' || argument.argumentType === 'pitfall')}
+	{#if argument.motivationType && (argument.type === 'motivation' || argument.type === 'pitfall')}
 		<div class="mt-2">
 			<span class="inline-block rounded-md bg-blue-50 px-2 py-1 text-sm dark:bg-blue-900/20">
 				{formatMotivationType(argument.motivationType)}
@@ -153,10 +142,10 @@
 	<!-- Deltas -->
 	<div class="mt-3 flex gap-4 text-sm font-semibold">
 		<span data-testid="interest-delta" class={interestDeltaColor()}>
-			{formatDelta(argument.interestDelta)} Interest
+			{formatDelta(argument.interestChange)} Interest
 		</span>
 		<span data-testid="patience-delta" class={patienceDeltaColor()}>
-			{formatDelta(argument.patienceDelta)} Patience
+			{formatDelta(argument.patienceChange)} Patience
 		</span>
 	</div>
 

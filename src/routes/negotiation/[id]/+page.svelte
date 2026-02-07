@@ -52,20 +52,10 @@
 		return negotiation.motivations.filter((m) => m.timesUsed > 0).map((m) => m.type);
 	});
 
-	// Transform arguments for ArgumentCard
+	// Get arguments for ArgumentCard
 	const argumentCards = $derived.by(() => {
 		if (!negotiation) return [];
-		return negotiation.arguments.map((arg) => ({
-			id: arg.id,
-			argumentType: arg.type,
-			tier: arg.tier,
-			interestDelta: arg.interestChange,
-			patienceDelta: arg.patienceChange,
-			motivationType: arg.motivationType,
-			playerName: arg.playerName,
-			notes: arg.notes,
-			createdAt: arg.createdAt
-		}));
+		return negotiation.arguments;
 	});
 
 	function handleBack() {

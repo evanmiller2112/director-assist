@@ -24,11 +24,12 @@ import type { NegotiationArgument } from '$lib/types/negotiation';
 describe('ArgumentCard Component - Basic Rendering (Issue #383)', () => {
 	const basicArgument: NegotiationArgument = {
 		id: '1',
-		argumentType: 'motivation',
+		type: 'motivation',
 		motivationType: 'justice',
 		tier: 1,
-		interestDelta: 1,
-		patienceDelta: 0,
+		description: 'Test argument',
+		interestChange: 1,
+		patienceChange: 0,
 		createdAt: new Date('2024-01-15T10:30:00')
 	};
 
@@ -66,11 +67,12 @@ describe('ArgumentCard Component - Argument Type Display', () => {
 	it('should display motivation type icon', () => {
 		const argument: NegotiationArgument = {
 			id: '1',
-			argumentType: 'motivation',
+			type: 'motivation',
+		description: 'Test argument',
 			motivationType: 'justice',
 			tier: 1,
-			interestDelta: 1,
-			patienceDelta: 0,
+			interestChange: 1,
+			patienceChange: 0,
 			createdAt: new Date()
 		};
 
@@ -86,10 +88,11 @@ describe('ArgumentCard Component - Argument Type Display', () => {
 	it('should display no_motivation type', () => {
 		const argument: NegotiationArgument = {
 			id: '2',
-			argumentType: 'no_motivation',
+			type: 'no_motivation',
+		description: 'Test argument',
 			tier: 2,
-			interestDelta: 1,
-			patienceDelta: -1,
+			interestChange: 1,
+			patienceChange: -1,
 			createdAt: new Date()
 		};
 
@@ -103,11 +106,12 @@ describe('ArgumentCard Component - Argument Type Display', () => {
 	it('should display pitfall type', () => {
 		const argument: NegotiationArgument = {
 			id: '3',
-			argumentType: 'pitfall',
+			type: 'pitfall',
+		description: 'Test argument',
 			motivationType: 'greed',
 			tier: 1,
-			interestDelta: -1,
-			patienceDelta: -1,
+			interestChange: -1,
+			patienceChange: -1,
 			createdAt: new Date()
 		};
 
@@ -121,11 +125,12 @@ describe('ArgumentCard Component - Argument Type Display', () => {
 	it('should show different icon for pitfall', () => {
 		const argument: NegotiationArgument = {
 			id: '3',
-			argumentType: 'pitfall',
+			type: 'pitfall',
+		description: 'Test argument',
 			motivationType: 'greed',
 			tier: 1,
-			interestDelta: -1,
-			patienceDelta: -1,
+			interestChange: -1,
+			patienceChange: -1,
 			createdAt: new Date()
 		};
 
@@ -143,11 +148,12 @@ describe('ArgumentCard Component - Tier Display', () => {
 	it('should display tier 1', () => {
 		const argument: NegotiationArgument = {
 			id: '1',
-			argumentType: 'motivation',
+			type: 'motivation',
+		description: 'Test argument',
 			motivationType: 'justice',
 			tier: 1,
-			interestDelta: 1,
-			patienceDelta: 0,
+			interestChange: 1,
+			patienceChange: 0,
 			createdAt: new Date()
 		};
 
@@ -161,11 +167,12 @@ describe('ArgumentCard Component - Tier Display', () => {
 	it('should display tier 2', () => {
 		const argument: NegotiationArgument = {
 			id: '2',
-			argumentType: 'motivation',
+			type: 'motivation',
+		description: 'Test argument',
 			motivationType: 'justice',
 			tier: 2,
-			interestDelta: 2,
-			patienceDelta: 0,
+			interestChange: 2,
+			patienceChange: 0,
 			createdAt: new Date()
 		};
 
@@ -179,11 +186,12 @@ describe('ArgumentCard Component - Tier Display', () => {
 	it('should display tier 3', () => {
 		const argument: NegotiationArgument = {
 			id: '3',
-			argumentType: 'motivation',
+			type: 'motivation',
+		description: 'Test argument',
 			motivationType: 'justice',
 			tier: 3,
-			interestDelta: 2,
-			patienceDelta: 1,
+			interestChange: 2,
+			patienceChange: 1,
 			createdAt: new Date()
 		};
 
@@ -197,10 +205,11 @@ describe('ArgumentCard Component - Tier Display', () => {
 	it('should color code tier 1 as basic', () => {
 		const argument: NegotiationArgument = {
 			id: '1',
-			argumentType: 'motivation',
+			type: 'motivation',
+		description: 'Test argument',
 			tier: 1,
-			interestDelta: 1,
-			patienceDelta: 0,
+			interestChange: 1,
+			patienceChange: 0,
 			createdAt: new Date()
 		};
 
@@ -215,10 +224,11 @@ describe('ArgumentCard Component - Tier Display', () => {
 	it('should color code tier 2 as intermediate', () => {
 		const argument: NegotiationArgument = {
 			id: '2',
-			argumentType: 'motivation',
+			type: 'motivation',
+		description: 'Test argument',
 			tier: 2,
-			interestDelta: 2,
-			patienceDelta: 0,
+			interestChange: 2,
+			patienceChange: 0,
 			createdAt: new Date()
 		};
 
@@ -233,10 +243,11 @@ describe('ArgumentCard Component - Tier Display', () => {
 	it('should color code tier 3 as advanced', () => {
 		const argument: NegotiationArgument = {
 			id: '3',
-			argumentType: 'motivation',
+			type: 'motivation',
+		description: 'Test argument',
 			tier: 3,
-			interestDelta: 2,
-			patienceDelta: 1,
+			interestChange: 2,
+			patienceChange: 1,
 			createdAt: new Date()
 		};
 
@@ -253,10 +264,11 @@ describe('ArgumentCard Component - Interest Delta Display', () => {
 	it('should display positive interest delta +1', () => {
 		const argument: NegotiationArgument = {
 			id: '1',
-			argumentType: 'motivation',
+			type: 'motivation',
+		description: 'Test argument',
 			tier: 1,
-			interestDelta: 1,
-			patienceDelta: 0,
+			interestChange: 1,
+			patienceChange: 0,
 			createdAt: new Date()
 		};
 
@@ -270,10 +282,11 @@ describe('ArgumentCard Component - Interest Delta Display', () => {
 	it('should display positive interest delta +2', () => {
 		const argument: NegotiationArgument = {
 			id: '2',
-			argumentType: 'motivation',
+			type: 'motivation',
+		description: 'Test argument',
 			tier: 2,
-			interestDelta: 2,
-			patienceDelta: 0,
+			interestChange: 2,
+			patienceChange: 0,
 			createdAt: new Date()
 		};
 
@@ -287,10 +300,11 @@ describe('ArgumentCard Component - Interest Delta Display', () => {
 	it('should display negative interest delta -1', () => {
 		const argument: NegotiationArgument = {
 			id: '3',
-			argumentType: 'pitfall',
+			type: 'pitfall',
+		description: 'Test argument',
 			tier: 1,
-			interestDelta: -1,
-			patienceDelta: -1,
+			interestChange: -1,
+			patienceChange: -1,
 			createdAt: new Date()
 		};
 
@@ -304,10 +318,11 @@ describe('ArgumentCard Component - Interest Delta Display', () => {
 	it('should display zero interest delta', () => {
 		const argument: NegotiationArgument = {
 			id: '4',
-			argumentType: 'no_motivation',
+			type: 'no_motivation',
+		description: 'Test argument',
 			tier: 1,
-			interestDelta: 0,
-			patienceDelta: -1,
+			interestChange: 0,
+			patienceChange: -1,
 			createdAt: new Date()
 		};
 
@@ -321,10 +336,11 @@ describe('ArgumentCard Component - Interest Delta Display', () => {
 	it('should style positive interest delta as green', () => {
 		const argument: NegotiationArgument = {
 			id: '1',
-			argumentType: 'motivation',
+			type: 'motivation',
+		description: 'Test argument',
 			tier: 1,
-			interestDelta: 1,
-			patienceDelta: 0,
+			interestChange: 1,
+			patienceChange: 0,
 			createdAt: new Date()
 		};
 
@@ -339,10 +355,11 @@ describe('ArgumentCard Component - Interest Delta Display', () => {
 	it('should style negative interest delta as red', () => {
 		const argument: NegotiationArgument = {
 			id: '3',
-			argumentType: 'pitfall',
+			type: 'pitfall',
+		description: 'Test argument',
 			tier: 1,
-			interestDelta: -1,
-			patienceDelta: -1,
+			interestChange: -1,
+			patienceChange: -1,
 			createdAt: new Date()
 		};
 
@@ -359,10 +376,11 @@ describe('ArgumentCard Component - Patience Delta Display', () => {
 	it('should display positive patience delta +1', () => {
 		const argument: NegotiationArgument = {
 			id: '1',
-			argumentType: 'motivation',
+			type: 'motivation',
+		description: 'Test argument',
 			tier: 3,
-			interestDelta: 2,
-			patienceDelta: 1,
+			interestChange: 2,
+			patienceChange: 1,
 			createdAt: new Date()
 		};
 
@@ -376,10 +394,11 @@ describe('ArgumentCard Component - Patience Delta Display', () => {
 	it('should display negative patience delta -1', () => {
 		const argument: NegotiationArgument = {
 			id: '2',
-			argumentType: 'no_motivation',
+			type: 'no_motivation',
+		description: 'Test argument',
 			tier: 1,
-			interestDelta: 0,
-			patienceDelta: -1,
+			interestChange: 0,
+			patienceChange: -1,
 			createdAt: new Date()
 		};
 
@@ -393,10 +412,11 @@ describe('ArgumentCard Component - Patience Delta Display', () => {
 	it('should display zero patience delta', () => {
 		const argument: NegotiationArgument = {
 			id: '3',
-			argumentType: 'motivation',
+			type: 'motivation',
+		description: 'Test argument',
 			tier: 1,
-			interestDelta: 1,
-			patienceDelta: 0,
+			interestChange: 1,
+			patienceChange: 0,
 			createdAt: new Date()
 		};
 
@@ -410,10 +430,11 @@ describe('ArgumentCard Component - Patience Delta Display', () => {
 	it('should style positive patience delta as green', () => {
 		const argument: NegotiationArgument = {
 			id: '1',
-			argumentType: 'motivation',
+			type: 'motivation',
+		description: 'Test argument',
 			tier: 3,
-			interestDelta: 2,
-			patienceDelta: 1,
+			interestChange: 2,
+			patienceChange: 1,
 			createdAt: new Date()
 		};
 
@@ -428,10 +449,11 @@ describe('ArgumentCard Component - Patience Delta Display', () => {
 	it('should style negative patience delta as red', () => {
 		const argument: NegotiationArgument = {
 			id: '2',
-			argumentType: 'no_motivation',
+			type: 'no_motivation',
+		description: 'Test argument',
 			tier: 1,
-			interestDelta: 0,
-			patienceDelta: -1,
+			interestChange: 0,
+			patienceChange: -1,
 			createdAt: new Date()
 		};
 
@@ -448,10 +470,11 @@ describe('ArgumentCard Component - Player Name Display', () => {
 	it('should display player name when provided', () => {
 		const argument: NegotiationArgument = {
 			id: '1',
-			argumentType: 'motivation',
+			type: 'motivation',
+		description: 'Test argument',
 			tier: 1,
-			interestDelta: 1,
-			patienceDelta: 0,
+			interestChange: 1,
+			patienceChange: 0,
 			playerName: 'Aragorn',
 			createdAt: new Date()
 		};
@@ -466,10 +489,11 @@ describe('ArgumentCard Component - Player Name Display', () => {
 	it('should not show player section when player name not provided', () => {
 		const argument: NegotiationArgument = {
 			id: '1',
-			argumentType: 'motivation',
+			type: 'motivation',
+		description: 'Test argument',
 			tier: 1,
-			interestDelta: 1,
-			patienceDelta: 0,
+			interestChange: 1,
+			patienceChange: 0,
 			createdAt: new Date()
 		};
 
@@ -484,10 +508,11 @@ describe('ArgumentCard Component - Player Name Display', () => {
 	it('should display long player names', () => {
 		const argument: NegotiationArgument = {
 			id: '1',
-			argumentType: 'motivation',
+			type: 'motivation',
+		description: 'Test argument',
 			tier: 1,
-			interestDelta: 1,
-			patienceDelta: 0,
+			interestChange: 1,
+			patienceChange: 0,
 			playerName: 'Sir Reginald von Bartholomew III',
 			createdAt: new Date()
 		};
@@ -504,10 +529,11 @@ describe('ArgumentCard Component - Notes Display', () => {
 	it('should display notes when provided', () => {
 		const argument: NegotiationArgument = {
 			id: '1',
-			argumentType: 'motivation',
+			type: 'motivation',
+		description: 'Test argument',
 			tier: 1,
-			interestDelta: 1,
-			patienceDelta: 0,
+			interestChange: 1,
+			patienceChange: 0,
 			notes: 'Excellent argument about protecting the innocent',
 			createdAt: new Date()
 		};
@@ -522,10 +548,11 @@ describe('ArgumentCard Component - Notes Display', () => {
 	it('should not show notes section when notes not provided', () => {
 		const argument: NegotiationArgument = {
 			id: '1',
-			argumentType: 'motivation',
+			type: 'motivation',
+		description: 'Test argument',
 			tier: 1,
-			interestDelta: 1,
-			patienceDelta: 0,
+			interestChange: 1,
+			patienceChange: 0,
 			createdAt: new Date()
 		};
 
@@ -540,10 +567,11 @@ describe('ArgumentCard Component - Notes Display', () => {
 	it('should display multi-line notes', () => {
 		const argument: NegotiationArgument = {
 			id: '1',
-			argumentType: 'motivation',
+			type: 'motivation',
+		description: 'Test argument',
 			tier: 1,
-			interestDelta: 1,
-			patienceDelta: 0,
+			interestChange: 1,
+			patienceChange: 0,
 			notes: 'First line\nSecond line\nThird line',
 			createdAt: new Date()
 		};
@@ -558,10 +586,11 @@ describe('ArgumentCard Component - Notes Display', () => {
 	it('should preserve whitespace in notes', () => {
 		const argument: NegotiationArgument = {
 			id: '1',
-			argumentType: 'motivation',
+			type: 'motivation',
+		description: 'Test argument',
 			tier: 1,
-			interestDelta: 1,
-			patienceDelta: 0,
+			interestChange: 1,
+			patienceChange: 0,
 			notes: 'First line\nSecond line',
 			createdAt: new Date()
 		};
@@ -579,11 +608,12 @@ describe('ArgumentCard Component - Motivation Type Display', () => {
 	it('should display motivation type for motivation arguments', () => {
 		const argument: NegotiationArgument = {
 			id: '1',
-			argumentType: 'motivation',
+			type: 'motivation',
+		description: 'Test argument',
 			motivationType: 'justice',
 			tier: 1,
-			interestDelta: 1,
-			patienceDelta: 0,
+			interestChange: 1,
+			patienceChange: 0,
 			createdAt: new Date()
 		};
 
@@ -597,11 +627,12 @@ describe('ArgumentCard Component - Motivation Type Display', () => {
 	it('should display motivation type for pitfall arguments', () => {
 		const argument: NegotiationArgument = {
 			id: '1',
-			argumentType: 'pitfall',
+			type: 'pitfall',
+		description: 'Test argument',
 			motivationType: 'greed',
 			tier: 1,
-			interestDelta: -1,
-			patienceDelta: -1,
+			interestChange: -1,
+			patienceChange: -1,
 			createdAt: new Date()
 		};
 
@@ -615,10 +646,11 @@ describe('ArgumentCard Component - Motivation Type Display', () => {
 	it('should not display motivation type for no_motivation arguments', () => {
 		const argument: NegotiationArgument = {
 			id: '1',
-			argumentType: 'no_motivation',
+			type: 'no_motivation',
+		description: 'Test argument',
 			tier: 1,
-			interestDelta: 0,
-			patienceDelta: -1,
+			interestChange: 0,
+			patienceChange: -1,
 			createdAt: new Date()
 		};
 
@@ -634,11 +666,12 @@ describe('ArgumentCard Component - Motivation Type Display', () => {
 	it('should capitalize motivation type', () => {
 		const argument: NegotiationArgument = {
 			id: '1',
-			argumentType: 'motivation',
+			type: 'motivation',
+		description: 'Test argument',
 			motivationType: 'higher_authority',
 			tier: 1,
-			interestDelta: 1,
-			patienceDelta: 0,
+			interestChange: 1,
+			patienceChange: 0,
 			createdAt: new Date()
 		};
 
@@ -654,10 +687,11 @@ describe('ArgumentCard Component - Timestamp Display', () => {
 	it('should display timestamp', () => {
 		const argument: NegotiationArgument = {
 			id: '1',
-			argumentType: 'motivation',
+			type: 'motivation',
+		description: 'Test argument',
 			tier: 1,
-			interestDelta: 1,
-			patienceDelta: 0,
+			interestChange: 1,
+			patienceChange: 0,
 			createdAt: new Date('2024-01-15T10:30:00')
 		};
 
@@ -673,10 +707,11 @@ describe('ArgumentCard Component - Timestamp Display', () => {
 	it('should format timestamp as relative time', () => {
 		const argument: NegotiationArgument = {
 			id: '1',
-			argumentType: 'motivation',
+			type: 'motivation',
+		description: 'Test argument',
 			tier: 1,
-			interestDelta: 1,
-			patienceDelta: 0,
+			interestChange: 1,
+			patienceChange: 0,
 			createdAt: new Date(Date.now() - 60000) // 1 minute ago
 		};
 
@@ -692,10 +727,11 @@ describe('ArgumentCard Component - Timestamp Display', () => {
 		const testDate = new Date('2024-01-15T10:30:00');
 		const argument: NegotiationArgument = {
 			id: '1',
-			argumentType: 'motivation',
+			type: 'motivation',
+		description: 'Test argument',
 			tier: 1,
-			interestDelta: 1,
-			patienceDelta: 0,
+			interestChange: 1,
+			patienceChange: 0,
 			createdAt: testDate
 		};
 
@@ -712,10 +748,11 @@ describe('ArgumentCard Component - Visual Styling', () => {
 	it('should have card-like appearance', () => {
 		const argument: NegotiationArgument = {
 			id: '1',
-			argumentType: 'motivation',
+			type: 'motivation',
+		description: 'Test argument',
 			tier: 1,
-			interestDelta: 1,
-			patienceDelta: 0,
+			interestChange: 1,
+			patienceChange: 0,
 			createdAt: new Date()
 		};
 
@@ -730,10 +767,11 @@ describe('ArgumentCard Component - Visual Styling', () => {
 	it('should use different styling for pitfall arguments', () => {
 		const argument: NegotiationArgument = {
 			id: '1',
-			argumentType: 'pitfall',
+			type: 'pitfall',
+		description: 'Test argument',
 			tier: 1,
-			interestDelta: -1,
-			patienceDelta: -1,
+			interestChange: -1,
+			patienceChange: -1,
 			createdAt: new Date()
 		};
 
@@ -748,10 +786,11 @@ describe('ArgumentCard Component - Visual Styling', () => {
 	it('should use different styling for motivation arguments', () => {
 		const argument: NegotiationArgument = {
 			id: '1',
-			argumentType: 'motivation',
+			type: 'motivation',
+		description: 'Test argument',
 			tier: 1,
-			interestDelta: 1,
-			patienceDelta: 0,
+			interestChange: 1,
+			patienceChange: 0,
 			createdAt: new Date()
 		};
 
@@ -768,10 +807,11 @@ describe('ArgumentCard Component - Accessibility', () => {
 	it('should have semantic article element', () => {
 		const argument: NegotiationArgument = {
 			id: '1',
-			argumentType: 'motivation',
+			type: 'motivation',
+		description: 'Test argument',
 			tier: 1,
-			interestDelta: 1,
-			patienceDelta: 0,
+			interestChange: 1,
+			patienceChange: 0,
 			createdAt: new Date()
 		};
 
@@ -786,11 +826,12 @@ describe('ArgumentCard Component - Accessibility', () => {
 	it('should have accessible label describing the argument', () => {
 		const argument: NegotiationArgument = {
 			id: '1',
-			argumentType: 'motivation',
+			type: 'motivation',
+		description: 'Test argument',
 			motivationType: 'justice',
 			tier: 2,
-			interestDelta: 2,
-			patienceDelta: 0,
+			interestChange: 2,
+			patienceChange: 0,
 			createdAt: new Date()
 		};
 
@@ -805,10 +846,11 @@ describe('ArgumentCard Component - Accessibility', () => {
 	it('should use time element for timestamp', () => {
 		const argument: NegotiationArgument = {
 			id: '1',
-			argumentType: 'motivation',
+			type: 'motivation',
+		description: 'Test argument',
 			tier: 1,
-			interestDelta: 1,
-			patienceDelta: 0,
+			interestChange: 1,
+			patienceChange: 0,
 			createdAt: new Date()
 		};
 
@@ -825,11 +867,12 @@ describe('ArgumentCard Component - Edge Cases', () => {
 	it('should handle argument with all optional fields', () => {
 		const argument: NegotiationArgument = {
 			id: '1',
-			argumentType: 'motivation',
+			type: 'motivation',
+		description: 'Test argument',
 			motivationType: 'justice',
 			tier: 3,
-			interestDelta: 2,
-			patienceDelta: 1,
+			interestChange: 2,
+			patienceChange: 1,
 			playerName: 'Gandalf',
 			notes: 'Wisdom prevails',
 			createdAt: new Date()
@@ -846,10 +889,11 @@ describe('ArgumentCard Component - Edge Cases', () => {
 	it('should handle argument with minimal fields', () => {
 		const argument: NegotiationArgument = {
 			id: '1',
-			argumentType: 'no_motivation',
+			type: 'no_motivation',
+		description: 'Test argument',
 			tier: 1,
-			interestDelta: 0,
-			patienceDelta: -1,
+			interestChange: 0,
+			patienceChange: -1,
 			createdAt: new Date()
 		};
 
@@ -864,10 +908,11 @@ describe('ArgumentCard Component - Edge Cases', () => {
 		const longNotes = 'This is a very long note '.repeat(50);
 		const argument: NegotiationArgument = {
 			id: '1',
-			argumentType: 'motivation',
+			type: 'motivation',
+		description: 'Test argument',
 			tier: 1,
-			interestDelta: 1,
-			patienceDelta: 0,
+			interestChange: 1,
+			patienceChange: 0,
 			notes: longNotes,
 			createdAt: new Date()
 		};

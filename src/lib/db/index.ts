@@ -9,6 +9,7 @@ import type {
 	CombatSession,
 	MontageSession
 } from '$lib/types';
+import type { CreatureTemplate } from '$lib/types/creature';
 import { migrateCampaignToEntity } from './migrations/migrateCampaignToEntity';
 import { migrateExistingChatMessages } from './migrations/migrateExistingChatMessages';
 
@@ -28,6 +29,7 @@ class DMAssistantDB extends Dexie {
 	relationshipSummaryCache!: Table<RelationshipSummaryCache>;
 	combatSessions!: Table<CombatSession>;
 	montageSessions!: Table<MontageSession>;
+	creatureTemplates!: Table<CreatureTemplate>;
 
 	constructor() {
 		super('dm-assistant');
@@ -107,6 +109,20 @@ class DMAssistantDB extends Dexie {
 			relationshipSummaryCache: 'id, sourceId, targetId, relationship, generatedAt',
 			combatSessions: 'id, status, createdAt, updatedAt',
 			montageSessions: 'id, status, createdAt, updatedAt'
+		});
+
+		// Version 8: Add creatureTemplates table for creature template library
+		this.version(8).stores({
+			entities: 'id, type, name, *tags, createdAt, updatedAt',
+			campaign: 'id',
+			conversations: 'id, name, updatedAt',
+			chatMessages: 'id, conversationId, timestamp',
+			suggestions: 'id, type, status, createdAt, expiresAt, *affectedEntityIds',
+			appConfig: 'key',
+			relationshipSummaryCache: 'id, sourceId, targetId, relationship, generatedAt',
+			combatSessions: 'id, status, createdAt, updatedAt',
+			montageSessions: 'id, status, createdAt, updatedAt',
+			creatureTemplates: 'id, name, threat, *tags, createdAt, updatedAt'
 		});
 	}
 }

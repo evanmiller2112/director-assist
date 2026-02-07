@@ -50,6 +50,7 @@ export function createMockCombatStore(initialSessions: CombatSession[] = []) {
 				currentRound: 0,
 				currentTurn: 0,
 				combatants: [],
+				groups: [],
 				victoryPoints: 0,
 				heroPoints: 3,
 				log: [],

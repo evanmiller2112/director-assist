@@ -8,8 +8,11 @@ import type {
 	CreatureCombatant,
 	CombatCondition,
 	CombatLogEntry,
-	PowerRollResult
+	PowerRollResult,
+	CombatantGroup,
+	CreateGroupInput
 } from './combat';
+import { isGroupedCombatant } from './combat';
 
 /**
  * Test Suite: Combat Types and Type Guards
@@ -68,6 +71,7 @@ describe('Combat Types - Type Safety', () => {
 				currentRound: 0,
 				currentTurn: 0,
 				combatants: [],
+				groups: [],
 				victoryPoints: 0,
 				heroPoints: 0,
 				log: [],
@@ -96,6 +100,7 @@ describe('Combat Types - Type Safety', () => {
 				currentRound: 1,
 				currentTurn: 0,
 				combatants: [],
+				groups: [],
 				victoryPoints: 0,
 				heroPoints: 0,
 				log: [],
@@ -700,6 +705,461 @@ describe('Combat Helper Functions - Concepts', () => {
 			const canSpend = heroPoints > 0;
 
 			expect(canSpend).toBe(false);
+		});
+	});
+});
+
+// ============================================================================
+// Group Support Tests (Issue #263)
+// ============================================================================
+
+describe('Combat Types - Group Support (Issue #263)', () => {
+	describe('CombatantGroup interface', () => {
+		it('should have required group properties', () => {
+			const group: CombatantGroup = {
+				id: 'group-1',
+				name: 'Goblin Squad',
+				memberIds: ['goblin-1', 'goblin-2', 'goblin-3'],
+				initiative: 12,
+				initiativeRoll: [6, 6],
+				turnOrder: 1
+			};
+
+			expect(group.id).toBe('group-1');
+			expect(group.name).toBe('Goblin Squad');
+			expect(group.memberIds).toHaveLength(3);
+			expect(group.initiative).toBe(12);
+			expect(group.turnOrder).toBe(1);
+		});
+
+		it('should allow groups with single member (before dissolution)', () => {
+			const group: CombatantGroup = {
+				id: 'group-1',
+				name: 'Solo Member',
+				memberIds: ['creature-1'],
+				initiative: 10,
+				initiativeRoll: [5, 5],
+				turnOrder: 2
+			};
+
+			expect(group.memberIds).toHaveLength(1);
+		});
+
+		it('should allow empty member array (transient state)', () => {
+			const group: CombatantGroup = {
+				id: 'group-1',
+				name: 'Empty Group',
+				memberIds: [],
+				initiative: 8,
+				initiativeRoll: [4, 4],
+				turnOrder: 3
+			};
+
+			expect(group.memberIds).toHaveLength(0);
+		});
+
+		it('should support fractional turnOrder for groups', () => {
+			const group: CombatantGroup = {
+				id: 'group-1',
+				name: 'Mid-Initiative Group',
+				memberIds: ['creature-1', 'creature-2'],
+				initiative: 12,
+				initiativeRoll: [6, 6],
+				turnOrder: 2.5
+			};
+
+			expect(group.turnOrder).toBe(2.5);
+		});
+	});
+
+	describe('BaseCombatant groupId field', () => {
+		it('should allow combatants with groupId', () => {
+			const combatant: Combatant = {
+				id: 'creature-1',
+				type: 'creature',
+				name: 'Goblin 1',
+				groupId: 'group-1',
+				initiative: 12,
+				initiativeRoll: [6, 6],
+				turnOrder: 1.1, // Grouped combatants use fractional turnOrder
+				hp: 8,
+				maxHp: 8,
+				tempHp: 0,
+				conditions: [],
+				threat: 1
+			};
+
+			expect(combatant.groupId).toBe('group-1');
+		});
+
+		it('should allow combatants without groupId (standalone)', () => {
+			const combatant: Combatant = {
+				id: 'hero-1',
+				type: 'hero',
+				name: 'Aragorn',
+				initiative: 18,
+				initiativeRoll: [9, 9],
+				turnOrder: 1,
+				hp: 40,
+				maxHp: 40,
+				tempHp: 0,
+				conditions: []
+			};
+
+			expect(combatant.groupId).toBeUndefined();
+		});
+
+		it('should allow heroes in groups', () => {
+			const hero: HeroCombatant = {
+				id: 'hero-1',
+				type: 'hero',
+				name: 'Ranger Team Leader',
+				groupId: 'hero-group-1',
+				initiative: 15,
+				initiativeRoll: [8, 7],
+				turnOrder: 1.1,
+				hp: 35,
+				maxHp: 35,
+				tempHp: 0,
+				conditions: []
+			};
+
+			expect(hero.groupId).toBe('hero-group-1');
+			expect(hero.type).toBe('hero');
+		});
+	});
+
+	describe('CombatSession groups array', () => {
+		it('should include groups array in CombatSession', () => {
+			const session: CombatSession = {
+				id: 'combat-1',
+				name: 'Test Combat',
+				status: 'active',
+				currentRound: 1,
+				currentTurn: 0,
+				combatants: [],
+				groups: [
+					{
+						id: 'group-1',
+						name: 'Enemy Squad',
+						memberIds: ['creature-1', 'creature-2'],
+						initiative: 12,
+						initiativeRoll: [6, 6],
+						turnOrder: 1
+					}
+				],
+				victoryPoints: 0,
+				heroPoints: 0,
+				log: [],
+				createdAt: new Date(),
+				updatedAt: new Date()
+			};
+
+			expect(session.groups).toBeDefined();
+			expect(session.groups).toHaveLength(1);
+			expect(session.groups[0].name).toBe('Enemy Squad');
+		});
+
+		it('should allow empty groups array', () => {
+			const session: CombatSession = {
+				id: 'combat-1',
+				name: 'No Groups Combat',
+				status: 'preparing',
+				currentRound: 0,
+				currentTurn: 0,
+				combatants: [],
+				groups: [],
+				victoryPoints: 0,
+				heroPoints: 0,
+				log: [],
+				createdAt: new Date(),
+				updatedAt: new Date()
+			};
+
+			expect(session.groups).toEqual([]);
+		});
+
+		it('should allow multiple groups in a session', () => {
+			const session: CombatSession = {
+				id: 'combat-1',
+				name: 'Multi-Group Combat',
+				status: 'active',
+				currentRound: 1,
+				currentTurn: 0,
+				combatants: [],
+				groups: [
+					{
+						id: 'group-1',
+						name: 'Goblin Squad',
+						memberIds: ['goblin-1', 'goblin-2'],
+						initiative: 10,
+						initiativeRoll: [5, 5],
+						turnOrder: 2
+					},
+					{
+						id: 'group-2',
+						name: 'Orc Warriors',
+						memberIds: ['orc-1', 'orc-2', 'orc-3'],
+						initiative: 14,
+						initiativeRoll: [7, 7],
+						turnOrder: 1
+					}
+				],
+				victoryPoints: 0,
+				heroPoints: 0,
+				log: [],
+				createdAt: new Date(),
+				updatedAt: new Date()
+			};
+
+			expect(session.groups).toHaveLength(2);
+			expect(session.groups[1].initiative).toBeGreaterThan(session.groups[0].initiative);
+		});
+	});
+
+	describe('CreateGroupInput interface', () => {
+		it('should validate CreateGroupInput structure', () => {
+			const input: CreateGroupInput = {
+				name: 'Orc Band',
+				memberIds: ['orc-1', 'orc-2', 'orc-3']
+			};
+
+			expect(input.name).toBe('Orc Band');
+			expect(input.memberIds).toHaveLength(3);
+		});
+
+		it('should require at least one member ID', () => {
+			// CreateGroupInput should allow creation with 1+ members
+			const input: CreateGroupInput = {
+				name: 'Single Member',
+				memberIds: ['creature-1']
+			};
+
+			expect(input.memberIds).toHaveLength(1);
+		});
+
+		it('should allow initiative override', () => {
+			const input: CreateGroupInput = {
+				name: 'Custom Init Group',
+				memberIds: ['creature-1', 'creature-2'],
+				initiative: 15
+			};
+
+			expect(input.initiative).toBe(15);
+		});
+
+		it('should allow multiple members without initiative override', () => {
+			const input: CreateGroupInput = {
+				name: 'Default Init Group',
+				memberIds: ['creature-1', 'creature-2', 'creature-3', 'creature-4']
+			};
+
+			expect(input.memberIds).toHaveLength(4);
+			expect(input.initiative).toBeUndefined();
+		});
+	});
+
+	describe('isGroupedCombatant type guard', () => {
+		it('should identify combatants with groupId', () => {
+			const combatant: Combatant = {
+				id: 'creature-1',
+				type: 'creature',
+				name: 'Grouped Enemy',
+				groupId: 'group-1',
+				initiative: 10,
+				initiativeRoll: [5, 5],
+				turnOrder: 2.1,
+				hp: 12,
+				maxHp: 12,
+				tempHp: 0,
+				conditions: [],
+				threat: 1
+			};
+
+			expect(isGroupedCombatant(combatant)).toBe(true);
+		});
+
+		it('should identify standalone combatants without groupId', () => {
+			const combatant: Combatant = {
+				id: 'hero-1',
+				type: 'hero',
+				name: 'Standalone Hero',
+				initiative: 15,
+				initiativeRoll: [8, 7],
+				turnOrder: 1,
+				hp: 35,
+				maxHp: 35,
+				tempHp: 0,
+				conditions: []
+			};
+
+			expect(isGroupedCombatant(combatant)).toBe(false);
+		});
+
+		it('should handle undefined groupId', () => {
+			const combatant: Combatant = {
+				id: 'creature-1',
+				type: 'creature',
+				name: 'No Group',
+				groupId: undefined,
+				initiative: 8,
+				initiativeRoll: [4, 4],
+				turnOrder: 3,
+				hp: 10,
+				maxHp: 10,
+				tempHp: 0,
+				conditions: [],
+				threat: 1
+			};
+
+			expect(isGroupedCombatant(combatant)).toBe(false);
+		});
+	});
+
+	describe('Type compilation tests', () => {
+		it('should allow fractional turnOrder for grouped combatants', () => {
+			const combatants: Combatant[] = [
+				{
+					id: 'creature-1',
+					type: 'creature',
+					name: 'Goblin 1',
+					groupId: 'group-1',
+					initiative: 12,
+					initiativeRoll: [6, 6],
+					turnOrder: 2.1,
+					hp: 8,
+					maxHp: 8,
+					tempHp: 0,
+					conditions: [],
+					threat: 1
+				},
+				{
+					id: 'creature-2',
+					type: 'creature',
+					name: 'Goblin 2',
+					groupId: 'group-1',
+					initiative: 12,
+					initiativeRoll: [6, 6],
+					turnOrder: 2.2,
+					hp: 8,
+					maxHp: 8,
+					tempHp: 0,
+					conditions: [],
+					threat: 1
+				}
+			];
+
+			expect(combatants[0].turnOrder).toBe(2.1);
+			expect(combatants[1].turnOrder).toBe(2.2);
+		});
+
+		it('should allow group members to have different HP values', () => {
+			const combatants: Combatant[] = [
+				{
+					id: 'creature-1',
+					type: 'creature',
+					name: 'Wounded Goblin',
+					groupId: 'group-1',
+					initiative: 12,
+					initiativeRoll: [6, 6],
+					turnOrder: 2.1,
+					hp: 3,
+					maxHp: 8,
+					tempHp: 0,
+					conditions: [],
+					threat: 1
+				},
+				{
+					id: 'creature-2',
+					type: 'creature',
+					name: 'Healthy Goblin',
+					groupId: 'group-1',
+					initiative: 12,
+					initiativeRoll: [6, 6],
+					turnOrder: 2.2,
+					hp: 8,
+					maxHp: 8,
+					tempHp: 0,
+					conditions: [],
+					threat: 1
+				}
+			];
+
+			expect(combatants[0].hp).toBe(3);
+			expect(combatants[1].hp).toBe(8);
+		});
+
+		it('should allow mixed groups and standalone combatants', () => {
+			const session: CombatSession = {
+				id: 'combat-1',
+				name: 'Mixed Combat',
+				status: 'active',
+				currentRound: 1,
+				currentTurn: 0,
+				combatants: [
+					{
+						id: 'hero-1',
+						type: 'hero',
+						name: 'Solo Hero',
+						initiative: 18,
+						initiativeRoll: [9, 9],
+						turnOrder: 1,
+						hp: 40,
+						maxHp: 40,
+						tempHp: 0,
+						conditions: []
+					},
+					{
+						id: 'creature-1',
+						type: 'creature',
+						name: 'Grouped Enemy 1',
+						groupId: 'group-1',
+						initiative: 12,
+						initiativeRoll: [6, 6],
+						turnOrder: 2.1,
+						hp: 10,
+						maxHp: 10,
+						tempHp: 0,
+						conditions: [],
+						threat: 1
+					},
+					{
+						id: 'creature-2',
+						type: 'creature',
+						name: 'Grouped Enemy 2',
+						groupId: 'group-1',
+						initiative: 12,
+						initiativeRoll: [6, 6],
+						turnOrder: 2.2,
+						hp: 10,
+						maxHp: 10,
+						tempHp: 0,
+						conditions: [],
+						threat: 1
+					}
+				],
+				groups: [
+					{
+						id: 'group-1',
+						name: 'Enemy Squad',
+						memberIds: ['creature-1', 'creature-2'],
+						initiative: 12,
+						initiativeRoll: [6, 6],
+						turnOrder: 2
+					}
+				],
+				victoryPoints: 0,
+				heroPoints: 0,
+				log: [],
+				createdAt: new Date(),
+				updatedAt: new Date()
+			};
+
+			expect(session.combatants).toHaveLength(3);
+			expect(session.groups).toHaveLength(1);
+			expect(isGroupedCombatant(session.combatants[0])).toBe(false);
+			expect(isGroupedCombatant(session.combatants[1])).toBe(true);
+			expect(isGroupedCombatant(session.combatants[2])).toBe(true);
 		});
 	});
 });

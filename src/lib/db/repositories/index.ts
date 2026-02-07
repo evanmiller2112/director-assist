@@ -6,6 +6,7 @@ export { relationshipSummaryCacheRepository } from './relationshipSummaryCacheRe
 export { suggestionRepository } from './suggestionRepository';
 export { combatRepository } from './combatRepository';
 export { montageRepository } from './montageRepository';
+export { creatureRepository } from './creatureRepository';
 
 // Re-export types for graph visualization
 export type {

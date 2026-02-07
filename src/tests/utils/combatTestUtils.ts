@@ -3,6 +3,8 @@
  *
  * Helper functions for creating mock combat data for testing A2 Combat Round Tracker components.
  * These utilities follow TDD RED phase - components will fail until implemented.
+ *
+ * Updated for Issue #263: Group support for combat tracker
  */
 
 import type {
@@ -12,7 +14,8 @@ import type {
 	CreatureCombatant,
 	CombatCondition,
 	CombatLogEntry,
-	HeroicResource
+	HeroicResource,
+	CombatantGroup
 } from '$lib/types/combat';
 
 /**
@@ -146,6 +149,7 @@ export function createMockCombatSession(
 		currentRound: 0,
 		currentTurn: 0,
 		combatants: [],
+		groups: [],
 		victoryPoints: 0,
 		heroPoints: 3,
 		log: [],
@@ -271,4 +275,187 @@ export function createCompletedCombatSession(): CombatSession {
 		})
 	);
 	return combat;
+}
+
+// ============================================================================
+// Group Support Utilities (Issue #263)
+// ============================================================================
+
+/**
+ * Creates a mock combatant group for testing.
+ */
+export function createMockCombatantGroup(
+	overrides: Partial<CombatantGroup> = {}
+): CombatantGroup {
+	return {
+		id: `group-${Math.random().toString(36).substring(7)}`,
+		name: 'Test Group',
+		memberIds: [],
+		initiative: 12,
+		initiativeRoll: [6, 6],
+		turnOrder: 1,
+		...overrides
+	};
+}
+
+/**
+ * Creates a mock creature combatant with group membership.
+ */
+export function createMockGroupedCreatureCombatant(
+	groupId: string,
+	overrides: Partial<CreatureCombatant> = {}
+): CreatureCombatant {
+	return {
+		id: `creature-${Math.random().toString(36).substring(7)}`,
+		type: 'creature',
+		name: 'Grouped Creature',
+		groupId,
+		entityId: `entity-${Math.random().toString(36).substring(7)}`,
+		initiative: 12,
+		initiativeRoll: [6, 6],
+		turnOrder: 1.1, // Fractional for group members
+		hp: 20,
+		maxHp: 20,
+		tempHp: 0,
+		ac: 13,
+		conditions: [],
+		threat: 1,
+		tokenIndicator: undefined,
+		...overrides
+	};
+}
+
+/**
+ * Creates multiple grouped creature combatants for testing.
+ */
+export function createMockGroupedCreatures(
+	count: number,
+	groupId: string,
+	overrides: Partial<CreatureCombatant>[] = []
+): CreatureCombatant[] {
+	return Array.from({ length: count }, (_, i) =>
+		createMockGroupedCreatureCombatant(groupId, {
+			id: `creature-${i}`,
+			name: `Grouped Creature ${i + 1}`,
+			turnOrder: 1 + (i + 1) * 0.1, // 1.1, 1.2, 1.3, etc.
+			...overrides[i]
+		})
+	);
+}
+
+/**
+ * Creates a combat session with grouped combatants for testing.
+ */
+export function createCombatWithGroups(): CombatSession {
+	const groupId = 'group-1';
+	const group: CombatantGroup = createMockCombatantGroup({
+		id: groupId,
+		name: 'Goblin Squad',
+		memberIds: ['creature-0', 'creature-1', 'creature-2'],
+		initiative: 12,
+		turnOrder: 2
+	});
+
+	const groupedCreatures = createMockGroupedCreatures(3, groupId, [
+		{ id: 'creature-0', name: 'Goblin 1', turnOrder: 2.1 },
+		{ id: 'creature-1', name: 'Goblin 2', turnOrder: 2.2 },
+		{ id: 'creature-2', name: 'Goblin 3', turnOrder: 2.3 }
+	]);
+
+	const hero = createMockHeroCombatant({
+		id: 'hero-1',
+		name: 'Solo Hero',
+		initiative: 18,
+		turnOrder: 1
+	});
+
+	const combat = createMockCombatSession({
+		status: 'active',
+		currentRound: 1,
+		currentTurn: 0,
+		combatants: [hero, ...groupedCreatures],
+		groups: [group],
+		log: [
+			createMockLogEntry({
+				message: 'Combat started',
+				type: 'system',
+				round: 1,
+				turn: 0
+			})
+		]
+	});
+
+	return combat;
+}
+
+/**
+ * Creates a combat session with multiple groups for testing.
+ */
+export function createCombatWithMultipleGroups(): CombatSession {
+	const group1Id = 'group-1';
+	const group2Id = 'group-2';
+
+	const group1: CombatantGroup = createMockCombatantGroup({
+		id: group1Id,
+		name: 'Goblin Squad',
+		memberIds: ['goblin-0', 'goblin-1'],
+		initiative: 10,
+		turnOrder: 3
+	});
+
+	const group2: CombatantGroup = createMockCombatantGroup({
+		id: group2Id,
+		name: 'Orc Warriors',
+		memberIds: ['orc-0', 'orc-1', 'orc-2'],
+		initiative: 14,
+		turnOrder: 2
+	});
+
+	const goblins = createMockGroupedCreatures(2, group1Id, [
+		{ id: 'goblin-0', name: 'Goblin 1', hp: 8, maxHp: 8, turnOrder: 3.1 },
+		{ id: 'goblin-1', name: 'Goblin 2', hp: 8, maxHp: 8, turnOrder: 3.2 }
+	]);
+
+	const orcs = createMockGroupedCreatures(3, group2Id, [
+		{ id: 'orc-0', name: 'Orc 1', hp: 15, maxHp: 15, turnOrder: 2.1, threat: 1 },
+		{ id: 'orc-1', name: 'Orc 2', hp: 15, maxHp: 15, turnOrder: 2.2, threat: 1 },
+		{ id: 'orc-2', name: 'Orc 3', hp: 15, maxHp: 15, turnOrder: 2.3, threat: 1 }
+	]);
+
+	const hero = createMockHeroCombatant({
+		id: 'hero-1',
+		name: 'Solo Hero',
+		initiative: 18,
+		turnOrder: 1
+	});
+
+	return createMockCombatSession({
+		status: 'active',
+		currentRound: 1,
+		currentTurn: 0,
+		combatants: [hero, ...orcs, ...goblins],
+		groups: [group1, group2],
+		log: [
+			createMockLogEntry({
+				message: 'Combat started',
+				type: 'system',
+				round: 1,
+				turn: 0
+			})
+		]
+	});
+}
+
+/**
+ * Helper to get all members of a group from a combat session.
+ */
+export function getGroupMembers(combat: CombatSession, groupId: string): Combatant[] {
+	return combat.combatants.filter(c => c.groupId === groupId);
+}
+
+/**
+ * Helper to find a group by ID in a combat session.
+ */
+export function findGroup(combat: CombatSession, groupId: string): CombatantGroup | undefined {
+	return combat.groups?.find(g => g.id === groupId);
 }

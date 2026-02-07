@@ -117,9 +117,62 @@
 			.map((word) => word.charAt(0).toUpperCase() + word.slice(1))
 			.join(' ');
 	}
+
+	// Keyboard shortcut handler
+	function handleKeyDown(event: KeyboardEvent) {
+		// Skip if modifier keys are held
+		if (event.ctrlKey || event.altKey || event.metaKey) return;
+
+		// Skip if focus is on form inputs
+		const target = event.target as HTMLElement;
+		const tagName = target.tagName.toLowerCase();
+		if (tagName === 'input' || tagName === 'textarea' || tagName === 'select') return;
+
+		const key = event.key.toLowerCase();
+
+		// Tier shortcuts
+		if (key === '1') {
+			selectedTier = 1;
+			return;
+		}
+		if (key === '2') {
+			selectedTier = 2;
+			return;
+		}
+		if (key === '3') {
+			selectedTier = 3;
+			return;
+		}
+
+		// Type shortcuts
+		if (key === 'm') {
+			event.preventDefault();
+			argumentType = 'motivation';
+			return;
+		}
+		if (key === 'n') {
+			event.preventDefault();
+			argumentType = 'no_motivation';
+			return;
+		}
+		if (key === 'p') {
+			event.preventDefault();
+			argumentType = 'pitfall';
+			return;
+		}
+
+		// Enter to record
+		if (key === 'enter') {
+			// Check if record button would be enabled
+			if (!isRecordDisabled()) {
+				handleRecord();
+			}
+			return;
+		}
+	}
 </script>
 
-<div class="space-y-4">
+<div class="space-y-4" onkeydown={handleKeyDown} tabindex="0">
 	<!-- Argument Type Selector -->
 	<div>
 		<label for="argument-type" class="block text-sm font-medium mb-1">
@@ -275,4 +328,9 @@
 	>
 		Record Argument
 	</button>
+
+	<!-- Keyboard Shortcuts Hints -->
+	<p class="keyboard-hints text-xs text-gray-500 mt-2">
+		Shortcuts: 1/2/3 Tier • M/N/P Type • Enter Record
+	</p>
 </div>

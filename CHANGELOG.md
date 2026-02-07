@@ -19,6 +19,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Preserves concept field for backward compatibility while enabling more detailed character information
 - Example usage: ancestry="Human", culture="Nomadic", career="Soldier", heroClass="Fury", subclass="Reaver"
 
+## [1.3.1] - 2025-02-07
+
+### Fixed
+
+**Scene Runner Fixes (Issue #292)**
+- Fixed Scene Runner using wrong field name (`status` → `sceneStatus`)
+- Fixed Scene Runner using wrong status value (`active` → `in_progress`)
+- Fixed scenes not appearing due to campaign filter
+- Added Scene link to sidebar navigation
+
 ## [1.3.0] - 2025-02-07
 
 ### Added

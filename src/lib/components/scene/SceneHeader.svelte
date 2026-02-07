@@ -15,7 +15,7 @@ import { ArrowLeft, Edit, Play, CheckCircle } from 'lucide-svelte';
 interface Props {
 	sceneId: string;
 	sceneName: string;
-	status: 'planned' | 'active' | 'completed';
+	status: 'planned' | 'in_progress' | 'completed';
 	onStart?: () => void;
 	onComplete?: () => void;
 }
@@ -77,7 +77,7 @@ function handleComplete() {
 				</button>
 			{/if}
 
-			{#if status === 'active' && onComplete}
+			{#if status === 'in_progress' && onComplete}
 				<button
 					type="button"
 					class="flex items-center gap-2 px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md"

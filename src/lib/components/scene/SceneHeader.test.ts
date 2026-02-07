@@ -45,7 +45,7 @@ describe('SceneHeader Component - Basic Rendering', () => {
 			props: {
 				sceneId: 'scene-1',
 				sceneName: 'The Dragon Encounter',
-				status: 'active'
+				status: 'in_progress'
 			}
 		});
 
@@ -69,7 +69,7 @@ describe('SceneHeader Component - Basic Rendering', () => {
 			props: {
 				sceneId: 'scene-1',
 				sceneName: 'Test',
-				status: 'active'
+				status: 'in_progress'
 			}
 		});
 
@@ -100,7 +100,7 @@ describe('SceneHeader Component - Back Button', () => {
 			props: {
 				sceneId: 'scene-1',
 				sceneName: 'Test',
-				status: 'active'
+				status: 'in_progress'
 			}
 		});
 
@@ -112,7 +112,7 @@ describe('SceneHeader Component - Back Button', () => {
 			props: {
 				sceneId: 'scene-1',
 				sceneName: 'Test',
-				status: 'active'
+				status: 'in_progress'
 			}
 		});
 
@@ -127,7 +127,7 @@ describe('SceneHeader Component - Back Button', () => {
 			props: {
 				sceneId: 'scene-1',
 				sceneName: 'Test',
-				status: 'active'
+				status: 'in_progress'
 			}
 		});
 
@@ -147,7 +147,7 @@ describe('SceneHeader Component - Edit Button', () => {
 			props: {
 				sceneId: 'scene-1',
 				sceneName: 'Test',
-				status: 'active'
+				status: 'in_progress'
 			}
 		});
 
@@ -159,7 +159,7 @@ describe('SceneHeader Component - Edit Button', () => {
 			props: {
 				sceneId: 'scene-123',
 				sceneName: 'Test',
-				status: 'active'
+				status: 'in_progress'
 			}
 		});
 
@@ -174,7 +174,7 @@ describe('SceneHeader Component - Edit Button', () => {
 			props: {
 				sceneId: 'scene-1',
 				sceneName: 'Test',
-				status: 'active'
+				status: 'in_progress'
 			}
 		});
 
@@ -193,7 +193,7 @@ describe('SceneHeader Component - Complete Scene Button', () => {
 			props: {
 				sceneId: 'scene-1',
 				sceneName: 'Test',
-				status: 'active'
+				status: 'in_progress'
 			}
 		});
 
@@ -230,7 +230,7 @@ describe('SceneHeader Component - Complete Scene Button', () => {
 			props: {
 				sceneId: 'scene-1',
 				sceneName: 'Test',
-				status: 'active',
+				status: 'in_progress',
 				onComplete
 			}
 		});
@@ -246,7 +246,7 @@ describe('SceneHeader Component - Complete Scene Button', () => {
 			props: {
 				sceneId: 'scene-1',
 				sceneName: 'Test',
-				status: 'active'
+				status: 'in_progress'
 			}
 		});
 
@@ -277,7 +277,7 @@ describe('SceneHeader Component - Start Scene Button', () => {
 			props: {
 				sceneId: 'scene-1',
 				sceneName: 'Test',
-				status: 'active'
+				status: 'in_progress'
 			}
 		});
 
@@ -324,7 +324,7 @@ describe('SceneHeader Component - Layout', () => {
 			props: {
 				sceneId: 'scene-1',
 				sceneName: 'Test',
-				status: 'active'
+				status: 'in_progress'
 			}
 		});
 
@@ -340,7 +340,7 @@ describe('SceneHeader Component - Layout', () => {
 			props: {
 				sceneId: 'scene-1',
 				sceneName: 'Test',
-				status: 'active'
+				status: 'in_progress'
 			}
 		});
 
@@ -359,7 +359,7 @@ describe('SceneHeader Component - Layout', () => {
 			props: {
 				sceneId: 'scene-1',
 				sceneName: 'Test Scene',
-				status: 'active'
+				status: 'in_progress'
 			}
 		});
 
@@ -383,7 +383,7 @@ describe('SceneHeader Component - Accessibility', () => {
 			props: {
 				sceneId: 'scene-1',
 				sceneName: 'Test',
-				status: 'active'
+				status: 'in_progress'
 			}
 		});
 
@@ -395,7 +395,7 @@ describe('SceneHeader Component - Accessibility', () => {
 			props: {
 				sceneId: 'scene-1',
 				sceneName: 'Test',
-				status: 'active'
+				status: 'in_progress'
 			}
 		});
 
@@ -413,7 +413,7 @@ describe('SceneHeader Component - Accessibility', () => {
 			props: {
 				sceneId: 'scene-1',
 				sceneName: 'Test',
-				status: 'active'
+				status: 'in_progress'
 			}
 		});
 

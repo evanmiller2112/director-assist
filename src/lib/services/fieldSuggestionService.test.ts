@@ -83,7 +83,7 @@ vi.mock('$lib/repositories/fieldSuggestionRepository', () => ({
 
 // Mock the AI settings store
 const mockAiSettings = {
-	aiMode: 'suggestions' as const,
+	aiMode: 'suggestions' as 'off' | 'suggestions' | 'full',
 	isSuggestionsMode: true,
 	isEnabled: true,
 	isFullMode: false

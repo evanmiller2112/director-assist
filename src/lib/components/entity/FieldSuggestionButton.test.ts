@@ -341,7 +341,7 @@ describe('FieldSuggestionButton Component - Loading State', () => {
 
 		// Mock onSuggestionGenerated to delay so we can see loading state
 		const onSuggestionGenerated = vi.fn(
-			() => new Promise((resolve) => setTimeout(resolve, 1000))
+			(): Promise<void> => new Promise((resolve) => setTimeout(resolve, 1000))
 		);
 
 		const { container } = render(FieldSuggestionButton, {
@@ -365,7 +365,7 @@ describe('FieldSuggestionButton Component - Loading State', () => {
 	it('should hide "Suggest" text while loading', async () => {
 
 		const onSuggestionGenerated = vi.fn(
-			() => new Promise((resolve) => setTimeout(resolve, 1000))
+			(): Promise<void> => new Promise((resolve) => setTimeout(resolve, 1000))
 		);
 
 		render(FieldSuggestionButton, {
@@ -393,7 +393,7 @@ describe('FieldSuggestionButton Component - Loading State', () => {
 	it('should be disabled while generating', async () => {
 
 		const onSuggestionGenerated = vi.fn(
-			() => new Promise((resolve) => setTimeout(resolve, 1000))
+			(): Promise<void> => new Promise((resolve) => setTimeout(resolve, 1000))
 		);
 
 		render(FieldSuggestionButton, {
@@ -417,7 +417,7 @@ describe('FieldSuggestionButton Component - Loading State', () => {
 	it('should prevent multiple simultaneous generations', async () => {
 
 		const onSuggestionGenerated = vi.fn(
-			() => new Promise((resolve) => setTimeout(resolve, 100))
+			(): Promise<void> => new Promise((resolve) => setTimeout(resolve, 100))
 		);
 
 		render(FieldSuggestionButton, {

@@ -70,7 +70,7 @@ describe('FieldSuggestionBadge Component - Basic Rendering', () => {
 		});
 
 		// Should not find any visible badge text or icon
-		expect(screen.queryByText(/AI/i)).not.toBeInTheDocument();
+		expect(screen.queryByText(/Suggestions/i)).not.toBeInTheDocument();
 	});
 
 	it('should render as inline element', () => {
@@ -103,7 +103,7 @@ describe('FieldSuggestionBadge Component - Visual Appearance', () => {
 		expect(badge).toHaveClass(/amber|yellow|bg-amber|bg-yellow/);
 	});
 
-	it('should display "AI" text or icon', () => {
+	it('should display "Suggestions" text or icon', () => {
 		render(FieldSuggestionBadge, {
 			props: {
 				fieldName: 'description',
@@ -112,11 +112,39 @@ describe('FieldSuggestionBadge Component - Visual Appearance', () => {
 			}
 		});
 
-		// Should have "AI" text OR an icon (svg element)
-		const aiText = screen.queryByText(/AI/i);
+		// Should have "Suggestions" text OR an icon (svg element)
+		const suggestionsText = screen.queryByText(/Suggestions/i);
 		const icon = document.querySelector('svg');
 
-		expect(aiText || icon).toBeTruthy();
+		expect(suggestionsText || icon).toBeTruthy();
+	});
+
+	it('should display "Suggestions" text on larger screens', () => {
+		render(FieldSuggestionBadge, {
+			props: {
+				fieldName: 'description',
+				hasSuggestion: true,
+				onClick: vi.fn()
+			}
+		});
+
+		// Should explicitly show "Suggestions" text (not "AI")
+		const suggestionsText = screen.queryByText('Suggestions');
+		expect(suggestionsText).toBeInTheDocument();
+	});
+
+	it('should NOT display "AI" text', () => {
+		render(FieldSuggestionBadge, {
+			props: {
+				fieldName: 'description',
+				hasSuggestion: true,
+				onClick: vi.fn()
+			}
+		});
+
+		// Should not show "AI" text - we want "Suggestions" instead
+		const aiText = screen.queryByText('AI');
+		expect(aiText).not.toBeInTheDocument();
 	});
 
 	it('should use lightbulb or sparkles icon from Lucide', () => {
@@ -324,8 +352,8 @@ describe('FieldSuggestionBadge Component - Accessibility', () => {
 		const badge = screen.getByRole('button');
 		const ariaLabel = badge.getAttribute('aria-label');
 
-		// Should include "suggestion" or "AI" and field name
-		expect(ariaLabel).toMatch(/suggestion|AI|description/i);
+		// Should include "suggestion" and field name
+		expect(ariaLabel).toMatch(/suggestion|description/i);
 	});
 
 	it('should be keyboard accessible', async () => {

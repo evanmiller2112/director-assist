@@ -244,6 +244,329 @@ Respond with ONLY a JSON object in this exact format (no markdown, no explanatio
 }
 
 /**
+ * Build a prompt for generating a suggestion for a single field.
+ *
+ * Similar to buildBatchSuggestionPrompt but optimized for a single field.
+ *
+ * @param typeDefinition - The entity type definition
+ * @param existingData - The current entity data
+ * @param fieldDef - The field to generate a suggestion for
+ * @param options - Additional context options
+ * @returns A formatted prompt string for the AI
+ * @private
+ */
+function buildSingleFieldSuggestionPrompt(
+	typeDefinition: EntityTypeDefinition,
+	existingData: EntityData,
+	fieldDef: FieldDefinition,
+	options?: FieldSuggestionOptions
+): string {
+	// Build context from existing values (EXCLUDING hidden fields)
+	let existingContext = '';
+
+	if (existingData.name) {
+		existingContext += `Name: ${existingData.name}\n`;
+	}
+
+	if (existingData.description) {
+		existingContext += `Description: ${existingData.description}\n`;
+	}
+
+	if (existingData.summary) {
+		existingContext += `Summary: ${existingData.summary}\n`;
+	}
+
+	if (existingData.tags && existingData.tags.length > 0) {
+		existingContext += `Tags: ${existingData.tags.join(', ')}\n`;
+	}
+
+	// Add other filled fields (excluding hidden fields)
+	for (const [key, value] of Object.entries(existingData.fields)) {
+		if (value !== null && value !== undefined && value !== '') {
+			// Find the field definition to check if it's hidden
+			const fieldDefCheck = typeDefinition.fieldDefinitions.find((f) => f.key === key);
+
+			// Skip hidden fields
+			if (fieldDefCheck?.section === 'hidden') {
+				continue;
+			}
+
+			const label = fieldDefCheck?.label ?? key;
+			const displayValue = Array.isArray(value) ? value.join(', ') : String(value);
+			existingContext += `${label}: ${displayValue}\n`;
+		}
+	}
+
+	// Build campaign context
+	let campaignInfo = '';
+	if (options?.campaignContext) {
+		campaignInfo = `\nCampaign Context:
+- Campaign: ${options.campaignContext.name}
+- Setting: ${options.campaignContext.setting}
+- System: ${options.campaignContext.system}
+`;
+	}
+
+	// Build relationship context
+	let relationshipInfo = '';
+	if (options?.relationshipContext && options.relationshipContext.trim()) {
+		relationshipInfo = `\n${options.relationshipContext}\n`;
+	}
+
+	const entityLabel = typeDefinition.label;
+
+	// Build field description
+	let fieldDesc = `${fieldDef.label} (${fieldDef.type})`;
+	if (fieldDef.placeholder) {
+		fieldDesc += ` - Example: ${fieldDef.placeholder}`;
+	}
+	if (fieldDef.helpText) {
+		fieldDesc += ` - Guidance: ${fieldDef.helpText}`;
+	}
+
+	return `You are a TTRPG campaign assistant helping a Game Master brainstorm ideas for a ${entityLabel}.
+
+CONTEXT ABOUT THIS ${entityLabel.toUpperCase()}:
+${existingContext || '(No existing details yet)'}
+${campaignInfo}${relationshipInfo}
+
+FIELD THAT NEEDS IDEAS:
+${fieldDesc}
+
+YOUR TASK:
+Provide a bulleted list of 3-5 quick ideas for "${fieldDef.label}". Draw from the context above - especially relationships and existing details.
+
+FORMAT YOUR SUGGESTIONS LIKE THIS:
+"${fieldDef.label} could be:
+- [Quick idea 1]
+- [Quick idea 2]
+- [Quick idea 3]
+- [Idea that connects to a relationship]
+- [Idea based on existing context]"
+
+GUIDELINES:
+- Each bullet should be SHORT (a few words to one sentence)
+- Include at least one idea that connects to relationships or existing details
+- Mix personality traits, physical details, quirks, connections to other characters
+- Be specific and creative, not generic
+
+EXAMPLE for a character's "personality" field with context that they're a blacksmith's apprentice who knows someone named Sam:
+"Personality could be:
+- Eager to prove himself
+- Secretly afraid of fire despite his trade
+- Fiercely loyal to Sam
+- Hums while working metal
+- Quick temper but quicker to forgive"
+
+Respond with ONLY a JSON object in this exact format (no markdown, no explanation):
+{
+  "suggestions": [
+    {
+      "fieldKey": "${fieldDef.key}",
+      "value": "${fieldDef.label} could be:\\n- Idea 1\\n- Idea 2\\n- Idea 3\\n- Idea 4\\n- Idea 5",
+      "confidence": 0.85
+    }
+  ]
+}`;
+}
+
+/**
+ * Generate an AI suggestion for a single field in an entity.
+ *
+ * This is useful when the user wants to generate a suggestion for a specific field
+ * rather than all empty fields at once (as with generateSuggestionsForEntity).
+ *
+ * @param typeOrDefinition - The entity type string (e.g., 'npc') or EntityTypeDefinition
+ * @param entityId - The ID of the entity
+ * @param fieldKey - The key of the field to generate a suggestion for
+ * @param existingData - The current entity data
+ * @param options - Optional campaign and relationship context
+ * @returns A promise resolving to the generation result
+ *
+ * @example
+ * ```typescript
+ * const result = await generateSuggestionForField(
+ *   'npc',
+ *   'npc-123',
+ *   'personality',
+ *   {
+ *     id: 'npc-123',
+ *     type: 'npc',
+ *     name: 'Grimwald',
+ *     description: 'An innkeeper',
+ *     fields: { role: 'Innkeeper' }
+ *   }
+ * );
+ * ```
+ */
+export async function generateSuggestionForField(
+	typeOrDefinition: EntityType | EntityTypeDefinition,
+	entityId: string,
+	fieldKey: string,
+	existingData: EntityData,
+	options?: FieldSuggestionOptions
+): Promise<FieldSuggestionResult> {
+	// Check for API key
+	const apiKey = typeof window !== 'undefined' ? localStorage.getItem('dm-assist-api-key') : null;
+
+	if (!apiKey) {
+		return {
+			success: false,
+			error: 'API key not configured. Please add your Anthropic API key in Settings.'
+		};
+	}
+
+	// Resolve the type definition
+	let typeDefinition: EntityTypeDefinition | undefined;
+
+	if (typeof typeOrDefinition === 'object' && 'fieldDefinitions' in typeOrDefinition) {
+		typeDefinition = typeOrDefinition;
+	} else if (typeof typeOrDefinition === 'string') {
+		typeDefinition = getEntityTypeDefinition(typeOrDefinition);
+
+		if (!typeDefinition) {
+			return {
+				success: true,
+				suggestions: []
+			};
+		}
+	} else {
+		return {
+			success: false,
+			error: 'Invalid entity type or type definition'
+		};
+	}
+
+	// Find the field definition
+	const fieldDef = typeDefinition.fieldDefinitions.find((f) => f.key === fieldKey);
+
+	if (!fieldDef) {
+		return {
+			success: false,
+			error: `Field "${fieldKey}" not found in entity type definition`
+		};
+	}
+
+	// Check if the field is generatable
+	if (!isGeneratableField(fieldDef)) {
+		return {
+			success: false,
+			error: `Field "${fieldKey}" is not generatable`
+		};
+	}
+
+	// Build the single-field prompt
+	const prompt = buildSingleFieldSuggestionPrompt(typeDefinition, existingData, fieldDef, options);
+	const model = getSelectedModel();
+
+	try {
+		// Call Anthropic API
+		const client = new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
+
+		const response = await client.messages.create({
+			model,
+			max_tokens: 1024,
+			messages: [
+				{
+					role: 'user',
+					content: prompt
+				}
+			]
+		});
+
+		// Extract text content from response
+		const textContent = response.content.find((c) => c.type === 'text');
+		if (!textContent || textContent.type !== 'text') {
+			return {
+				success: false,
+				error: 'Unexpected response format from AI'
+			};
+		}
+
+		// Parse the JSON response - handle markdown code blocks
+		let aiResponse: AISuggestionResponse;
+		try {
+			let jsonText = textContent.text.trim();
+
+			// Strip markdown code blocks if present
+			const jsonMatch = jsonText.match(/```(?:json)?\s*([\s\S]*?)```/);
+			if (jsonMatch) {
+				jsonText = jsonMatch[1].trim();
+			}
+
+			aiResponse = JSON.parse(jsonText);
+		} catch (parseError) {
+			console.error('[fieldSuggestionService] Failed to parse AI response:', textContent.text);
+			return {
+				success: false,
+				error: 'Failed to parse AI response as JSON'
+			};
+		}
+
+		// Validate response structure
+		if (!aiResponse.suggestions || !Array.isArray(aiResponse.suggestions)) {
+			return {
+				success: false,
+				error: 'AI response missing suggestions array'
+			};
+		}
+
+		// Get the first (and only) suggestion
+		const suggestion = aiResponse.suggestions[0];
+
+		if (!suggestion) {
+			return {
+				success: false,
+				error: 'AI response did not include a suggestion'
+			};
+		}
+
+		// Create and store the FieldSuggestion
+		try {
+			const created = await fieldSuggestionRepository.create({
+				entityId,
+				entityType: existingData.type,
+				fieldKey: suggestion.fieldKey,
+				suggestedValue: suggestion.value,
+				...(suggestion.confidence !== undefined && { confidence: suggestion.confidence })
+			});
+
+			return {
+				success: true,
+				suggestions: [created]
+			};
+		} catch (storageError) {
+			return {
+				success: false,
+				error: storageError instanceof Error ? storageError.message : 'Failed to store suggestion'
+			};
+		}
+	} catch (error) {
+		// Handle API errors gracefully
+		if (error && typeof error === 'object' && 'status' in error) {
+			const status = (error as { status: number }).status;
+			if (status === 401) {
+				return {
+					success: false,
+					error: 'Invalid API key. Please check your API key in Settings.'
+				};
+			} else if (status === 429) {
+				return {
+					success: false,
+					error: 'Rate limit exceeded. Please wait a moment and try again.'
+				};
+			}
+		}
+
+		const message = error instanceof Error ? error.message : 'Unknown error';
+		return {
+			success: false,
+			error: `Failed to generate suggestion: ${message}`
+		};
+	}
+}
+
+/**
  * Generate AI suggestions for empty fields in an entity.
  *
  * This is the main entry point for batch field suggestion generation. It:

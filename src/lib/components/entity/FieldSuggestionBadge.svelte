@@ -51,6 +51,6 @@
 		class="inline-flex items-center gap-1 rounded-md bg-amber-100 dark:bg-amber-900/30 px-1.5 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-900/50 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-1 transition-colors cursor-pointer"
 	>
 		<Lightbulb class="h-3 w-3" />
-		<span class="hidden sm:inline">AI</span>
+		<span class="hidden sm:inline">Suggestions</span>
 	</button>
 {/if}

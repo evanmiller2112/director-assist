@@ -100,7 +100,7 @@ onMount(() => {
 		<SceneHeader
 			sceneId={scene.id}
 			sceneName={scene.name}
-			status={(scene.fields.status as 'planned' | 'active' | 'completed') ?? 'planned'}
+			status={(scene.fields.sceneStatus as 'planned' | 'in_progress' | 'completed') ?? 'planned'}
 			onStart={handleStart}
 			onComplete={handleCompleteClick}
 		/>

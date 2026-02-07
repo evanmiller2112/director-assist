@@ -18,7 +18,7 @@ import type { BaseEntity } from '$lib/types';
 
 let scenes = $state<BaseEntity[]>([]);
 let filteredScenes = $state<BaseEntity[]>([]);
-let statusFilter = $state<'all' | 'planned' | 'active' | 'completed'>('all');
+let statusFilter = $state<'all' | 'planned' | 'in_progress' | 'completed'>('all');
 let loading = $state(true);
 
 async function loadScenes() {
@@ -45,7 +45,7 @@ function applyFilter() {
 		filteredScenes = scenes;
 	} else {
 		filteredScenes = scenes.filter((scene) => {
-			const status = (scene.fields.status as string | undefined) ?? 'planned';
+			const status = (scene.fields.sceneStatus as string | undefined) ?? 'planned';
 			return status === statusFilter;
 		});
 	}
@@ -110,12 +110,12 @@ $effect(() => {
 		</button>
 		<button
 			type="button"
-			class="px-3 py-1 rounded-md {statusFilter === 'active'
+			class="px-3 py-1 rounded-md {statusFilter === 'in_progress'
 				? 'bg-blue-600 text-white'
 				: 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}"
-			onclick={() => handleStatusFilterChange('active')}
+			onclick={() => handleStatusFilterChange('in_progress')}
 		>
-			Active
+			In Progress
 		</button>
 		<button
 			type="button"
@@ -144,7 +144,7 @@ $effect(() => {
 					<div class="flex-1">
 						<div class="flex items-center gap-3 mb-2">
 							<h2 class="text-lg font-semibold">{scene.name}</h2>
-							<SceneStatusBadge status={(scene.fields.status as 'planned' | 'active' | 'completed') ?? 'planned'} />
+							<SceneStatusBadge status={(scene.fields.sceneStatus as 'planned' | 'in_progress' | 'completed') ?? 'planned'} />
 						</div>
 						{#if scene.description}
 							<p class="text-sm text-gray-600 dark:text-gray-400">{scene.description}</p>

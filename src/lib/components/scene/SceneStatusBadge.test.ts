@@ -51,18 +51,18 @@ describe('SceneStatusBadge Component - Planned Status', () => {
 	});
 });
 
-describe('SceneStatusBadge Component - Active Status', () => {
+describe('SceneStatusBadge Component - In Progress Status', () => {
 	it('should display "Active" text for active status', () => {
 		render(SceneStatusBadge, {
-			props: { status: 'active' }
+			props: { status: 'in_progress' }
 		});
 
-		expect(screen.getByText(/active/i)).toBeInTheDocument();
+		expect(screen.getByText(/in.?progress/i)).toBeInTheDocument();
 	});
 
 	it('should apply yellow/amber styling for active status', () => {
 		const { container } = render(SceneStatusBadge, {
-			props: { status: 'active' }
+			props: { status: 'in_progress' }
 		});
 
 		const badge = container.querySelector('[data-testid="scene-status-badge"]');
@@ -71,7 +71,7 @@ describe('SceneStatusBadge Component - Active Status', () => {
 
 	it('should use warning color variant for active status', () => {
 		const { container } = render(SceneStatusBadge, {
-			props: { status: 'active' }
+			props: { status: 'in_progress' }
 		});
 
 		const badge = container.querySelector('[data-testid="scene-status-badge"]');
@@ -128,7 +128,7 @@ describe('SceneStatusBadge Component - Default Behavior', () => {
 
 	it('should be accessible with proper role', () => {
 		const { container } = render(SceneStatusBadge, {
-			props: { status: 'active' }
+			props: { status: 'in_progress' }
 		});
 
 		const badge = container.querySelector('[data-testid="scene-status-badge"]');
@@ -142,7 +142,7 @@ describe('SceneStatusBadge Component - Visual Consistency', () => {
 			props: { status: 'planned' }
 		});
 		const { container: activeContainer } = render(SceneStatusBadge, {
-			props: { status: 'active' }
+			props: { status: 'in_progress' }
 		});
 		const { container: completedContainer } = render(SceneStatusBadge, {
 			props: { status: 'completed' }

@@ -18,6 +18,7 @@ Director Assist features a **system-aware architecture** with first-class suppor
 - **Conversation Management**: Organize AI chats into separate conversations—create, switch, rename, and delete as needed
 - **Forge Steel Integration**: Import character data directly from Forge Steel character builder
 - **Montage Challenge Tracker**: Track Draw Steel montage challenges with player count-based limits, success/failure tracking across two rounds, difficulty-based outcomes (Easy, Moderate, Hard), and automatic victory point awards
+- **Negotiation Tracker**: Manage Draw Steel negotiations with Interest/Patience tracking (0-5 scale), NPC motivations and pitfalls, tier-based argument outcomes, and built-in rules reference
 - **Responsive Loading States**: Polished loading feedback with skeleton screens, spinners, and loading buttons
 
 ## Quick Start

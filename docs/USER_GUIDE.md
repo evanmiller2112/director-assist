@@ -1542,6 +1542,177 @@ After completing all challenges in Round 1, the tracker advances to Round 2 auto
 - Narrate the results based on the outcome type
 - Use notes from challenge cards to enrich the narrative
 
+### Negotiation Tracker
+
+The Negotiation Tracker helps you manage Draw Steel social encounters where heroes negotiate with NPCs. Players make arguments to increase Interest while managing the NPC's Patience, with outcomes determined by the final Interest level.
+
+**What is a Negotiation?**
+
+In Draw Steel, negotiations are social encounters where heroes attempt to convince an NPC to agree with them. Success depends on making arguments that appeal to the NPC's motivations while avoiding pitfalls that decrease Interest and Patience.
+
+**Access the Tracker:**
+
+Navigate to `/negotiation` or click "Negotiation" in the sidebar.
+
+**Active Negotiations Badge:**
+
+When you have active negotiations, a badge appears next to "Negotiation" in the sidebar showing the count of in-progress negotiation sessions.
+
+### Creating a Negotiation Session
+
+1. Click "Negotiation" in the sidebar
+2. Click "New Negotiation"
+3. Configure the negotiation:
+   - **Name**: Descriptive title (e.g., "Persuade the Guard Captain")
+   - **Description**: What heroes are trying to accomplish (optional)
+   - **NPC Name**: The character being negotiated with
+   - **Motivations**: Add 1-3 motivations that appeal to the NPC
+   - **Pitfalls**: Add topics that trigger negative reactions
+
+**Motivation Types:**
+
+Choose from 14 motivation types:
+- Benevolence, Discovery, Freedom, Greed, Higher Authority
+- Justice, Legacy, Peace, Power, Protection
+- Reputation, Revelry, Vengeance, Wealth
+
+**Setting Up Motivations:**
+
+For each motivation:
+- Select the type
+- Add a description explaining how it applies to this NPC
+- Motivations start hidden from players until revealed through roleplay
+
+**Setting Up Pitfalls:**
+
+For each pitfall:
+- Describe the topic that triggers a negative reaction
+- Examples: past trauma, sensitive subjects, insults
+- Pitfalls start hidden until players accidentally trigger them
+
+### Running a Negotiation
+
+Once you create a negotiation, the tracker displays:
+
+**Status Panel:**
+- Current Interest level (0-5) with visual progress bar
+- Current Patience level (0-5) with visual progress bar
+- Negotiation status (preparing, active, completed)
+
+**Motivation & Pitfall Panel:**
+- List of motivations with known/hidden toggle
+- Usage count for each motivation
+- List of pitfalls with known/hidden toggle
+- Quick reference for the Director
+
+**Rules Reference:**
+- Collapsible panel showing argument effects
+- Tier-based outcome tables
+- Quick reference during play
+
+### Recording Arguments
+
+For each argument made by a hero:
+
+1. Click "Record Argument" button
+2. Select the argument type:
+   - **Motivation**: Argument appeals to one of the NPC's motivations
+   - **No Motivation**: Argument doesn't appeal to any motivation
+   - **Pitfall**: Argument triggers a pitfall
+3. Select the tier (1, 2, or 3) based on the quality of the argument
+4. Enter a description of the argument
+5. Optionally add player name and notes
+6. Submit to record the argument
+
+**Argument Effects:**
+
+| Type | Tier 1 | Tier 2 | Tier 3 |
+|------|---------|---------|---------|
+| Motivation | Interest +1, Patience +1 | Interest +2, Patience +1 | Interest +3, Patience +2 |
+| No Motivation | Patience -1 | Patience -2 | Patience -2 |
+| Pitfall | Interest -1, Patience -1 | Interest -2, Patience -2 | Interest -3, Patience -2 |
+
+**Auto-Completion:**
+
+The negotiation automatically completes when:
+- Patience reaches 0 (negotiation ends immediately)
+- Director manually ends the negotiation
+
+### Negotiation Outcomes
+
+Outcomes are determined by the final Interest level:
+
+**Failure (Interest 0-1):**
+- No agreement reached
+- NPC refuses the request
+- Heroes must try another approach
+
+**Minor Favor (Interest 2):**
+- Limited success
+- NPC agrees to a reduced version of the request
+- May require concessions from heroes
+
+**Major Favor (Interest 3-4):**
+- Strong agreement
+- NPC agrees to the full request
+- May offer additional help
+
+**Alliance (Interest 5):**
+- Best possible outcome
+- NPC becomes an ally
+- Goes beyond the original request to actively help
+
+### Managing Negotiations
+
+**View All Negotiations:**
+
+The main negotiation page shows:
+- Active negotiations at the top
+- Completed negotiations below
+- Quick status indicators
+- Creation timestamps
+
+**Edit a Negotiation:**
+
+You can edit negotiation details (name, description, NPC name, motivations, pitfalls) during setup phase. Once active, only motivation/pitfall visibility can be changed.
+
+**Delete a Negotiation:**
+
+Remove a negotiation session from the tracker. This cannot be undone.
+
+**Toggle Known/Hidden:**
+
+Click the eye icon next to motivations or pitfalls to toggle whether players know about them. Use this to reveal information as the roleplay unfolds.
+
+### Negotiation Best Practices
+
+**Before the Session:**
+- Set up the negotiation with appropriate motivations
+- Think about what topics would offend or upset the NPC (pitfalls)
+- Start with motivations hidden unless players already know them
+- Consider the NPC's personality when choosing motivation types
+
+**During the Session:**
+- Have players roleplay their arguments before rolling
+- Assign tiers based on argument quality and roleplay
+- Reveal motivations when players successfully appeal to them
+- Reveal pitfalls when players trigger them
+- Add notes to arguments to remember dramatic moments
+- Track who made each argument for narrative purposes
+
+**After Resolution:**
+- Narrate the outcome based on the final Interest level
+- Honor the outcome but add your own interpretation
+- Use argument notes to reference specific moments
+- Consider how the outcome affects future interactions with this NPC
+
+**Tips:**
+- Start Interest at 2 for neutral NPCs, lower for hostile, higher for friendly
+- Start Patience at 3 for most NPCs, adjust based on personality
+- Use the rules reference panel if you forget the effects
+- Toggle motivation visibility when players discover them through roleplay
+- Don't be afraid to adjust tiers based on creative arguments
+
 ### Tips for Directors
 
 **Choosing Difficulty:**

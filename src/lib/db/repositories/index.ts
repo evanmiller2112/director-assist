@@ -7,6 +7,7 @@ export { suggestionRepository } from './suggestionRepository';
 export { combatRepository } from './combatRepository';
 export { montageRepository } from './montageRepository';
 export { creatureRepository } from './creatureRepository';
+export { negotiationRepository } from './negotiationRepository';
 
 // Re-export types for graph visualization
 export type {

@@ -7,7 +7,8 @@ import type {
 	AISuggestion,
 	RelationshipSummaryCache,
 	CombatSession,
-	MontageSession
+	MontageSession,
+	NegotiationSession
 } from '$lib/types';
 import type { CreatureTemplate } from '$lib/types/creature';
 import type { FieldSuggestion } from '$lib/types/ai';
@@ -30,6 +31,7 @@ class DMAssistantDB extends Dexie {
 	relationshipSummaryCache!: Table<RelationshipSummaryCache>;
 	combatSessions!: Table<CombatSession>;
 	montageSessions!: Table<MontageSession>;
+	negotiationSessions!: Table<NegotiationSession>;
 	creatureTemplates!: Table<CreatureTemplate>;
 	fieldSuggestions!: Table<FieldSuggestion>;
 
@@ -138,6 +140,22 @@ class DMAssistantDB extends Dexie {
 			relationshipSummaryCache: 'id, sourceId, targetId, relationship, generatedAt',
 			combatSessions: 'id, status, createdAt, updatedAt',
 			montageSessions: 'id, status, createdAt, updatedAt',
+			creatureTemplates: 'id, name, threat, *tags, createdAt, updatedAt',
+			fieldSuggestions: 'id, entityId, entityType, status, createdAt'
+		});
+
+		// Version 10: Add negotiationSessions table for Draw Steel negotiation tracking
+		this.version(10).stores({
+			entities: 'id, type, name, *tags, createdAt, updatedAt',
+			campaign: 'id',
+			conversations: 'id, name, updatedAt',
+			chatMessages: 'id, conversationId, timestamp',
+			suggestions: 'id, type, status, createdAt, expiresAt, *affectedEntityIds',
+			appConfig: 'key',
+			relationshipSummaryCache: 'id, sourceId, targetId, relationship, generatedAt',
+			combatSessions: 'id, status, createdAt, updatedAt',
+			montageSessions: 'id, status, createdAt, updatedAt',
+			negotiationSessions: 'id, status, createdAt, updatedAt',
 			creatureTemplates: 'id, name, threat, *tags, createdAt, updatedAt',
 			fieldSuggestions: 'id, entityId, entityType, status, createdAt'
 		});

@@ -8,3 +8,4 @@ export { notificationStore } from './notifications.svelte';
 export { uiStore } from './ui.svelte';
 export { combatStore } from './combat.svelte';
 export { montageStore } from './montage.svelte';
+export { negotiationStore } from './negotiation.svelte';

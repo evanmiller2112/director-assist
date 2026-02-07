@@ -1,5 +1,8 @@
 import type { EntityId } from './entities';
 
+// AI Mode - tri-state configuration for AI features
+export type AIMode = 'off' | 'suggestions' | 'full';
+
 // Conversation containing chat messages
 export interface Conversation {
 	id: EntityId;
@@ -158,3 +161,14 @@ export const DEFAULT_RELATIONSHIP_CONTEXT_SETTINGS: RelationshipContextSettings 
 	contextBudgetAllocation: 50,
 	autoGenerateSummaries: false
 };
+
+// Field-level AI suggestion
+export interface FieldSuggestion {
+	id: string;
+	entityId?: string;
+	entityType: string;
+	fieldKey: string;
+	suggestedValue: string;
+	status: 'pending' | 'accepted' | 'dismissed';
+	createdAt: Date;
+}

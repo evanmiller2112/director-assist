@@ -476,28 +476,58 @@
 	<section class="mb-8">
 		<h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">AI Assistant</h2>
 		<div class="space-y-4">
-			<!-- AI Toggle -->
-			<div class="flex items-start gap-3 p-4 bg-slate-50 dark:bg-slate-800 rounded-lg">
-				<div class="flex-1">
-					<label for="aiToggle" class="label mb-1 cursor-pointer">Enable AI Features</label>
-					<p class="text-sm text-slate-500 dark:text-slate-400">
-						Disable all AI generation and chat features. Existing summaries will remain visible.
-					</p>
+			<!-- AI Mode Selection -->
+			<div class="space-y-3">
+				<div class="label">AI Mode</div>
+				<div class="space-y-2">
+					<!-- Off Option -->
+					<label class="flex items-start gap-3 p-4 bg-slate-50 dark:bg-slate-800 rounded-lg cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors border-2 {aiSettings.aiMode === 'off' ? 'border-blue-500 dark:border-blue-400' : 'border-transparent'}">
+						<input
+							type="radio"
+							name="aiMode"
+							value="off"
+							checked={aiSettings.aiMode === 'off'}
+							onchange={() => aiSettings.setMode('off')}
+							class="mt-1 w-4 h-4 text-blue-600 border-slate-300 dark:border-slate-600 focus:ring-blue-500"
+						/>
+						<div class="flex-1">
+							<div class="font-medium text-slate-900 dark:text-white">Off</div>
+							<div class="text-sm text-slate-500 dark:text-slate-400">AI features disabled</div>
+						</div>
+					</label>
+
+					<!-- Suggestions Option -->
+					<label class="flex items-start gap-3 p-4 bg-slate-50 dark:bg-slate-800 rounded-lg cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors border-2 {aiSettings.aiMode === 'suggestions' ? 'border-blue-500 dark:border-blue-400' : 'border-transparent'}">
+						<input
+							type="radio"
+							name="aiMode"
+							value="suggestions"
+							checked={aiSettings.aiMode === 'suggestions'}
+							onchange={() => aiSettings.setMode('suggestions')}
+							class="mt-1 w-4 h-4 text-blue-600 border-slate-300 dark:border-slate-600 focus:ring-blue-500"
+						/>
+						<div class="flex-1">
+							<div class="font-medium text-slate-900 dark:text-white">Suggestions Only</div>
+							<div class="text-sm text-slate-500 dark:text-slate-400">AI suggests content, you choose what to accept</div>
+						</div>
+					</label>
+
+					<!-- Full Auto Option -->
+					<label class="flex items-start gap-3 p-4 bg-slate-50 dark:bg-slate-800 rounded-lg cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors border-2 {aiSettings.aiMode === 'full' ? 'border-blue-500 dark:border-blue-400' : 'border-transparent'}">
+						<input
+							type="radio"
+							name="aiMode"
+							value="full"
+							checked={aiSettings.aiMode === 'full'}
+							onchange={() => aiSettings.setMode('full')}
+							class="mt-1 w-4 h-4 text-blue-600 border-slate-300 dark:border-slate-600 focus:ring-blue-500"
+						/>
+						<div class="flex-1">
+							<div class="font-medium text-slate-900 dark:text-white">Full Auto</div>
+							<div class="text-sm text-slate-500 dark:text-slate-400">AI automatically generates content for new entities</div>
+						</div>
+					</label>
 				</div>
-				<label class="relative inline-flex items-center cursor-pointer">
-					<input
-						id="aiToggle"
-						type="checkbox"
-						class="sr-only peer"
-						checked={aiSettings.isEnabled}
-						onchange={() => aiSettings.toggle()}
-						role="switch"
-						aria-label="Enable AI Features"
-					/>
-					<div
-						class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-blue-600"
-					></div>
-				</label>
 			</div>
 
 			{#if aiSettings.isEnabled}

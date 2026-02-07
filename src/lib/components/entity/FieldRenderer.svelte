@@ -21,7 +21,7 @@
 	 * - computed → calculated value display
 	 */
 
-	import type { FieldDefinition, FieldValue } from '$lib/types';
+	import type { FieldDefinition, FieldValue, ResourceValue, DurationValue } from '$lib/types';
 	import { normalizeFieldType, evaluateComputedField } from '$lib/utils/fieldTypes';
 	import MarkdownViewer from '$lib/components/markdown/MarkdownViewer.svelte';
 	import { Check, X, ExternalLink } from 'lucide-svelte';
@@ -120,6 +120,71 @@
 
 	// Empty state text
 	const emptyStateText = '—';
+
+	// Get resource value
+	const resourceValue = $derived.by(() => {
+		if (normalizedType === 'resource' && value && typeof value === 'object' && 'current' in value && 'max' in value) {
+			return value as ResourceValue;
+		}
+		return null;
+	});
+
+	// Get duration value
+	const durationValue = $derived.by(() => {
+		if (normalizedType === 'duration' && value && typeof value === 'object' && 'unit' in value) {
+			return value as DurationValue;
+		}
+		return null;
+	});
+
+	// Format duration display
+	function formatDuration(dur: DurationValue): string {
+		const { value: durValue, unit } = dur;
+
+		// Special durations
+		if (unit === 'concentration') return 'Concentration';
+		if (unit === 'instant') return 'Instant';
+		if (unit === 'permanent') return 'Permanent';
+
+		// Numeric durations
+		if (durValue === undefined || durValue === null) return '—';
+
+		// Handle singular/plural
+		if (durValue === 1) {
+			const singularUnit = unit.replace(/s$/, ''); // Remove trailing 's' if present
+			return `${durValue} ${singularUnit}`;
+		}
+
+		// Ensure plural form
+		const pluralUnit = unit.endsWith('s') ? unit : `${unit}s`;
+		return `${durValue} ${pluralUnit}`;
+	}
+
+	// Abbreviate duration for compact mode
+	function abbreviateDuration(dur: DurationValue): string {
+		const { value: durValue, unit } = dur;
+
+		// Special durations
+		if (unit === 'concentration') return 'Conc.';
+		if (unit === 'instant') return 'Instant';
+		if (unit === 'permanent') return 'Perm.';
+
+		// Numeric durations
+		if (durValue === undefined || durValue === null) return '—';
+
+		const abbrev: Record<string, string> = {
+			round: 'r',
+			rounds: 'r',
+			minute: 'm',
+			minutes: 'm',
+			hour: 'h',
+			hours: 'h',
+			turn: 't',
+			turns: 't'
+		};
+
+		return `${durValue}${abbrev[unit] || unit}`;
+	}
 </script>
 
 <div class="field-renderer" class:compact>
@@ -258,6 +323,56 @@
 						Computed
 					</div>
 				{/if}
+			{:else}
+				<span class="text-slate-400 dark:text-slate-500">{emptyStateText}</span>
+			{/if}
+		{:else if normalizedType === 'dice'}
+			{#if value && typeof value === 'string'}
+				<div class="font-mono text-lg">{value}</div>
+			{:else}
+				<span class="text-slate-400 dark:text-slate-500">{emptyStateText}</span>
+			{/if}
+		{:else if normalizedType === 'resource'}
+			{#if resourceValue}
+				<div class="space-y-2">
+					<div class="text-lg font-semibold">
+						{formatNumber(resourceValue.current)} / {formatNumber(resourceValue.max)}
+						{#if !compact}
+							<span class="text-sm font-normal text-slate-500 dark:text-slate-400 ml-2">
+								({Math.round((resourceValue.current / resourceValue.max) * 100)}%)
+							</span>
+						{/if}
+					</div>
+					{#if !compact}
+						<div class="relative pt-1">
+							<div class="overflow-hidden h-3 text-xs flex rounded bg-slate-200 dark:bg-slate-700">
+								<div
+									style="width: {Math.min(100, (resourceValue.current / resourceValue.max) * 100)}%"
+									class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center transition-all duration-300 {
+										resourceValue.current / resourceValue.max > 0.5
+											? 'bg-green-500'
+											: resourceValue.current / resourceValue.max > 0.25
+											? 'bg-yellow-500'
+											: 'bg-red-500'
+									}"
+									role="progressbar"
+									aria-valuenow={resourceValue.current}
+									aria-valuemin="0"
+									aria-valuemax={resourceValue.max}
+									aria-valuetext="{resourceValue.current} of {resourceValue.max}, {Math.round((resourceValue.current / resourceValue.max) * 100)} percent"
+								></div>
+							</div>
+						</div>
+					{/if}
+				</div>
+			{:else}
+				<span class="text-slate-400 dark:text-slate-500">{emptyStateText}</span>
+			{/if}
+		{:else if normalizedType === 'duration'}
+			{#if durationValue}
+				<div class="text-lg">
+					{compact ? abbreviateDuration(durationValue) : formatDuration(durationValue)}
+				</div>
 			{:else}
 				<span class="text-slate-400 dark:text-slate-500">{emptyStateText}</span>
 			{/if}

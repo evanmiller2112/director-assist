@@ -524,7 +524,7 @@ export const BUILT_IN_ENTITY_TYPES: EntityTypeDefinition[] = [
 				key: 'mood',
 				label: 'Mood',
 				type: 'select',
-				options: ['tense', 'relaxed', 'mysterious', 'celebratory', 'somber', 'chaotic', 'peaceful', 'ominous'],
+				options: ['tense', 'relaxed', 'mysterious', 'celebratory', 'somber', 'chaotic', 'peaceful', 'ominous', 'triumphant', 'desperate', 'exhilarating'],
 				required: false,
 				order: 9
 			},

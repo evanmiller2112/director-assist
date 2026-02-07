@@ -12,6 +12,7 @@
  * 4. Negotiation Outcome - Negotiation encounter outcomes
  * 5. Spell/Ritual - Magic spells and rituals
  * 6. Encounter - Encounter planning and management (Issue #219)
+ * 7. Treasure/Loot - Treasure and loot items for rewards (Issue #220)
  */
 
 import type { EntityTypeDefinition, FieldDefinition } from '$lib/types';
@@ -275,7 +276,8 @@ const spellRitualTemplate: EntityTypeTemplate = {
 				label: 'Level',
 				type: 'number',
 				required: false,
-				order: 1
+				order: 1,
+				helpText: 'Enter the power tier of the spell (0 for cantrips, 1-9 for leveled spells).'
 			},
 			{
 				key: 'schools',
@@ -292,28 +294,32 @@ const spellRitualTemplate: EntityTypeTemplate = {
 					'necromancy',
 					'transmutation'
 				],
-				order: 2
+				order: 2,
+				helpText: 'Select magic schools for this spell. Customize these for your campaign.'
 			},
 			{
 				key: 'casting_time',
 				label: 'Casting Time',
 				type: 'text',
 				required: false,
-				order: 3
+				order: 3,
+				helpText: 'Describe how long it takes to cast, such as 1 action, 1 maneuver, or 10 minutes for rituals.'
 			},
 			{
 				key: 'range',
 				label: 'Range',
 				type: 'text',
 				required: false,
-				order: 4
+				order: 4,
+				helpText: 'Specify maximum distance for targeting, like self, touch, 5 squares, or 10 squares.'
 			},
 			{
 				key: 'duration',
 				label: 'Duration',
 				type: 'text',
 				required: false,
-				order: 5
+				order: 5,
+				helpText: 'How long the spell effect lasts (e.g., instant, 1 round, concentration).'
 			}
 		],
 		defaultRelationships: []
@@ -394,6 +400,72 @@ const encounterTemplate: EntityTypeTemplate = {
 };
 
 // =============================================================================
+// Template 7: Treasure/Loot Entity Template (Issue #220)
+// =============================================================================
+
+const treasureLootTemplate: EntityTypeTemplate = {
+	id: 'ds-treasure-loot',
+	name: 'Treasure/Loot',
+	description:
+		'Track treasure, loot items, and rewards for Draw Steel campaigns including item value, rarity tiers, magical properties, descriptions, and origin stories for narrative context.',
+	category: 'draw-steel',
+	template: {
+		type: 'ds-treasure-loot',
+		label: 'Treasure/Loot',
+		labelPlural: 'Treasure/Loot',
+		icon: 'gem',
+		color: 'cyan',
+		isBuiltIn: false,
+		fieldDefinitions: [
+			{
+				key: 'name',
+				label: 'Name',
+				type: 'text',
+				required: false,
+				order: 1
+			},
+			{
+				key: 'value',
+				label: 'Value',
+				type: 'text',
+				required: false,
+				order: 2
+			},
+			{
+				key: 'rarity',
+				label: 'Rarity',
+				type: 'select',
+				required: false,
+				options: ['common', 'uncommon', 'rare', 'very rare', 'legendary'],
+				order: 3
+			},
+			{
+				key: 'description',
+				label: 'Description',
+				type: 'richtext',
+				required: false,
+				order: 4
+			},
+			{
+				key: 'properties',
+				label: 'Properties',
+				type: 'richtext',
+				required: false,
+				order: 5
+			},
+			{
+				key: 'origin',
+				label: 'Origin',
+				type: 'textarea',
+				required: false,
+				order: 6
+			}
+		],
+		defaultRelationships: []
+	}
+};
+
+// =============================================================================
 // Export All Templates
 // =============================================================================
 
@@ -403,5 +475,6 @@ export const DRAW_STEEL_ENTITY_TEMPLATES: EntityTypeTemplate[] = [
 	conditionTemplate,
 	negotiationOutcomeTemplate,
 	spellRitualTemplate,
-	encounterTemplate
+	encounterTemplate,
+	treasureLootTemplate
 ];

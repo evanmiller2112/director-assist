@@ -357,11 +357,20 @@ export async function generateSuggestionsForEntity(
 			};
 		}
 
-		// Parse the JSON response
+		// Parse the JSON response - handle markdown code blocks
 		let aiResponse: AISuggestionResponse;
 		try {
-			aiResponse = JSON.parse(textContent.text.trim());
+			let jsonText = textContent.text.trim();
+
+			// Strip markdown code blocks if present (```json ... ``` or ``` ... ```)
+			const jsonMatch = jsonText.match(/```(?:json)?\s*([\s\S]*?)```/);
+			if (jsonMatch) {
+				jsonText = jsonMatch[1].trim();
+			}
+
+			aiResponse = JSON.parse(jsonText);
 		} catch (parseError) {
+			console.error('[fieldSuggestionService] Failed to parse AI response:', textContent.text);
 			return {
 				success: false,
 				error: 'Failed to parse AI response as JSON'

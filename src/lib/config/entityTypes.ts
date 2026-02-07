@@ -465,12 +465,20 @@ export const BUILT_IN_ENTITY_TYPES: EntityTypeDefinition[] = [
 				order: 1
 			},
 			{
+				key: 'sceneType',
+				label: 'Scene Type',
+				type: 'select',
+				options: ['combat', 'negotiation', 'exploration', 'montage', 'social', 'investigation'],
+				required: false,
+				order: 2
+			},
+			{
 				key: 'location',
 				label: 'Location',
 				type: 'entity-ref',
 				entityTypes: ['location'],
 				required: false,
-				order: 2
+				order: 3
 			},
 			{
 				key: 'npcsPresent',
@@ -478,14 +486,14 @@ export const BUILT_IN_ENTITY_TYPES: EntityTypeDefinition[] = [
 				type: 'entity-refs',
 				entityTypes: ['npc'],
 				required: false,
-				order: 3
+				order: 4
 			},
 			{
 				key: 'sceneSettingText',
 				label: 'Scene Setting (Read-Aloud)',
 				type: 'richtext',
 				required: false,
-				order: 4,
+				order: 5,
 				helpText: 'Vivid description of the scene. Can be AI-generated from location and NPCs.'
 			},
 			{
@@ -493,7 +501,7 @@ export const BUILT_IN_ENTITY_TYPES: EntityTypeDefinition[] = [
 				label: 'What Happened',
 				type: 'richtext',
 				required: false,
-				order: 5,
+				order: 6,
 				helpText: 'Record what actually happened during the scene.'
 			},
 			{
@@ -501,7 +509,7 @@ export const BUILT_IN_ENTITY_TYPES: EntityTypeDefinition[] = [
 				label: 'Pre-Scene Summary',
 				type: 'richtext',
 				required: false,
-				order: 6,
+				order: 7,
 				helpText: 'Brief summary of the scene setup (1-2 sentences). Can be AI-generated.'
 			},
 			{
@@ -509,7 +517,7 @@ export const BUILT_IN_ENTITY_TYPES: EntityTypeDefinition[] = [
 				label: 'Post-Scene Summary',
 				type: 'richtext',
 				required: false,
-				order: 7,
+				order: 8,
 				helpText: 'Brief summary of what happened (1-2 sentences). Can be AI-generated.'
 			},
 			{
@@ -518,7 +526,7 @@ export const BUILT_IN_ENTITY_TYPES: EntityTypeDefinition[] = [
 				type: 'select',
 				options: ['tense', 'relaxed', 'mysterious', 'celebratory', 'somber', 'chaotic', 'peaceful', 'ominous'],
 				required: false,
-				order: 8
+				order: 9
 			},
 			{
 				key: 'session',
@@ -526,7 +534,7 @@ export const BUILT_IN_ENTITY_TYPES: EntityTypeDefinition[] = [
 				type: 'entity-ref',
 				entityTypes: ['session'],
 				required: false,
-				order: 9
+				order: 10
 			}
 		],
 		defaultRelationships: ['occurred_at', 'featured', 'part_of', 'leads_to', 'follows']

@@ -19,6 +19,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Preserves concept field for backward compatibility while enabling more detailed character information
 - Example usage: ancestry="Human", culture="Nomadic", career="Soldier", heroClass="Fury", subclass="Reaver"
 
+## [1.3.0] - 2025-02-07
+
+### Added
+
+**Scene Runner Mode (Issue #292)**
+- New `/scene` list page with status filtering (all, planned, active, completed)
+- Scene runner page (`/scene/[id]`) for running scenes live during sessions
+- Read-aloud setting display in styled box for atmospheric scene descriptions
+- Location and NPC quick reference panels for context at a glance
+- Live "What Happened" notes textarea with auto-save (debounced)
+- Scene lifecycle management: planned → active → completed transitions
+- Completion modal for finalizing scenes with notes
+
+**Enhanced Scene Entity (Issues #283, #284, #285, #286, #287)**
+- Scene type field for categorization: combat, negotiation, exploration, montage, social, investigation
+- Scene order field for session timeline organization
+- Encounter reference field linking scenes to encounters
+- Current round tracking for combat/structured scenes
+- Expanded mood options with Draw Steel emotional states: triumphant, desperate, exhilarating
+- Draw Steel tone integration for AI-assisted scene generation
+
+**New Draw Steel Entity Templates (Issues #219, #220, #222, #223)**
+- Encounter entity template with 7 predefined fields for combat planning
+- Treasure/Loot entity template with 6 fields for reward management
+- Example values added to all 7 Draw Steel templates for better guidance
+- Enhanced Spell/Ritual template with detailed helpText fields
+
+**Entity Duplication (Issue #221)**
+- Entity duplication service for quick entity creation from existing templates
+- Preserves entity-ref field relationships with smart detection
+- Clears time-sensitive fields while keeping structural data
+
+**Field Enhancements (Issues #167, #218)**
+- Three new field types: dice, resource, duration
+- Field guidance tooltips added across entity types
+- HelpText content quality improvements
+
+**Documentation**
+- Richtext formatting guidelines (#288)
+
 ## [1.2.1] - 2025-02-07
 
 ### Added

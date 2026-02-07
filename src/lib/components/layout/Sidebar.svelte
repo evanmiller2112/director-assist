@@ -1,8 +1,8 @@
 <script lang="ts">
-	import { Plus, Home, ChevronUp, ChevronDown, Pencil, Swords, Theater, Users, Clapperboard } from 'lucide-svelte';
+	import { Plus, Home, ChevronUp, ChevronDown, Pencil, Swords, Theater, MessageCircle, Users, Clapperboard } from 'lucide-svelte';
 	import { page } from '$app/stores';
 	import { getOrderedEntityTypes } from '$lib/config/entityTypes';
-	import { entitiesStore, campaignStore, combatStore, montageStore } from '$lib/stores';
+	import { entitiesStore, campaignStore, combatStore, montageStore, negotiationStore } from '$lib/stores';
 	import { getIconComponent } from '$lib/utils/icons';
 	import QuickAddModal from './QuickAddModal.svelte';
 	import {
@@ -25,6 +25,11 @@
 	// Get active montages count
 	const activeMontagesCount = $derived(
 		montageStore.montages.filter((m) => m.status === 'active').length
+	);
+
+	// Get active negotiations count
+	const activeNegotiationsCount = $derived(
+		negotiationStore.activeNegotiations.length
 	);
 
 	// Initialize ordered types on mount
@@ -150,6 +155,29 @@
 					aria-live="polite"
 				>
 					{activeMontagesCount}
+				</span>
+			{/if}
+		</a>
+
+		<!-- Negotiation -->
+		<a
+			href="/negotiation"
+			class="flex items-center gap-3 px-3 py-2 rounded-lg mb-2 transition-colors
+				{isActive('/negotiation')
+				? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
+				: 'hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300'}"
+			aria-current={isActive('/negotiation') ? 'page' : undefined}
+		>
+			<MessageCircle class="w-5 h-5" data-icon="message-circle" />
+			<span class="flex-1 font-medium">Negotiation</span>
+			{#if activeNegotiationsCount > 0}
+				<span
+					class="text-xs bg-green-500 dark:bg-green-600 text-white px-2 py-0.5 rounded-full"
+					data-testid="active-negotiation-badge"
+					aria-label="{activeNegotiationsCount} active negotiation{activeNegotiationsCount === 1 ? '' : 's'}"
+					aria-live="polite"
+				>
+					{activeNegotiationsCount}
 				</span>
 			{/if}
 		</a>

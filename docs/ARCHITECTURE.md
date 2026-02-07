@@ -101,6 +101,15 @@ src/
 │   │   │   ├── MontageControls.svelte        # Round controls and actions
 │   │   │   ├── OutcomeDisplay.svelte         # Outcome results display
 │   │   │   └── index.ts                      # Barrel exports
+│   │   ├── negotiation/     # Negotiation tracking (Draw Steel)
+│   │   │   ├── NegotiationSetup.svelte       # Negotiation creation/configuration
+│   │   │   ├── NegotiationProgress.svelte    # Interest/Patience bars and status
+│   │   │   ├── ArgumentCard.svelte           # Individual argument display
+│   │   │   ├── ArgumentControls.svelte       # Argument submission controls
+│   │   │   ├── MotivationPitfallPanel.svelte # Motivation/pitfall management
+│   │   │   ├── NegotiationRulesReference.svelte # Draw Steel rules reference
+│   │   │   ├── NegotiationOutcomeDisplay.svelte # Final outcome display
+│   │   │   └── index.ts                      # Barrel exports
 │   │   ├── ui/              # UI components
 │   │   │   ├── LoadingSpinner.svelte
 │   │   │   ├── LoadingSkeleton.svelte
@@ -137,6 +146,7 @@ src/
 │   │       ├── suggestionRepository.ts                 # AI suggestions management
 │   │       ├── combatRepository.ts                     # Combat sessions CRUD and game mechanics
 │   │       ├── montageRepository.ts                    # Montage sessions CRUD and challenge tracking
+│   │       ├── negotiationRepository.ts                # Negotiation sessions CRUD and argument tracking
 │   │       └── relationshipSummaryCacheRepository.ts   # Relationship summary cache
 │   ├── services/            # Business logic services
 │   │   ├── contextBuilder.ts                      # Entity context building for AI
@@ -159,8 +169,9 @@ src/
 │   ├── stores/              # Application state
 │   │   ├── campaign.svelte.ts
 │   │   ├── entities.svelte.ts
-│   │   ├── combat.svelte.ts   # Combat session state (Svelte 5 runes)
-│   │   ├── montage.svelte.ts  # Montage session state (Svelte 5 runes)
+│   │   ├── combat.svelte.ts      # Combat session state (Svelte 5 runes)
+│   │   ├── montage.svelte.ts     # Montage session state (Svelte 5 runes)
+│   │   ├── negotiation.svelte.ts # Negotiation session state (Svelte 5 runes)
 │   │   └── ui.svelte.ts
 │   └── types/               # TypeScript definitions
 │       ├── entities.ts      # Entity type system
@@ -168,6 +179,7 @@ src/
 │       ├── systems.ts       # Game system profile types
 │       ├── combat.ts        # Combat type system (Draw Steel)
 │       ├── montage.ts       # Montage type system (Draw Steel)
+│       ├── negotiation.ts   # Negotiation type system (Draw Steel)
 │       ├── ai.ts            # AI integration types
 │       ├── relationships.ts # Relationship filtering and sorting types
 │       ├── matrix.ts        # Matrix view types
@@ -199,6 +211,12 @@ src/
 │   │   │   └── +page.svelte     # Create montage (/montage/new)
 │   │   └── [id]/
 │   │       └── +page.svelte     # View/run montage (/montage/abc123)
+│   ├── negotiation/         # Negotiation tracking routes
+│   │   ├── +page.svelte         # Negotiation list page (/negotiation)
+│   │   ├── new/
+│   │   │   └── +page.svelte     # Create negotiation (/negotiation/new)
+│   │   └── [id]/
+│   │       └── +page.svelte     # View/run negotiation (/negotiation/abc123)
 │   └── settings/
 │       └── +page.svelte     # Settings page
 ├── app.css                  # Global styles & Tailwind
@@ -3006,6 +3024,28 @@ User Action → Store → Repository → Database
 9. User is redirected to entity detail page
 ```
 
+### Example Data Flow: Recording a Negotiation Argument
+
+```
+1. User fills out argument form and submits
+   ↓
+2. ArgumentControls component calls negotiationStore.recordArgument()
+   ↓
+3. Store calculates Interest/Patience changes based on tier and type
+   ↓
+4. Store calls negotiationRepository.recordArgument()
+   ↓
+5. Repository updates negotiation session in IndexedDB
+   ↓
+6. Negotiation store state updates automatically
+   ↓
+7. NegotiationProgress component re-renders with updated Interest/Patience bars
+   ↓
+8. ArgumentCard component displays the new argument in history
+   ↓
+9. If Patience reaches 0, store automatically completes negotiation with outcome
+```
+
 ## Database Schema
 
 ### Tables
@@ -4008,6 +4048,133 @@ const completed = montageStore.completedMontages;
 - [Montage Type Definitions](/src/lib/types/montage.ts) - TypeScript types
 - [Montage Repository](/src/lib/db/repositories/montageRepository.ts) - Data layer
 
+## Negotiation System (Draw Steel)
+
+The Negotiation Tracker implements Draw Steel's negotiation mechanics for social encounters with NPCs. Players make arguments to increase Interest while managing Patience, with outcomes determined by the final Interest level.
+
+### Core Concepts
+
+**Interest (0-5):** Represents the NPC's willingness to agree. Higher values lead to better outcomes.
+
+**Patience (0-5):** Represents the NPC's tolerance for the negotiation. When Patience reaches 0, the negotiation ends immediately.
+
+**Motivations:** Topics that appeal to the NPC. Arguments appealing to motivations increase Interest and restore Patience.
+
+**Pitfalls:** Topics that trigger negative reactions. Arguments hitting pitfalls decrease Interest and Patience.
+
+**Argument Tiers:** Each argument has a tier (1, 2, or 3) that determines the magnitude of effects.
+
+### Argument Effects
+
+| Type | Tier 1 | Tier 2 | Tier 3 |
+|------|---------|---------|---------|
+| Motivation | Interest +1, Patience +1 | Interest +2, Patience +1 | Interest +3, Patience +2 |
+| No Motivation | Patience -1 | Patience -2 | Patience -2 |
+| Pitfall | Interest -1, Patience -1 | Interest -2, Patience -2 | Interest -3, Patience -2 |
+
+### Outcomes
+
+Final outcome is determined by the Interest level when negotiation completes:
+
+- **Interest 0-1:** Failure - No agreement reached
+- **Interest 2:** Minor Favor - Limited success
+- **Interest 3-4:** Major Favor - Strong agreement
+- **Interest 5:** Alliance - Best possible outcome
+
+### Components
+
+**NegotiationSetup:** Initial setup form for creating negotiations
+
+**NegotiationProgress:** Visual display of current Interest and Patience levels
+
+**ArgumentControls:** Form for recording new arguments with tier and type selection
+
+**ArgumentCard:** Display of individual arguments in the negotiation history
+
+**MotivationPitfallPanel:** Manage NPC motivations and pitfalls, toggle known/hidden state
+
+**NegotiationRulesReference:** Collapsible reference panel showing Draw Steel rules
+
+**NegotiationOutcomeDisplay:** Final outcome display when negotiation completes
+
+### Routes
+
+**List Negotiations:** `/negotiation`
+- List all negotiations with status filtering
+- Create new negotiation button
+- Active negotiation count in sidebar badge
+
+**Create Negotiation:** `/negotiation/new`
+- NPC name and description
+- Motivation configuration (type and description for each)
+- Pitfall configuration
+
+**View/Run Negotiation:** `/negotiation/[id]`
+- Current Interest/Patience display
+- Motivation and pitfall panel
+- Argument recording interface
+- Argument history
+- Rules reference
+- Outcome display (when completed)
+
+### Database Schema
+
+**Table:** `negotiationSessions` (added in database version 7)
+
+```typescript
+db.version(7).stores({
+  // ... existing tables
+  negotiationSessions: 'id, status, createdAt, updatedAt'
+});
+```
+
+**Indexes:**
+- Primary key: `id`
+- `status`: For filtering preparing/active/completed negotiations
+- `createdAt`: For sorting by creation date
+- `updatedAt`: For sorting by last modification
+
+### Usage Example
+
+```typescript
+import { negotiationStore } from '$lib/stores';
+
+// Create a new negotiation
+const negotiation = await negotiationStore.create({
+  name: 'Persuade the Guard Captain',
+  description: 'Convince Captain Thorne to let us investigate',
+  npcName: 'Captain Thorne',
+  motivations: [
+    { type: 'justice', description: 'Values law and order above all' },
+    { type: 'protection', description: 'Wants to keep citizens safe' }
+  ],
+  pitfalls: [
+    { description: 'Questions about his past as a mercenary' }
+  ]
+});
+
+// Record an argument
+await negotiationStore.recordArgument(
+  negotiation.id,
+  {
+    type: 'motivation',
+    tier: 2,
+    description: 'We appeal to his sense of justice',
+    motivationType: 'justice',
+    playerName: 'Kira',
+    notes: 'Used persuasion skill'
+  }
+);
+
+// Access reactive state
+const active = negotiationStore.activeNegotiations;
+const completed = negotiationStore.completedNegotiations;
+```
+
+**Related Documentation:**
+- [Negotiation Type Definitions](/src/lib/types/negotiation.ts) - TypeScript types
+- [Negotiation Repository](/src/lib/db/repositories/negotiationRepository.ts) - Data layer
+
 ## Search & Filtering
 
 ### Relationship-Based Filtering
@@ -4671,6 +4838,7 @@ interface CampaignBackup {
   selectedModel?: string;       // User's selected Claude model preference
   combatSessions?: CombatSession[];  // Combat sessions (Issue #310)
   montageSessions?: MontageSession[]; // Montage sessions (Issue #310)
+  negotiationSessions?: NegotiationSession[]; // Negotiation sessions (Issue #396)
 }
 ```
 

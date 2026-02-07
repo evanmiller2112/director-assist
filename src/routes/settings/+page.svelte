@@ -172,6 +172,8 @@
 			// Issue #310: Get combat and montage sessions
 			const combatSessions = await db.combatSessions.toArray();
 			const montageSessions = await db.montageSessions.toArray();
+			// Issue #392: Get negotiation sessions
+			const negotiationSessions = await db.negotiationSessions.toArray();
 
 			const exportDate = new Date();
 			const backup: CampaignBackup = {
@@ -182,7 +184,8 @@
 				activeCampaignId: activeCampaignId ?? undefined,
 				selectedModel: modelToExport,
 				combatSessions,
-				montageSessions
+				montageSessions,
+				negotiationSessions
 			};
 
 			const json = JSON.stringify(backup, null, 2);
@@ -272,7 +275,7 @@
 				// Import data
 				await db.transaction(
 					'rw',
-					[db.campaign, db.entities, db.chatMessages, db.appConfig, db.combatSessions, db.montageSessions],
+					[db.campaign, db.entities, db.chatMessages, db.appConfig, db.combatSessions, db.montageSessions, db.negotiationSessions],
 					async () => {
 						await db.campaign.clear();
 						await db.entities.clear();
@@ -280,6 +283,7 @@
 						await db.appConfig.clear();
 						await db.combatSessions.clear();
 						await db.montageSessions.clear();
+						await db.negotiationSessions.clear();
 
 						// Handle old format: convert campaign to entity
 						let entitiesToImport = [...backup.entities];
@@ -304,6 +308,11 @@
 
 						if (backup.montageSessions && backup.montageSessions.length > 0) {
 							await db.montageSessions.bulkAdd(backup.montageSessions);
+						}
+
+						// Issue #392: Restore negotiation sessions
+						if (backup.negotiationSessions && backup.negotiationSessions.length > 0) {
+							await db.negotiationSessions.bulkAdd(backup.negotiationSessions);
 						}
 
 						// Set active campaign

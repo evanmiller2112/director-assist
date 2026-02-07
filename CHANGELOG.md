@@ -19,6 +19,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Preserves concept field for backward compatibility while enabling more detailed character information
 - Example usage: ancestry="Human", culture="Nomadic", career="Soldier", heroClass="Fury", subclass="Reaver"
 
+## [1.3.5] - TBD
+
+### Added
+
+**Negotiation Tracker for Draw Steel (Issue #396)**
+- New negotiation system implementing Draw Steel mechanics
+- Interest and Patience tracking on 0-5 scale with visual progress bars
+- NPC motivation management with 14 motivation types (benevolence, discovery, freedom, greed, higher authority, justice, legacy, peace, power, protection, reputation, revelry, vengeance, wealth)
+- Pitfall tracking for topics that trigger negative reactions
+- Argument recording with three tiers (1, 2, 3) and automatic Interest/Patience calculation
+- Three argument types: motivation appeal, no motivation, and pitfall trigger
+- Tier-based outcomes: failure (Interest 0-1), minor favor (Interest 2), major favor (Interest 3-4), alliance (Interest 5)
+- Negotiation status workflow: preparing → active → completed
+- Rules reference panel with Draw Steel negotiation mechanics
+- ArgumentCard component displays argument history with tier badges
+- NegotiationProgress component shows current Interest/Patience with color-coded bars
+- MotivationPitfallPanel for managing known/hidden motivations and pitfalls
+- Sidebar integration with active negotiation count badge
+- Backup/restore support for negotiation sessions
+- NegotiationRepository with full CRUD operations
+- Routes: `/negotiation` (list), `/negotiation/new` (create), `/negotiation/[id]` (run)
+
 ## [1.3.1] - 2025-02-07
 
 ### Fixed

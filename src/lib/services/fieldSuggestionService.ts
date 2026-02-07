@@ -197,7 +197,7 @@ function buildBatchSuggestionPrompt(
 
 	const entityLabel = typeDefinition.label;
 
-	return `You are a TTRPG campaign assistant helping a Game Master develop a ${entityLabel}.
+	return `You are a TTRPG campaign assistant helping a Game Master brainstorm ideas for a ${entityLabel}.
 
 CONTEXT ABOUT THIS ${entityLabel.toUpperCase()}:
 ${existingContext || '(No existing details yet)'}
@@ -207,24 +207,36 @@ FIELDS THAT NEED IDEAS:
 ${fieldDescriptions}
 
 YOUR TASK:
-Based on the context above (especially the name, existing details, and relationships), suggest specific ideas for each field. Your suggestions should:
+For each field, provide a bulleted list of 3-5 quick ideas. Draw from the context above - especially relationships and existing details.
 
-1. BE CONTEXTUAL: Draw directly from the relationships and existing details. If this character is "the blacksmith's apprentice", suggest things that connect to that relationship.
-2. BE SPECIFIC: Instead of generic content, suggest concrete details that fit this specific ${entityLabel}. Use names, places, and connections from the context.
-3. BE CONCISE: Give the core idea in 1-2 sentences. The GM will expand it if they like it.
-4. EXPLAIN YOUR REASONING: Briefly note why this suggestion fits (e.g., "Given their relationship with X..." or "Since they're described as...")
+FORMAT YOUR SUGGESTIONS LIKE THIS:
+"[Field label] could be:
+- [Quick idea 1]
+- [Quick idea 2]
+- [Quick idea 3]
+- [Idea that connects to a relationship]
+- [Idea based on existing context]"
 
-For each field, phrase your suggestion as a creative prompt like:
-- "How about: [specific idea]? This fits because..."
-- "Given [context detail], perhaps: [idea]"
-- "Their connection to [relationship] suggests: [idea]"
+GUIDELINES:
+- Each bullet should be SHORT (a few words to one sentence)
+- Include at least one idea that connects to relationships or existing details
+- Mix personality traits, physical details, quirks, connections to other characters
+- Be specific and creative, not generic
+
+EXAMPLE for a character's "personality" field with context that they're a blacksmith's apprentice who knows someone named Sam:
+"Personality could be:
+- Eager to prove himself
+- Secretly afraid of fire despite his trade
+- Fiercely loyal to Sam
+- Hums while working metal
+- Quick temper but quicker to forgive"
 
 Respond with ONLY a JSON object in this exact format (no markdown, no explanation):
 {
   "suggestions": [
     {
       "fieldKey": "fieldKeyHere",
-      "value": "How about: [your specific suggestion]? This fits because [brief reasoning based on context].",
+      "value": "[Field] could be:\\n- Idea 1\\n- Idea 2\\n- Idea 3\\n- Idea 4\\n- Idea 5",
       "confidence": 0.85
     }
   ]

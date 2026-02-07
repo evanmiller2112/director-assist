@@ -79,6 +79,7 @@ interface BaseCombatant {
 	conditions: CombatCondition[];
 	isAdHoc?: boolean; // Flag for ad-hoc combatants added without entity template
 	tokenIndicator?: string; // Optional token marker for physical tracking (e.g., "A", "1", "red base")
+	groupId?: string; // Reference to group this combatant belongs to (Issue #263)
 }
 
 /**
@@ -119,6 +120,13 @@ export function isHeroCombatant(combatant: Combatant): combatant is HeroCombatan
  */
 export function isCreatureCombatant(combatant: Combatant): combatant is CreatureCombatant {
 	return combatant.type === 'creature';
+}
+
+/**
+ * Type guard to check if combatant belongs to a group.
+ */
+export function isGroupedCombatant(combatant: Combatant): boolean {
+	return combatant.groupId !== undefined;
 }
 
 // ============================================================================
@@ -170,6 +178,24 @@ export interface PowerRollResult {
 }
 
 // ============================================================================
+// Combatant Groups (Issue #263)
+// ============================================================================
+
+/**
+ * Group of combatants sharing initiative.
+ * Members act in sequence using fractional turnOrder.
+ */
+export interface CombatantGroup {
+	id: string;
+	name: string;
+	memberIds: string[];
+	initiative: number;
+	initiativeRoll: [number, number];
+	turnOrder: number;
+	isCollapsed?: boolean;
+}
+
+// ============================================================================
 // Combat Session
 // ============================================================================
 
@@ -184,6 +210,7 @@ export interface CombatSession {
 	currentRound: number;
 	currentTurn: number;
 	combatants: Combatant[];
+	groups: CombatantGroup[];
 	victoryPoints: number;
 	heroPoints: number;
 	log: CombatLogEntry[];
@@ -298,4 +325,13 @@ export interface LogPowerRollInput {
 	critical?: boolean;
 	action: string;
 	combatantId?: string;
+}
+
+/**
+ * Input for creating a combatant group (Issue #263).
+ */
+export interface CreateGroupInput {
+	name: string;
+	memberIds: string[];
+	initiative?: number;
 }

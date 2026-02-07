@@ -8,3 +8,4 @@ export * from './combat';
 export * from './montage';
 export * from './playerExport';
 export * from './entityTypeExport';
+export * from './creature';

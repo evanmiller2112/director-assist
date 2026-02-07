@@ -33,7 +33,9 @@ import type {
 	AddConditionInput,
 	CombatLogEntry,
 	AddLogEntryInput,
-	LogPowerRollInput
+	LogPowerRollInput,
+	CombatantGroup,
+	CreateGroupInput
 } from '$lib/types/combat';
 import { nanoid } from 'nanoid';
 
@@ -176,6 +178,7 @@ export const combatRepository = {
 			currentRound: 0,
 			currentTurn: 0,
 			combatants: [],
+			groups: [],
 			victoryPoints: 0,
 			heroPoints: 0,
 			log: [],
@@ -724,6 +727,7 @@ export const combatRepository = {
 
 	/**
 	 * Remove combatant from combat.
+	 * If combatant is in a group, removes from group and auto-dissolves if only 1 member remains.
 	 */
 	async removeCombatant(combatId: string, combatantId: string): Promise<CombatSession> {
 		await ensureDbReady();
@@ -738,13 +742,70 @@ export const combatRepository = {
 			throw new Error(`Combatant ${combatantId} not found`);
 		}
 
+		let updatedGroups = combat.groups;
+		const logEntries: CombatLogEntry[] = [
+			createLogEntry(combat, `${combatant.name} removed from combat`, 'system')
+		];
+
+		// If combatant is in a group, update the group
+		if (combatant.groupId) {
+			const group = combat.groups.find((g) => g.id === combatant.groupId);
+			if (group) {
+				const newMemberIds = group.memberIds.filter((id) => id !== combatantId);
+
+				// Auto-dissolve if only 1 member remains
+				if (newMemberIds.length === 1) {
+					updatedGroups = combat.groups.filter((g) => g.id !== group.id);
+
+					// Update remaining member to be standalone
+					const remainingMemberId = newMemberIds[0];
+					const updatedCombatantsWithRemaining = combat.combatants
+						.filter((c) => c.id !== combatantId)
+						.map((c) => {
+							if (c.id === remainingMemberId) {
+								return {
+									...c,
+									groupId: undefined,
+									turnOrder: Math.floor(c.turnOrder)
+								};
+							}
+							return c;
+						});
+
+					logEntries.push(
+						createLogEntry(combat, `Group "${group.name}" dissolved (only 1 member remaining)`, 'system')
+					);
+
+					const updated: CombatSession = {
+						...combat,
+						combatants: updatedCombatantsWithRemaining,
+						groups: updatedGroups,
+						log: [...combat.log, ...logEntries],
+						updatedAt: new Date()
+					};
+
+					await db.combatSessions.put(updated);
+					return updated;
+				}
+
+				// Update group with new member list
+				updatedGroups = combat.groups.map((g) => {
+					if (g.id === group.id) {
+						return {
+							...g,
+							memberIds: newMemberIds
+						};
+					}
+					return g;
+				});
+			}
+		}
+
 		const updated: CombatSession = {
 			...combat,
 			combatants: combat.combatants.filter((c) => c.id !== combatantId),
-			log: [
-				...combat.log,
-				createLogEntry(combat, `${combatant.name} removed from combat`, 'system')
-			],
+			groups: updatedGroups,
+			log: [...combat.log, ...logEntries],
 			updatedAt: new Date()
 		};
 
@@ -1520,6 +1581,374 @@ export const combatRepository = {
 		const updated: CombatSession = {
 			...combat,
 			log: [...combat.log, logEntry],
+			updatedAt: new Date()
+		};
+
+		await db.combatSessions.put(updated);
+		return updated;
+	},
+
+	// ========================================================================
+	// Group Management (Issue #263)
+	// ========================================================================
+
+	/**
+	 * Create a group from selected combatants.
+	 * Members share initiative and act sequentially with fractional turnOrder.
+	 */
+	async createGroup(combatId: string, input: CreateGroupInput): Promise<CombatSession> {
+		await ensureDbReady();
+
+		const combat = await db.combatSessions.get(combatId);
+		if (!combat) {
+			throw new Error(`Combat session ${combatId} not found`);
+		}
+
+		// Validate all members exist
+		for (const memberId of input.memberIds) {
+			const combatant = combat.combatants.find((c) => c.id === memberId);
+			if (!combatant) {
+				throw new Error(`Combatant ${memberId} not found`);
+			}
+			// Validate member is not already in a group
+			if (combatant.groupId) {
+				throw new Error(`Combatant ${memberId} is already in a group`);
+			}
+		}
+
+		// Determine group initiative (use custom or first member's)
+		const firstMember = combat.combatants.find((c) => c.id === input.memberIds[0])!;
+		const groupInitiative = input.initiative ?? firstMember.initiative;
+		const groupInitiativeRoll = input.initiative ? roll2d10() : firstMember.initiativeRoll;
+
+		// Create the group
+		const group: CombatantGroup = {
+			id: nanoid(),
+			name: input.name,
+			memberIds: [...input.memberIds],
+			initiative: groupInitiative,
+			initiativeRoll: groupInitiativeRoll,
+			turnOrder: firstMember.turnOrder
+		};
+
+		// Update all members to have groupId and fractional turnOrder
+		const updatedCombatants = combat.combatants.map((combatant) => {
+			const memberIndex = input.memberIds.indexOf(combatant.id);
+			if (memberIndex !== -1) {
+				return {
+					...combatant,
+					groupId: group.id,
+					initiative: groupInitiative,
+					initiativeRoll: groupInitiativeRoll,
+					turnOrder: group.turnOrder + (memberIndex + 1) * 0.1
+				};
+			}
+			return combatant;
+		});
+
+		const updated: CombatSession = {
+			...combat,
+			combatants: updatedCombatants,
+			groups: [...combat.groups, group],
+			log: [
+				...combat.log,
+				createLogEntry(combat, `Group "${input.name}" created with ${input.memberIds.length} members`, 'system')
+			],
+			updatedAt: new Date()
+		};
+
+		await db.combatSessions.put(updated);
+		return updated;
+	},
+
+	/**
+	 * Add a combatant to an existing group.
+	 * The combatant inherits the group's initiative and gets a fractional turnOrder.
+	 */
+	async addToGroup(combatId: string, combatantId: string, groupId: string): Promise<CombatSession> {
+		await ensureDbReady();
+
+		const combat = await db.combatSessions.get(combatId);
+		if (!combat) {
+			throw new Error(`Combat session ${combatId} not found`);
+		}
+
+		const group = combat.groups.find((g) => g.id === groupId);
+		if (!group) {
+			throw new Error(`Group ${groupId} not found`);
+		}
+
+		const combatant = combat.combatants.find((c) => c.id === combatantId);
+		if (!combatant) {
+			throw new Error(`Combatant ${combatantId} not found`);
+		}
+
+		if (combatant.groupId) {
+			throw new Error(`Combatant ${combatantId} is already in a group`);
+		}
+
+		// Calculate new member's fractional turnOrder
+		const currentMemberCount = group.memberIds.length;
+		const newTurnOrder = group.turnOrder + (currentMemberCount + 1) * 0.1;
+
+		// Update combatant
+		const updatedCombatants = combat.combatants.map((c) => {
+			if (c.id === combatantId) {
+				return {
+					...c,
+					groupId: group.id,
+					initiative: group.initiative,
+					initiativeRoll: group.initiativeRoll,
+					turnOrder: newTurnOrder
+				};
+			}
+			return c;
+		});
+
+		// Update group memberIds
+		const updatedGroups = combat.groups.map((g) => {
+			if (g.id === groupId) {
+				return {
+					...g,
+					memberIds: [...g.memberIds, combatantId]
+				};
+			}
+			return g;
+		});
+
+		const updated: CombatSession = {
+			...combat,
+			combatants: updatedCombatants,
+			groups: updatedGroups,
+			log: [
+				...combat.log,
+				createLogEntry(combat, `${combatant.name} added to group "${group.name}"`, 'system')
+			],
+			updatedAt: new Date()
+		};
+
+		await db.combatSessions.put(updated);
+		return updated;
+	},
+
+	/**
+	 * Remove a combatant from its group.
+	 * Auto-dissolves the group if only 1 member remains.
+	 */
+	async removeFromGroup(combatId: string, combatantId: string): Promise<CombatSession> {
+		await ensureDbReady();
+
+		const combat = await db.combatSessions.get(combatId);
+		if (!combat) {
+			throw new Error(`Combat session ${combatId} not found`);
+		}
+
+		const combatant = combat.combatants.find((c) => c.id === combatantId);
+		if (!combatant) {
+			throw new Error(`Combatant ${combatantId} not found`);
+		}
+
+		if (!combatant.groupId) {
+			throw new Error(`Combatant ${combatantId} is not in a group`);
+		}
+
+		const group = combat.groups.find((g) => g.id === combatant.groupId);
+		if (!group) {
+			throw new Error(`Group ${combatant.groupId} not found`);
+		}
+
+		// Remove combatant from group
+		const newMemberIds = group.memberIds.filter((id) => id !== combatantId);
+
+		// Update combatant to be standalone with integer turnOrder
+		const updatedCombatants = combat.combatants.map((c) => {
+			if (c.id === combatantId) {
+				return {
+					...c,
+					groupId: undefined,
+					turnOrder: Math.floor(c.turnOrder)
+				};
+			}
+			return c;
+		});
+
+		const logEntries: CombatLogEntry[] = [
+			createLogEntry(combat, `${combatant.name} removed from group "${group.name}"`, 'system')
+		];
+
+		let updatedGroups = combat.groups;
+
+		// Auto-dissolve if only 1 member remains
+		if (newMemberIds.length === 1) {
+			const remainingMemberId = newMemberIds[0];
+
+			// Remove group and make last member standalone
+			updatedGroups = combat.groups.filter((g) => g.id !== group.id);
+
+			// Update remaining member to be standalone
+			const updatedCombatantsWithRemaining = updatedCombatants.map((c) => {
+				if (c.id === remainingMemberId) {
+					return {
+						...c,
+						groupId: undefined,
+						turnOrder: Math.floor(c.turnOrder)
+					};
+				}
+				return c;
+			});
+
+			logEntries.push(
+				createLogEntry(combat, `Group "${group.name}" dissolved (only 1 member remaining)`, 'system')
+			);
+
+			const updated: CombatSession = {
+				...combat,
+				combatants: updatedCombatantsWithRemaining,
+				groups: updatedGroups,
+				log: [...combat.log, ...logEntries],
+				updatedAt: new Date()
+			};
+
+			await db.combatSessions.put(updated);
+			return updated;
+		}
+
+		// Update group with new member list
+		updatedGroups = combat.groups.map((g) => {
+			if (g.id === group.id) {
+				return {
+					...g,
+					memberIds: newMemberIds
+				};
+			}
+			return g;
+		});
+
+		const updated: CombatSession = {
+			...combat,
+			combatants: updatedCombatants,
+			groups: updatedGroups,
+			log: [...combat.log, ...logEntries],
+			updatedAt: new Date()
+		};
+
+		await db.combatSessions.put(updated);
+		return updated;
+	},
+
+	/**
+	 * Split a combatant from its group into a standalone combatant.
+	 * Group continues to exist with remaining members.
+	 */
+	async splitFromGroup(
+		combatId: string,
+		combatantId: string,
+		newInitiative?: number
+	): Promise<CombatSession> {
+		await ensureDbReady();
+
+		const combat = await db.combatSessions.get(combatId);
+		if (!combat) {
+			throw new Error(`Combat session ${combatId} not found`);
+		}
+
+		const combatant = combat.combatants.find((c) => c.id === combatantId);
+		if (!combatant) {
+			throw new Error(`Combatant ${combatantId} not found`);
+		}
+
+		if (!combatant.groupId) {
+			throw new Error(`Combatant ${combatantId} is not in a group`);
+		}
+
+		const group = combat.groups.find((g) => g.id === combatant.groupId);
+		if (!group) {
+			throw new Error(`Group ${combatant.groupId} not found`);
+		}
+
+		// Determine new initiative for split combatant
+		const initiative = newInitiative ?? combatant.initiative;
+		const initiativeRoll = newInitiative ? roll2d10() : combatant.initiativeRoll;
+
+		// Update combatant to be standalone
+		const updatedCombatants = combat.combatants.map((c) => {
+			if (c.id === combatantId) {
+				return {
+					...c,
+					groupId: undefined,
+					initiative,
+					initiativeRoll,
+					turnOrder: Math.floor(c.turnOrder)
+				};
+			}
+			return c;
+		});
+
+		// Remove from group's member list
+		const updatedGroups = combat.groups.map((g) => {
+			if (g.id === group.id) {
+				return {
+					...g,
+					memberIds: g.memberIds.filter((id) => id !== combatantId)
+				};
+			}
+			return g;
+		});
+
+		const updated: CombatSession = {
+			...combat,
+			combatants: updatedCombatants,
+			groups: updatedGroups,
+			log: [
+				...combat.log,
+				createLogEntry(combat, `${combatant.name} split from group "${group.name}"`, 'system')
+			],
+			updatedAt: new Date()
+		};
+
+		await db.combatSessions.put(updated);
+		return updated;
+	},
+
+	/**
+	 * Dissolve a group, making all members standalone combatants.
+	 */
+	async dissolveGroup(combatId: string, groupId: string): Promise<CombatSession> {
+		await ensureDbReady();
+
+		const combat = await db.combatSessions.get(combatId);
+		if (!combat) {
+			throw new Error(`Combat session ${combatId} not found`);
+		}
+
+		const group = combat.groups.find((g) => g.id === groupId);
+		if (!group) {
+			throw new Error(`Group ${groupId} not found`);
+		}
+
+		// Update all members to be standalone with integer turnOrder
+		const updatedCombatants = combat.combatants.map((c) => {
+			if (c.groupId === groupId) {
+				return {
+					...c,
+					groupId: undefined,
+					turnOrder: Math.floor(c.turnOrder)
+				};
+			}
+			return c;
+		});
+
+		// Remove the group
+		const updatedGroups = combat.groups.filter((g) => g.id !== groupId);
+
+		const updated: CombatSession = {
+			...combat,
+			combatants: updatedCombatants,
+			groups: updatedGroups,
+			log: [
+				...combat.log,
+				createLogEntry(combat, `Group "${group.name}" dissolved`, 'system')
+			],
 			updatedAt: new Date()
 		};
 

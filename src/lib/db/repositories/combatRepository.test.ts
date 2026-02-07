@@ -2395,3 +2395,849 @@ describe('CombatRepository - Token Indicator Support (Issue #300)', () => {
 		});
 	});
 });
+
+// ============================================================================
+// Group Management Tests (Issue #263)
+// ============================================================================
+
+describe('CombatRepository - Group Management (Issue #263)', () => {
+	let combatId: string;
+
+	beforeEach(async () => {
+		const combat = await combatRepository.create({
+			name: 'Group Test Combat'
+		});
+		combatId = combat.id;
+	});
+
+	describe('createGroup', () => {
+		it('should create a group from selected combatants', async () => {
+			// Add some creatures
+			await combatRepository.addCreatureCombatant(combatId, {
+				name: 'Goblin 1',
+				hp: 8
+			});
+			await combatRepository.addCreatureCombatant(combatId, {
+				name: 'Goblin 2',
+				hp: 8
+			});
+			const combatBefore = await combatRepository.addCreatureCombatant(combatId, {
+				name: 'Goblin 3',
+				hp: 8
+			});
+
+			const memberIds = combatBefore.combatants.map(c => c.id);
+
+			// Create group from all three goblins
+			const combat = await combatRepository.createGroup(combatId, {
+				name: 'Goblin Squad',
+				memberIds
+			});
+
+			// Should have a group
+			expect(combat.groups).toBeDefined();
+			expect(combat.groups).toHaveLength(1);
+
+			const group = combat.groups[0];
+			expect(group.name).toBe('Goblin Squad');
+			expect(group.memberIds).toHaveLength(3);
+			expect(group.memberIds).toEqual(expect.arrayContaining(memberIds));
+
+			// All members should have the groupId set
+			combat.combatants.forEach(c => {
+				expect(c.groupId).toBe(group.id);
+			});
+
+			// Group should share initiative from first member
+			expect(group.initiative).toBe(combat.combatants[0].initiative);
+		});
+
+		it('should assign fractional turnOrder to group members', async () => {
+			// Add creatures
+			await combatRepository.addCreatureCombatant(combatId, {
+				name: 'Orc 1',
+				hp: 15
+			});
+			const combatBefore = await combatRepository.addCreatureCombatant(combatId, {
+				name: 'Orc 2',
+				hp: 15
+			});
+
+			const memberIds = combatBefore.combatants.map(c => c.id);
+
+			const combat = await combatRepository.createGroup(combatId, {
+				name: 'Orc Band',
+				memberIds
+			});
+
+			const group = combat.groups[0];
+
+			// Group should have integer turnOrder
+			expect(group.turnOrder).toBe(Math.floor(group.turnOrder));
+
+			// Members should have fractional turnOrder (group.turnOrder + 0.1, 0.2, etc.)
+			const members = combat.combatants.filter(c => c.groupId === group.id);
+			members.forEach((member, index) => {
+				const expectedTurnOrder = group.turnOrder + (index + 1) * 0.1;
+				expect(member.turnOrder).toBeCloseTo(expectedTurnOrder, 1);
+			});
+		});
+
+		it('should use custom initiative if provided', async () => {
+			await combatRepository.addCreatureCombatant(combatId, {
+				name: 'Creature 1',
+				hp: 12
+			});
+			const combatBefore = await combatRepository.addCreatureCombatant(combatId, {
+				name: 'Creature 2',
+				hp: 12
+			});
+
+			const memberIds = combatBefore.combatants.map(c => c.id);
+
+			const combat = await combatRepository.createGroup(combatId, {
+				name: 'Custom Init Group',
+				memberIds,
+				initiative: 18
+			});
+
+			const group = combat.groups[0];
+			expect(group.initiative).toBe(18);
+
+			// All members should have the custom initiative
+			combat.combatants.forEach(c => {
+				expect(c.initiative).toBe(18);
+			});
+		});
+
+		it('should log group creation', async () => {
+			await combatRepository.addCreatureCombatant(combatId, {
+				name: 'Minion 1',
+				hp: 5
+			});
+			const combatBefore = await combatRepository.addCreatureCombatant(combatId, {
+				name: 'Minion 2',
+				hp: 5
+			});
+
+			const memberIds = combatBefore.combatants.map(c => c.id);
+
+			const combat = await combatRepository.createGroup(combatId, {
+				name: 'Minion Swarm',
+				memberIds
+			});
+
+			// Should have log entry for group creation
+			const logEntry = combat.log.find(entry =>
+				entry.message.includes('Minion Swarm') && entry.message.includes('created')
+			);
+			expect(logEntry).toBeDefined();
+			expect(logEntry?.type).toBe('system');
+		});
+
+		it('should throw error if combat not found', async () => {
+			await expect(
+				combatRepository.createGroup('invalid-id', {
+					name: 'Test Group',
+					memberIds: ['member-1']
+				})
+			).rejects.toThrow('Combat session invalid-id not found');
+		});
+
+		it('should throw error if member not found', async () => {
+			await expect(
+				combatRepository.createGroup(combatId, {
+					name: 'Invalid Group',
+					memberIds: ['invalid-member-id']
+				})
+			).rejects.toThrow('Combatant invalid-member-id not found');
+		});
+
+		it('should throw error if trying to group already grouped combatant', async () => {
+			await combatRepository.addCreatureCombatant(combatId, {
+				name: 'Creature 1',
+				hp: 10
+			});
+			await combatRepository.addCreatureCombatant(combatId, {
+				name: 'Creature 2',
+				hp: 10
+			});
+			const combatBefore = await combatRepository.addCreatureCombatant(combatId, {
+				name: 'Creature 3',
+				hp: 10
+			});
+
+			const memberIds = combatBefore.combatants.map(c => c.id);
+
+			// Create first group
+			await combatRepository.createGroup(combatId, {
+				name: 'Group 1',
+				memberIds: [memberIds[0], memberIds[1]]
+			});
+
+			// Try to create second group with a member that's already grouped
+			await expect(
+				combatRepository.createGroup(combatId, {
+					name: 'Group 2',
+					memberIds: [memberIds[0], memberIds[2]] // memberIds[0] is already grouped
+				})
+			).rejects.toThrow('already in a group');
+		});
+	});
+
+	describe('addToGroup', () => {
+		it('should add a combatant to an existing group', async () => {
+			// Create initial group
+			await combatRepository.addCreatureCombatant(combatId, {
+				name: 'Goblin 1',
+				hp: 8
+			});
+			await combatRepository.addCreatureCombatant(combatId, {
+				name: 'Goblin 2',
+				hp: 8
+			});
+			const combatWithCombatants = await combatRepository.addCreatureCombatant(combatId, {
+				name: 'Goblin 3',
+				hp: 8
+			});
+
+			const initialMemberIds = [
+				combatWithCombatants.combatants[0].id,
+				combatWithCombatants.combatants[1].id
+			];
+
+			const combatWithGroup = await combatRepository.createGroup(combatId, {
+				name: 'Goblin Squad',
+				memberIds: initialMemberIds
+			});
+
+			const groupId = combatWithGroup.groups[0].id;
+			const newMemberId = combatWithCombatants.combatants[2].id;
+
+			// Add third goblin to the group
+			const combat = await combatRepository.addToGroup(combatId, newMemberId, groupId);
+
+			const group = combat.groups.find(g => g.id === groupId);
+			expect(group).toBeDefined();
+			expect(group!.memberIds).toHaveLength(3);
+			expect(group!.memberIds).toContain(newMemberId);
+
+			// New member should have groupId set
+			const newMember = combat.combatants.find(c => c.id === newMemberId);
+			expect(newMember?.groupId).toBe(groupId);
+
+			// New member should inherit group's initiative
+			expect(newMember?.initiative).toBe(group!.initiative);
+		});
+
+		it('should assign appropriate fractional turnOrder to new member', async () => {
+			// Create group with 2 members
+			await combatRepository.addCreatureCombatant(combatId, {
+				name: 'Orc 1',
+				hp: 15
+			});
+			const combatWith2 = await combatRepository.addCreatureCombatant(combatId, {
+				name: 'Orc 2',
+				hp: 15
+			});
+
+			const initialMemberIds = combatWith2.combatants.map(c => c.id);
+
+			const combatWithGroup = await combatRepository.createGroup(combatId, {
+				name: 'Orc Band',
+				memberIds: initialMemberIds
+			});
+
+			// Add a third member
+			const combatWith3 = await combatRepository.addCreatureCombatant(combatId, {
+				name: 'Orc 3',
+				hp: 15
+			});
+
+			const groupId = combatWithGroup.groups[0].id;
+			const newMemberId = combatWith3.combatants[combatWith3.combatants.length - 1].id;
+
+			const combat = await combatRepository.addToGroup(combatId, newMemberId, groupId);
+
+			const group = combat.groups.find(g => g.id === groupId)!;
+			const members = combat.combatants.filter(c => c.groupId === groupId);
+
+			// Should now have 3 members
+			expect(members).toHaveLength(3);
+
+			// New member should be at end with appropriate fractional turnOrder
+			const newMember = combat.combatants.find(c => c.id === newMemberId)!;
+			expect(newMember.turnOrder).toBeCloseTo(group.turnOrder + 0.3, 1);
+		});
+
+		it('should log addition to group', async () => {
+			await combatRepository.addCreatureCombatant(combatId, {
+				name: 'Skeleton 1',
+				hp: 10
+			});
+			const combatWith2 = await combatRepository.addCreatureCombatant(combatId, {
+				name: 'Skeleton 2',
+				hp: 10
+			});
+
+			const memberIds = [combatWith2.combatants[0].id];
+			const combatWithGroup = await combatRepository.createGroup(combatId, {
+				name: 'Undead Squad',
+				memberIds
+			});
+
+			const groupId = combatWithGroup.groups[0].id;
+			const newMemberId = combatWith2.combatants[1].id;
+
+			const combat = await combatRepository.addToGroup(combatId, newMemberId, groupId);
+
+			const logEntry = combat.log.find(entry =>
+				entry.message.includes('Skeleton 2') && entry.message.includes('Undead Squad')
+			);
+			expect(logEntry).toBeDefined();
+			expect(logEntry?.type).toBe('system');
+		});
+
+		it('should throw error if combatant already in a group', async () => {
+			await combatRepository.addCreatureCombatant(combatId, {
+				name: 'Creature 1',
+				hp: 10
+			});
+			await combatRepository.addCreatureCombatant(combatId, {
+				name: 'Creature 2',
+				hp: 10
+			});
+			const combatWith3 = await combatRepository.addCreatureCombatant(combatId, {
+				name: 'Creature 3',
+				hp: 10
+			});
+
+			const memberIds = combatWith3.combatants.map(c => c.id);
+
+			// Create first group with first two creatures
+			const combatWithGroup1 = await combatRepository.createGroup(combatId, {
+				name: 'Group 1',
+				memberIds: [memberIds[0], memberIds[1]]
+			});
+
+			// Create second group with third creature
+			const combatWithGroup2 = await combatRepository.createGroup(combatId, {
+				name: 'Group 2',
+				memberIds: [memberIds[2]]
+			});
+
+			const group1Id = combatWithGroup1.groups[0].id;
+			const group2MemberId = memberIds[2];
+
+			// Try to add creature from group 2 to group 1
+			await expect(
+				combatRepository.addToGroup(combatId, group2MemberId, group1Id)
+			).rejects.toThrow('already in a group');
+		});
+	});
+
+	describe('removeFromGroup', () => {
+		it('should remove a member from a group', async () => {
+			// Create group with 3 members
+			await combatRepository.addCreatureCombatant(combatId, {
+				name: 'Goblin 1',
+				hp: 8
+			});
+			await combatRepository.addCreatureCombatant(combatId, {
+				name: 'Goblin 2',
+				hp: 8
+			});
+			const combatWith3 = await combatRepository.addCreatureCombatant(combatId, {
+				name: 'Goblin 3',
+				hp: 8
+			});
+
+			const memberIds = combatWith3.combatants.map(c => c.id);
+			const combatWithGroup = await combatRepository.createGroup(combatId, {
+				name: 'Goblin Squad',
+				memberIds
+			});
+
+			const groupId = combatWithGroup.groups[0].id;
+			const memberToRemove = memberIds[1];
+
+			// Remove one member
+			const combat = await combatRepository.removeFromGroup(combatId, memberToRemove);
+
+			const group = combat.groups.find(g => g.id === groupId)!;
+			expect(group.memberIds).toHaveLength(2);
+			expect(group.memberIds).not.toContain(memberToRemove);
+
+			// Removed member should not have groupId
+			const removedMember = combat.combatants.find(c => c.id === memberToRemove);
+			expect(removedMember?.groupId).toBeUndefined();
+
+			// Removed member should have standalone integer turnOrder
+			expect(removedMember?.turnOrder).toBe(Math.floor(removedMember!.turnOrder));
+		});
+
+		it('should auto-dissolve group when only 1 member remains', async () => {
+			// Create group with 2 members
+			await combatRepository.addCreatureCombatant(combatId, {
+				name: 'Orc 1',
+				hp: 15
+			});
+			const combatWith2 = await combatRepository.addCreatureCombatant(combatId, {
+				name: 'Orc 2',
+				hp: 15
+			});
+
+			const memberIds = combatWith2.combatants.map(c => c.id);
+			const combatWithGroup = await combatRepository.createGroup(combatId, {
+				name: 'Orc Pair',
+				memberIds
+			});
+
+			const groupId = combatWithGroup.groups[0].id;
+			const memberToRemove = memberIds[0];
+
+			// Remove one member, leaving only 1
+			const combat = await combatRepository.removeFromGroup(combatId, memberToRemove);
+
+			// Group should be dissolved
+			expect(combat.groups.find(g => g.id === groupId)).toBeUndefined();
+
+			// Remaining member should not have groupId
+			const remainingMember = combat.combatants.find(c => c.id === memberIds[1]);
+			expect(remainingMember?.groupId).toBeUndefined();
+
+			// Both members should have standalone turnOrder
+			combat.combatants.forEach(c => {
+				expect(c.turnOrder).toBe(Math.floor(c.turnOrder));
+			});
+		});
+
+		it('should log removal and auto-dissolution', async () => {
+			await combatRepository.addCreatureCombatant(combatId, {
+				name: 'Skeleton 1',
+				hp: 10
+			});
+			const combatWith2 = await combatRepository.addCreatureCombatant(combatId, {
+				name: 'Skeleton 2',
+				hp: 10
+			});
+
+			const memberIds = combatWith2.combatants.map(c => c.id);
+			const combatWithGroup = await combatRepository.createGroup(combatId, {
+				name: 'Undead Duo',
+				memberIds
+			});
+
+			const memberToRemove = memberIds[0];
+			const combat = await combatRepository.removeFromGroup(combatId, memberToRemove);
+
+			// Should log removal
+			const removalLog = combat.log.find(entry =>
+				entry.message.includes('Skeleton 1') && entry.message.includes('removed')
+			);
+			expect(removalLog).toBeDefined();
+
+			// Should log auto-dissolution
+			const dissolutionLog = combat.log.find(entry =>
+				entry.message.includes('Undead Duo') && entry.message.includes('dissolved')
+			);
+			expect(dissolutionLog).toBeDefined();
+		});
+
+		it('should throw error if combatant not in a group', async () => {
+			await combatRepository.addCreatureCombatant(combatId, {
+				name: 'Standalone',
+				hp: 12
+			});
+
+			const combat = await combatRepository.getById(combatId);
+			const combatantId = combat!.combatants[0].id;
+
+			await expect(
+				combatRepository.removeFromGroup(combatId, combatantId)
+			).rejects.toThrow('not in a group');
+		});
+	});
+
+	describe('splitFromGroup', () => {
+		it('should split a member into standalone combatant', async () => {
+			// Create group with 3 members
+			await combatRepository.addCreatureCombatant(combatId, {
+				name: 'Wolf 1',
+				hp: 11
+			});
+			await combatRepository.addCreatureCombatant(combatId, {
+				name: 'Wolf 2',
+				hp: 11
+			});
+			const combatWith3 = await combatRepository.addCreatureCombatant(combatId, {
+				name: 'Wolf 3',
+				hp: 11
+			});
+
+			const memberIds = combatWith3.combatants.map(c => c.id);
+			const combatWithGroup = await combatRepository.createGroup(combatId, {
+				name: 'Wolf Pack',
+				memberIds
+			});
+
+			const groupId = combatWithGroup.groups[0].id;
+			const memberToSplit = memberIds[1];
+
+			// Split one wolf from the pack
+			const combat = await combatRepository.splitFromGroup(combatId, memberToSplit);
+
+			// Group should still exist with 2 members
+			const group = combat.groups.find(g => g.id === groupId)!;
+			expect(group).toBeDefined();
+			expect(group.memberIds).toHaveLength(2);
+			expect(group.memberIds).not.toContain(memberToSplit);
+
+			// Split member should be standalone
+			const splitMember = combat.combatants.find(c => c.id === memberToSplit)!;
+			expect(splitMember.groupId).toBeUndefined();
+			expect(splitMember.turnOrder).toBe(Math.floor(splitMember.turnOrder));
+		});
+
+		it('should allow specifying new initiative for split member', async () => {
+			await combatRepository.addCreatureCombatant(combatId, {
+				name: 'Bandit 1',
+				hp: 14
+			});
+			const combatWith2 = await combatRepository.addCreatureCombatant(combatId, {
+				name: 'Bandit 2',
+				hp: 14
+			});
+
+			const memberIds = combatWith2.combatants.map(c => c.id);
+			const combatWithGroup = await combatRepository.createGroup(combatId, {
+				name: 'Bandit Gang',
+				memberIds
+			});
+
+			const memberToSplit = memberIds[0];
+
+			const combat = await combatRepository.splitFromGroup(combatId, memberToSplit, 16);
+
+			const splitMember = combat.combatants.find(c => c.id === memberToSplit)!;
+			expect(splitMember.initiative).toBe(16);
+		});
+
+		it('should log the split action', async () => {
+			await combatRepository.addCreatureCombatant(combatId, {
+				name: 'Thug 1',
+				hp: 12
+			});
+			await combatRepository.addCreatureCombatant(combatId, {
+				name: 'Thug 2',
+				hp: 12
+			});
+			const combatWith3 = await combatRepository.addCreatureCombatant(combatId, {
+				name: 'Thug 3',
+				hp: 12
+			});
+
+			const memberIds = combatWith3.combatants.map(c => c.id);
+			const combatWithGroup = await combatRepository.createGroup(combatId, {
+				name: 'Thug Crew',
+				memberIds
+			});
+
+			const memberToSplit = memberIds[0];
+			const combat = await combatRepository.splitFromGroup(combatId, memberToSplit);
+
+			const logEntry = combat.log.find(entry =>
+				entry.message.includes('Thug 1') && entry.message.includes('split from')
+			);
+			expect(logEntry).toBeDefined();
+			expect(logEntry?.type).toBe('system');
+		});
+	});
+
+	describe('dissolveGroup', () => {
+		it('should dissolve a group and make all members standalone', async () => {
+			// Create group
+			await combatRepository.addCreatureCombatant(combatId, {
+				name: 'Kobold 1',
+				hp: 5
+			});
+			await combatRepository.addCreatureCombatant(combatId, {
+				name: 'Kobold 2',
+				hp: 5
+			});
+			const combatWith3 = await combatRepository.addCreatureCombatant(combatId, {
+				name: 'Kobold 3',
+				hp: 5
+			});
+
+			const memberIds = combatWith3.combatants.map(c => c.id);
+			const combatWithGroup = await combatRepository.createGroup(combatId, {
+				name: 'Kobold Mob',
+				memberIds
+			});
+
+			const groupId = combatWithGroup.groups[0].id;
+
+			// Dissolve the group
+			const combat = await combatRepository.dissolveGroup(combatId, groupId);
+
+			// Group should be removed
+			expect(combat.groups.find(g => g.id === groupId)).toBeUndefined();
+
+			// All former members should be standalone
+			combat.combatants.forEach(c => {
+				expect(c.groupId).toBeUndefined();
+				expect(c.turnOrder).toBe(Math.floor(c.turnOrder));
+			});
+		});
+
+		it('should log group dissolution', async () => {
+			await combatRepository.addCreatureCombatant(combatId, {
+				name: 'Imp 1',
+				hp: 7
+			});
+			const combatWith2 = await combatRepository.addCreatureCombatant(combatId, {
+				name: 'Imp 2',
+				hp: 7
+			});
+
+			const memberIds = combatWith2.combatants.map(c => c.id);
+			const combatWithGroup = await combatRepository.createGroup(combatId, {
+				name: 'Imp Swarm',
+				memberIds
+			});
+
+			const groupId = combatWithGroup.groups[0].id;
+			const combat = await combatRepository.dissolveGroup(combatId, groupId);
+
+			const logEntry = combat.log.find(entry =>
+				entry.message.includes('Imp Swarm') && entry.message.includes('dissolved')
+			);
+			expect(logEntry).toBeDefined();
+			expect(logEntry?.type).toBe('system');
+		});
+
+		it('should throw error if group not found', async () => {
+			await expect(
+				combatRepository.dissolveGroup(combatId, 'invalid-group-id')
+			).rejects.toThrow('Group invalid-group-id not found');
+		});
+	});
+
+	describe('nextTurn with groups', () => {
+		it('should advance through group members sequentially', async () => {
+			// Create combat with hero and grouped enemies
+			await combatRepository.addHeroCombatant(combatId, {
+				name: 'Hero',
+				hp: 40,
+				maxHp: 40
+			});
+
+			await combatRepository.addCreatureCombatant(combatId, {
+				name: 'Goblin 1',
+				hp: 8
+			});
+			await combatRepository.addCreatureCombatant(combatId, {
+				name: 'Goblin 2',
+				hp: 8
+			});
+			const combatWith3Creatures = await combatRepository.addCreatureCombatant(combatId, {
+				name: 'Goblin 3',
+				hp: 8
+			});
+
+			// Roll initiative for all
+			const combatWithInit = await combatRepository.rollInitiativeForAll(combatId);
+
+			// Group the goblins
+			const goblinIds = combatWithInit.combatants
+				.filter(c => c.name.startsWith('Goblin'))
+				.map(c => c.id);
+
+			const combatWithGroup = await combatRepository.createGroup(combatId, {
+				name: 'Goblin Squad',
+				memberIds: goblinIds
+			});
+
+			// Start combat
+			let combat = await combatRepository.startCombat(combatId);
+
+			// Turn 0: Should be first combatant
+			const firstCombatant = combat.combatants[0];
+
+			// Next turn
+			combat = await combatRepository.nextTurn(combatId);
+			expect(combat.currentTurn).toBe(1);
+
+			// If first was hero, next should be first goblin
+			// If first was goblin, next should be second goblin
+			const secondCombatant = combat.combatants[combat.currentTurn];
+			expect(secondCombatant).toBeDefined();
+
+			// Continue through the group
+			combat = await combatRepository.nextTurn(combatId);
+			const thirdCombatant = combat.combatants[combat.currentTurn];
+			expect(thirdCombatant).toBeDefined();
+		});
+
+		it('should handle groups at round boundary', async () => {
+			// Create simple combat with just grouped creatures
+			await combatRepository.addCreatureCombatant(combatId, {
+				name: 'Orc 1',
+				hp: 15
+			});
+			const combatWith2 = await combatRepository.addCreatureCombatant(combatId, {
+				name: 'Orc 2',
+				hp: 15
+			});
+
+			const memberIds = combatWith2.combatants.map(c => c.id);
+			await combatRepository.createGroup(combatId, {
+				name: 'Orc Band',
+				memberIds
+			});
+
+			await combatRepository.rollInitiativeForAll(combatId);
+			let combat = await combatRepository.startCombat(combatId);
+
+			const totalCombatants = combat.combatants.length;
+
+			// Advance through all turns
+			for (let i = 0; i < totalCombatants - 1; i++) {
+				combat = await combatRepository.nextTurn(combatId);
+			}
+
+			// Next turn should wrap to round 2
+			combat = await combatRepository.nextTurn(combatId);
+			expect(combat.currentRound).toBe(2);
+			expect(combat.currentTurn).toBe(0);
+		});
+	});
+
+	describe('previousTurn with groups', () => {
+		it('should go back through group members', async () => {
+			await combatRepository.addCreatureCombatant(combatId, {
+				name: 'Wolf 1',
+				hp: 11
+			});
+			const combatWith2 = await combatRepository.addCreatureCombatant(combatId, {
+				name: 'Wolf 2',
+				hp: 11
+			});
+
+			const memberIds = combatWith2.combatants.map(c => c.id);
+			await combatRepository.createGroup(combatId, {
+				name: 'Wolf Pack',
+				memberIds
+			});
+
+			await combatRepository.rollInitiativeForAll(combatId);
+			let combat = await combatRepository.startCombat(combatId);
+
+			// Advance one turn
+			combat = await combatRepository.nextTurn(combatId);
+			const currentTurnAfterNext = combat.currentTurn;
+
+			// Go back one turn
+			combat = await combatRepository.previousTurn(combatId);
+			expect(combat.currentTurn).toBe(currentTurnAfterNext - 1);
+		});
+	});
+
+	describe('Group edge cases', () => {
+		it('should handle removing defeated combatant from group', async () => {
+			await combatRepository.addCreatureCombatant(combatId, {
+				name: 'Bandit 1',
+				hp: 10
+			});
+			await combatRepository.addCreatureCombatant(combatId, {
+				name: 'Bandit 2',
+				hp: 10
+			});
+			const combatWith3 = await combatRepository.addCreatureCombatant(combatId, {
+				name: 'Bandit 3',
+				hp: 10
+			});
+
+			const memberIds = combatWith3.combatants.map(c => c.id);
+			let combat = await combatRepository.createGroup(combatId, {
+				name: 'Bandit Gang',
+				memberIds
+			});
+
+			const groupId = combat.groups[0].id;
+			const victimId = memberIds[0];
+
+			// Deal lethal damage
+			combat = await combatRepository.applyDamage(combatId, victimId, 10);
+
+			// Remove the defeated combatant
+			combat = await combatRepository.removeCombatant(combatId, victimId);
+
+			// Group should still exist with remaining members
+			const group = combat.groups.find(g => g.id === groupId);
+			expect(group).toBeDefined();
+			expect(group!.memberIds).toHaveLength(2);
+			expect(group!.memberIds).not.toContain(victimId);
+		});
+
+		it('should dissolve group when removing second-to-last member', async () => {
+			await combatRepository.addCreatureCombatant(combatId, {
+				name: 'Thug 1',
+				hp: 12
+			});
+			const combatWith2 = await combatRepository.addCreatureCombatant(combatId, {
+				name: 'Thug 2',
+				hp: 12
+			});
+
+			const memberIds = combatWith2.combatants.map(c => c.id);
+			let combat = await combatRepository.createGroup(combatId, {
+				name: 'Thug Duo',
+				memberIds
+			});
+
+			const groupId = combat.groups[0].id;
+			const victimId = memberIds[0];
+
+			// Remove one member (leaving 1)
+			combat = await combatRepository.removeCombatant(combatId, victimId);
+
+			// Group should be auto-dissolved
+			expect(combat.groups.find(g => g.id === groupId)).toBeUndefined();
+
+			// Remaining member should be standalone
+			const remainingMember = combat.combatants[0];
+			expect(remainingMember.groupId).toBeUndefined();
+		});
+
+		it('should handle heroes in groups', async () => {
+			await combatRepository.addHeroCombatant(combatId, {
+				name: 'Ranger 1',
+				hp: 30,
+				maxHp: 30
+			});
+			const combatWith2 = await combatRepository.addHeroCombatant(combatId, {
+				name: 'Ranger 2',
+				hp: 30,
+				maxHp: 30
+			});
+
+			const memberIds = combatWith2.combatants.map(c => c.id);
+			const combat = await combatRepository.createGroup(combatId, {
+				name: 'Ranger Team',
+				memberIds
+			});
+
+			const group = combat.groups[0];
+			expect(group.name).toBe('Ranger Team');
+			expect(group.memberIds).toHaveLength(2);
+
+			// Both heroes should be in the group
+			combat.combatants.forEach(c => {
+				expect(c.type).toBe('hero');
+				expect(c.groupId).toBe(group.id);
+			});
+		});
+	});
+});

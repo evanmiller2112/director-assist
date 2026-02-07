@@ -46,6 +46,7 @@ vi.mock('$lib/db/repositories', () => ({
 			currentRound: 0,
 			currentTurn: 0,
 			combatants: [],
+			groups: [],
 			victoryPoints: 0,
 			heroPoints: 0,
 			log: [],
@@ -159,6 +160,7 @@ describe('CombatStore - Derived Values', () => {
 					currentRound: 1,
 					currentTurn: 0,
 					combatants: [],
+					groups: [],
 					victoryPoints: 0,
 					heroPoints: 0,
 					log: [],
@@ -172,6 +174,7 @@ describe('CombatStore - Derived Values', () => {
 					currentRound: 0,
 					currentTurn: 0,
 					combatants: [],
+					groups: [],
 					victoryPoints: 0,
 					heroPoints: 0,
 					log: [],
@@ -185,6 +188,7 @@ describe('CombatStore - Derived Values', () => {
 					currentRound: 5,
 					currentTurn: 0,
 					combatants: [],
+					groups: [],
 					victoryPoints: 10,
 					heroPoints: 0,
 					log: [],
@@ -241,6 +245,7 @@ describe('CombatStore - Derived Values', () => {
 						threat: 1
 					}
 				],
+				groups: [],
 				victoryPoints: 0,
 				heroPoints: 2,
 				log: [],
@@ -338,6 +343,7 @@ describe('CombatStore - CRUD Actions', () => {
 				currentRound: 1,
 				currentTurn: 0,
 				combatants: [],
+				groups: [],
 				victoryPoints: 0,
 				heroPoints: 0,
 				log: [],
@@ -397,6 +403,7 @@ describe('CombatStore - Combat Lifecycle Actions', () => {
 				currentRound: 1,
 				currentTurn: 0,
 				combatants: [],
+				groups: [],
 				victoryPoints: 0,
 				heroPoints: 0,
 				log: [],
@@ -801,6 +808,7 @@ describe('CombatStore - Helper Methods', () => {
 						heroicResource: { current: 3, max: 5, name: 'Victories' }
 					}
 				],
+				groups: [],
 				victoryPoints: 0,
 				heroPoints: 0,
 				log: [],
@@ -844,6 +852,7 @@ describe('CombatStore - Helper Methods', () => {
 						heroicResource: { current: 3, max: 5, name: 'Victories' }
 					}
 				],
+				groups: [],
 				victoryPoints: 0,
 				heroPoints: 0,
 				log: [],
@@ -878,6 +887,7 @@ describe('CombatStore - Helper Methods', () => {
 						threat: 1
 					}
 				],
+				groups: [],
 				victoryPoints: 0,
 				heroPoints: 0,
 				log: [],

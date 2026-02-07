@@ -94,6 +94,7 @@ interface BaseCombatant {
   entityId?: string;               // Links to entity in entities table (optional for ad-hoc combatants)
   initiative: number;
   initiativeRoll: [number, number]; // Draw Steel uses 2d10
+  turnOrder: number;               // Float for flexible ordering (e.g., 2.1, 2.2, 2.3 for grouped combatants)
   stamina: number;
   maxStamina?: number;             // Optional - allows tracking current Stamina without a cap
   startingHp?: number;             // Issue #241: Tracks initial HP for healing cap when maxStamina undefined
@@ -101,6 +102,7 @@ interface BaseCombatant {
   ac?: number;
   conditions: CombatCondition[];
   tokenIndicator?: string;         // Issue #300: Optional indicator for identifying combatants (e.g., "A", "Boss")
+  groupId?: string;                // Issue #263: Reference to group this combatant belongs to
 }
 ```
 
@@ -131,6 +133,39 @@ interface CreatureCombatant extends BaseCombatant {
 ```typescript
 function isHeroCombatant(combatant: Combatant): combatant is HeroCombatant
 function isCreatureCombatant(combatant: Combatant): combatant is CreatureCombatant
+function isGroupedCombatant(combatant: Combatant): boolean
+```
+
+#### Combatant Groups
+
+Issue #263 added support for grouping combatants that share initiative.
+
+**CombatantGroup:**
+```typescript
+interface CombatantGroup {
+  id: string;
+  name: string;
+  memberIds: string[];
+  initiative: number;
+  initiativeRoll: [number, number];
+  turnOrder: number;
+  isCollapsed?: boolean;
+}
+```
+
+**How groups work:**
+- Members share the same initiative roll
+- Members act sequentially within the group using fractional turnOrder values
+- Each member tracks HP and conditions individually
+- Groups auto-dissolve when only 1 member remains
+- Useful for multiple identical creatures (e.g., "Goblin Squad" with 4 goblins)
+
+**Input type:**
+```typescript
+interface CreateGroupInput {
+  name: string;
+  memberIds: string[];  // IDs of combatants to group together
+}
 ```
 
 #### Combat Conditions
@@ -362,6 +397,38 @@ updateCombatant(combatId: string, combatantId: string, input: UpdateCombatantInp
 // Remove combatant
 removeCombatant(combatId: string, combatantId: string): Promise<CombatSession>
 ```
+
+### Group Management
+
+Issue #263 added methods for managing combatant groups.
+
+```typescript
+// Create a group from selected combatants
+// Members share initiative and act sequentially
+createGroup(combatId: string, input: CreateGroupInput): Promise<CombatSession>
+
+// Add a combatant to an existing group
+// Combatant inherits group's initiative and gets sequential turnOrder
+addToGroup(combatId: string, combatantId: string, groupId: string): Promise<CombatSession>
+
+// Remove a combatant from its group
+// Auto-dissolves group if only 1 member remains
+removeFromGroup(combatId: string, combatantId: string): Promise<CombatSession>
+
+// Split a combatant from group into standalone combatant
+// Group continues to exist with remaining members
+splitFromGroup(combatId: string, combatantId: string, newInitiative?: number): Promise<CombatSession>
+
+// Dissolve entire group, making all members standalone combatants
+dissolveGroup(combatId: string, groupId: string): Promise<CombatSession>
+```
+
+**Group behavior:**
+- When creating a group, all members adopt the highest initiative among them
+- Members receive fractional turnOrder values (e.g., 15.1, 15.2, 15.3) for sequential actions
+- Each member still tracks HP, conditions, and other stats individually
+- Removing members auto-dissolves the group when only 1 remains
+- Groups simplify managing encounters with multiple identical creatures
 
 ### Initiative System
 
@@ -1587,6 +1654,211 @@ import { combatStore } from '$lib/stores/combat.svelte';
 console.log(combatStore.activeCombat);
 console.log(combatStore.combats);
 ```
+
+## Creature Template Library
+
+Issue #305 added a creature template library for saving and reusing monster stat blocks.
+
+### Overview
+
+The creature library allows you to:
+- Save creature stat blocks as reusable templates
+- Import/export your library as JSON
+- Search and filter templates by name, tags, threat level, or role
+- Save ad-hoc combat creatures to the library
+- Quickly add creatures to combat from saved templates
+
+### Creature Template Type
+
+```typescript
+interface CreatureTemplate {
+  id: string;
+  name: string;
+  description?: string;
+  hp: number;
+  maxHp: number;
+  ac?: number;
+  threat: ThreatLevel;           // 1 (minion/standard), 2 (elite), 3 (boss/solo)
+  role?: CreatureRole;           // Ambusher, Artillery, Brute, etc.
+  movement?: number;
+  abilities: CreatureAbility[];
+  tags: string[];
+  source?: string;               // Source book or origin
+  notes?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+```
+
+### Creature Roles
+
+Draw Steel creature roles define combat behavior:
+- **Ambusher** - Strikes from stealth/surprise
+- **Artillery** - Ranged attacks, stays at distance
+- **Brute** - High damage, direct combat
+- **Controller** - Battlefield control, area effects
+- **Defender** - Protects allies, high AC/HP
+- **Harrier** - Mobile, hit-and-run tactics
+- **Hexer** - Debuffs and curses
+- **Leader** - Buffs allies, commands
+- **Mount** - Carries riders
+- **Support** - Heals and assists allies
+
+### Creature Abilities
+
+Abilities describe creature actions during combat:
+
+```typescript
+interface CreatureAbility {
+  name: string;
+  description: string;
+  type: CreatureAbilityType;  // 'action' | 'maneuver' | 'triggered' | 'villain'
+}
+```
+
+### Repository Methods
+
+The `creatureRepository` provides CRUD operations for templates.
+
+**Location:** `/src/lib/db/repositories/creatureRepository.ts`
+
+```typescript
+// Get all templates
+getAll(): Observable<CreatureTemplate[]>
+
+// Get single template
+getById(id: string): Promise<CreatureTemplate | undefined>
+
+// Create new template
+create(input: CreateCreatureTemplateInput): Promise<CreatureTemplate>
+
+// Update existing template
+update(id: string, input: UpdateCreatureTemplateInput): Promise<CreatureTemplate>
+
+// Delete template
+delete(id: string): Promise<void>
+
+// Search by name
+searchByName(query: string): Promise<CreatureTemplate[]>
+
+// Filter by threat level
+getByThreatLevel(threat: ThreatLevel): Promise<CreatureTemplate[]>
+
+// Filter by role
+getByRole(role: CreatureRole): Promise<CreatureTemplate[]>
+
+// Filter by tag
+getByTag(tag: string): Promise<CreatureTemplate[]>
+
+// Import/export library
+exportLibrary(): Promise<CreatureLibraryExport>
+importLibrary(library: CreatureLibraryExport, mode: ImportMode): Promise<ImportResult>
+```
+
+### Import/Export
+
+Export your library to share with others or back up your creatures:
+
+```typescript
+// Export all templates
+const library = await creatureRepository.exportLibrary();
+
+// Import with merge (adds new, skips duplicates)
+const result = await creatureRepository.importLibrary(library, 'merge');
+
+// Import with replace (clears existing library first)
+const result = await creatureRepository.importLibrary(library, 'replace');
+```
+
+**Export format:**
+```typescript
+interface CreatureLibraryExport {
+  version: number;
+  exportedAt: Date;
+  templates: CreatureTemplate[];
+}
+```
+
+**Import result:**
+```typescript
+interface ImportResult {
+  imported: number;  // Number of templates imported
+  skipped: number;   // Number of duplicates skipped
+  errors: string[];  // Any import errors
+}
+```
+
+### Usage Examples
+
+**Creating a template:**
+```typescript
+const goblin = await creatureRepository.create({
+  name: 'Goblin Warrior',
+  description: 'Common goblin soldier',
+  hp: 12,
+  maxHp: 12,
+  ac: 14,
+  threat: 1,
+  role: 'Brute',
+  movement: 6,
+  abilities: [
+    {
+      name: 'Shortsword',
+      description: 'Melee attack, 2d6 damage',
+      type: 'action'
+    }
+  ],
+  tags: ['goblin', 'humanoid', 'standard'],
+  source: 'Draw Steel Core Rules'
+});
+```
+
+**Searching and filtering:**
+```typescript
+// Search by name
+const goblins = await creatureRepository.searchByName('goblin');
+
+// Get all elite creatures
+const elites = await creatureRepository.getByThreatLevel(2);
+
+// Get all brutes
+const brutes = await creatureRepository.getByRole('Brute');
+
+// Get creatures with specific tag
+const undead = await creatureRepository.getByTag('undead');
+```
+
+**Adding from template to combat:**
+```typescript
+// Get template
+const template = await creatureRepository.getById(templateId);
+
+// Add to combat using template stats
+await combatStore.addCreature(combatId, {
+  name: template.name,
+  hp: template.hp,
+  maxHp: template.maxHp,
+  ac: template.ac,
+  threat: template.threat
+});
+```
+
+### Database Schema
+
+Creature templates are stored in the `creatureTemplates` table (database version 8).
+
+**Schema:**
+```typescript
+creatureTemplates: '++id, name, threat, role, *tags, createdAt'
+```
+
+**Indexes:**
+- `id` (primary key)
+- `name` (for name searches)
+- `threat` (for filtering by threat level)
+- `role` (for filtering by role)
+- `tags` (multi-entry for tag filtering)
+- `createdAt` (for sorting)
 
 ## Future Enhancements
 

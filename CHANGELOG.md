@@ -44,6 +44,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - All changes logged to combat log with metadata
 - Eliminates need to remove and re-add combatants when HP changes
 
+**Group Support for Combat Tracker (Issue #263)**
+- Group identical combatants to share initiative but track HP individually
+- New CombatantGroup type manages groups of creatures
+- Members act sequentially using fractional turnOrder values
+- Repository methods: createGroup, addToGroup, removeFromGroup, splitFromGroup, dissolveGroup
+- Groups auto-dissolve when only 1 member remains
+- Simplifies tracking multiple identical creatures in combat
+
+**Creature Template Library (Issue #305)**
+- Save and reuse monster stat blocks with new CreatureTemplate type
+- New creatureTemplates table in database (v8) for persistent storage
+- Full CRUD operations via creatureRepository
+- Search by name or tags, filter by threat level, role, or tags
+- Import/export entire library as JSON for sharing
+- Save ad-hoc combat creatures to library for future use
+- Includes abilities, threat levels, and Draw Steel creature roles
+
 ### Fixed
 
 **Uncapped Healing for Quick-Add Combatants (Issue #241)**

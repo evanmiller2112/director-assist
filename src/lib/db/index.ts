@@ -10,6 +10,7 @@ import type {
 	MontageSession
 } from '$lib/types';
 import type { CreatureTemplate } from '$lib/types/creature';
+import type { FieldSuggestion } from '$lib/types/ai';
 import { migrateCampaignToEntity } from './migrations/migrateCampaignToEntity';
 import { migrateExistingChatMessages } from './migrations/migrateExistingChatMessages';
 
@@ -30,6 +31,7 @@ class DMAssistantDB extends Dexie {
 	combatSessions!: Table<CombatSession>;
 	montageSessions!: Table<MontageSession>;
 	creatureTemplates!: Table<CreatureTemplate>;
+	fieldSuggestions!: Table<FieldSuggestion>;
 
 	constructor() {
 		super('dm-assistant');
@@ -123,6 +125,21 @@ class DMAssistantDB extends Dexie {
 			combatSessions: 'id, status, createdAt, updatedAt',
 			montageSessions: 'id, status, createdAt, updatedAt',
 			creatureTemplates: 'id, name, threat, *tags, createdAt, updatedAt'
+		});
+
+		// Version 9: Add fieldSuggestions table for field-level AI suggestions
+		this.version(9).stores({
+			entities: 'id, type, name, *tags, createdAt, updatedAt',
+			campaign: 'id',
+			conversations: 'id, name, updatedAt',
+			chatMessages: 'id, conversationId, timestamp',
+			suggestions: 'id, type, status, createdAt, expiresAt, *affectedEntityIds',
+			appConfig: 'key',
+			relationshipSummaryCache: 'id, sourceId, targetId, relationship, generatedAt',
+			combatSessions: 'id, status, createdAt, updatedAt',
+			montageSessions: 'id, status, createdAt, updatedAt',
+			creatureTemplates: 'id, name, threat, *tags, createdAt, updatedAt',
+			fieldSuggestions: 'id, entityId, entityType, status, createdAt'
 		});
 	}
 }

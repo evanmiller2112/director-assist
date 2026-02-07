@@ -8,11 +8,14 @@
 	import { buildRelationshipContext, formatRelationshipContextForPrompt, getRelationshipContextStats } from '$lib/services/relationshipContextBuilder';
 	import { getRelationshipContextSettings } from '$lib/services/relationshipContextSettingsService';
 	import { relationshipSummaryCacheService } from '$lib/services';
-	import type { FieldValue, FieldDefinition, BaseEntity } from '$lib/types';
+	import type { FieldValue, FieldDefinition, BaseEntity, FieldSuggestion } from '$lib/types';
 	import { validateEntity, formatContextSummary } from '$lib/utils';
 	import { getSystemAwareEntityType } from '$lib/utils/entityFormUtils';
 	import { ArrowLeft, Save, ExternalLink, ImagePlus, X as XIcon, Upload, Search, ChevronDown, Eye, EyeOff } from 'lucide-svelte';
 	import FieldGenerateButton from '$lib/components/entity/FieldGenerateButton.svelte';
+	import GenerateSuggestionsButton from '$lib/components/entity/GenerateSuggestionsButton.svelte';
+	import FieldSuggestionBadge from '$lib/components/entity/FieldSuggestionBadge.svelte';
+	import FieldSuggestionPopover from '$lib/components/entity/FieldSuggestionPopover.svelte';
 	import LoadingButton from '$lib/components/ui/LoadingButton.svelte';
 	import { MarkdownEditor } from '$lib/components/markdown';
 	import { ConfirmDialog, FormActionBar } from '$lib/components/ui';
@@ -64,6 +67,10 @@
 	let relationshipContextData = $state<RelationshipContextData[]>([]);
 	let relationshipCount = $derived(entity?.links?.length ?? 0);
 	let loadingRelationshipContext = $state(false);
+
+	// Suggestion state (Phase 5: Form Integration)
+	let suggestions = $state<Map<string, FieldSuggestion>>(new Map());
+	let activePopoverFieldKey = $state<string | null>(null);
 
 	// Validation
 	function validate(): boolean {
@@ -677,6 +684,53 @@
 			generatingDescription = false;
 		}
 	}
+
+	// Suggestion handlers (Phase 5: Form Integration)
+	async function handleGenerateSuggestions() {
+		// TODO: Implement suggestion generation when service is ready (Phase 3)
+		// For now, this is a placeholder that will be connected to fieldSuggestionService
+		notificationStore.info('Suggestion generation will be implemented in Phase 3');
+	}
+
+	function handleAcceptSuggestion(fieldKey: string, suggestedValue: string) {
+		// Copy suggestion to field
+		updateField(fieldKey, suggestedValue);
+
+		// Update suggestion status
+		const suggestion = suggestions.get(fieldKey);
+		if (suggestion) {
+			suggestions.set(fieldKey, { ...suggestion, status: 'accepted' });
+		}
+
+		// Close popover
+		activePopoverFieldKey = null;
+
+		notificationStore.success('Suggestion accepted');
+	}
+
+	function handleDismissSuggestion(fieldKey: string) {
+		// Update suggestion status
+		const suggestion = suggestions.get(fieldKey);
+		if (suggestion) {
+			suggestions.set(fieldKey, { ...suggestion, status: 'dismissed' });
+		}
+
+		// Close popover
+		activePopoverFieldKey = null;
+	}
+
+	function handleTogglePopover(fieldKey: string) {
+		if (activePopoverFieldKey === fieldKey) {
+			activePopoverFieldKey = null;
+		} else {
+			activePopoverFieldKey = fieldKey;
+		}
+	}
+
+	function hasPendingSuggestion(fieldKey: string): boolean {
+		const suggestion = suggestions.get(fieldKey);
+		return suggestion !== undefined && suggestion.status === 'pending';
+	}
 </script>
 
 <svelte:head>
@@ -783,13 +837,22 @@
 								totalFields={visibleFields.length}
 							/>
 						{/if}
-					<div class="flex-1">
+					<div class="flex-1 relative">
 						<div class="flex items-center justify-between mb-1">
-							<label for={field.key} class="label mb-0">
-								{field.label}
-								{#if field.required}*{/if}
-							</label>
-							{#if isGeneratableField(field) && canGenerate}
+							<div class="flex items-center gap-2">
+								<label for={field.key} class="label mb-0">
+									{field.label}
+									{#if field.required}*{/if}
+								</label>
+								{#if aiSettings.isSuggestionsMode && hasPendingSuggestion(field.key)}
+									<FieldSuggestionBadge
+										fieldName={field.label}
+										hasSuggestion={true}
+										onClick={() => handleTogglePopover(field.key)}
+									/>
+								{/if}
+							</div>
+							{#if isGeneratableField(field) && canGenerate && !aiSettings.isSuggestionsMode}
 								<FieldGenerateButton
 									disabled={isSaving}
 									loading={generatingFieldKey === field.key}
@@ -798,6 +861,26 @@
 								/>
 							{/if}
 						</div>
+
+						{#if activePopoverFieldKey === field.key}
+							{@const suggestion = suggestions.get(field.key)}
+							{#if suggestion}
+								<FieldSuggestionPopover
+									suggestion={{
+										id: suggestion.id,
+										entityType: suggestion.entityType,
+										entityId: suggestion.entityId ? parseInt(suggestion.entityId) : undefined,
+										fieldName: suggestion.fieldKey,
+										suggestedContent: suggestion.suggestedValue,
+										createdAt: suggestion.createdAt,
+										dismissed: suggestion.status === 'dismissed'
+									}}
+									onAccept={(content) => handleAcceptSuggestion(field.key, content)}
+									onDismiss={() => handleDismissSuggestion(field.key)}
+									onClose={() => (activePopoverFieldKey = null)}
+								/>
+							{/if}
+						{/if}
 
 						{#if field.helpText}
 							<p class="text-sm text-slate-500 mb-1">{field.helpText}</p>
@@ -1258,6 +1341,15 @@
 					{/snippet}
 					Save Changes
 				</LoadingButton>
+				{#if aiSettings.isSuggestionsMode && canGenerate && entity}
+					<GenerateSuggestionsButton
+						entityType={entityType}
+						currentData={{ name, description, summary, tags, notes, fields: $state.snapshot(fields) }}
+						entityId={parseInt(entityId)}
+						onSuggestionsGenerated={handleGenerateSuggestions}
+						disabled={isSaving}
+					/>
+				{/if}
 				<a href="/entities/{entityType}/{entityId}" class="btn btn-secondary"> Cancel </a>
 			</FormActionBar>
 		</form>

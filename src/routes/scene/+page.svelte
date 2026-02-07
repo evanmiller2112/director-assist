@@ -11,7 +11,6 @@
 import { onMount } from 'svelte';
 import { goto } from '$app/navigation';
 import { db } from '$lib/db';
-import { campaignStore } from '$lib/stores';
 import SceneStatusBadge from '$lib/components/scene/SceneStatusBadge.svelte';
 import { Play, Plus } from 'lucide-svelte';
 import type { BaseEntity } from '$lib/types';
@@ -25,13 +24,9 @@ async function loadScenes() {
 	loading = true;
 	try {
 		const allEntities = await db.entities.toArray();
-		const currentCampaignId = campaignStore.campaign?.id;
 
-		const sceneEntities = allEntities.filter(
-			(entity) =>
-				entity.type === 'scene' &&
-				(entity.metadata as { campaignId?: string })?.campaignId === currentCampaignId
-		);
+		// Filter for scene entities
+		const sceneEntities = allEntities.filter((entity) => entity.type === 'scene');
 
 		scenes = sceneEntities;
 		applyFilter();

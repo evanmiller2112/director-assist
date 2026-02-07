@@ -197,28 +197,34 @@ function buildBatchSuggestionPrompt(
 
 	const entityLabel = typeDefinition.label;
 
-	return `You are a TTRPG campaign assistant. Generate content suggestions for multiple fields of a ${entityLabel}.
-${campaignInfo}
-${existingContext ? `\nExisting Context:\n${existingContext}` : ''}${relationshipInfo}
+	return `You are a TTRPG campaign assistant helping a Game Master develop a ${entityLabel}.
 
-FIELDS TO GENERATE SUGGESTIONS FOR:
+CONTEXT ABOUT THIS ${entityLabel.toUpperCase()}:
+${existingContext || '(No existing details yet)'}
+${campaignInfo}${relationshipInfo}
+
+FIELDS THAT NEED IDEAS:
 ${fieldDescriptions}
 
-IMPORTANT RULES:
-1. Generate a suggestion for EACH field listed above
-2. Keep suggestions consistent with any existing context provided
-3. For "text" fields: Write concise, descriptive text (~50-100 characters, 1-2 sentences maximum)
-4. For "textarea" fields: Write 1-2 paragraphs of content
-5. For "richtext" fields: Write 1-3 paragraphs of evocative content
-6. Make the content interesting, memorable, and game-ready
-7. Provide a confidence score (0.0 to 1.0) for each suggestion
+YOUR TASK:
+Based on the context above (especially the name, existing details, and relationships), suggest specific ideas for each field. Your suggestions should:
+
+1. BE CONTEXTUAL: Draw directly from the relationships and existing details. If this character is "the blacksmith's apprentice", suggest things that connect to that relationship.
+2. BE SPECIFIC: Instead of generic content, suggest concrete details that fit this specific ${entityLabel}. Use names, places, and connections from the context.
+3. BE CONCISE: Give the core idea in 1-2 sentences. The GM will expand it if they like it.
+4. EXPLAIN YOUR REASONING: Briefly note why this suggestion fits (e.g., "Given their relationship with X..." or "Since they're described as...")
+
+For each field, phrase your suggestion as a creative prompt like:
+- "How about: [specific idea]? This fits because..."
+- "Given [context detail], perhaps: [idea]"
+- "Their connection to [relationship] suggests: [idea]"
 
 Respond with ONLY a JSON object in this exact format (no markdown, no explanation):
 {
   "suggestions": [
     {
       "fieldKey": "fieldKeyHere",
-      "value": "The suggested content for this field",
+      "value": "How about: [your specific suggestion]? This fits because [brief reasoning based on context].",
       "confidence": 0.85
     }
   ]

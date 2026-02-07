@@ -710,12 +710,27 @@
 			system: (campaign.fields?.system as string) ?? ''
 		} : undefined;
 
+		// Build relationship context from selected relationships
+		let relationshipContextStr: string | undefined = undefined;
+		const selectedRelationships = relationshipContextData.filter((ctx) => ctx.included);
+		if (selectedRelationships.length > 0) {
+			const contextParts = selectedRelationships.map((ctx) => {
+				const relType = ctx.relationship.relationship;
+				const targetName = ctx.targetEntity.name;
+				const summary = ctx.summary || `${relType} of ${targetName}`;
+				return `- ${targetName} (${relType}): ${summary}`;
+			});
+			if (contextParts.length > 0) {
+				relationshipContextStr = `Related entities:\n${contextParts.join('\n')}`;
+			}
+		}
+
 		// Generate suggestions
 		const result = await generateSuggestionsForEntity(
 			typeDefinition,
 			entityId,
 			currentData,
-			{ campaignContext }
+			{ campaignContext, relationshipContext: relationshipContextStr }
 		);
 
 		if (result.success && result.suggestions) {

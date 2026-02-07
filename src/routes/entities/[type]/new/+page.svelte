@@ -476,12 +476,15 @@
 			system: (campaign.fields?.system as string) ?? ''
 		} : undefined;
 
+		// Build relationship context from pending relationships
+		const relationshipContextStr = buildPendingRelationshipsContext(pendingRelationships);
+
 		// Generate suggestions
 		const result = await generateSuggestionsForEntity(
 			typeDefinition,
 			tempEntityId,
 			currentData,
-			{ campaignContext }
+			{ campaignContext, relationshipContext: relationshipContextStr || undefined }
 		);
 
 		if (result.success && result.suggestions) {

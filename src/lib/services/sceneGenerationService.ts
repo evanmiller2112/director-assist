@@ -17,6 +17,7 @@ import { getSelectedModel } from './modelService';
 import { debugStore } from '$lib/stores/debug.svelte';
 import type { BaseEntity } from '$lib/types';
 import type { DebugEntry } from '$lib/types/debug';
+import { getSystemProfile } from '$lib/config/systems';
 
 /**
  * Result type for scene setting text generation
@@ -91,17 +92,31 @@ export interface SummaryResult {
 }
 
 /**
+ * System context for AI generation
+ */
+export interface SystemContext {
+	/** Campaign name */
+	name?: string;
+	/** Campaign setting */
+	setting?: string;
+	/** Game system ID */
+	system?: string;
+}
+
+/**
  * Build a prompt for generating scene setting text
  *
  * @param location - The location entity where the scene takes place
  * @param npcs - NPCs present in the scene
  * @param mood - Optional mood/atmosphere
+ * @param systemContext - Optional system context for tailored generation
  * @returns Formatted prompt for AI
  */
 function buildSceneSettingPrompt(
 	location: BaseEntity | null,
 	npcs: BaseEntity[],
-	mood?: string
+	mood?: string,
+	systemContext?: SystemContext
 ): string {
 	let context = '';
 
@@ -155,10 +170,27 @@ function buildSceneSettingPrompt(
 		context += `MOOD: ${mood}\n\n`;
 	}
 
-	return `You are a TTRPG Game Master assistant. Generate vivid scene setting text (read-aloud description) for a scene.
+	// Get system profile if available
+	const systemProfile = systemContext?.system ? getSystemProfile(systemContext.system) : undefined;
+	const gmTerm = systemProfile?.terminology?.gm || 'GM';
 
+	// Build system-specific context
+	let systemSpecificContext = '';
+	if (systemProfile?.aiContext) {
+		systemSpecificContext += `\nSYSTEM CONTEXT:\n`;
+		if (systemProfile.aiContext.systemDescription) {
+			systemSpecificContext += `${systemProfile.aiContext.systemDescription}\n`;
+		}
+		if (systemProfile.aiContext.keyMechanics && systemProfile.aiContext.keyMechanics.length > 0) {
+			systemSpecificContext += `Key mechanics to consider: ${systemProfile.aiContext.keyMechanics.join(', ')}\n`;
+		}
+		systemSpecificContext += '\n';
+	}
+
+	return `You are a TTRPG ${gmTerm} assistant. Generate vivid scene setting text (read-aloud description) for a scene.
+${systemSpecificContext}
 ${context}
-TASK: Create an evocative, atmospheric scene description that a GM can read aloud to players.
+TASK: Create an evocative, atmospheric scene description that a ${gmTerm} can read aloud to players.
 
 IMPORTANT RULES:
 1. Write 2-3 paragraphs of vivid, sensory description
@@ -177,9 +209,10 @@ Respond with ONLY the scene setting text (no JSON, no markdown, no explanation).
  * Build a prompt for generating pre-scene summary
  *
  * @param context - Context for the scene
+ * @param systemContext - Optional system context for tailored generation
  * @returns Formatted prompt for AI
  */
-function buildPreSceneSummaryPrompt(context: PreSceneSummaryContext): string {
+function buildPreSceneSummaryPrompt(context: PreSceneSummaryContext, systemContext?: SystemContext): string {
 	let contextText = '';
 
 	if (context.sceneName) {
@@ -202,8 +235,25 @@ function buildPreSceneSummaryPrompt(context: PreSceneSummaryContext): string {
 		contextText += `\nSETTING:\n${context.settingText}\n`;
 	}
 
-	return `You are a TTRPG Game Master assistant. Generate a brief pre-scene summary.
+	// Get system profile if available
+	const systemProfile = systemContext?.system ? getSystemProfile(systemContext.system) : undefined;
+	const gmTerm = systemProfile?.terminology?.gm || 'GM';
 
+	// Build system-specific context
+	let systemSpecificContext = '';
+	if (systemProfile?.aiContext) {
+		systemSpecificContext += `\nSYSTEM CONTEXT:\n`;
+		if (systemProfile.aiContext.systemDescription) {
+			systemSpecificContext += `${systemProfile.aiContext.systemDescription}\n`;
+		}
+		if (systemProfile.aiContext.keyMechanics && systemProfile.aiContext.keyMechanics.length > 0) {
+			systemSpecificContext += `Key mechanics to consider: ${systemProfile.aiContext.keyMechanics.join(', ')}\n`;
+		}
+		systemSpecificContext += '\n';
+	}
+
+	return `You are a TTRPG ${gmTerm} assistant. Generate a brief pre-scene summary.
+${systemSpecificContext}
 ${contextText}
 
 TASK: Create a concise summary (1-2 sentences) of what's about to happen in this scene.
@@ -213,7 +263,7 @@ IMPORTANT RULES:
 2. Focus on setup and expectations
 3. Set the stage for what's about to occur
 4. Don't reveal outcomes - this is the "before" summary
-5. Make it clear and informative for the GM
+5. Make it clear and informative for the ${gmTerm}
 
 Respond with ONLY the summary text (no JSON, no markdown, no explanation). Just 1-2 sentences.`;
 }
@@ -222,9 +272,10 @@ Respond with ONLY the summary text (no JSON, no markdown, no explanation). Just 
  * Build a prompt for generating post-scene summary
  *
  * @param context - Context including what happened
+ * @param systemContext - Optional system context for tailored generation
  * @returns Formatted prompt for AI
  */
-function buildPostSceneSummaryPrompt(context: PostSceneSummaryContext): string {
+function buildPostSceneSummaryPrompt(context: PostSceneSummaryContext, systemContext?: SystemContext): string {
 	let contextText = '';
 
 	if (context.sceneName) {
@@ -243,8 +294,25 @@ function buildPostSceneSummaryPrompt(context: PostSceneSummaryContext): string {
 		contextText += `NPCs INVOLVED: ${context.npcs.map((n) => n.name).join(', ')}\n`;
 	}
 
-	return `You are a TTRPG Game Master assistant. Generate a brief post-scene summary.
+	// Get system profile if available
+	const systemProfile = systemContext?.system ? getSystemProfile(systemContext.system) : undefined;
+	const gmTerm = systemProfile?.terminology?.gm || 'GM';
 
+	// Build system-specific context
+	let systemSpecificContext = '';
+	if (systemProfile?.aiContext) {
+		systemSpecificContext += `\nSYSTEM CONTEXT:\n`;
+		if (systemProfile.aiContext.systemDescription) {
+			systemSpecificContext += `${systemProfile.aiContext.systemDescription}\n`;
+		}
+		if (systemProfile.aiContext.keyMechanics && systemProfile.aiContext.keyMechanics.length > 0) {
+			systemSpecificContext += `Key mechanics to consider: ${systemProfile.aiContext.keyMechanics.join(', ')}\n`;
+		}
+		systemSpecificContext += '\n';
+	}
+
+	return `You are a TTRPG ${gmTerm} assistant. Generate a brief post-scene summary.
+${systemSpecificContext}
 ${contextText}
 
 TASK: Create a concise summary (1-2 sentences) of what happened in this scene.
@@ -269,6 +337,7 @@ Respond with ONLY the summary text (no JSON, no markdown, no explanation). Just 
  * @param location - The location entity (or null)
  * @param npcs - Array of NPC entities present in the scene
  * @param mood - Optional mood/atmosphere for the scene
+ * @param systemContext - Optional system context for tailored generation
  * @returns Promise resolving to generation result
  *
  * @example
@@ -282,7 +351,8 @@ Respond with ONLY the summary text (no JSON, no markdown, no explanation). Just 
 export async function generateSceneSettingText(
 	location: BaseEntity | null,
 	npcs: BaseEntity[],
-	mood?: string
+	mood?: string,
+	systemContext?: SystemContext
 ): Promise<SceneSettingResult> {
 	// Validate inputs
 	if (location === null || location === undefined) {
@@ -307,7 +377,7 @@ export async function generateSceneSettingText(
 	}
 
 	// Build the prompt
-	const prompt = buildSceneSettingPrompt(location, npcs, mood);
+	const prompt = buildSceneSettingPrompt(location, npcs, mood, systemContext);
 	const model = getSelectedModel();
 	const startTime = Date.now();
 
@@ -450,6 +520,7 @@ export async function generateSceneSettingText(
  * in the scene. This is used to set expectations before the scene begins.
  *
  * @param context - Scene context including name, location, NPCs, mood, etc.
+ * @param systemContext - Optional system context for tailored generation
  * @returns Promise resolving to summary result
  *
  * @example
@@ -466,7 +537,8 @@ export async function generateSceneSettingText(
  * ```
  */
 export async function generatePreSceneSummary(
-	context: PreSceneSummaryContext
+	context: PreSceneSummaryContext,
+	systemContext?: SystemContext
 ): Promise<SummaryResult> {
 	// Validate input
 	if (!context || context === null) {
@@ -487,7 +559,7 @@ export async function generatePreSceneSummary(
 	}
 
 	// Build the prompt
-	const prompt = buildPreSceneSummaryPrompt(context);
+	const prompt = buildPreSceneSummaryPrompt(context, systemContext);
 	const model = getSelectedModel();
 	const startTime = Date.now();
 
@@ -631,6 +703,7 @@ export async function generatePreSceneSummary(
  * easy reference.
  *
  * @param context - Scene data including what happened, location, NPCs, etc.
+ * @param systemContext - Optional system context for tailored generation
  * @returns Promise resolving to summary result
  *
  * @example
@@ -647,7 +720,8 @@ export async function generatePreSceneSummary(
  * ```
  */
 export async function generatePostSceneSummary(
-	context: PostSceneSummaryContext
+	context: PostSceneSummaryContext,
+	systemContext?: SystemContext
 ): Promise<SummaryResult> {
 	// Validate input
 	if (!context || context === null) {
@@ -668,7 +742,7 @@ export async function generatePostSceneSummary(
 	}
 
 	// Build the prompt
-	const prompt = buildPostSceneSummaryPrompt(context);
+	const prompt = buildPostSceneSummaryPrompt(context, systemContext);
 	const model = getSelectedModel();
 	const startTime = Date.now();
 

@@ -16,12 +16,26 @@ export type EntityType =
 // Unique identifier type (nanoid-generated)
 export type EntityId = string;
 
+// Resource value for tracking current/max values (HP, spell slots, etc.)
+export interface ResourceValue {
+	current: number;
+	max: number;
+}
+
+// Duration value for tracking time/rounds
+export interface DurationValue {
+	value?: number; // Optional for special durations like 'concentration'
+	unit: 'round' | 'rounds' | 'minute' | 'minutes' | 'hour' | 'hours' | 'turn' | 'turns' | 'concentration' | 'instant' | 'permanent';
+}
+
 // Field value types (primitive values that can be stored in fields)
 export type FieldValue =
 	| string
 	| number
 	| boolean
 	| string[] // Multi-select, tags
+	| ResourceValue // Resource tracking (current/max)
+	| DurationValue // Duration tracking (value + unit)
 	| null
 	| undefined;
 
@@ -80,7 +94,10 @@ export type FieldType =
 	| 'date'
 	| 'url'
 	| 'image'
-	| 'computed'; // Computed field based on formula
+	| 'computed' // Computed field based on formula
+	| 'dice' // Dice notation (2d6, 1d8+3)
+	| 'resource' // Resource tracking (current/max)
+	| 'duration'; // Duration tracking (rounds, minutes, etc.)
 
 // Configuration for computed fields
 export interface ComputedFieldConfig {

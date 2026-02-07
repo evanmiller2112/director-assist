@@ -102,6 +102,21 @@ export const FIELD_TYPE_METADATA: Record<
 		label: 'Computed',
 		category: 'Advanced',
 		description: 'Calculated field based on formula and other field values'
+	},
+	dice: {
+		label: 'Dice',
+		category: 'Draw Steel',
+		description: 'Dice notation for game mechanics (e.g., 2d6, 1d8+3)'
+	},
+	resource: {
+		label: 'Resource',
+		category: 'Draw Steel',
+		description: 'Resource tracking with current/max values (e.g., HP, spell slots)'
+	},
+	duration: {
+		label: 'Duration',
+		category: 'Draw Steel',
+		description: 'Time duration tracking (rounds, minutes, hours, turns, or special durations)'
 	}
 };
 

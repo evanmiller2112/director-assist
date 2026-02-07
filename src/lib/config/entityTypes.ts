@@ -30,7 +30,8 @@ export const BUILT_IN_ENTITY_TYPES: EntityTypeDefinition[] = [
 				type: 'text',
 				required: false,
 				order: 2,
-				placeholder: 'e.g., Grizzled veteran seeking redemption'
+				placeholder: 'e.g., Grizzled veteran seeking redemption',
+				helpText: 'Brief summary of the character idea in one sentence'
 			},
 			{
 				key: 'ancestry',
@@ -91,7 +92,8 @@ export const BUILT_IN_ENTITY_TYPES: EntityTypeDefinition[] = [
 				label: 'Goals & Motivations',
 				type: 'richtext',
 				required: false,
-				order: 10
+				order: 10,
+				helpText: 'What drives this character? What do they want to achieve?'
 			},
 			{
 				key: 'secrets',
@@ -99,7 +101,8 @@ export const BUILT_IN_ENTITY_TYPES: EntityTypeDefinition[] = [
 				type: 'richtext',
 				required: false,
 				order: 11,
-				section: 'hidden'
+				section: 'hidden',
+				helpText: 'Hidden aspects of their backstory. Private DM notes about what players might discover.'
 			},
 			{
 				key: 'status',
@@ -134,7 +137,8 @@ export const BUILT_IN_ENTITY_TYPES: EntityTypeDefinition[] = [
 				label: 'Personality',
 				type: 'richtext',
 				required: false,
-				order: 2
+				order: 2,
+				helpText: 'Key traits, behaviors, and quirks that define this character'
 			},
 			{
 				key: 'appearance',
@@ -165,7 +169,8 @@ export const BUILT_IN_ENTITY_TYPES: EntityTypeDefinition[] = [
 				label: 'Motivation',
 				type: 'richtext',
 				required: false,
-				order: 6
+				order: 6,
+				helpText: 'What drives this NPC? What goals or desires motivate their actions?'
 			},
 			{
 				key: 'secrets',
@@ -173,7 +178,8 @@ export const BUILT_IN_ENTITY_TYPES: EntityTypeDefinition[] = [
 				type: 'richtext',
 				required: false,
 				order: 7,
-				section: 'hidden'
+				section: 'hidden',
+				helpText: 'Hidden information about this NPC that players might discover through interaction'
 			},
 			{
 				key: 'status',
@@ -235,14 +241,16 @@ export const BUILT_IN_ENTITY_TYPES: EntityTypeDefinition[] = [
 				label: 'Notable Features',
 				type: 'richtext',
 				required: false,
-				order: 3
+				order: 3,
+				helpText: 'Landmarks and distinguishing characteristics that stand out about this place'
 			},
 			{
 				key: 'history',
 				label: 'History',
 				type: 'richtext',
 				required: false,
-				order: 4
+				order: 4,
+				helpText: 'Past events and origins of this location. How was it founded or created?'
 			},
 			{
 				key: 'secrets',
@@ -250,7 +258,8 @@ export const BUILT_IN_ENTITY_TYPES: EntityTypeDefinition[] = [
 				type: 'richtext',
 				required: false,
 				order: 5,
-				section: 'hidden'
+				section: 'hidden',
+				helpText: 'Hidden aspects of this location that players might discover through exploration. DM notes.'
 			},
 			{
 				key: 'parentLocation',
@@ -284,14 +293,16 @@ export const BUILT_IN_ENTITY_TYPES: EntityTypeDefinition[] = [
 				label: 'Goals',
 				type: 'richtext',
 				required: false,
-				order: 2
+				order: 2,
+				helpText: 'What objectives does this faction seek to achieve?'
 			},
 			{
 				key: 'values',
 				label: 'Values & Beliefs',
 				type: 'richtext',
 				required: false,
-				order: 3
+				order: 3,
+				helpText: 'Core principles and beliefs that are important to this faction'
 			},
 			{
 				key: 'resources',
@@ -306,7 +317,8 @@ export const BUILT_IN_ENTITY_TYPES: EntityTypeDefinition[] = [
 				type: 'richtext',
 				required: false,
 				order: 5,
-				section: 'hidden'
+				section: 'hidden',
+				helpText: 'Hidden agendas and secret information about this faction. DM notes.'
 			},
 			{
 				key: 'status',
@@ -465,12 +477,47 @@ export const BUILT_IN_ENTITY_TYPES: EntityTypeDefinition[] = [
 				order: 1
 			},
 			{
+				key: 'sceneType',
+				label: 'Scene Type',
+				type: 'select',
+				options: ['combat', 'negotiation', 'exploration', 'montage', 'social', 'investigation'],
+				required: false,
+				order: 2
+			},
+			{
+				key: 'encounterRef',
+				label: 'Encounter',
+				type: 'entity-ref',
+				entityTypes: ['encounter'],
+				required: false,
+				order: 3,
+				helpText: 'Link to an encounter entity for combat scenes'
+			},
+			{
+				key: 'currentRound',
+				label: 'Current Round',
+				type: 'number',
+				required: false,
+				order: 4,
+				placeholder: '1',
+				helpText: 'Track the current combat round'
+			},
+			{
+				key: 'initiativeOrder',
+				label: 'Initiative Order',
+				type: 'textarea',
+				required: false,
+				order: 5,
+				placeholder: 'Character 1 (15)\nEnemy A (12)\nCharacter 2 (8)',
+				helpText: 'Track turn order and initiative values'
+			},
+			{
 				key: 'location',
 				label: 'Location',
 				type: 'entity-ref',
 				entityTypes: ['location'],
 				required: false,
-				order: 2
+				order: 6
 			},
 			{
 				key: 'npcsPresent',
@@ -478,14 +525,14 @@ export const BUILT_IN_ENTITY_TYPES: EntityTypeDefinition[] = [
 				type: 'entity-refs',
 				entityTypes: ['npc'],
 				required: false,
-				order: 3
+				order: 7
 			},
 			{
 				key: 'sceneSettingText',
 				label: 'Scene Setting (Read-Aloud)',
 				type: 'richtext',
 				required: false,
-				order: 4,
+				order: 8,
 				helpText: 'Vivid description of the scene. Can be AI-generated from location and NPCs.'
 			},
 			{
@@ -493,7 +540,7 @@ export const BUILT_IN_ENTITY_TYPES: EntityTypeDefinition[] = [
 				label: 'What Happened',
 				type: 'richtext',
 				required: false,
-				order: 5,
+				order: 9,
 				helpText: 'Record what actually happened during the scene.'
 			},
 			{
@@ -501,7 +548,7 @@ export const BUILT_IN_ENTITY_TYPES: EntityTypeDefinition[] = [
 				label: 'Pre-Scene Summary',
 				type: 'richtext',
 				required: false,
-				order: 6,
+				order: 10,
 				helpText: 'Brief summary of the scene setup (1-2 sentences). Can be AI-generated.'
 			},
 			{
@@ -509,16 +556,16 @@ export const BUILT_IN_ENTITY_TYPES: EntityTypeDefinition[] = [
 				label: 'Post-Scene Summary',
 				type: 'richtext',
 				required: false,
-				order: 7,
+				order: 11,
 				helpText: 'Brief summary of what happened (1-2 sentences). Can be AI-generated.'
 			},
 			{
 				key: 'mood',
 				label: 'Mood',
 				type: 'select',
-				options: ['tense', 'relaxed', 'mysterious', 'celebratory', 'somber', 'chaotic', 'peaceful', 'ominous'],
+				options: ['tense', 'relaxed', 'mysterious', 'celebratory', 'somber', 'chaotic', 'peaceful', 'ominous', 'triumphant', 'desperate', 'exhilarating'],
 				required: false,
-				order: 8
+				order: 12
 			},
 			{
 				key: 'session',
@@ -526,7 +573,17 @@ export const BUILT_IN_ENTITY_TYPES: EntityTypeDefinition[] = [
 				type: 'entity-ref',
 				entityTypes: ['session'],
 				required: false,
-				order: 9
+				order: 13,
+				helpText: 'Link this scene to a game session for campaign timeline organization'
+			},
+			{
+				key: 'sceneOrder',
+				label: 'Scene Order',
+				type: 'number',
+				required: false,
+				order: 14,
+				placeholder: 'e.g., 1',
+				helpText: 'Order this scene within its session (only needed when linked to a session)'
 			}
 		],
 		defaultRelationships: ['occurred_at', 'featured', 'part_of', 'leads_to', 'follows']
@@ -614,7 +671,8 @@ export const BUILT_IN_ENTITY_TYPES: EntityTypeDefinition[] = [
 				label: 'Significance',
 				type: 'richtext',
 				required: false,
-				order: 3
+				order: 3,
+				helpText: 'Why was this event important? What impact did it have on the world?'
 			},
 			{
 				key: 'consequences',

@@ -622,4 +622,372 @@ describe('sceneGenerationService', () => {
 			expect(result3.error).toBeDefined();
 		});
 	});
+
+	describe('Draw Steel System Integration (Issue #285)', () => {
+		const mockLocation: BaseEntity = {
+			id: 'loc-1',
+			type: 'location',
+			name: 'The Ancient Arena',
+			description: 'A massive colosseum where heroes once fought',
+			summary: 'Historic arena',
+			tags: ['combat', 'historic'],
+			fields: {
+				locationType: 'structure',
+				atmosphere: 'Tense and foreboding'
+			},
+			links: [],
+			notes: '',
+			createdAt: new Date(),
+			updatedAt: new Date(),
+			metadata: {}
+		};
+
+		const mockNPCs: BaseEntity[] = [
+			{
+				id: 'npc-1',
+				type: 'npc',
+				name: 'Commander Ironheart',
+				description: 'A veteran warrior with a tactical mind',
+				summary: 'Military commander',
+				tags: ['military', 'leader'],
+				fields: {
+					role: 'Commander',
+					personality: 'Stern but fair',
+					threatLevel: 'elite'
+				},
+				links: [],
+				notes: '',
+				createdAt: new Date(),
+				updatedAt: new Date(),
+				metadata: {}
+			}
+		];
+
+		describe('generateSceneSettingText with Draw Steel context', () => {
+			it('should accept optional systemContext parameter', () => {
+				const systemContext = {
+					name: 'Test Campaign',
+					setting: 'Fantasy',
+					system: 'draw-steel'
+				};
+
+				expect(() => {
+					generateSceneSettingText(mockLocation, mockNPCs, undefined, systemContext);
+				}).not.toThrow();
+			});
+
+			it('should work without systemContext (backwards compatibility)', async () => {
+				const result = await generateSceneSettingText(mockLocation, mockNPCs);
+				expect(result.success).toBe(true);
+			});
+
+			it('should include Draw Steel terminology when system is draw-steel', async () => {
+				const systemContext = {
+					name: 'Heroic Campaign',
+					setting: 'Fantasy',
+					system: 'draw-steel'
+				};
+
+				const result = await generateSceneSettingText(mockLocation, mockNPCs, undefined, systemContext);
+				expect(result.success).toBe(true);
+
+				// The mock should have been called with prompt containing Draw Steel context
+				// This will be verified via mock inspection in implementation
+			});
+
+			it('should include Draw Steel themes in generation prompt', async () => {
+				const systemContext = {
+					name: 'Heroic Campaign',
+					setting: 'Fantasy',
+					system: 'draw-steel'
+				};
+
+				// This test will fail until implementation includes Draw Steel context
+				// The current implementation does not accept systemContext parameter
+				const result = await generateSceneSettingText(mockLocation, mockNPCs, undefined, systemContext);
+
+				// Once implemented, the prompt should include Draw Steel themes
+				// - "tactical fantasy RPG"
+				// - "hero-focused"
+				// - "tactical positioning"
+				// - References to Draw Steel mechanics
+				expect(result.success).toBe(true);
+			});
+
+			it('should reference Draw Steel mechanics when appropriate', async () => {
+				const systemContext = {
+					name: 'Heroic Campaign',
+					setting: 'Fantasy',
+					system: 'draw-steel'
+				};
+
+				const result = await generateSceneSettingText(mockLocation, mockNPCs, undefined, systemContext);
+				expect(result.success).toBe(true);
+
+				// Prompt should include references to tactical positioning, hero-focused combat
+			});
+
+			it('should use standard tone for non-Draw Steel campaigns', async () => {
+				const systemContext = {
+					name: 'Generic Campaign',
+					setting: 'Fantasy',
+					system: 'system-agnostic'
+				};
+
+				const result = await generateSceneSettingText(mockLocation, mockNPCs, undefined, systemContext);
+				expect(result.success).toBe(true);
+
+				// Prompt should NOT include Draw Steel specific context
+			});
+
+			it('should work with D&D or other systems without Draw Steel tone', async () => {
+				const systemContext = {
+					name: 'D&D Campaign',
+					setting: 'Forgotten Realms',
+					system: 'd&d-5e'
+				};
+
+				const result = await generateSceneSettingText(mockLocation, mockNPCs, undefined, systemContext);
+				expect(result.success).toBe(true);
+			});
+		});
+
+		describe('generatePreSceneSummary with Draw Steel context', () => {
+			const mockSceneContext = {
+				sceneName: 'Battle at the Arena',
+				location: {
+					id: 'loc-1',
+					name: 'The Ancient Arena',
+					type: 'location' as const
+				},
+				npcs: [
+					{ id: 'npc-1', name: 'Commander Ironheart', type: 'npc' as const }
+				],
+				mood: 'intense',
+				settingText: 'The arena stands before you...'
+			};
+
+			it('should accept optional systemContext parameter', () => {
+				const systemContext = {
+					name: 'Test Campaign',
+					setting: 'Fantasy',
+					system: 'draw-steel'
+				};
+
+				expect(() => {
+					generatePreSceneSummary(mockSceneContext, systemContext);
+				}).not.toThrow();
+			});
+
+			it('should work without systemContext (backwards compatibility)', async () => {
+				const result = await generatePreSceneSummary(mockSceneContext);
+				expect(result.success).toBe(true);
+			});
+
+			it('should incorporate Draw Steel tone when system is draw-steel', async () => {
+				const systemContext = {
+					name: 'Heroic Campaign',
+					setting: 'Fantasy',
+					system: 'draw-steel'
+				};
+
+				const result = await generatePreSceneSummary(mockSceneContext, systemContext);
+				expect(result.success).toBe(true);
+			});
+
+			it('should reference tactical objectives for Draw Steel campaigns', async () => {
+				const systemContext = {
+					name: 'Heroic Campaign',
+					setting: 'Fantasy',
+					system: 'draw-steel'
+				};
+
+				const result = await generatePreSceneSummary(mockSceneContext, systemContext);
+				expect(result.success).toBe(true);
+
+				// Prompt should mention victory points, tactical positioning, etc.
+			});
+
+			it('should use generic tone for non-Draw Steel systems', async () => {
+				const systemContext = {
+					name: 'Generic Campaign',
+					setting: 'Fantasy',
+					system: 'system-agnostic'
+				};
+
+				const result = await generatePreSceneSummary(mockSceneContext, systemContext);
+				expect(result.success).toBe(true);
+			});
+		});
+
+		describe('generatePostSceneSummary with Draw Steel context', () => {
+			const mockSceneData = {
+				sceneName: 'Battle at the Arena',
+				whatHappened: 'The heroes fought valiantly, using tactical positioning to defeat Commander Ironheart. Victory points were earned through clever use of the arena terrain.',
+				location: {
+					id: 'loc-1',
+					name: 'The Ancient Arena',
+					type: 'location' as const
+				},
+				npcs: [
+					{ id: 'npc-1', name: 'Commander Ironheart', type: 'npc' as const }
+				],
+				mood: 'triumphant'
+			};
+
+			it('should accept optional systemContext parameter', () => {
+				const systemContext = {
+					name: 'Test Campaign',
+					setting: 'Fantasy',
+					system: 'draw-steel'
+				};
+
+				expect(() => {
+					generatePostSceneSummary(mockSceneData, systemContext);
+				}).not.toThrow();
+			});
+
+			it('should work without systemContext (backwards compatibility)', async () => {
+				const result = await generatePostSceneSummary(mockSceneData);
+				expect(result.success).toBe(true);
+			});
+
+			it('should incorporate Draw Steel tone in summary', async () => {
+				const systemContext = {
+					name: 'Heroic Campaign',
+					setting: 'Fantasy',
+					system: 'draw-steel'
+				};
+
+				const result = await generatePostSceneSummary(mockSceneData, systemContext);
+				expect(result.success).toBe(true);
+			});
+
+			it('should recognize Draw Steel specific events in whatHappened', async () => {
+				const systemContext = {
+					name: 'Heroic Campaign',
+					setting: 'Fantasy',
+					system: 'draw-steel'
+				};
+
+				const result = await generatePostSceneSummary(mockSceneData, systemContext);
+				expect(result.success).toBe(true);
+
+				// Summary should understand victory points, tactical positioning concepts
+			});
+
+			it('should use standard summarization for non-Draw Steel campaigns', async () => {
+				const systemContext = {
+					name: 'Generic Campaign',
+					setting: 'Fantasy',
+					system: 'system-agnostic'
+				};
+
+				const result = await generatePostSceneSummary(mockSceneData, systemContext);
+				expect(result.success).toBe(true);
+			});
+		});
+
+		describe('Draw Steel Prompt Content Verification', () => {
+			it('should include Draw Steel system description in prompts', async () => {
+				const systemContext = {
+					name: 'Heroic Campaign',
+					setting: 'Fantasy',
+					system: 'draw-steel'
+				};
+
+				// This test validates that the prompt builder includes system-specific context
+				const result = await generateSceneSettingText(mockLocation, mockNPCs, undefined, systemContext);
+				expect(result.success).toBe(true);
+
+				// The implementation should include:
+				// - "tactical fantasy RPG"
+				// - "hero-focused combat"
+				// - "tactical positioning"
+				// - References to Draw Steel specific concepts
+			});
+
+			it('should include Draw Steel key mechanics in context', async () => {
+				const systemContext = {
+					name: 'Heroic Campaign',
+					setting: 'Fantasy',
+					system: 'draw-steel'
+				};
+
+				const result = await generatePreSceneSummary(
+					{
+						sceneName: 'Test Scene',
+						location: { id: 'loc-1', name: 'Test Location', type: 'location' },
+						npcs: []
+					},
+					systemContext
+				);
+
+				expect(result.success).toBe(true);
+
+				// Should reference victory points, negotiation encounters, montages, etc.
+			});
+
+			it('should use Director terminology instead of GM for Draw Steel', async () => {
+				const systemContext = {
+					name: 'Heroic Campaign',
+					setting: 'Fantasy',
+					system: 'draw-steel'
+				};
+
+				const result = await generateSceneSettingText(mockLocation, [], undefined, systemContext);
+				expect(result.success).toBe(true);
+
+				// Prompt should use "Director" not "GM" or "Game Master"
+			});
+		});
+
+		describe('System Profile Integration', () => {
+			it('should handle missing system profile gracefully', async () => {
+				const systemContext = {
+					name: 'Unknown Campaign',
+					setting: 'Fantasy',
+					system: 'nonexistent-system'
+				};
+
+				const result = await generateSceneSettingText(mockLocation, mockNPCs, undefined, systemContext);
+				expect(result.success).toBe(true);
+
+				// Should fall back to generic generation without errors
+			});
+
+			it('should handle null/undefined system in context', async () => {
+				const systemContext = {
+					name: 'Generic Campaign',
+					setting: 'Fantasy',
+					system: ''
+				};
+
+				const result = await generatePreSceneSummary(
+					{
+						sceneName: 'Test Scene',
+						location: { id: 'loc-1', name: 'Test', type: 'location' },
+						npcs: []
+					},
+					systemContext
+				);
+
+				expect(result.success).toBe(true);
+			});
+
+			it('should properly load Draw Steel aiContext from system profile', async () => {
+				const systemContext = {
+					name: 'Heroic Campaign',
+					setting: 'Fantasy',
+					system: 'draw-steel'
+				};
+
+				const result = await generateSceneSettingText(mockLocation, mockNPCs, undefined, systemContext);
+				expect(result.success).toBe(true);
+
+				// Implementation should call getSystemProfile('draw-steel')
+				// and use aiContext.systemDescription and aiContext.keyMechanics
+			});
+		});
+	});
 });

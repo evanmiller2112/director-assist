@@ -21,7 +21,7 @@
 	 * - computed → read-only display with auto-calculation
 	 */
 
-	import type { FieldDefinition, FieldValue } from '$lib/types';
+	import type { FieldDefinition, FieldValue, ResourceValue, DurationValue } from '$lib/types';
 	import { normalizeFieldType, evaluateComputedField } from '$lib/utils/fieldTypes';
 	import MarkdownEditor from '$lib/components/markdown/MarkdownEditor.svelte';
 	import { Check, X, ExternalLink, Upload, Trash2 } from 'lucide-svelte';
@@ -188,6 +188,114 @@
 		}
 		window.open(url, '_blank', 'noopener,noreferrer');
 	}
+
+	// Handle dice input
+	function handleDiceInput(event: Event) {
+		const target = event.target as HTMLInputElement;
+		onchange(target.value || '');
+	}
+
+	// Validate dice notation
+	function isValidDice(dice: string): boolean {
+		if (!dice) return true;
+		// Pattern: XdY or XdY+Z or XdY-Z (where X, Y, Z are numbers)
+		const dicePattern = /^\d+d\d+([+\-]\d+)?$/i;
+		return dicePattern.test(dice.trim());
+	}
+
+	// Handle resource current value change
+	function handleResourceCurrentInput(event: Event) {
+		const target = event.target as HTMLInputElement;
+		const current = target.value === '' ? 0 : Number(target.value);
+		const resourceValue = (value as ResourceValue) || { current: 0, max: 0 };
+		onchange({ current, max: resourceValue.max });
+	}
+
+	// Handle resource max value change
+	function handleResourceMaxInput(event: Event) {
+		const target = event.target as HTMLInputElement;
+		const max = target.value === '' ? 0 : Number(target.value);
+		const resourceValue = (value as ResourceValue) || { current: 0, max: 0 };
+		onchange({ current: resourceValue.current, max });
+	}
+
+	// Handle duration value change
+	function handleDurationValueInput(event: Event) {
+		const target = event.target as HTMLInputElement;
+		const numValue = target.value === '' ? undefined : Number(target.value);
+		const durationValue = (value as DurationValue) || { unit: 'rounds' };
+		onchange({ ...durationValue, value: numValue });
+	}
+
+	// Handle duration unit change
+	function handleDurationUnitChange(event: Event) {
+		const target = event.target as HTMLSelectElement;
+		const unit = target.value as DurationValue['unit'];
+		const durationValue = (value as DurationValue) || { unit: 'rounds' };
+
+		// Clear value for special units
+		if (unit === 'concentration' || unit === 'instant' || unit === 'permanent') {
+			onchange({ unit });
+		} else {
+			onchange({ ...durationValue, unit });
+		}
+	}
+
+	// Get resource value parts
+	const resourceValue = $derived.by(() => {
+		if (normalizedType === 'resource' && value && typeof value === 'object' && 'current' in value && 'max' in value) {
+			return value as ResourceValue;
+		}
+		return { current: 0, max: 0 };
+	});
+
+	// Get duration value parts
+	const durationValue = $derived.by(() => {
+		if (normalizedType === 'duration' && value && typeof value === 'object' && 'unit' in value) {
+			return value as DurationValue;
+		}
+		return { unit: 'rounds' as const };
+	});
+
+	// Check if duration unit needs numeric value
+	const needsDurationValue = $derived.by(() => {
+		const unit = durationValue.unit;
+		return unit !== 'concentration' && unit !== 'instant' && unit !== 'permanent';
+	});
+
+	// Validate dice notation on blur
+	const diceIsValid = $derived.by(() => {
+		if (normalizedType === 'dice' && typeof value === 'string' && value) {
+			return isValidDice(value);
+		}
+		return true;
+	});
+
+	// Validate resource values
+	const resourceIsValid = $derived.by(() => {
+		if (normalizedType === 'resource') {
+			const res = resourceValue;
+			if (res.current < 0) return false;
+			if (res.max <= 0) return false;
+			if (res.current > res.max) return false;
+		}
+		return true;
+	});
+
+	// Validate duration value
+	const durationIsValid = $derived.by(() => {
+		if (normalizedType === 'duration') {
+			const dur = durationValue;
+			// Special units don't need numeric value
+			if (dur.unit === 'concentration' || dur.unit === 'instant' || dur.unit === 'permanent') {
+				return true;
+			}
+			// Numeric units need positive value
+			if (dur.value === undefined || dur.value === null) return false;
+			return dur.value > 0;
+		}
+		return true;
+	});
 
 	// Get entities filtered by allowed types
 	const availableEntities = $derived.by(() => {
@@ -536,6 +644,142 @@
 				Formula: {field.computedConfig.formula}
 			</p>
 		{/if}
+	{:else if normalizedType === 'dice'}
+		<div class="space-y-2">
+			<input
+				type="text"
+				id={inputId}
+				value={value || ''}
+				placeholder={field.placeholder || 'e.g., 2d6 or 1d8+3'}
+				{disabled}
+				oninput={handleDiceInput}
+				class={inputClasses}
+				aria-invalid={error || !diceIsValid ? 'true' : 'false'}
+				aria-describedby={error ? errorId : undefined}
+			/>
+			{#if value && !diceIsValid}
+				<p class="text-sm text-red-600 dark:text-red-400">Invalid dice notation. Use format: XdY or XdY±Z (e.g., 2d6 or 1d8+3)</p>
+			{/if}
+		</div>
+	{:else if normalizedType === 'resource'}
+		<div class="space-y-2">
+			<div class="flex items-center gap-2">
+				<div class="flex-1">
+					<label for={`${inputId}-current`} class="text-xs text-slate-600 dark:text-slate-400">Current</label>
+					<input
+						type="number"
+						id={`${inputId}-current`}
+						value={resourceValue.current ?? ''}
+						min="0"
+						placeholder="Current"
+						{disabled}
+						oninput={handleResourceCurrentInput}
+						class={inputClasses}
+						aria-invalid={error || !resourceIsValid ? 'true' : 'false'}
+						aria-describedby={error ? errorId : undefined}
+					/>
+				</div>
+				<div class="pt-5 text-slate-500 dark:text-slate-400">/</div>
+				<div class="flex-1">
+					<label for={`${inputId}-max`} class="text-xs text-slate-600 dark:text-slate-400">Max</label>
+					<input
+						type="number"
+						id={`${inputId}-max`}
+						value={resourceValue.max ?? ''}
+						min="1"
+						placeholder="Max"
+						{disabled}
+						oninput={handleResourceMaxInput}
+						class={inputClasses}
+						aria-invalid={error || !resourceIsValid ? 'true' : 'false'}
+						aria-describedby={error ? errorId : undefined}
+					/>
+				</div>
+			</div>
+			{#if !resourceIsValid}
+				<p class="text-sm text-red-600 dark:text-red-400">
+					{#if resourceValue.max <= 0}
+						Maximum must be greater than 0
+					{:else if resourceValue.current < 0}
+						Current cannot be negative
+					{:else if resourceValue.current > resourceValue.max}
+						Current cannot exceed maximum
+					{/if}
+				</p>
+			{/if}
+			{#if resourceIsValid && resourceValue.max > 0}
+				<div class="relative pt-1">
+					<div class="overflow-hidden h-2 text-xs flex rounded bg-slate-200 dark:bg-slate-700">
+						<div
+							style="width: {Math.min(100, (resourceValue.current / resourceValue.max) * 100)}%"
+							class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center transition-all duration-300 {
+								resourceValue.current / resourceValue.max > 0.5
+									? 'bg-green-500'
+									: resourceValue.current / resourceValue.max > 0.25
+									? 'bg-yellow-500'
+									: 'bg-red-500'
+							}"
+						></div>
+					</div>
+					<p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+						{Math.round((resourceValue.current / resourceValue.max) * 100)}%
+					</p>
+				</div>
+			{/if}
+		</div>
+	{:else if normalizedType === 'duration'}
+		<div class="space-y-2">
+			<div class="flex items-center gap-2">
+				{#if needsDurationValue}
+					<div class="flex-1">
+						<input
+							type="number"
+							id={`${inputId}-value`}
+							value={durationValue.value ?? ''}
+							min="1"
+							placeholder="Duration"
+							{disabled}
+							oninput={handleDurationValueInput}
+							class={inputClasses}
+							aria-invalid={error || !durationIsValid ? 'true' : 'false'}
+							aria-describedby={error ? errorId : undefined}
+						/>
+					</div>
+				{/if}
+				<div class={needsDurationValue ? 'flex-1' : 'w-full'}>
+					<select
+						id={`${inputId}-unit`}
+						value={durationValue.unit}
+						{disabled}
+						onchange={handleDurationUnitChange}
+						class={inputClasses}
+						aria-invalid={error ? 'true' : 'false'}
+						aria-describedby={error ? errorId : undefined}
+					>
+						<optgroup label="Numeric Durations">
+							<option value="round">Round</option>
+							<option value="rounds">Rounds</option>
+							<option value="minute">Minute</option>
+							<option value="minutes">Minutes</option>
+							<option value="hour">Hour</option>
+							<option value="hours">Hours</option>
+							<option value="turn">Turn</option>
+							<option value="turns">Turns</option>
+						</optgroup>
+						<optgroup label="Special Durations">
+							<option value="concentration">Concentration</option>
+							<option value="instant">Instant</option>
+							<option value="permanent">Permanent</option>
+						</optgroup>
+					</select>
+				</div>
+			</div>
+			{#if !durationIsValid}
+				<p class="text-sm text-red-600 dark:text-red-400">
+					Duration value must be a positive number
+				</p>
+			{/if}
+		</div>
 	{:else}
 		<!-- Unknown field type fallback -->
 		<div class="text-sm text-slate-500 dark:text-slate-400">

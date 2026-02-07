@@ -116,7 +116,7 @@ Plan combat, social, or exploration encounters. Include objective, difficulty, t
 Keep session notes and prep for upcoming sessions. Track what happened, what's next, and any loose threads. For Draw Steel campaigns, track XP awarded, glory distribution, power roll outcomes, and negotiation results.
 
 **Scenes**
-Track specific moments in your game like "party entering town" or "entering the tavern". Record the scene's status (planned, in progress, or completed), link to the location and NPCs present, set the mood, and capture what happened. Use scene setting text for read-aloud descriptions and summaries to keep track of setup and outcomes.
+Track specific moments in your game like "party entering town" or "entering the tavern". Record the scene's status (planned, in progress, or completed), link to the location and NPCs present, set the mood, and capture what happened. Use scene setting text for read-aloud descriptions and summaries to keep track of setup and outcomes. See [Richtext Formatting Guidelines](./RICHTEXT_FORMATTING.md) for recommended structures for scene fields.
 
 **Deities**
 Gods, goddesses, or other divine entities. Note their domains, worshippers, symbols, and influence on the world.
@@ -2871,6 +2871,8 @@ Create a Session entity after each game session with:
 - Lists: Start lines with `-` or `1.`
 - Code: Wrap text in backticks or use the code button
 - Links: Use the link button or `[text](url)` syntax
+
+For detailed formatting guidelines including recommended structures for Scene fields, see [Richtext Formatting Guidelines](./RICHTEXT_FORMATTING.md).
 
 ### Search Tips
 

@@ -19,6 +19,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Preserves concept field for backward compatibility while enabling more detailed character information
 - Example usage: ancestry="Human", culture="Nomadic", career="Soldier", heroClass="Fury", subclass="Reaver"
 
+## [1.2.1] - 2025-02-07
+
+### Added
+
+**Suggestions-Only AI Mode (Issue #362)**
+- New AI mode option providing content suggestions without pre-filling fields
+- Three AI modes available: Off, Suggestions, and Full Auto
+- AI generates bulleted lists of ideas based on entity context and relationships
+- Per-field "Suggest" buttons for targeted idea generation
+- Bulk "Suggest Content" button generates suggestions for all empty fields at once
+- Accept/Dismiss workflow for reviewing and acting on suggestions
+- Suggestions appear in a dedicated panel without overwriting existing content
+- Contextually aware suggestions leverage entity type, existing fields, and related entities
+- Users maintain full control over which suggestions to accept or dismiss
+
 ## [1.2.0] - TBD
 
 ### Added

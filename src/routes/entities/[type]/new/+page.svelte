@@ -5,6 +5,7 @@
 	import { getEntityTypeDefinition } from '$lib/config/entityTypes';
 	import { generateEntity, hasGenerationApiKey } from '$lib/services';
 	import { generateField, isGeneratableField } from '$lib/services/fieldGenerationService';
+	import { generateSuggestionsForEntity } from '$lib/services/fieldSuggestionService';
 	import { createEntity, type FieldValue, type FieldDefinition, type PendingRelationship, type FieldSuggestion } from '$lib/types';
 	import { validateEntity, formatContextSummary } from '$lib/utils';
 	import { getSystemAwareEntityType } from '$lib/utils/entityFormUtils';
@@ -450,9 +451,50 @@
 
 	// Suggestion handlers (Phase 5: Form Integration)
 	async function handleGenerateSuggestions() {
-		// TODO: Implement suggestion generation when service is ready (Phase 3)
-		// For now, this is a placeholder that will be connected to fieldSuggestionService
-		notificationStore.info('Suggestion generation will be implemented in Phase 3');
+		if (!typeDefinition) return;
+
+		// Generate a temporary ID for new entities
+		const tempEntityId = nanoid();
+
+		// Build current form data
+		const currentData = {
+			id: tempEntityId,
+			type: entityType,
+			name,
+			description,
+			summary,
+			tags: tags.split(',').map(t => t.trim()).filter(Boolean),
+			notes,
+			fields: $state.snapshot(fields)
+		};
+
+		// Build campaign context
+		const campaign = campaignStore.campaign;
+		const campaignContext = campaign ? {
+			name: campaign.name,
+			setting: (campaign.fields?.setting as string) ?? '',
+			system: (campaign.fields?.system as string) ?? ''
+		} : undefined;
+
+		// Generate suggestions
+		const result = await generateSuggestionsForEntity(
+			typeDefinition,
+			tempEntityId,
+			currentData,
+			{ campaignContext }
+		);
+
+		if (result.success && result.suggestions) {
+			// Store suggestions in local state for display
+			const newSuggestions = new Map(suggestions);
+			for (const suggestion of result.suggestions) {
+				newSuggestions.set(suggestion.fieldKey, suggestion);
+			}
+			suggestions = newSuggestions;
+			notificationStore.success(`Generated ${result.suggestions.length} suggestion(s)`);
+		} else {
+			notificationStore.error(result.error || 'Failed to generate suggestions');
+		}
 	}
 
 	function handleAcceptSuggestion(fieldKey: string, suggestedValue: string) {
@@ -594,9 +636,7 @@
 						{#if suggestion}
 							<FieldSuggestionPopover
 								suggestion={{
-									id: suggestion.id,
 									entityType: suggestion.entityType,
-									entityId: suggestion.entityId ? parseInt(suggestion.entityId) : undefined,
 									fieldName: suggestion.fieldKey,
 									suggestedContent: suggestion.suggestedValue,
 									createdAt: suggestion.createdAt,

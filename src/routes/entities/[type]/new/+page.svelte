@@ -5,7 +5,7 @@
 	import { getEntityTypeDefinition } from '$lib/config/entityTypes';
 	import { generateEntity, hasGenerationApiKey } from '$lib/services';
 	import { generateField, isGeneratableField } from '$lib/services/fieldGenerationService';
-	import { generateSuggestionsForEntity } from '$lib/services/fieldSuggestionService';
+	import { generateSuggestionsForEntity, generateSuggestionForField } from '$lib/services/fieldSuggestionService';
 	import { createEntity, type FieldValue, type FieldDefinition, type PendingRelationship, type FieldSuggestion } from '$lib/types';
 	import { validateEntity, formatContextSummary } from '$lib/utils';
 	import { getSystemAwareEntityType } from '$lib/utils/entityFormUtils';
@@ -14,6 +14,7 @@
 	import PrefillBanner from '$lib/components/ui/PrefillBanner.svelte';
 	import { ArrowLeft, Save, Sparkles, Loader2, ExternalLink, ImagePlus, X as XIcon, Upload, Search, ChevronDown, Eye, EyeOff, Plus, ChevronRight } from 'lucide-svelte';
 	import FieldGenerateButton from '$lib/components/entity/FieldGenerateButton.svelte';
+	import FieldSuggestionButton from '$lib/components/entity/FieldSuggestionButton.svelte';
 	import GenerateSuggestionsButton from '$lib/components/entity/GenerateSuggestionsButton.svelte';
 	import FieldSuggestionBadge from '$lib/components/entity/FieldSuggestionBadge.svelte';
 	import FieldSuggestionPopover from '$lib/components/entity/FieldSuggestionPopover.svelte';
@@ -539,6 +540,62 @@
 		const suggestion = suggestions.get(fieldKey);
 		return suggestion !== undefined && suggestion.status === 'pending';
 	}
+
+	async function handleGenerateSingleFieldSuggestion(params: {
+		fieldKey: string;
+		fieldDefinition: FieldDefinition;
+	}) {
+		if (!typeDefinition) return;
+
+		const { fieldKey, fieldDefinition } = params;
+
+		// Generate a temporary ID for new entities
+		const tempEntityId = nanoid();
+
+		// Build current entity data
+		const currentData = {
+			id: tempEntityId,
+			type: entityType,
+			name,
+			description,
+			summary,
+			tags: tags.split(',').map(t => t.trim()).filter(Boolean),
+			notes,
+			fields: $state.snapshot(fields)
+		};
+
+		// Build campaign context
+		const campaign = campaignStore.campaign;
+		const campaignContext = campaign ? {
+			name: campaign.name,
+			setting: (campaign.fields?.setting as string) ?? '',
+			system: (campaign.fields?.system as string) ?? ''
+		} : undefined;
+
+		// Build relationship context from pending relationships
+		const relationshipContextStr = buildPendingRelationshipsContext(pendingRelationships);
+
+		// Generate suggestion for this specific field
+		const result = await generateSuggestionForField(
+			typeDefinition,
+			tempEntityId,
+			fieldKey,
+			currentData,
+			{ campaignContext, relationshipContext: relationshipContextStr || undefined }
+		);
+
+		if (result.success && result.suggestions && result.suggestions.length > 0) {
+			// Store suggestion in local state for display
+			const newSuggestions = new Map(suggestions);
+			for (const suggestion of result.suggestions) {
+				newSuggestions.set(suggestion.fieldKey, suggestion);
+			}
+			suggestions = newSuggestions;
+			notificationStore.success(`Generated suggestion for ${fieldDefinition.label}`);
+		} else {
+			notificationStore.error(result.error || 'Failed to generate suggestion');
+		}
+	}
 </script>
 
 <svelte:head>
@@ -624,14 +681,35 @@
 								/>
 							{/if}
 						</div>
-						{#if isGeneratableField(field) && canGenerate && !aiSettings.isSuggestionsMode}
-							<FieldGenerateButton
-								disabled={isGenerating || isSaving}
-								loading={generatingFieldKey === field.key}
-								onGenerate={() => handleGenerateField(field)}
-								contextSummary={getContextSummaryForField(field.key)}
-							/>
-						{/if}
+						<div class="flex items-center gap-2">
+							{#if isGeneratableField(field) && canGenerate && aiSettings.isSuggestionsMode}
+								<FieldSuggestionButton
+									fieldKey={field.key}
+									fieldDefinition={field}
+									entityType={entityType}
+									entityData={{
+										id: 'temp-' + nanoid(),
+										type: entityType,
+										name,
+										description,
+										summary,
+										tags: tags.split(',').map(t => t.trim()).filter(Boolean),
+										notes,
+										fields: $state.snapshot(fields)
+									}}
+									onSuggestionGenerated={handleGenerateSingleFieldSuggestion}
+									disabled={isGenerating || isSaving}
+								/>
+							{/if}
+							{#if isGeneratableField(field) && canGenerate && !aiSettings.isSuggestionsMode}
+								<FieldGenerateButton
+									disabled={isGenerating || isSaving}
+									loading={generatingFieldKey === field.key}
+									onGenerate={() => handleGenerateField(field)}
+									contextSummary={getContextSummaryForField(field.key)}
+								/>
+							{/if}
+						</div>
 					</div>
 
 					{#if activePopoverFieldKey === field.key}
@@ -1018,14 +1096,35 @@
 						<div class="mb-4">
 							<div class="flex items-center justify-between mb-1">
 								<label for={field.key} class="label mb-0">{field.label}</label>
-								{#if isGeneratableField(field) && canGenerate}
-									<FieldGenerateButton
-										disabled={isGenerating || isSaving}
-										loading={generatingFieldKey === field.key}
-										onGenerate={() => handleGenerateField(field)}
-										contextSummary={getContextSummaryForField(field.key)}
-									/>
-								{/if}
+								<div class="flex items-center gap-2">
+									{#if isGeneratableField(field) && canGenerate && aiSettings.isSuggestionsMode}
+										<FieldSuggestionButton
+											fieldKey={field.key}
+											fieldDefinition={field}
+											entityType={entityType}
+											entityData={{
+												id: 'temp-' + nanoid(),
+												type: entityType,
+												name,
+												description,
+												summary,
+												tags: tags.split(',').map(t => t.trim()).filter(Boolean),
+												notes,
+												fields: $state.snapshot(fields)
+											}}
+											onSuggestionGenerated={handleGenerateSingleFieldSuggestion}
+											disabled={isGenerating || isSaving}
+										/>
+									{/if}
+									{#if isGeneratableField(field) && canGenerate && !aiSettings.isSuggestionsMode}
+										<FieldGenerateButton
+											disabled={isGenerating || isSaving}
+											loading={generatingFieldKey === field.key}
+											onGenerate={() => handleGenerateField(field)}
+											contextSummary={getContextSummaryForField(field.key)}
+										/>
+									{/if}
+								</div>
 							</div>
 							<textarea
 								id={field.key}

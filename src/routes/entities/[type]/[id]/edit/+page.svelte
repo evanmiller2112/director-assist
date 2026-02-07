@@ -5,7 +5,7 @@
 	import { getEntityTypeDefinition } from '$lib/config/entityTypes';
 	import { hasGenerationApiKey, buildFieldRelationshipContext, buildPlayerCharacterContext } from '$lib/services';
 	import { generateField, generateSummaryContent, generateDescriptionContent, isGeneratableField } from '$lib/services/fieldGenerationService';
-	import { generateSuggestionsForEntity } from '$lib/services/fieldSuggestionService';
+	import { generateSuggestionsForEntity, generateSuggestionForField } from '$lib/services/fieldSuggestionService';
 	import { buildRelationshipContext, formatRelationshipContextForPrompt, getRelationshipContextStats } from '$lib/services/relationshipContextBuilder';
 	import { getRelationshipContextSettings } from '$lib/services/relationshipContextSettingsService';
 	import { relationshipSummaryCacheService } from '$lib/services';
@@ -14,6 +14,7 @@
 	import { getSystemAwareEntityType } from '$lib/utils/entityFormUtils';
 	import { ArrowLeft, Save, ExternalLink, ImagePlus, X as XIcon, Upload, Search, ChevronDown, Eye, EyeOff } from 'lucide-svelte';
 	import FieldGenerateButton from '$lib/components/entity/FieldGenerateButton.svelte';
+	import FieldSuggestionButton from '$lib/components/entity/FieldSuggestionButton.svelte';
 	import GenerateSuggestionsButton from '$lib/components/entity/GenerateSuggestionsButton.svelte';
 	import FieldSuggestionBadge from '$lib/components/entity/FieldSuggestionBadge.svelte';
 	import FieldSuggestionPopover from '$lib/components/entity/FieldSuggestionPopover.svelte';
@@ -785,6 +786,71 @@
 		const suggestion = suggestions.get(fieldKey);
 		return suggestion !== undefined && suggestion.status === 'pending';
 	}
+
+	async function handleGenerateSingleFieldSuggestion(params: {
+		fieldKey: string;
+		fieldDefinition: FieldDefinition;
+	}) {
+		if (!typeDefinition || !entityId) return;
+
+		const { fieldKey, fieldDefinition } = params;
+
+		// Build current entity data
+		const currentData = {
+			id: entityId,
+			type: entityType,
+			name,
+			description,
+			summary,
+			tags: tags.split(',').map(t => t.trim()).filter(Boolean),
+			notes,
+			fields: $state.snapshot(fields)
+		};
+
+		// Build campaign context
+		const campaign = campaignStore.campaign;
+		const campaignContext = campaign ? {
+			name: campaign.name,
+			setting: (campaign.fields?.setting as string) ?? '',
+			system: (campaign.fields?.system as string) ?? ''
+		} : undefined;
+
+		// Build relationship context from selected relationships
+		let relationshipContextStr: string | undefined = undefined;
+		const selectedRelationships = relationshipContextData.filter((ctx) => ctx.included);
+		if (selectedRelationships.length > 0) {
+			const contextParts = selectedRelationships.map((ctx) => {
+				const relType = ctx.relationship.relationship;
+				const targetName = ctx.targetEntity.name;
+				const summary = ctx.summary || `${relType} of ${targetName}`;
+				return `- ${targetName} (${relType}): ${summary}`;
+			});
+			if (contextParts.length > 0) {
+				relationshipContextStr = `Related entities:\n${contextParts.join('\n')}`;
+			}
+		}
+
+		// Generate suggestion for this specific field
+		const result = await generateSuggestionForField(
+			typeDefinition,
+			entityId,
+			fieldKey,
+			currentData,
+			{ campaignContext, relationshipContext: relationshipContextStr }
+		);
+
+		if (result.success && result.suggestions && result.suggestions.length > 0) {
+			// Store suggestion in local state for display
+			const newSuggestions = new Map(suggestions);
+			for (const suggestion of result.suggestions) {
+				newSuggestions.set(suggestion.fieldKey, suggestion);
+			}
+			suggestions = newSuggestions;
+			notificationStore.success(`Generated suggestion for ${fieldDefinition.label}`);
+		} else {
+			notificationStore.error(result.error || 'Failed to generate suggestion');
+		}
+	}
 </script>
 
 <svelte:head>
@@ -906,14 +972,35 @@
 									/>
 								{/if}
 							</div>
-							{#if isGeneratableField(field) && canGenerate && !aiSettings.isSuggestionsMode}
-								<FieldGenerateButton
-									disabled={isSaving}
-									loading={generatingFieldKey === field.key}
-									onGenerate={() => handleGenerateField(field)}
-									contextSummary={getContextSummaryForField(field.key)}
-								/>
-							{/if}
+							<div class="flex items-center gap-2">
+								{#if isGeneratableField(field) && canGenerate && aiSettings.isSuggestionsMode}
+									<FieldSuggestionButton
+										fieldKey={field.key}
+										fieldDefinition={field}
+										entityType={entityType}
+										entityData={{
+											id: entityId,
+											type: entityType,
+											name,
+											description,
+											summary,
+											tags: tags.split(',').map(t => t.trim()).filter(Boolean),
+											notes,
+											fields: $state.snapshot(fields)
+										}}
+										onSuggestionGenerated={handleGenerateSingleFieldSuggestion}
+										disabled={isSaving}
+									/>
+								{/if}
+								{#if isGeneratableField(field) && canGenerate && !aiSettings.isSuggestionsMode}
+									<FieldGenerateButton
+										disabled={isSaving}
+										loading={generatingFieldKey === field.key}
+										onGenerate={() => handleGenerateField(field)}
+										contextSummary={getContextSummaryForField(field.key)}
+									/>
+								{/if}
+							</div>
 						</div>
 
 						{#if activePopoverFieldKey === field.key}
@@ -1311,14 +1398,35 @@
 							<div class="mb-4">
 								<div class="flex items-center justify-between mb-1">
 									<label for={field.key} class="label mb-0">{field.label}</label>
-									{#if isGeneratableField(field) && canGenerate}
-										<FieldGenerateButton
-											disabled={isSaving}
-											loading={generatingFieldKey === field.key}
-											onGenerate={() => handleGenerateField(field)}
-											contextSummary={getContextSummaryForField(field.key)}
-										/>
-									{/if}
+									<div class="flex items-center gap-2">
+										{#if isGeneratableField(field) && canGenerate && aiSettings.isSuggestionsMode}
+											<FieldSuggestionButton
+												fieldKey={field.key}
+												fieldDefinition={field}
+												entityType={entityType}
+												entityData={{
+													id: entityId,
+													type: entityType,
+													name,
+													description,
+													summary,
+													tags: tags.split(',').map(t => t.trim()).filter(Boolean),
+													notes,
+													fields: $state.snapshot(fields)
+												}}
+												onSuggestionGenerated={handleGenerateSingleFieldSuggestion}
+												disabled={isSaving}
+											/>
+										{/if}
+										{#if isGeneratableField(field) && canGenerate && !aiSettings.isSuggestionsMode}
+											<FieldGenerateButton
+												disabled={isSaving}
+												loading={generatingFieldKey === field.key}
+												onGenerate={() => handleGenerateField(field)}
+												contextSummary={getContextSummaryForField(field.key)}
+											/>
+										{/if}
+									</div>
 								</div>
 								<textarea
 									id={field.key}

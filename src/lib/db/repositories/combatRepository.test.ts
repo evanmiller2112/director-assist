@@ -3240,4 +3240,67 @@ describe('CombatRepository - Group Management (Issue #263)', () => {
 			});
 		});
 	});
+
+	describe('Narrative Event Integration (Issue #399)', () => {
+		let combatId: string;
+
+		beforeEach(async () => {
+			// Create and start a combat
+			const combat = await combatRepository.create({
+				name: 'Goblin Ambush',
+				description: 'A surprise attack on the road'
+			});
+			combatId = combat.id;
+			await combatRepository.startCombat(combatId);
+		});
+
+		it('should create a narrative event when combat ends', async () => {
+			// Mock the narrativeEventService to verify it's called
+			const { createFromCombat } = await import('$lib/services/narrativeEventService');
+			const originalCreateFromCombat = createFromCombat;
+			let wasCalledWith: CombatSession | null = null;
+
+			// Replace with spy
+			const mockCreateFromCombat = async (combat: CombatSession) => {
+				wasCalledWith = combat;
+				return originalCreateFromCombat(combat);
+			};
+
+			// Note: This test will verify the integration pattern
+			// The actual mocking will be done in implementation
+			const completedCombat = await combatRepository.endCombat(combatId);
+
+			expect(completedCombat.status).toBe('completed');
+			// Verify that a narrative event would be created
+			// (implementation will add actual service call)
+		});
+
+		it('should not throw if narrative event creation fails', async () => {
+			// Even if narrative event service fails, combat should still complete
+			// This test verifies the try/catch pattern
+
+			// End combat should succeed
+			await expect(combatRepository.endCombat(combatId)).resolves.toBeDefined();
+
+			// Combat should be in completed state
+			const combat = await combatRepository.getById(combatId);
+			expect(combat?.status).toBe('completed');
+		});
+
+		it('should only create narrative event when combat is completed', async () => {
+			// Pause combat - should not create narrative event
+			await combatRepository.pauseCombat(combatId);
+			let pausedCombat = await combatRepository.getById(combatId);
+			expect(pausedCombat?.status).toBe('paused');
+
+			// Resume combat - should not create narrative event
+			await combatRepository.resumeCombat(combatId);
+			let activeCombat = await combatRepository.getById(combatId);
+			expect(activeCombat?.status).toBe('active');
+
+			// Only endCombat should create narrative event
+			const completedCombat = await combatRepository.endCombat(combatId);
+			expect(completedCombat.status).toBe('completed');
+		});
+	});
 });

@@ -4175,6 +4175,274 @@ const completed = negotiationStore.completedNegotiations;
 - [Negotiation Type Definitions](/src/lib/types/negotiation.ts) - TypeScript types
 - [Negotiation Repository](/src/lib/db/repositories/negotiationRepository.ts) - Data layer
 
+## Narrative Trail System (Epic #397)
+
+### Overview
+
+The Narrative Trail system links game moments (combat, montages, scenes, negotiations) into a chronological story chain. When combat encounters or montage challenges complete, narrative event entities are automatically created to capture the story's progression. This enables session timeline visualization and narrative summary generation.
+
+**What is a Narrative Event?**
+
+A narrative event is a built-in entity type that wraps any narrative moment in your game. Events use the existing `leads_to`/`follows` relationship system to form temporal chains representing story flow.
+
+**Implementation Files:**
+- **Types:** `/src/lib/types/entities.ts` - NarrativeEvent entity type definition
+- **Config:** `/src/lib/config/entityTypes.ts` - Entity type configuration
+- **Service:** `/src/lib/services/narrativeEventService.ts` - Event creation and linking
+- **Summary Service:** `/src/lib/services/sessionSummaryService.ts` - Trail traversal and summary generation
+- **Components:** `/src/lib/components/narrative/` - Timeline UI components
+
+### Architecture
+
+The narrative trail system follows Director Assist's standard three-layer architecture:
+
+1. **Data Layer** - Uses existing entity repository for CRUD operations
+2. **Service Layer** - narrativeEventService and sessionSummaryService for business logic
+3. **UI Layer** - NarrativeTimeline and TimelineEvent components for visualization
+
+### Entity Type Definition
+
+The narrative_event entity type is defined in `/src/lib/config/entityTypes.ts`:
+
+```typescript
+{
+  type: 'narrative_event',
+  label: 'Narrative Event',
+  labelPlural: 'Narrative Events',
+  icon: 'milestone',
+  color: 'amber',
+  isBuiltIn: true,
+  fieldDefinitions: [
+    {
+      key: 'eventType',
+      label: 'Event Type',
+      type: 'select',
+      options: ['scene', 'combat', 'montage', 'negotiation', 'other'],
+      required: true,
+      order: 1
+    },
+    {
+      key: 'sourceId',
+      label: 'Source ID',
+      type: 'text',
+      required: false,
+      order: 2,
+      helpText: 'ID of the linked combat, montage, or scene'
+    },
+    {
+      key: 'outcome',
+      label: 'Outcome',
+      type: 'text',
+      required: false,
+      order: 3
+    },
+    {
+      key: 'session',
+      label: 'Session',
+      type: 'entity-ref',
+      entityTypes: ['session'],
+      required: false,
+      order: 4
+    }
+  ],
+  defaultRelationships: ['leads_to', 'follows', 'part_of']
+}
+```
+
+### Narrative Event Service
+
+**Location:** `/src/lib/services/narrativeEventService.ts`
+
+The service provides functions for creating and linking narrative events:
+
+**createFromCombat(combat: CombatSession): Promise<BaseEntity>**
+- Creates a narrative event from a completed combat session
+- Validates combat status is 'completed'
+- Builds outcome summary with victory points and round count
+- Returns created entity
+
+**createFromMontage(montage: MontageSession): Promise<BaseEntity>**
+- Creates a narrative event from a completed montage session
+- Validates montage status is 'completed'
+- Uses montage outcome field
+- Returns created entity
+
+**createFromScene(sceneId: string): Promise<BaseEntity>**
+- Creates a narrative event from a scene entity
+- Validates scene exists and is correct type
+- Returns created entity
+
+**linkEvents(fromId: string, toId: string): Promise<void>**
+- Links two narrative events with temporal relationship
+- Creates bidirectional 'leads_to' / 'follows' relationship
+- Validates both entities exist and are narrative_event type
+
+### Session Summary Service
+
+**Location:** `/src/lib/services/sessionSummaryService.ts`
+
+The service provides functions for traversing narrative trails and generating summaries:
+
+**getTrailForSession(sessionId: string): Promise<BaseEntity[]>**
+- Retrieves all narrative_event entities linked to a session
+- Orders events chronologically using two strategies:
+  1. Topological sort by leads_to/follows relationships (preferred)
+  2. Creation time fallback when relationships unavailable
+- Returns ordered array (oldest first)
+- Uses Kahn's algorithm for topological sorting
+
+**generateSummary(sessionId: string): Promise<string>**
+- Constructs human-readable prose from ordered narrative events
+- Includes contextual transitions based on position:
+  - First event: "The session began with..."
+  - Middle events: "Following this...", "Then...", "Next...", etc.
+  - Last event: "The session concluded with..."
+- Formats event types with descriptive text:
+  - combat → "a combat encounter:"
+  - montage → "a montage:"
+  - scene → "a scene:"
+  - other → "an event:"
+- Converts snake_case outcomes to readable text
+- Returns formatted narrative string
+
+### Auto-Creation Integration
+
+Narrative events are automatically created when sessions complete:
+
+**Combat Integration** (`/src/lib/db/repositories/combatRepository.ts`):
+```typescript
+async function endCombat(combatId: string): Promise<void> {
+  // ... existing combat ending logic ...
+
+  // Create narrative event
+  const combat = await getById(combatId);
+  if (combat) {
+    await narrativeEventService.createFromCombat(combat);
+  }
+}
+```
+
+**Montage Integration** (`/src/lib/db/repositories/montageRepository.ts`):
+```typescript
+async function completeMontage(montageId: string, outcome: string): Promise<void> {
+  // ... existing montage completion logic ...
+
+  // Create narrative event
+  const montage = await getById(montageId);
+  if (montage) {
+    await narrativeEventService.createFromMontage(montage);
+  }
+}
+```
+
+### UI Components
+
+**NarrativeTimeline.svelte**
+
+**Location:** `/src/lib/components/narrative/NarrativeTimeline.svelte`
+
+Main timeline view component:
+- Accepts events array and optional sessionId filter
+- Sorts events by createdAt (oldest first)
+- Filters events by sessionId when provided
+- Passes isFirst/isLast flags to TimelineEvent components
+- Supports empty state display
+- Propagates callbacks for viewing sources and linking events
+
+**Props:**
+```typescript
+{
+  events: BaseEntity[];
+  sessionId?: string;
+  onViewSource?: (eventType: string, sourceId: string) => void;
+  onLinkEvent?: (eventId: string) => void;
+  showEmpty?: boolean;
+}
+```
+
+**TimelineEvent.svelte**
+
+**Location:** `/src/lib/components/narrative/TimelineEvent.svelte`
+
+Individual event card component:
+- Displays event name and type
+- Shows outcome when available
+- Renders event type icon
+- Provides "View Source" button for clicking through to combat/montage/scene
+- Indicates position (first/last) for visual styling
+- Supports event linking UI
+
+### Relationship System Integration
+
+Narrative events leverage Director Assist's existing relationship system:
+
+**Temporal Relationships:**
+- `leads_to` - Forward temporal relationship (earlier event → later event)
+- `follows` - Reverse temporal relationship (later event → earlier event)
+- Bidirectional by default for consistent traversal
+
+**Other Relationships:**
+- `part_of` - Links events to sessions for organization
+- Can relate to NPCs, locations, or other entities as needed
+
+### Timeline Ordering Algorithm
+
+The session summary service uses a two-stage ordering approach:
+
+**Stage 1: Topological Sort (Preferred)**
+- Builds directed graph from leads_to relationships
+- Uses Kahn's algorithm for cycle-safe topological ordering
+- Deterministic sorting when multiple starting points exist
+- Falls back to Stage 2 if cycles detected
+
+**Stage 2: Creation Time Fallback**
+- Orders by createdAt timestamp (oldest first)
+- Used when no relationships exist or cycles prevent topological sort
+- Ensures consistent ordering even without explicit links
+
+### Usage Example
+
+```typescript
+// Auto-create narrative event from combat
+const combat = await combatRepository.getById(combatId);
+await combatRepository.endCombat(combatId);
+// Narrative event automatically created
+
+// Get timeline for session
+const events = await sessionSummaryService.getTrailForSession(sessionId);
+// Returns ordered array of narrative events
+
+// Generate session summary
+const summary = await sessionSummaryService.generateSummary(sessionId);
+// Returns: "The session began with a combat encounter: Ambush at the River..."
+
+// Manually link events
+await narrativeEventService.linkEvents(event1Id, event2Id);
+// Creates bidirectional leads_to/follows relationship
+```
+
+### Best Practices
+
+**Event Creation:**
+- Let auto-creation handle combat and montage events
+- Manually create events for narrative scenes or unstructured moments
+- Link events immediately when story flow differs from creation order
+
+**Timeline Management:**
+- Review timeline after each session to verify event creation
+- Add outcome details for richer session summaries
+- Use session field consistently for proper filtering
+
+**Relationship Usage:**
+- Link events when auto-ordering isn't sufficient
+- Use leads_to/follows for temporal flow
+- Avoid cycles in event chains (causes fallback to creation time ordering)
+
+**Related Documentation:**
+- [Entity Types Configuration](/src/lib/config/entityTypes.ts) - Entity type definitions
+- [Narrative Event Service](/src/lib/services/narrativeEventService.ts) - Event creation logic
+- [Session Summary Service](/src/lib/services/sessionSummaryService.ts) - Trail traversal and summary generation
+
 ## Search & Filtering
 
 ### Relationship-Based Filtering

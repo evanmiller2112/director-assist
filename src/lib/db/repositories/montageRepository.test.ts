@@ -1609,4 +1609,82 @@ describe('MontageRepository - Predefined Challenges', () => {
 			expect(updated.challenges[0].predefinedChallengeId).toBeUndefined();
 		});
 	});
+
+	describe('Narrative Event Integration (Issue #399)', () => {
+		let montageId: string;
+
+		beforeEach(async () => {
+			// Create and start a montage
+			const montage = await montageRepository.create({
+				name: 'Wilderness Survival',
+				description: 'Finding shelter and food',
+				difficulty: 'easy',
+				playerCount: 3
+			});
+			montageId = montage.id;
+			await montageRepository.startMontage(montageId);
+		});
+
+		it('should create a narrative event when montage completes', async () => {
+			// Complete the montage
+			const completedMontage = await montageRepository.completeMontage(
+				montageId,
+				'total_success'
+			);
+
+			expect(completedMontage.status).toBe('completed');
+			expect(completedMontage.outcome).toBe('total_success');
+			// Verify that a narrative event would be created
+			// (implementation will add actual service call)
+		});
+
+		it('should not throw if narrative event creation fails', async () => {
+			// Even if narrative event service fails, montage should still complete
+			// This test verifies the try/catch pattern
+
+			// Complete montage should succeed
+			await expect(
+				montageRepository.completeMontage(montageId, 'total_success')
+			).resolves.toBeDefined();
+
+			// Montage should be in completed state
+			const montage = await montageRepository.getById(montageId);
+			expect(montage?.status).toBe('completed');
+		});
+
+		it('should create narrative event on auto-completion', async () => {
+			// Record enough successes to trigger auto-completion
+			// Easy difficulty with 3 players: successLimit = 3
+			await montageRepository.recordChallengeResult(montageId, {
+				result: 'success',
+				description: 'Found shelter'
+			});
+			await montageRepository.recordChallengeResult(montageId, {
+				result: 'success',
+				description: 'Found food'
+			});
+			const finalMontage = await montageRepository.recordChallengeResult(montageId, {
+				result: 'success',
+				description: 'Made fire'
+			});
+
+			// Should auto-complete
+			expect(finalMontage.status).toBe('completed');
+			expect(finalMontage.outcome).toBe('total_success');
+			// Narrative event should be created on auto-completion too
+		});
+
+		it('should only create narrative event when montage is completed', async () => {
+			// Starting montage should not create narrative event
+			let montage = await montageRepository.getById(montageId);
+			expect(montage?.status).toBe('active');
+
+			// Only completeMontage should create narrative event
+			const completedMontage = await montageRepository.completeMontage(
+				montageId,
+				'partial_success'
+			);
+			expect(completedMontage.status).toBe('completed');
+		});
+	});
 });

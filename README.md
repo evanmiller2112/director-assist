@@ -6,7 +6,7 @@ Director Assist features a **system-aware architecture** with first-class suppor
 
 ## Features
 
-- **Track Everything**: Characters, NPCs, locations, factions, items, encounters, sessions, scenes, deities, timeline events, world rules, and player profiles
+- **Track Everything**: Characters, NPCs, locations, factions, items, encounters, sessions, scenes, deities, timeline events, world rules, player profiles, and narrative events
 - **Connect the Dots**: Create relationships between entities (knows, allied with, member of, located at)
 - **Visualize Connections**: Relationship Matrix View shows a 2D grid of relationships between entity types with filtering, sorting, and color-coded cell density
 - **Find Anything Fast**: Global search with Cmd/Ctrl+K shortcut, results grouped by type, keyboard navigation
@@ -19,6 +19,7 @@ Director Assist features a **system-aware architecture** with first-class suppor
 - **Forge Steel Integration**: Import character data directly from Forge Steel character builder
 - **Montage Challenge Tracker**: Track Draw Steel montage challenges with player count-based limits, success/failure tracking across two rounds, difficulty-based outcomes (Easy, Moderate, Hard), and automatic victory point awards
 - **Negotiation Tracker**: Manage Draw Steel negotiations with Interest/Patience tracking (0-5 scale), NPC motivations and pitfalls, tier-based argument outcomes, and built-in rules reference
+- **Narrative Trail System**: Link game moments (combat, montages, scenes) into a chronological story chain with automatic event creation and session summaries
 - **Responsive Loading States**: Polished loading feedback with skeleton screens, spinners, and loading buttons
 
 ## Quick Start
@@ -158,7 +159,7 @@ When generating fields for existing entities, Director Assist automatically incl
 
 ### Entity Types
 
-Director Assist includes 12 built-in entity types:
+Director Assist includes 13 built-in entity types:
 
 - **Characters** - Player characters with background, goals, and secrets
 - **NPCs** - Non-player characters with personality and motivations
@@ -172,6 +173,7 @@ Director Assist includes 12 built-in entity types:
 - **Timeline Events** - Historical events with dates and consequences
 - **World Rules** - How magic, society, or nature works in your world
 - **Player Profiles** - Player preferences and boundaries
+- **Narrative Events** - Auto-created events linking combat, montages, and scenes into story chains
 
 Each entity type has custom fields relevant to its purpose. When you select a game system for your campaign, entity types automatically gain system-specific fields:
 

@@ -27,6 +27,7 @@ import type {
 	PredefinedChallenge
 } from '$lib/types/montage';
 import { nanoid } from 'nanoid';
+import { createFromMontage } from '$lib/services/narrativeEventService';
 
 // ============================================================================
 // Helper Functions (Exported for Testing)
@@ -283,6 +284,7 @@ export const montageRepository = {
 	/**
 	 * Complete montage (active -> completed).
 	 * Calculates and awards victory points based on outcome.
+	 * Creates a narrative event from the completed montage (Issue #399).
 	 */
 	async completeMontage(id: string, outcome: MontageOutcome): Promise<MontageSession> {
 		await ensureDbReady();
@@ -308,6 +310,15 @@ export const montageRepository = {
 		};
 
 		await db.montageSessions.put(updated);
+
+		// Create narrative event from completed montage
+		// Use try/catch so narrative event creation failure doesn't block montage completion
+		try {
+			await createFromMontage(updated);
+		} catch (error) {
+			console.error('Failed to create narrative event for montage:', error);
+		}
+
 		return updated;
 	},
 
@@ -435,6 +446,16 @@ export const montageRepository = {
 		}
 
 		await db.montageSessions.put(updated);
+
+		// Create narrative event if auto-completed
+		if (outcome) {
+			try {
+				await createFromMontage(updated);
+			} catch (error) {
+				console.error('Failed to create narrative event for montage:', error);
+			}
+		}
+
 		return updated;
 	}
 };

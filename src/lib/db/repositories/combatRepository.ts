@@ -38,6 +38,7 @@ import type {
 	CreateGroupInput
 } from '$lib/types/combat';
 import { nanoid } from 'nanoid';
+import { createFromCombat } from '$lib/services/narrativeEventService';
 
 // ============================================================================
 // Helper Functions
@@ -317,6 +318,7 @@ export const combatRepository = {
 
 	/**
 	 * End combat (active/paused -> completed).
+	 * Creates a narrative event from the completed combat (Issue #399).
 	 */
 	async endCombat(id: string): Promise<CombatSession> {
 		await ensureDbReady();
@@ -341,6 +343,15 @@ export const combatRepository = {
 		};
 
 		await db.combatSessions.put(updated);
+
+		// Create narrative event from completed combat
+		// Use try/catch so narrative event creation failure doesn't block combat ending
+		try {
+			await createFromCombat(updated);
+		} catch (error) {
+			console.error('Failed to create narrative event for combat:', error);
+		}
+
 		return updated;
 	},
 

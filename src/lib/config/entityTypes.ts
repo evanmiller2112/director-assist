@@ -823,6 +823,48 @@ export const BUILT_IN_ENTITY_TYPES: EntityTypeDefinition[] = [
 			}
 		],
 		defaultRelationships: ['contains', 'features']
+	},
+	{
+		type: 'narrative_event',
+		label: 'Narrative Event',
+		labelPlural: 'Narrative Events',
+		icon: 'milestone',
+		color: 'amber',
+		isBuiltIn: true,
+		fieldDefinitions: [
+			{
+				key: 'eventType',
+				label: 'Event Type',
+				type: 'select',
+				options: ['scene', 'combat', 'montage', 'negotiation', 'other'],
+				required: true,
+				order: 1
+			},
+			{
+				key: 'sourceId',
+				label: 'Source ID',
+				type: 'text',
+				required: false,
+				order: 2,
+				helpText: 'ID of the linked combat, montage, or scene'
+			},
+			{
+				key: 'outcome',
+				label: 'Outcome',
+				type: 'text',
+				required: false,
+				order: 3
+			},
+			{
+				key: 'session',
+				label: 'Session',
+				type: 'entity-ref',
+				entityTypes: ['session'],
+				required: false,
+				order: 4
+			}
+		],
+		defaultRelationships: ['leads_to', 'follows', 'part_of']
 	}
 ];
 
@@ -1035,7 +1077,8 @@ export function getDefaultEntityTypeOrder(): string[] {
 		'deity',
 		'timeline_event',
 		'world_rule',
-		'player_profile'
+		'player_profile',
+		'narrative_event'
 	];
 }
 

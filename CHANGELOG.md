@@ -9,6 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+**Narrative Trail System (Epic #397, Issues #398-401)**
+- New Narrative Event entity type for tracking game moments in chronological sequence
+- Automatic narrative event creation when combat encounters and montage challenges complete
+- Timeline view UI components (NarrativeTimeline and TimelineEvent) for visualizing story flow
+- Session summary service generates human-readable narrative text from event chains
+- NarrativeEvent entity with fields: eventType (scene/combat/montage/negotiation/other), sourceId, outcome, session
+- Auto-creation triggers: combat sessions on endCombat(), montage sessions on completeMontage()
+- Temporal relationship system using leads_to/follows relationships to chain events
+- Topological sort algorithm orders events by relationships, falls back to creation time
+- Timeline filtering by session for focused session review
+- Click-through from timeline events to source combat/montage/scene entities
+- Event linking UI for manual story flow adjustment
+- Narrative summary generation with contextual transitions and outcome formatting
+
 **Character Identity Fields Aligned with Forge Steel Hero Format (Issue #247)**
 - Added 5 new character identity fields to Player Character entity type for better Draw Steel support
 - New fields: ancestry (text), culture (text), career (text), heroClass (text), subclass (text)

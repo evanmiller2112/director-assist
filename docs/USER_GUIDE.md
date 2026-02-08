@@ -1713,6 +1713,75 @@ Click the eye icon next to motivations or pitfalls to toggle whether players kno
 - Toggle motivation visibility when players discover them through roleplay
 - Don't be afraid to adjust tiers based on creative arguments
 
+### Narrative Trail System
+
+The Narrative Trail system automatically links your game moments into a chronological story chain, making it easy to see how scenes, combat, and montages connect. When you complete combat encounters or montage challenges, Director Assist creates narrative event entities that form a timeline of your session's story.
+
+**What is a Narrative Event?**
+
+A narrative event is a special entity type that represents a moment in your game's story. Each event tracks:
+- Event type (scene, combat, montage, negotiation, or other)
+- Source ID linking back to the original combat, montage, or scene
+- Outcome describing what happened
+- Session reference for organizing events by game session
+
+**How Events Are Created:**
+
+Narrative events are created automatically:
+- When combat encounters end, an event is created with victory points and round count
+- When montage challenges complete, an event is created with the outcome
+- You can manually create events from scene entities as well
+
+**Viewing the Timeline:**
+
+Navigate to a session to see its narrative timeline. The timeline shows:
+- Chronological list of events (oldest first)
+- Event type icons distinguishing combat, montages, and scenes
+- Event names and brief outcomes
+- Connecting lines showing story flow between linked events
+
+Click any event to view its source - this opens the original combat session, montage session, or scene entity.
+
+**Linking Events:**
+
+Events can be linked with "leads_to" and "follows" relationships to show story flow:
+- Automatic ordering based on relationships when available
+- Falls back to creation time when relationships aren't defined
+- Use the linking UI to manually connect events when automatic ordering needs adjustment
+- Bidirectional relationships ensure both directions are tracked
+
+**Session Summaries:**
+
+Generate a readable summary of your session from the narrative trail:
+- Orders events chronologically using relationships or creation time
+- Constructs prose with contextual transitions ("The session began with...", "Following this...", etc.)
+- Includes event names, types, and outcomes
+- Formats outcomes as readable text with proper capitalization
+
+**Example Summary:**
+
+"The session began with a combat encounter: Ambush at the River Crossing. Outcome: Victory in 5 rounds, earned 2 VP. Following this, a montage: Searching the Bandit Camp. Outcome: Success. The session concluded with a scene: Questioning the Bandit Leader."
+
+**Best Practices:**
+
+- Review the timeline after each session to verify event creation
+- Link events manually when story flow differs from creation order
+- Add outcome details to events for richer session summaries
+- Reference the session field to organize events across multiple sessions
+- Use scene entities for narrative moments between structured encounters
+- Check narrative events when preparing for the next session to recall story beats
+
+**Working with Narrative Events:**
+
+Narrative events appear in your entity lists like other entity types. You can:
+- View event details to see linked combat/montage/scene
+- Edit outcomes to add more context
+- Create relationships to other entities (NPCs, locations, etc.)
+- Add tags for categorization
+- Delete events that don't belong in your narrative trail
+
+The Narrative Trail system works behind the scenes to help you track your campaign's story without manual record-keeping. After each session, you'll have a complete record of what happened, ready for review or summary generation.
+
 ### Tips for Directors
 
 **Choosing Difficulty:**

@@ -11,6 +11,7 @@ export type EntityType =
 	| 'timeline_event'
 	| 'world_rule'
 	| 'player_profile'
+	| 'narrative_event'
 	| string; // Allow custom types
 
 // Unique identifier type (nanoid-generated)

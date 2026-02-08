@@ -44,14 +44,14 @@ function handleComplete() {
 		<div class="flex items-center gap-3">
 			<button
 				type="button"
-				class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+				class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-gray-700 dark:text-gray-300"
 				onclick={handleBack}
 				aria-label="Back to scene list"
 			>
 				<ArrowLeft size={20} />
 			</button>
 
-			<h1 class="text-2xl font-bold">{sceneName}</h1>
+			<h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">{sceneName}</h1>
 
 			<SceneStatusBadge {status} />
 		</div>
@@ -59,7 +59,7 @@ function handleComplete() {
 		<div class="flex items-center gap-2">
 			<button
 				type="button"
-				class="flex items-center gap-2 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
+				class="flex items-center gap-2 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
 				onclick={handleEdit}
 			>
 				<Edit size={16} />

@@ -284,7 +284,7 @@ export const BUILT_IN_ENTITY_TYPES: EntityTypeDefinition[] = [
 				key: 'factionType',
 				label: 'Type',
 				type: 'select',
-				options: ['guild', 'religion', 'government', 'criminal', 'military', 'secret', 'other'],
+				options: ['guild', 'religion', 'government', 'criminal', 'military', 'noble house', 'secret', 'other'],
 				required: false,
 				order: 1
 			},

@@ -96,10 +96,11 @@ describe('FieldSuggestionButton Component - Basic Rendering', () => {
 		expect(button).toBeInTheDocument();
 	});
 
-	it('should NOT render when isSuggestionsMode is false', async () => {
+	it('should NOT render when AI is disabled (off mode)', async () => {
 
 		mockAiSettings.aiMode = 'off';
 		mockAiSettings.isSuggestionsMode = false;
+		mockAiSettings.isEnabled = false;
 
 		render(FieldSuggestionButton, {
 			props: {
@@ -115,11 +116,12 @@ describe('FieldSuggestionButton Component - Basic Rendering', () => {
 		expect(button).not.toBeInTheDocument();
 	});
 
-	it('should NOT render when aiMode is "full"', async () => {
+	it('should render when aiMode is "full" (both buttons show when AI enabled)', async () => {
 
 		mockAiSettings.aiMode = 'full';
 		mockAiSettings.isSuggestionsMode = false;
 		mockAiSettings.isFullMode = true;
+		mockAiSettings.isEnabled = true;
 
 		render(FieldSuggestionButton, {
 			props: {
@@ -132,7 +134,7 @@ describe('FieldSuggestionButton Component - Basic Rendering', () => {
 		});
 
 		const button = screen.queryByRole('button');
-		expect(button).not.toBeInTheDocument();
+		expect(button).toBeInTheDocument();
 	});
 
 	it('should render as inline element to fit with field labels', async () => {
@@ -1308,11 +1310,12 @@ describe('FieldSuggestionButton Component - Integration with FieldGenerateButton
 		updatedAt: new Date()
 	};
 
-	it('should NOT render when FieldGenerateButton would render (full mode)', async () => {
+	it('should render alongside FieldGenerateButton (both show when AI enabled)', async () => {
 
 		mockAiSettings.aiMode = 'full';
 		mockAiSettings.isSuggestionsMode = false;
 		mockAiSettings.isFullMode = true;
+		mockAiSettings.isEnabled = true;
 
 		render(FieldSuggestionButton, {
 			props: {
@@ -1324,9 +1327,9 @@ describe('FieldSuggestionButton Component - Integration with FieldGenerateButton
 			}
 		});
 
-		// Should not render in full mode
+		// Should render in full mode (both buttons visible when AI enabled)
 		const button = screen.queryByRole('button');
-		expect(button).not.toBeInTheDocument();
+		expect(button).toBeInTheDocument();
 	});
 
 	it('should render when FieldGenerateButton would NOT render (suggestions mode)', async () => {
@@ -1334,6 +1337,7 @@ describe('FieldSuggestionButton Component - Integration with FieldGenerateButton
 		mockAiSettings.aiMode = 'suggestions';
 		mockAiSettings.isSuggestionsMode = true;
 		mockAiSettings.isFullMode = false;
+		mockAiSettings.isEnabled = true;
 
 		render(FieldSuggestionButton, {
 			props: {
@@ -1350,7 +1354,54 @@ describe('FieldSuggestionButton Component - Integration with FieldGenerateButton
 		expect(button).toBeInTheDocument();
 	});
 
+	it('should check isEnabled instead of isSuggestionsMode for visibility', async () => {
+
+		mockAiSettings.aiMode = 'full';
+		mockAiSettings.isSuggestionsMode = false;
+		mockAiSettings.isFullMode = true;
+		mockAiSettings.isEnabled = true;
+
+		render(FieldSuggestionButton, {
+			props: {
+				fieldKey: 'personality',
+				fieldDefinition: mockFieldDefinition,
+				entityType: 'npc',
+				entityData: mockEntityData,
+				onSuggestionGenerated: vi.fn()
+			}
+		});
+
+		// Should render when isEnabled is true, regardless of mode
+		const button = screen.getByRole('button');
+		expect(button).toBeInTheDocument();
+	});
+
+	it('should NOT render when AI is disabled (off mode)', async () => {
+
+		mockAiSettings.aiMode = 'off';
+		mockAiSettings.isSuggestionsMode = false;
+		mockAiSettings.isFullMode = false;
+		mockAiSettings.isEnabled = false;
+
+		render(FieldSuggestionButton, {
+			props: {
+				fieldKey: 'personality',
+				fieldDefinition: mockFieldDefinition,
+				entityType: 'npc',
+				entityData: mockEntityData,
+				onSuggestionGenerated: vi.fn()
+			}
+		});
+
+		// Should NOT render when AI is completely disabled
+		const button = screen.queryByRole('button');
+		expect(button).not.toBeInTheDocument();
+	});
+
 	it('should have similar styling to FieldGenerateButton', async () => {
+
+		mockAiSettings.aiMode = 'full';
+		mockAiSettings.isEnabled = true;
 
 		const { container } = render(FieldSuggestionButton, {
 			props: {

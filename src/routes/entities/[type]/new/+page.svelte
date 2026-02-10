@@ -673,7 +673,7 @@
 								{field.label}
 								{#if field.required}*{/if}
 							</label>
-							{#if aiSettings.isSuggestionsMode && hasPendingSuggestion(field.key)}
+							{#if canGenerate && hasPendingSuggestion(field.key)}
 								<FieldSuggestionBadge
 									fieldName={field.label}
 									hasSuggestion={true}
@@ -682,7 +682,7 @@
 							{/if}
 						</div>
 						<div class="flex items-center gap-2">
-							{#if isGeneratableField(field) && canGenerate && aiSettings.isSuggestionsMode}
+							{#if isGeneratableField(field) && canGenerate}
 								<FieldSuggestionButton
 									fieldKey={field.key}
 									fieldDefinition={field}
@@ -701,7 +701,7 @@
 									disabled={isGenerating || isSaving}
 								/>
 							{/if}
-							{#if isGeneratableField(field) && canGenerate && !aiSettings.isSuggestionsMode}
+							{#if isGeneratableField(field) && canGenerate}
 								<FieldGenerateButton
 									disabled={isGenerating || isSaving}
 									loading={generatingFieldKey === field.key}
@@ -1097,7 +1097,7 @@
 							<div class="flex items-center justify-between mb-1">
 								<label for={field.key} class="label mb-0">{field.label}</label>
 								<div class="flex items-center gap-2">
-									{#if isGeneratableField(field) && canGenerate && aiSettings.isSuggestionsMode}
+									{#if isGeneratableField(field) && canGenerate}
 										<FieldSuggestionButton
 											fieldKey={field.key}
 											fieldDefinition={field}
@@ -1116,7 +1116,7 @@
 											disabled={isGenerating || isSaving}
 										/>
 									{/if}
-									{#if isGeneratableField(field) && canGenerate && !aiSettings.isSuggestionsMode}
+									{#if isGeneratableField(field) && canGenerate}
 										<FieldGenerateButton
 											disabled={isGenerating || isSaving}
 											loading={generatingFieldKey === field.key}
@@ -1249,14 +1249,13 @@
 				{/snippet}
 				Create
 			</LoadingButton>
-			{#if aiSettings.isSuggestionsMode && canGenerate}
+			{#if canGenerate}
 				<GenerateSuggestionsButton
 					entityType={entityType}
 					currentData={{ name, description, summary, tags, notes, fields: $state.snapshot(fields) }}
 					onSuggestionsGenerated={handleGenerateSuggestions}
 					disabled={isSaving || isGenerating}
 				/>
-			{:else if canGenerate}
 				<button
 					type="button"
 					class="btn btn-secondary"

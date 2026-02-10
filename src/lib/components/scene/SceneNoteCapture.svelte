@@ -53,7 +53,7 @@ $effect(() => {
 </script>
 
 <div class="scene-note-capture">
-	<label for="scene-notes-{sceneId}" class="block text-sm font-medium mb-2">
+	<label for="scene-notes-{sceneId}" class="block text-sm font-medium mb-2 text-gray-900 dark:text-gray-100">
 		What Happened
 	</label>
 

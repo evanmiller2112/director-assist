@@ -72,7 +72,7 @@ $effect(() => {
 
 <div class="scene-list-page container mx-auto p-6">
 	<div class="flex items-center justify-between mb-6">
-		<h1 class="text-3xl font-bold">Scenes</h1>
+		<h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100">Scenes</h1>
 		<button
 			type="button"
 			class="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md"
@@ -138,7 +138,7 @@ $effect(() => {
 				>
 					<div class="flex-1">
 						<div class="flex items-center gap-3 mb-2">
-							<h2 class="text-lg font-semibold">{scene.name}</h2>
+							<h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">{scene.name}</h2>
 							<SceneStatusBadge status={(scene.fields.sceneStatus as 'planned' | 'in_progress' | 'completed') ?? 'planned'} />
 						</div>
 						{#if scene.description}

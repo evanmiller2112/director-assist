@@ -670,3 +670,119 @@ describe('validation - Image Field Type', () => {
 		});
 	});
 });
+
+describe('validation - Select Field Type with Custom Values (Issue #429)', () => {
+	describe('validateField - select type with custom values', () => {
+		const selectField: FieldDefinition = {
+			key: 'class',
+			label: 'Class',
+			type: 'select',
+			required: false,
+			options: ['fighter', 'rogue', 'wizard'],
+			order: 1
+		};
+
+		it('should accept value from predefined options', () => {
+			const result = validateField(selectField, 'fighter');
+			expect(result).toBeNull();
+		});
+
+		it('should accept custom value not in predefined options', () => {
+			const result = validateField(selectField, 'paladin');
+			expect(result).toBeNull();
+		});
+
+		it('should accept custom value with underscores', () => {
+			const result = validateField(selectField, 'blood_hunter');
+			expect(result).toBeNull();
+		});
+
+		it('should accept custom value with special characters', () => {
+			const result = validateField(selectField, "O'Brien's Class");
+			expect(result).toBeNull();
+		});
+
+		it('should accept custom value with unicode characters', () => {
+			const result = validateField(selectField, 'Måns');
+			expect(result).toBeNull();
+		});
+
+		it('should accept empty string for optional select field', () => {
+			const result = validateField(selectField, '');
+			expect(result).toBeNull();
+		});
+
+		it('should reject null for required select field', () => {
+			const requiredSelectField: FieldDefinition = {
+				...selectField,
+				required: true
+			};
+			const result = validateField(requiredSelectField, null);
+			expect(result).toBe('Class is required');
+		});
+
+		it('should reject undefined for required select field', () => {
+			const requiredSelectField: FieldDefinition = {
+				...selectField,
+				required: true
+			};
+			const result = validateField(requiredSelectField, undefined);
+			expect(result).toBe('Class is required');
+		});
+
+		it('should reject empty string for required select field', () => {
+			const requiredSelectField: FieldDefinition = {
+				...selectField,
+				required: true
+			};
+			const result = validateField(requiredSelectField, '');
+			expect(result).toBe('Class is required');
+		});
+
+		it('should accept custom value for required select field', () => {
+			const requiredSelectField: FieldDefinition = {
+				...selectField,
+				required: true
+			};
+			const result = validateField(requiredSelectField, 'artificer');
+			expect(result).toBeNull();
+		});
+
+		it('should handle select field with no predefined options', () => {
+			const selectFieldNoOptions: FieldDefinition = {
+				key: 'custom_field',
+				label: 'Custom Field',
+				type: 'select',
+				required: false,
+				order: 1
+			};
+			const result = validateField(selectFieldNoOptions, 'any_value');
+			expect(result).toBeNull();
+		});
+
+		it('should handle select field with empty options array', () => {
+			const selectFieldEmptyOptions: FieldDefinition = {
+				key: 'custom_field',
+				label: 'Custom Field',
+				type: 'select',
+				required: false,
+				options: [],
+				order: 1
+			};
+			const result = validateField(selectFieldEmptyOptions, 'any_value');
+			expect(result).toBeNull();
+		});
+
+		it('should accept very long custom value', () => {
+			const longValue = 'A'.repeat(500);
+			const result = validateField(selectField, longValue);
+			expect(result).toBeNull();
+		});
+
+		it('should accept whitespace-trimmed custom value', () => {
+			// Note: Trimming should happen in the component, not validation
+			const result = validateField(selectField, 'paladin');
+			expect(result).toBeNull();
+		});
+	});
+});

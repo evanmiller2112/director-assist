@@ -87,9 +87,8 @@ function validateNumber(definition: FieldDefinition, value: FieldValue): string 
 }
 
 function validateSelect(definition: FieldDefinition, value: string): string | null {
-	if (definition.options && definition.options.length > 0 && !definition.options.includes(value)) {
-		return `${definition.label} must be one of the available options`;
-	}
+	// Issue #429: Allow custom values not in predefined options
+	// Validation now accepts any string value for select fields
 	return null;
 }
 

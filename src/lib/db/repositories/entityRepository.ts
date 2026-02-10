@@ -106,6 +106,11 @@ export const entityRepository = {
 		return liveQuery(() => db.entities.toArray());
 	},
 
+	// Get all entities as a plain array (non-reactive, for one-shot reads)
+	async getAllArray(): Promise<BaseEntity[]> {
+		return db.entities.toArray();
+	},
+
 	// Get entities by type as a live query
 	getByType(type: EntityType): Observable<BaseEntity[]> {
 		return liveQuery(() => db.entities.where('type').equals(type).toArray());

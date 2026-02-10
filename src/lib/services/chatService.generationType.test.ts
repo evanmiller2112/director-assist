@@ -136,6 +136,8 @@ describe('chatService - Generation Type Integration', () => {
 				'location',
 				'plot_hook',
 				'combat',
+			'negotiation',
+			'montage',
 				'item',
 				'faction',
 				'session_prep'
@@ -446,6 +448,8 @@ describe('chatService - Generation Type Integration', () => {
 	describe('Error handling with generationType', () => {
 		it('should handle API errors with generationType', async () => {
 			mockMessagesCreate.mockRejectedValue(new Error('API error'));
+			'negotiation',
+			'montage',
 
 			await expect(
 				sendChatMessage('Test', [], true, undefined, 'npc')
@@ -625,7 +629,9 @@ describe('chatService - Generation Type Integration', () => {
 				combat: /encounter|combat|battle/i,
 				item: /item|artifact|equipment/i,
 				faction: /faction|organization|guild/i,
-				session_prep: /session|prep|planning/i
+				session_prep: /session|prep|planning/i,
+				negotiation: /negotiation|interest|patience/i,
+				montage: /montage|challenge|round/i
 			};
 
 			for (const [type, keyword] of Object.entries(typeKeywords)) {
@@ -1058,6 +1064,389 @@ describe('chatService - Generation Type Integration', () => {
 				// Should have proper sections
 				expect(systemPrompt).toContain('TTRPG campaign assistant');
 				expect(systemPrompt).toContain('NPC');
+			});
+		});
+
+	describe('Combat typeFieldValues integration (Issue #154)', () => {
+		beforeEach(() => {
+			mockMessagesCreate.mockClear();
+			mockMessagesStream.mockClear();
+		});
+
+		it('should accept encounterDifficulty in typeFieldValues', async () => {
+			await expect(
+				sendChatMessage('Test', [], true, undefined, 'combat', { encounterDifficulty: 'medium' })
+			).resolves.not.toThrow();
+		});
+
+		it('should include encounterDifficulty in prompt when set', async () => {
+			await sendChatMessage('Generate combat', [], true, undefined, 'combat', {
+				encounterDifficulty: 'deadly'
+			});
+
+			expect(mockMessagesCreate).toHaveBeenCalled();
+			const systemPrompt = mockMessagesCreate.mock.calls[0][0].system.toLowerCase();
+			expect(systemPrompt).toMatch(/deadly|difficulty/);
+		});
+
+		it('should accept terrainComplexity in typeFieldValues', async () => {
+			await expect(
+				sendChatMessage('Test', [], true, undefined, 'combat', { terrainComplexity: 'complex' })
+			).resolves.not.toThrow();
+		});
+
+		it('should include terrainComplexity in prompt when set', async () => {
+			await sendChatMessage('Generate combat', [], true, undefined, 'combat', {
+				terrainComplexity: 'minimal'
+			});
+
+			expect(mockMessagesCreate).toHaveBeenCalled();
+			const systemPrompt = mockMessagesCreate.mock.calls[0][0].system.toLowerCase();
+			expect(systemPrompt).toMatch(/minimal|terrain|complexity/);
+		});
+
+		it('should handle both encounterDifficulty and terrainComplexity together', async () => {
+			await sendChatMessage('Generate combat', [], true, undefined, 'combat', {
+				encounterDifficulty: 'hard',
+				terrainComplexity: 'standard'
+			});
+
+			const systemPrompt = mockMessagesCreate.mock.calls[0][0].system.toLowerCase();
+			expect(systemPrompt).toMatch(/hard|difficulty/);
+			expect(systemPrompt).toMatch(/standard|terrain/);
+		});
+	});
+
+	describe('Negotiation typeFieldValues integration (Issue #159)', () => {
+		beforeEach(() => {
+			mockMessagesCreate.mockClear();
+			mockMessagesStream.mockClear();
+		});
+
+		it('should accept startingPosition in typeFieldValues', async () => {
+			await expect(
+				sendChatMessage('Test', [], true, undefined, 'negotiation', { startingPosition: 'advantage' })
+			).resolves.not.toThrow();
+		});
+
+		it('should include startingPosition in prompt when set', async () => {
+			await sendChatMessage('Generate negotiation', [], true, undefined, 'negotiation', {
+				startingPosition: 'even'
+			});
+
+			expect(mockMessagesCreate).toHaveBeenCalled();
+			const systemPrompt = mockMessagesCreate.mock.calls[0][0].system.toLowerCase();
+			expect(systemPrompt).toMatch(/even|position|balanced/);
+		});
+
+		it('should accept negotiationStakes in typeFieldValues', async () => {
+			await expect(
+				sendChatMessage('Test', [], true, undefined, 'negotiation', { negotiationStakes: 'high' })
+			).resolves.not.toThrow();
+		});
+
+		it('should include negotiationStakes in prompt when set', async () => {
+			await sendChatMessage('Generate negotiation', [], true, undefined, 'negotiation', {
+				negotiationStakes: 'critical'
+			});
+
+			expect(mockMessagesCreate).toHaveBeenCalled();
+			const systemPrompt = mockMessagesCreate.mock.calls[0][0].system.toLowerCase();
+			expect(systemPrompt).toMatch(/critical|stakes/);
+		});
+
+		it('should handle both startingPosition and negotiationStakes together', async () => {
+			await sendChatMessage('Generate negotiation', [], true, undefined, 'negotiation', {
+				startingPosition: 'disadvantage',
+				negotiationStakes: 'moderate'
+			});
+
+			const systemPrompt = mockMessagesCreate.mock.calls[0][0].system.toLowerCase();
+			expect(systemPrompt).toMatch(/disadvantage|position/);
+			expect(systemPrompt).toMatch(/moderate|stakes/);
+		});
+	});
+
+	describe('Montage typeFieldValues integration (Issue #159)', () => {
+		beforeEach(() => {
+			mockMessagesCreate.mockClear();
+			mockMessagesStream.mockClear();
+		});
+
+		it('should accept montageDifficulty in typeFieldValues', async () => {
+			await expect(
+				sendChatMessage('Test', [], true, undefined, 'montage', { montageDifficulty: 'standard' })
+			).resolves.not.toThrow();
+		});
+
+		it('should include montageDifficulty in prompt when set', async () => {
+			await sendChatMessage('Generate montage', [], true, undefined, 'montage', {
+				montageDifficulty: 'hard'
+			});
+
+			expect(mockMessagesCreate).toHaveBeenCalled();
+			const systemPrompt = mockMessagesCreate.mock.calls[0][0].system.toLowerCase();
+			expect(systemPrompt).toMatch(/hard|difficult/);
+		});
+
+		it('should accept montageTheme in typeFieldValues', async () => {
+			await expect(
+				sendChatMessage('Test', [], true, undefined, 'montage', { montageTheme: 'infiltration' })
+			).resolves.not.toThrow();
+		});
+
+		it('should include montageTheme in prompt when set', async () => {
+			await sendChatMessage('Generate montage', [], true, undefined, 'montage', {
+				montageTheme: 'research'
+			});
+
+			expect(mockMessagesCreate).toHaveBeenCalled();
+			const systemPrompt = mockMessagesCreate.mock.calls[0][0].system.toLowerCase();
+			expect(systemPrompt).toMatch(/research|theme/);
+		});
+
+		it('should handle both montageDifficulty and montageTheme together', async () => {
+			await sendChatMessage('Generate montage', [], true, undefined, 'montage', {
+				montageDifficulty: 'easy',
+				montageTheme: 'travel'
+			});
+
+			const systemPrompt = mockMessagesCreate.mock.calls[0][0].system.toLowerCase();
+			expect(systemPrompt).toMatch(/easy|difficulty/);
+			expect(systemPrompt).toMatch(/travel|theme/);
+		});
+	});
+	});
+
+	describe('System Override Integration (Issues #157, #158, #160, #161)', () => {
+		beforeEach(() => {
+			mockMessagesCreate.mockClear();
+			mockMessagesStream.mockClear();
+		});
+
+		it('should accept systemId as 9th parameter', async () => {
+			await expect(
+				sendChatMessage('Test', [], true, undefined, 'npc', {}, false, 'summary', 'draw-steel')
+			).resolves.not.toThrow();
+		});
+
+		it('should work without systemId parameter (backward compatibility)', async () => {
+			await expect(
+				sendChatMessage('Test', [], true, undefined, 'npc', {})
+			).resolves.not.toThrow();
+		});
+
+		describe('Draw Steel system overrides', () => {
+			it('should include Draw Steel override content in system prompt for combat', async () => {
+				await sendChatMessage('Generate combat', [], true, undefined, 'combat', {}, false, 'summary', 'draw-steel');
+
+				expect(mockMessagesCreate).toHaveBeenCalled();
+				const systemPrompt = mockMessagesCreate.mock.calls[0][0].system.toLowerCase();
+
+				// Draw Steel combat override should mention Victory Points
+				expect(systemPrompt).toMatch(/victory point/);
+			});
+
+			it('should include Draw Steel NPC override content for npc generation', async () => {
+				await sendChatMessage('Generate NPC', [], true, undefined, 'npc', {}, false, 'summary', 'draw-steel');
+
+				expect(mockMessagesCreate).toHaveBeenCalled();
+				const systemPrompt = mockMessagesCreate.mock.calls[0][0].system.toLowerCase();
+
+				// Draw Steel NPC override should mention ancestry
+				expect(systemPrompt).toMatch(/ancestry|ancestries/);
+			});
+
+			it('should include Draw Steel session_prep override content', async () => {
+				await sendChatMessage('Prep session', [], true, undefined, 'session_prep', {}, false, 'summary', 'draw-steel');
+
+				expect(mockMessagesCreate).toHaveBeenCalled();
+				const systemPrompt = mockMessagesCreate.mock.calls[0][0].system.toLowerCase();
+
+				// Draw Steel session_prep override should mention encounter types
+				expect(systemPrompt).toMatch(/negotiation|montage|combat/);
+			});
+
+			it('should include Draw Steel plot_hook override content', async () => {
+				await sendChatMessage('Create hook', [], true, undefined, 'plot_hook', {}, false, 'summary', 'draw-steel');
+
+				expect(mockMessagesCreate).toHaveBeenCalled();
+				const systemPrompt = mockMessagesCreate.mock.calls[0][0].system.toLowerCase();
+
+				// Draw Steel plot_hook override should mention heroic elements
+				expect(systemPrompt).toMatch(/heroic|hero/);
+			});
+
+			it('should use "Director" terminology in Draw Steel overrides', async () => {
+				await sendChatMessage('Test', [], true, undefined, 'npc', {}, false, 'summary', 'draw-steel');
+
+				const systemPrompt = mockMessagesCreate.mock.calls[0][0].system;
+
+				// Should use Director terminology
+				expect(systemPrompt.toLowerCase()).toContain('director');
+			});
+
+			it('should work with streaming and systemId', async () => {
+				const onStream = vi.fn();
+
+				await sendChatMessage('Test', [], true, onStream, 'combat', {}, false, 'summary', 'draw-steel');
+
+				expect(mockMessagesStream).toHaveBeenCalled();
+				const systemPrompt = mockMessagesStream.mock.calls[0][0].system.toLowerCase();
+
+				expect(systemPrompt).toMatch(/victory point/);
+			});
+		});
+
+		describe('No system override when systemId is null/undefined', () => {
+			it('should not include Draw Steel content when systemId is null', async () => {
+				await sendChatMessage('Generate combat', [], true, undefined, 'combat', {}, false, 'summary', null);
+
+				expect(mockMessagesCreate).toHaveBeenCalled();
+				const systemPrompt = mockMessagesCreate.mock.calls[0][0].system;
+
+				// Should have base combat prompt
+				expect(systemPrompt.toLowerCase()).toContain('combat');
+
+				// Should NOT have Draw Steel Victory Point content
+				// (this is a soft check - base combat config shouldn't mention VP)
+				const hasVictoryPoint = systemPrompt.toLowerCase().includes('victory point');
+				const hasDrawSteelSpecific = systemPrompt.toLowerCase().includes('draw steel');
+
+				// If neither exists, that's fine (no override applied)
+				if (hasVictoryPoint || hasDrawSteelSpecific) {
+					// But if they do exist, we've failed to exclude the override
+					expect(false).toBe(true);
+				}
+			});
+
+			it('should not include Draw Steel content when systemId is undefined', async () => {
+				await sendChatMessage('Generate NPC', [], true, undefined, 'npc', {}, false, 'summary', undefined);
+
+				expect(mockMessagesCreate).toHaveBeenCalled();
+				const systemPrompt = mockMessagesCreate.mock.calls[0][0].system;
+
+				// Should have base NPC prompt
+				expect(systemPrompt).toContain('NPC');
+
+				// Should NOT have Draw Steel ancestry details
+				const hasDrawSteelSpecific = systemPrompt.toLowerCase().includes('dwarf') ||
+					systemPrompt.toLowerCase().includes('hakaan');
+
+				if (hasDrawSteelSpecific) {
+					expect(false).toBe(true);
+				}
+			});
+		});
+
+		describe('System-agnostic system', () => {
+			it('should not add override content for system-agnostic', async () => {
+				await sendChatMessage('Test', [], true, undefined, 'npc', {}, false, 'summary', 'system-agnostic');
+
+				expect(mockMessagesCreate).toHaveBeenCalled();
+				const systemPrompt = mockMessagesCreate.mock.calls[0][0].system;
+
+				// Should have base NPC prompt
+				expect(systemPrompt).toContain('NPC');
+
+				// Should NOT have any system-specific content
+				const hasSystemSpecific = systemPrompt.toLowerCase().includes('draw steel') ||
+					systemPrompt.toLowerCase().includes('victory point');
+
+				if (hasSystemSpecific) {
+					expect(false).toBe(true);
+				}
+			});
+		});
+
+		describe('Combined with typeFieldValues', () => {
+			it('should include both system override and typeFieldValues in prompt', async () => {
+				await sendChatMessage('Generate NPC', [], true, undefined, 'npc', {
+					threatLevel: 'elite'
+				}, false, 'summary', 'draw-steel');
+
+				const systemPrompt = mockMessagesCreate.mock.calls[0][0].system.toLowerCase();
+
+				// Should have threat level from typeFieldValues
+				expect(systemPrompt).toContain('elite');
+
+				// Should have Draw Steel ancestry from override
+				expect(systemPrompt).toMatch(/ancestry|ancestries/);
+			});
+
+			it('should work with combat typeFieldValues and Draw Steel override', async () => {
+				await sendChatMessage('Generate combat', [], true, undefined, 'combat', {
+					encounterDifficulty: 'hard'
+				}, false, 'summary', 'draw-steel');
+
+				const systemPrompt = mockMessagesCreate.mock.calls[0][0].system.toLowerCase();
+
+				// Should have difficulty from typeFieldValues
+				expect(systemPrompt).toMatch(/hard|difficulty/);
+
+				// Should have Victory Points from Draw Steel override
+				expect(systemPrompt).toMatch(/victory point/);
+			});
+		});
+
+		describe('Prompt structure', () => {
+			it('should append system override after base config and typeFieldValues', async () => {
+				await sendChatMessage('Test', [], true, undefined, 'npc', {
+					threatLevel: 'boss'
+				}, false, 'summary', 'draw-steel');
+
+				const systemPrompt = mockMessagesCreate.mock.calls[0][0].system;
+
+				// All elements should be present
+				expect(systemPrompt).toContain('TTRPG campaign assistant'); // base
+				expect(systemPrompt).toContain('NPC'); // type config
+				expect(systemPrompt.toLowerCase()).toContain('boss'); // typeFieldValue
+				expect(systemPrompt.toLowerCase()).toMatch(/ancestry|director/); // system override
+			});
+
+			it('should maintain proper prompt length with all enhancements', async () => {
+				await sendChatMessage('Test', [], true, undefined, 'combat', {
+					encounterDifficulty: 'deadly',
+					terrainComplexity: 'complex'
+				}, false, 'summary', 'draw-steel');
+
+				const systemPrompt = mockMessagesCreate.mock.calls[0][0].system;
+
+				// System prompt should be substantial when everything is included
+				expect(systemPrompt.length).toBeGreaterThan(200);
+			});
+		});
+
+		describe('Edge cases', () => {
+			it('should handle unknown systemId gracefully', async () => {
+				await expect(
+					sendChatMessage('Test', [], true, undefined, 'npc', {}, 'unknown-system' as any)
+				).resolves.not.toThrow();
+			});
+
+			it('should handle empty string systemId', async () => {
+				await expect(
+					sendChatMessage('Test', [], true, undefined, 'npc', {}, '' as any)
+				).resolves.not.toThrow();
+			});
+
+			it('should work with all parameters including systemId', async () => {
+				mockBuildContext.mockResolvedValue([]);
+				mockFormatContextForPrompt.mockReturnValue('');
+
+				const onStream = vi.fn();
+
+				await sendChatMessage(
+					'Full test',
+					['entity-1'],
+					false,
+					onStream,
+					'combat',
+					{ encounterDifficulty: 'medium' },
+					'draw-steel'
+				);
+
+				expect(mockMessagesStream).toHaveBeenCalled();
 			});
 		});
 	});

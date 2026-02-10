@@ -33,6 +33,95 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Preserves concept field for backward compatibility while enabling more detailed character information
 - Example usage: ancestry="Human", culture="Nomadic", career="Soldier", heroClass="Fury", subclass="Reaver"
 
+## [1.4.5] - 2026-02-10
+
+### Added
+
+**Enhanced Combat Generation (Issues #154, #159)**
+- Draw Steel Victory Points mechanic integrated into combat generation
+- Tactical grid positioning guidance with terrain mechanics
+- New combat typeFields: encounterDifficulty (select), terrainComplexity (select)
+- Enhanced combat prompts reference Victory Point objectives and terrain tactics
+
+**Negotiation Generation (Issue #159)**
+- New negotiation generation type with Draw Steel mechanics
+- Interest/Patience tracking system built into generation prompts
+- NPC Motivations and Pitfalls automatically generated
+- New negotiation typeFields: startingPosition (select), negotiationStakes (select)
+- Generation outputs include motivation appeals and pitfall warnings
+
+**Montage Generation (Issue #159)**
+- New montage generation type for multi-round challenges
+- Montage difficulty and theme selection
+- New montage typeFields: montageDifficulty (select), montageTheme (select)
+- Structured montage challenges with clear success/failure conditions
+
+**System-Aware Generation (Issue #156)**
+- System-specific generation overrides registry for game system customization
+- Draw Steel override merges Victory Points, terrain tactics, and mechanical guidance into base generation configs
+- systemGenerationOverrides.ts provides extensible framework for other game systems
+- Chat service automatically applies system overrides based on campaign settings
+- Enhanced prompts with system-specific terminology and mechanics
+
+**Session Prep Enhancement (Issue #157)**
+- Session prep generation references negotiation scenes and montage opportunities
+- Victory Point objectives included in combat encounter suggestions
+- More comprehensive preparation guidance for modern Draw Steel features
+
+**NPC Ancestry Selection (Issue #158)**
+- New ancestry typeField for NPC generation with Draw Steel options
+- Seven Draw Steel ancestries: Human, Dwarf, Elf, Hakaan, Memonek, Orc, Time Raider
+- Ancestry selection influences NPC characteristics and abilities in generation
+
+**Item Power Level Guidance (Issue #160)**
+- Draw Steel override provides Renown-based power level guidance
+- Clear distinction between mechanical benefits and narrative flavor
+- Power level options: Mundane, Minor (Renown 1), Moderate (Renown 2), Major (Renown 3+)
+- Helps AI generate appropriately balanced magic items
+
+**Plot Hook Heroic Tone (Issue #161)**
+- Enhanced plot hook generation emphasizes heroic fantasy themes
+- Prompts encourage hope, courage, and adventure over grimdark elements
+- Aligned with Draw Steel's heroic tone and narrative focus
+
+**@Mentions Feature - Core Mention Detection (Issue #199)**
+- Pure utility service for detecting and parsing @mentions in text
+- detectMentionTrigger() identifies when @ character triggers autocomplete
+- extractMentionTokens() parses mention patterns from text
+- matchEntitiesToMentions() matches entity names to mention tokens
+- resolvePartialMention() handles partial name matching for autocomplete
+- Supports multi-word entity names, Unicode characters, and name particles
+- Email filtering prevents false positives (user@example.com not treated as mention)
+
+**@Mentions Feature - ChatMentionPopover Component (Issue #200)**
+- Autocomplete dropdown for entity selection during message composition
+- Real-time entity filtering based on typed characters
+- Keyboard navigation with Arrow keys, Enter to select, Escape to dismiss
+- ARIA roles and labels for screen reader accessibility
+- Result limit of 10 items for performance
+- Visual entity type indicators with color-coded badges
+
+**@Mentions Feature - ChatPanel Integration (Issue #201)**
+- @mention detection integrated into chat textarea
+- Entity selection and insertion workflow
+- contextEntities extraction on message send
+- Mentioned entities automatically included in AI generation context
+- Seamless integration with existing chat message flow
+
+**@Mentions Feature - Mention Rendering (Issue #202)**
+- Visual highlighting of @mentions in chat message display
+- Clickable @mention links navigate to referenced entities
+- Dark mode support with appropriate contrast
+- Entity reference validation (grayed out for deleted entities)
+
+**Entity Regeneration (Issue #308)**
+- AI-powered entity regeneration with relationship context awareness
+- Field preservation options: keep specific fields unchanged during regeneration
+- Diff preview shows proposed changes before applying
+- Regenerate entire entity or selected fields only
+- Relationship context automatically included for contextually appropriate regeneration
+- Safety features prevent accidental data loss
+
 ## [1.3.5] - TBD
 
 ### Added

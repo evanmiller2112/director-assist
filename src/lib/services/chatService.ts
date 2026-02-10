@@ -2,9 +2,11 @@ import Anthropic from '@anthropic-ai/sdk';
 import { buildContext, formatContextForPrompt } from './contextBuilder';
 import { getSelectedModel } from './modelService';
 import type { ChatMessage, GenerationType, Campaign } from '$lib/types';
+import type { SystemId } from '$lib/types/systems';
 import type { DebugEntry, ContextSummary } from '$lib/types/debug';
 import { chatRepository } from '$lib/db/repositories';
 import { getGenerationTypeConfig } from '$lib/config/generationTypes';
+import { getSystemGenerationOverride, mergeGenerationConfig } from '$lib/config/systemGenerationOverrides';
 import { debugStore } from '$lib/stores/debug.svelte';
 import { campaignStore } from '$lib/stores/campaign.svelte';
 
@@ -43,7 +45,8 @@ export async function sendChatMessage(
 	generationType: GenerationType = 'custom',
 	typeFieldValues?: Record<string, string>,
 	sendAllContext: boolean = false,
-	contextDetailLevel: 'summary' | 'full' = 'summary'
+	contextDetailLevel: 'summary' | 'full' = 'summary',
+	systemId?: SystemId | null
 ): Promise<string> {
 	// Get API key from localStorage
 	const apiKey = typeof window !== 'undefined' ? localStorage.getItem('dm-assist-api-key') : null;
@@ -98,7 +101,14 @@ export async function sendChatMessage(
 
 	// Add generation type-specific prompt and structure
 	if (generationType && generationType !== 'custom') {
-		const typeConfig = getGenerationTypeConfig(generationType);
+		let typeConfig = getGenerationTypeConfig(generationType);
+
+		// Merge with system-specific overrides if a system is specified
+		if (typeConfig && systemId) {
+			const systemOverride = getSystemGenerationOverride(systemId, generationType);
+			typeConfig = mergeGenerationConfig(typeConfig, systemOverride);
+		}
+
 		if (typeConfig) {
 			fullSystemPrompt += '\n\n' + typeConfig.promptTemplate;
 			if (typeConfig.suggestedStructure) {

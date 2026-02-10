@@ -55,9 +55,9 @@
 
 	let isGenerating = $state(false);
 
-	// Only show when in suggestions mode and field is generatable
+	// Only show when AI is enabled and field is generatable
 	const shouldShow = $derived(
-		aiSettings.isSuggestionsMode &&
+		aiSettings.isEnabled &&
 		(fieldDefinition.aiGenerate !== false)
 	);
 

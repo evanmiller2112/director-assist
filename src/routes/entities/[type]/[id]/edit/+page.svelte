@@ -3,7 +3,7 @@
 	import { goto } from '$app/navigation';
 	import { aiSettings, entitiesStore, notificationStore, campaignStore } from '$lib/stores';
 	import { getEntityTypeDefinition } from '$lib/config/entityTypes';
-	import { hasGenerationApiKey, buildFieldRelationshipContext, buildPlayerCharacterContext } from '$lib/services';
+	import { hasGenerationApiKey, generateEntity, buildFieldRelationshipContext, buildPlayerCharacterContext } from '$lib/services';
 	import { generateField, generateSummaryContent, generateDescriptionContent, isGeneratableField } from '$lib/services/fieldGenerationService';
 	import { generateSuggestionsForEntity, generateSuggestionForField } from '$lib/services/fieldSuggestionService';
 	import { buildRelationshipContext, formatRelationshipContextForPrompt, getRelationshipContextStats } from '$lib/services/relationshipContextBuilder';
@@ -12,7 +12,7 @@
 	import type { FieldValue, FieldDefinition, BaseEntity, FieldSuggestion } from '$lib/types';
 	import { validateEntity, formatContextSummary } from '$lib/utils';
 	import { getSystemAwareEntityType } from '$lib/utils/entityFormUtils';
-	import { ArrowLeft, Save, ExternalLink, ImagePlus, X as XIcon, Upload, Search, ChevronDown, Eye, EyeOff } from 'lucide-svelte';
+	import { ArrowLeft, Save, Sparkles, Loader2, ExternalLink, ImagePlus, X as XIcon, Upload, Search, ChevronDown, Eye, EyeOff } from 'lucide-svelte';
 	import FieldGenerateButton from '$lib/components/entity/FieldGenerateButton.svelte';
 	import FieldSuggestionButton from '$lib/components/entity/FieldSuggestionButton.svelte';
 	import GenerateSuggestionsButton from '$lib/components/entity/GenerateSuggestionsButton.svelte';
@@ -49,6 +49,7 @@
 	let playerVisible = $state<boolean | undefined>(undefined);
 	let fields = $state<Record<string, FieldValue>>({});
 	let isSaving = $state(false);
+	let isGenerating = $state(false);
 	let isInitialized = $state(false);
 	let errors = $state<Record<string, string>>({});
 	let generatingFieldKey = $state<string | null>(null);
@@ -223,8 +224,54 @@
 		clearError(key);
 	}
 
+	async function handleGenerate() {
+		if (!typeDefinition || isGenerating) return;
+
+		isGenerating = true;
+
+		try {
+			const context = {
+				name: name.trim() || undefined,
+				description: description.trim() || undefined,
+				tags: tags
+					.split(',')
+					.map((t) => t.trim())
+					.filter(Boolean),
+				fields: $state.snapshot(fields)
+			};
+
+			const campaign = campaignStore.campaign;
+			const campaignContext = campaign
+				? {
+						name: campaign.name,
+						setting: (campaign.fields?.setting as string) ?? '',
+						system: (campaign.fields?.system as string) ?? ''
+					}
+				: undefined;
+
+			const result = await generateEntity(typeDefinition, context, campaignContext);
+
+			if (result.success && result.entity) {
+				name = result.entity.name;
+				description = result.entity.description;
+				summary = result.entity.summary;
+				tags = result.entity.tags.join(', ');
+				fields = { ...fields, ...result.entity.fields };
+
+				notificationStore.success('Entity generated! Review and save when ready.');
+			} else {
+				notificationStore.error(result.error ?? 'Failed to generate entity');
+			}
+		} catch (error) {
+			console.error('Failed to generate entity:', error);
+			notificationStore.error('An unexpected error occurred');
+		} finally {
+			isGenerating = false;
+		}
+	}
+
 	async function handleGenerateField(targetField: FieldDefinition) {
-		if (!typeDefinition || generatingFieldKey) return;
+		if (!typeDefinition || generatingFieldKey || isGenerating) return;
 
 		generatingFieldKey = targetField.key;
 
@@ -964,7 +1011,7 @@
 									{field.label}
 									{#if field.required}*{/if}
 								</label>
-								{#if aiSettings.isSuggestionsMode && hasPendingSuggestion(field.key)}
+								{#if canGenerate && hasPendingSuggestion(field.key)}
 									<FieldSuggestionBadge
 										fieldName={field.label}
 										hasSuggestion={true}
@@ -973,7 +1020,7 @@
 								{/if}
 							</div>
 							<div class="flex items-center gap-2">
-								{#if isGeneratableField(field) && canGenerate && aiSettings.isSuggestionsMode}
+								{#if isGeneratableField(field) && canGenerate}
 									<FieldSuggestionButton
 										fieldKey={field.key}
 										fieldDefinition={field}
@@ -992,7 +1039,7 @@
 										disabled={isSaving}
 									/>
 								{/if}
-								{#if isGeneratableField(field) && canGenerate && !aiSettings.isSuggestionsMode}
+								{#if isGeneratableField(field) && canGenerate}
 									<FieldGenerateButton
 										disabled={isSaving}
 										loading={generatingFieldKey === field.key}
@@ -1399,7 +1446,7 @@
 								<div class="flex items-center justify-between mb-1">
 									<label for={field.key} class="label mb-0">{field.label}</label>
 									<div class="flex items-center gap-2">
-										{#if isGeneratableField(field) && canGenerate && aiSettings.isSuggestionsMode}
+										{#if isGeneratableField(field) && canGenerate}
 											<FieldSuggestionButton
 												fieldKey={field.key}
 												fieldDefinition={field}
@@ -1418,7 +1465,7 @@
 												disabled={isSaving}
 											/>
 										{/if}
-										{#if isGeneratableField(field) && canGenerate && !aiSettings.isSuggestionsMode}
+										{#if isGeneratableField(field) && canGenerate}
 											<FieldGenerateButton
 												disabled={isSaving}
 												loading={generatingFieldKey === field.key}
@@ -1501,13 +1548,28 @@
 					{/snippet}
 					Save Changes
 				</LoadingButton>
-				{#if aiSettings.isSuggestionsMode && canGenerate && entity}
+				{#if canGenerate && entity}
+					<button
+						type="button"
+						class="btn btn-secondary"
+						onclick={handleGenerate}
+						disabled={isGenerating || isSaving}
+						title="Generate entity content using AI"
+					>
+						{#if isGenerating}
+							<Loader2 class="w-4 h-4 animate-spin" />
+							Generating...
+						{:else}
+							<Sparkles class="w-4 h-4" />
+							Generate
+						{/if}
+					</button>
 					<GenerateSuggestionsButton
 						entityType={entityType}
 						currentData={{ name, description, summary, tags, notes, fields: $state.snapshot(fields) }}
 						entityId={parseInt(entityId)}
 						onSuggestionsGenerated={handleGenerateSuggestions}
-						disabled={isSaving}
+						disabled={isSaving || isGenerating}
 					/>
 				{/if}
 				<a href="/entities/{entityType}/{entityId}" class="btn btn-secondary"> Cancel </a>

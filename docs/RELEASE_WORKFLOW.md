@@ -31,25 +31,45 @@ v1.1.0 → v2.0.0  (major: breaking changes)
 
 ## Pipeline Stages
 
-The release workflow consists of 5 stages:
+The release workflow consists of 6 stages:
 
 ```
-1. Pre-Release Check    → Verify branch is ready
-2. Branch Merge         → Merge into main
-3. Version Bump         → Update version and changelog
-4. Tag Creation         → Create Git tag
-5. GitHub Release       → Publish release with notes
+1. Pre-Release Validation → Type check, tests, build pass
+2. Branch Merge           → Merge into main
+3. Post-Merge Validation  → Re-verify after merge/conflict resolution
+4. Version Bump           → Update version and changelog
+5. Tag Creation           → Create Git tag
+6. GitHub Release         → Publish release with notes
 ```
 
 ## The Agents
 
-### 1. mergemaster
+### 1. qa-expert
+
+**Role:** Pre-release and post-merge validation gate
+
+**Responsibilities:**
+- Run `npm run check` (svelte-check) and verify 0 TypeScript errors
+- Run `npx vitest run` and verify all tests pass
+- Run `npm run build` and verify production build succeeds
+- Flag any new warnings that may indicate regressions
+- **Must pass before merge AND after merge** (conflict resolution can introduce errors)
+
+**When to Use:**
+- Before merging a feature branch (pre-release validation)
+- After merging/conflict resolution (post-merge validation)
+- Any time code changes are made during the release process
+
+**Why This Matters:**
+Merge conflict resolution can introduce TypeScript errors (e.g., parameter order mismatches, missing imports). These must be caught and fixed before tagging a release.
+
+---
+
+### 2. mergemaster
 
 **Role:** Branch integration and conflict resolution
 
 **Responsibilities:**
-- Verify feature branch is ready to merge
-- Check for merge conflicts
 - Merge feature branch into main
 - Resolve any conflicts that arise
 - Verify merge was successful
@@ -60,7 +80,7 @@ The release workflow consists of 5 stages:
 
 ---
 
-### 2. docs-specialist
+### 3. docs-specialist
 
 **Role:** Changelog and release notes
 
@@ -76,7 +96,7 @@ The release workflow consists of 5 stages:
 
 ---
 
-### 3. git-manager
+### 4. git-manager
 
 **Role:** Version tagging and Git operations
 
@@ -100,7 +120,7 @@ The release workflow consists of 5 stages:
 
 ---
 
-### 4. github-project-manager
+### 5. github-project-manager
 
 **Role:** GitHub release publication
 
@@ -131,31 +151,36 @@ This allows users to download pre-built files without needing Node.js or npm.
 
 Use this workflow when releasing a new version after completing features or fixes.
 
-**Steps:** 1 → 2 → 3 → 4 → 5
+**Steps:** 1 → 2 → 3 → 4 → 5 → 6
 
 ```
-1. Pre-Release Check (mergemaster)
-   - Verify all tests pass on feature branch
-   - Check CI/CD status
-   - Confirm branch is up to date with main
+1. Pre-Release Validation (qa-expert)
+   - Run `npm run check` → 0 TypeScript errors required
+   - Run `npx vitest run` → all tests pass
+   - Run `npm run build` → production build succeeds
+   - Review any new warnings (svelte-check) for regressions
    ↓
 2. Branch Merge (mergemaster)
    - Merge feature branch into main
    - Resolve any conflicts
    - Verify merge successful
    ↓
-3. Version Bump (docs-specialist)
+3. Post-Merge Validation (qa-expert)
+   - Re-run `npm run check` → 0 errors after merge
+   - Re-run `npx vitest run` → all tests still pass
+   - Confirm no regressions from conflict resolution
+   ↓
+4. Version Bump (docs-specialist)
    - Determine version increment type
    - Update CHANGELOG.md
+   - Update `package.json` and `package-lock.json` version
    - Prepare release notes
    ↓
-4. Tag Creation (git-manager)
-   - Update `package.json` version to match new version
-   - Commit version bump
+5. Tag Creation (git-manager)
    - Create annotated tag (e.g., v1.2.0)
    - Push commit and tag to remote
    ↓
-5. GitHub Release (github-project-manager)
+6. GitHub Release (github-project-manager)
    - Create release from tag
    - Add release notes
    - Publish release
@@ -166,22 +191,29 @@ Use this workflow when releasing a new version after completing features or fixe
 
 Use this workflow for urgent bug fixes that need immediate release.
 
-**Steps:** 1 → 3 → 4 → 5
+**Steps:** 1 → 2 → 3 → 4 → 5 → 6
 
 ```
-1. Pre-Release Check (mergemaster)
-   - Verify hotfix is on main or merge hotfix branch
-   - Confirm fix is tested
+1. Pre-Release Validation (qa-expert)
+   - Run `npm run check` → 0 TypeScript errors
+   - Run `npx vitest run` → all tests pass
+   - Confirm hotfix is tested
    ↓
-3. Version Bump (docs-specialist)
+2. Branch Merge (mergemaster)
+   - Verify hotfix is on main or merge hotfix branch
+   ↓
+3. Post-Merge Validation (qa-expert)
+   - Re-run `npm run check` and `npx vitest run`
+   ↓
+4. Version Bump (docs-specialist)
    - Increment PATCH version
    - Update CHANGELOG.md with fix description
    ↓
-4. Tag Creation (git-manager)
+5. Tag Creation (git-manager)
    - Create patch version tag
    - Push tag to remote
    ↓
-5. GitHub Release (github-project-manager)
+6. GitHub Release (github-project-manager)
    - Create release marked as patch/hotfix
    - Add brief fix description
    - GitHub Actions automatically attaches build artifact
@@ -194,14 +226,14 @@ Use this workflow for urgent bug fixes that need immediate release.
 ### Releasing v1.2.0 with New Features
 
 ```bash
-# Step 1: Pre-Release Check
-"Check if feature/issue-98 is ready to merge into main"
+# Step 1: Pre-Release Validation
+"Validate feature/issue-98 is ready for release"
 
-# mergemaster response:
-# "Branch feature/issue-98 is ready:
-#  ✓ All tests passing
-#  ✓ Up to date with main
-#  ✓ No merge conflicts detected
+# qa-expert response:
+# "Pre-release validation passed:
+#  ✓ npm run check: 0 errors (116 warnings)
+#  ✓ npx vitest run: 411 tests passed
+#  ✓ npm run build: production build succeeded
 #
 #  Ready to merge."
 
@@ -211,12 +243,20 @@ Use this workflow for urgent bug fixes that need immediate release.
 # mergemaster response:
 # "Merge complete:
 #  ✓ feature/issue-98 merged into main
-#  ✓ No conflicts
-#  ✓ Push successful
-#
-#  Handing off to docs-specialist for changelog."
+#  ✓ 1 conflict in chatService.ts resolved
+#  ✓ Push successful"
 
-# Step 3: Version Bump
+# Step 3: Post-Merge Validation
+"Re-validate after merge"
+
+# qa-expert response:
+# "Post-merge validation passed:
+#  ✓ npm run check: 0 errors
+#  ✓ npx vitest run: all tests pass
+#
+#  Safe to proceed with version bump."
+
+# Step 4: Version Bump
 "Update changelog for new release - this adds a new feature"
 
 # docs-specialist response:
@@ -229,7 +269,7 @@ Use this workflow for urgent bug fixes that need immediate release.
 #
 #  Handing off to git-manager for tagging."
 
-# Step 4: Tag Creation
+# Step 5: Tag Creation
 "Create tag v1.2.0 and push"
 
 # git-manager response:
@@ -242,7 +282,7 @@ Use this workflow for urgent bug fixes that need immediate release.
 #
 #  Handing off to github-project-manager for release."
 
-# Step 5: GitHub Release
+# Step 6: GitHub Release
 "Create GitHub release for v1.2.0"
 
 # github-project-manager response:
@@ -264,10 +304,18 @@ Use this workflow for urgent bug fixes that need immediate release.
 ```
 Start: Ready to release?
     ↓
+Does `npm run check` pass with 0 errors?
+├─ No → Fix errors first, not ready for release
+└─ Yes → Continue
+    ↓
+Do all tests pass (`npx vitest run`)?
+├─ No → Fix failing tests first
+└─ Yes → Continue
+    ↓
 Is there a feature branch to merge?
-├─ Yes → Start at Step 1 (mergemaster)
+├─ Yes → Start at Step 1 (qa-expert pre-release validation)
 └─ No → Is main ready to release as-is?
-    ├─ Yes → Start at Step 3 (docs-specialist)
+    ├─ Yes → Start at Step 4 (docs-specialist version bump)
     └─ No → Not ready for release
     ↓
 Is this a breaking change?
@@ -286,13 +334,20 @@ Is this a new feature?
 ### Commands Cheat Sheet
 
 ```bash
-# Pre-Release Check
-"Check if [branch] is ready to merge"
-"Verify branch status for release"
+# Pre-Release Validation
+"Validate branch is ready for release"
+npm run check    # Must show 0 errors
+npx vitest run   # Must show all tests passing
+npm run build    # Must succeed
 
 # Branch Merge
 "Merge [branch] into main"
 "Integrate feature branch for release"
+
+# Post-Merge Validation
+"Re-validate after merge"
+npm run check    # Re-check after conflict resolution
+npx vitest run   # Re-run tests after merge
 
 # Version Bump
 "Update changelog for [major|minor|patch] release"
@@ -311,9 +366,10 @@ Is this a new feature?
 
 | Step | Agent | Primary Action |
 |------|-------|----------------|
-| Pre-Release Check | mergemaster | Verify branch readiness |
-| Branch Merge | mergemaster | Merge to main |
-| Version Bump | docs-specialist | Update changelog |
+| Pre-Release Validation | qa-expert | `npm run check` + `vitest run` + `npm run build` |
+| Branch Merge | mergemaster | Merge to main, resolve conflicts |
+| Post-Merge Validation | qa-expert | Re-run check + tests after merge |
+| Version Bump | docs-specialist | Update changelog and package.json |
 | Tag Creation | git-manager | Create and push tag |
 | GitHub Release | github-project-manager | Publish release |
 

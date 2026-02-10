@@ -41,6 +41,8 @@ export type GenerationType =
 	| 'location'
 	| 'plot_hook'
 	| 'combat'
+	| 'negotiation'
+	| 'montage'
 	| 'item'
 	| 'faction'
 	| 'session_prep'

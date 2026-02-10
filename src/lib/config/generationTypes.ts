@@ -153,6 +153,42 @@ export const GENERATION_TYPES: readonly GenerationTypeConfig[] = [
 					}
 				],
 				promptTemplate: 'This NPC should fulfill the {value} combat role.'
+			},
+			{
+				key: 'ancestry',
+				label: 'Ancestry',
+				type: 'select',
+				options: [
+					{
+						value: 'dwarf',
+						label: 'Dwarf'
+					},
+					{
+						value: 'elf',
+						label: 'Elf'
+					},
+					{
+						value: 'hakaan',
+						label: 'Hakaan'
+					},
+					{
+						value: 'human',
+						label: 'Human'
+					},
+					{
+						value: 'memonek',
+						label: 'Memonek'
+					},
+					{
+						value: 'orc',
+						label: 'Orc'
+					},
+					{
+						value: 'time-raider',
+						label: 'Time Raider'
+					}
+				],
+				promptTemplate: 'This NPC should be of {value} ancestry.'
 			}
 		]
 	},
@@ -189,7 +225,7 @@ export const GENERATION_TYPES: readonly GenerationTypeConfig[] = [
 		label: 'Plot Hook',
 		description: 'Generate plot hooks, story threads, and adventure ideas',
 		icon: 'book',
-		promptTemplate: `When generating a plot hook, create an engaging story premise with clear stakes, complications, and potential resolutions. Make it actionable and compelling for players. Format the response using the suggested structure below.`,
+		promptTemplate: `When generating a plot hook, create an engaging heroic fantasy story premise with themes of hope, courage, and adventure. Frame challenges as opportunities for heroism and emphasize uplifting, inspiring, and positive tones. Make it actionable and compelling for players. Format the response using the suggested structure below.`,
 		suggestedStructure: `## Hook Title
 **Type** (e.g., mystery, conflict, discovery, etc.)
 
@@ -217,7 +253,7 @@ export const GENERATION_TYPES: readonly GenerationTypeConfig[] = [
 		label: 'Combat',
 		description: 'Design combat encounters and challenges',
 		icon: 'swords',
-		promptTemplate: `When generating a combat encounter, create an interesting combat scenario with tactical positioning elements, environmental terrain factors, and clear victory point objectives. Consider pacing and difficulty. Format the response using the suggested structure below.`,
+		promptTemplate: `When generating a combat encounter, create an interesting combat scenario with tactical positioning elements and environmental terrain factors. Consider pacing and difficulty. Format the response using the suggested structure below.`,
 		suggestedStructure: `## Combat Name
 **Type** (combat, trap, puzzle, social, etc.)
 
@@ -229,10 +265,6 @@ export const GENERATION_TYPES: readonly GenerationTypeConfig[] = [
 - Opponents or obstacles
 - Numbers and capabilities
 - Tactics they might use
-
-## Victory Point Conditions
-- Primary objectives for earning victory points
-- Optional secondary objectives
 
 ## Terrain and Positioning
 - Battlefield layout and tactical positioning opportunities
@@ -574,7 +606,7 @@ export const GENERATION_TYPES: readonly GenerationTypeConfig[] = [
 		label: 'Session Prep',
 		description: 'Help plan and prepare game sessions',
 		icon: 'calendar',
-		promptTemplate: `When helping with session prep, provide structured planning guidance including scenes, NPCs, pacing, and key moments. Focus on practical preparation that's ready to run. Format the response using the suggested structure below.`,
+		promptTemplate: `When helping with session prep, provide structured planning guidance including scenes, NPCs, pacing, and key moments. Consider varied encounter types including combat, negotiation encounters/scenes, and montage scenes/opportunities. Include Victory Point objectives for encounters where appropriate. Focus on practical preparation that's ready to run. Format the response using the suggested structure below.`,
 		suggestedStructure: `## Session Overview
 **Expected Duration** | **Key Themes**
 

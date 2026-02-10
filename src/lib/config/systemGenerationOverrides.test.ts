@@ -390,6 +390,51 @@ describe('systemGenerationOverrides', () => {
 		});
 	});
 
+	describe('Draw Steel item override (Issue #160)', () => {
+		const itemOverride = SYSTEM_GENERATION_OVERRIDES['draw-steel']['item'];
+
+		it('should have item override defined', () => {
+			expect(itemOverride).toBeDefined();
+			expect(itemOverride?.promptAddendum).toBeDefined();
+		});
+
+		it('should reference Renown in promptAddendum', () => {
+			expect(itemOverride?.promptAddendum).toBeTruthy();
+			expect(itemOverride?.promptAddendum?.toLowerCase()).toMatch(/renown/);
+		});
+
+		it('should mention power level guidance', () => {
+			const text = itemOverride?.promptAddendum || '';
+			expect(text.toLowerCase()).toMatch(/power|level|tier|potency/);
+		});
+
+		it('should distinguish between mechanical and narrative benefits', () => {
+			const text = itemOverride?.promptAddendum || '';
+			expect(text.toLowerCase()).toMatch(/mechanical|narrative/);
+		});
+
+		it('should use "Director" terminology', () => {
+			const text = (itemOverride?.promptAddendum || '') + (itemOverride?.structureAddendum || '');
+			expect(text.toLowerCase()).toMatch(/director/);
+		});
+
+		it('should have substantial content (not just a short note)', () => {
+			expect(itemOverride?.promptAddendum).toBeTruthy();
+			expect(itemOverride!.promptAddendum!.length).toBeGreaterThan(50);
+		});
+
+		it('should reference Draw Steel specific item concepts', () => {
+			const text = itemOverride?.promptAddendum || '';
+			const hasDrawSteelConcepts =
+				text.toLowerCase().includes('renown') ||
+				text.toLowerCase().includes('draw steel') ||
+				text.toLowerCase().includes('heroic') ||
+				text.toLowerCase().includes('director');
+
+			expect(hasDrawSteelConcepts).toBe(true);
+		});
+	});
+
 	describe('All Draw Steel overrides', () => {
 		it('should all use "Director" instead of DM/GM', () => {
 			const drawSteelOverrides = SYSTEM_GENERATION_OVERRIDES['draw-steel'];

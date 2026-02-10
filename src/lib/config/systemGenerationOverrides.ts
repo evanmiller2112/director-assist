@@ -39,7 +39,12 @@ export const SYSTEM_GENERATION_OVERRIDES: Record<
 - Use "Director" terminology when referring to the person running the game
 - Leverage tactical grid-based combat with 5-foot squares
 - Consider battlefield terrain and positioning mechanics
-- Include environmental hazards or interactive elements on the grid`
+- Include environmental hazards or interactive elements on the grid`,
+			structureAddendum: `
+
+## Victory Point Conditions
+- Primary objectives for earning victory points
+- Optional secondary objectives`
 		},
 		session_prep: {
 			promptAddendum: `\n\nFor Draw Steel session preparation:
@@ -57,6 +62,15 @@ export const SYSTEM_GENERATION_OVERRIDES: Record<
 - Consider how the hook might lead to combat, negotiation, or montage encounters
 - Emphasize heroic fantasy themes and epic challenges
 - Include opportunities for heroes to use their tactical abilities and resources`
+		},
+		item: {
+			promptAddendum: `\n\nFor Draw Steel items and equipment:
+- Use "Director" terminology when referring to the person running the game
+- Consider Renown as the primary item currency (items can be purchased with Renown)
+- Distinguish between mechanical benefits (stat bonuses, abilities) and narrative benefits (reputation, access, story hooks)
+- Items should have appropriate power levels that scale with character tier and Renown cost
+- Heroic items should feel significant and tied to the heroic fantasy setting
+- Consider whether the item provides tactical advantages in grid-based combat`
 		}
 	}
 };

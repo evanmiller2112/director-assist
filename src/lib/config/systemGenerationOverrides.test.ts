@@ -95,8 +95,7 @@ describe('systemGenerationOverrides', () => {
 		});
 
 		it('should return null for unknown system', () => {
-			// @ts-expect-error - Testing invalid input
-			const override = getSystemGenerationOverride('unknown-system', 'npc');
+			const override = getSystemGenerationOverride('unknown-system' as any, 'npc');
 			expect(override).toBeNull();
 		});
 
@@ -481,8 +480,7 @@ describe('systemGenerationOverrides', () => {
 
 	describe('Edge cases', () => {
 		it('should handle invalid system IDs gracefully', () => {
-			// @ts-expect-error - Testing invalid input
-			const override = getSystemGenerationOverride('invalid-system-id', 'npc');
+			const override = getSystemGenerationOverride('invalid-system-id' as any, 'npc');
 			expect(override).toBeNull();
 		});
 
@@ -555,7 +553,7 @@ describe('systemGenerationOverrides', () => {
 			expect(result.typeFields?.find(f => f.key === 'new')).toBeDefined();
 
 			// Original should not be mutated
-			expect(baseWithFields.typeFields.length).toBe(1);
+			expect(baseWithFields.typeFields!.length).toBe(1);
 		});
 	});
 

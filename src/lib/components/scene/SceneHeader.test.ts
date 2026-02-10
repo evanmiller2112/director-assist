@@ -166,7 +166,8 @@ describe('SceneHeader Component - Edit Button', () => {
 		const editButton = screen.getByRole('button', { name: /edit/i });
 		await fireEvent.click(editButton);
 
-		expect(goto).toHaveBeenCalledWith('/entities/scene/scene-123');
+		// BUG FIX #419: Should navigate to correct edit route with /edit suffix
+		expect(goto).toHaveBeenCalledWith('/entities/scene/scene-123/edit');
 	});
 
 	it('should have proper icon for edit button', () => {
@@ -180,6 +181,58 @@ describe('SceneHeader Component - Edit Button', () => {
 
 		const editButton = screen.getByRole('button', { name: /edit/i });
 		expect(editButton.querySelector('svg') || editButton.querySelector('[class*="icon"]')).toBeTruthy();
+	});
+
+	// BUG FIX #419: Additional tests for correct edit route construction
+	it('should navigate to correct edit route for different scene IDs', async () => {
+		const testCases = [
+			{ sceneId: 'test-scene-1', expectedRoute: '/entities/scene/test-scene-1/edit' },
+			{ sceneId: 'abc-123-xyz', expectedRoute: '/entities/scene/abc-123-xyz/edit' },
+			{ sceneId: '12345', expectedRoute: '/entities/scene/12345/edit' }
+		];
+
+		for (const { sceneId, expectedRoute } of testCases) {
+			vi.clearAllMocks();
+
+			const { unmount } = render(SceneHeader, {
+				props: {
+					sceneId,
+					sceneName: 'Test Scene',
+					status: 'planned'
+				}
+			});
+
+			const editButton = screen.getByRole('button', { name: /edit/i });
+			await fireEvent.click(editButton);
+
+			expect(goto).toHaveBeenCalledWith(expectedRoute);
+
+			unmount();
+		}
+	});
+
+	it('should navigate to edit route for all scene statuses', async () => {
+		const statuses: Array<'planned' | 'in_progress' | 'completed'> = ['planned', 'in_progress', 'completed'];
+
+		for (const status of statuses) {
+			vi.clearAllMocks();
+
+			const { unmount } = render(SceneHeader, {
+				props: {
+					sceneId: 'scene-456',
+					sceneName: 'Test Scene',
+					status
+				}
+			});
+
+			const editButton = screen.getByRole('button', { name: /edit/i });
+			await fireEvent.click(editButton);
+
+			// Edit button should work the same regardless of scene status
+			expect(goto).toHaveBeenCalledWith('/entities/scene/scene-456/edit');
+
+			unmount();
+		}
 	});
 });
 

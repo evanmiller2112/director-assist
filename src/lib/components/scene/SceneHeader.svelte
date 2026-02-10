@@ -27,7 +27,7 @@ function handleBack() {
 }
 
 function handleEdit() {
-	goto(`/entity/${sceneId}`);
+	goto(`/entities/scene/${sceneId}/edit`);
 }
 
 function handleStart() {

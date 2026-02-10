@@ -448,8 +448,6 @@ describe('chatService - Generation Type Integration', () => {
 	describe('Error handling with generationType', () => {
 		it('should handle API errors with generationType', async () => {
 			mockMessagesCreate.mockRejectedValue(new Error('API error'));
-			'negotiation',
-			'montage',
 
 			await expect(
 				sendChatMessage('Test', [], true, undefined, 'npc')
@@ -1443,6 +1441,8 @@ describe('chatService - Generation Type Integration', () => {
 					onStream,
 					'combat',
 					{ encounterDifficulty: 'medium' },
+					false,
+					'summary',
 					'draw-steel'
 				);
 

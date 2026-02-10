@@ -45,12 +45,14 @@ describe('generationTypes configuration', () => {
 			expect(types).toContain('plot_hook');
 			expect(types).toContain('combat');
 			expect(types).toContain('item');
+			expect(types).toContain('negotiation');
+			expect(types).toContain('montage');
 			expect(types).toContain('faction');
 			expect(types).toContain('session_prep');
 		});
 
-		it('should have exactly 8 generation types', () => {
-			expect(GENERATION_TYPES).toHaveLength(8);
+		it('should have exactly 10 generation types', () => {
+			expect(GENERATION_TYPES).toHaveLength(10);
 		});
 
 		it('should have custom type as first item (default)', () => {
@@ -108,6 +110,8 @@ describe('generationTypes configuration', () => {
 				'combat',
 				'item',
 				'faction',
+				'negotiation',
+				'montage',
 				'session_prep'
 			];
 			expect(validTypes).toContain(config.id);
@@ -438,6 +442,8 @@ describe('generationTypes configuration', () => {
 				'location',
 				'plot_hook',
 				'combat',
+				'negotiation',
+				'montage',
 				'item',
 				'faction',
 				'session_prep'
@@ -610,25 +616,25 @@ describe('generationTypes configuration', () => {
 			GENERATION_TYPES.forEach(() => {
 				count++;
 			});
-			expect(count).toBe(8);
+			expect(count).toBe(10);
 		});
 
 		it('should allow filtering GENERATION_TYPES', () => {
 			const filtered = GENERATION_TYPES.filter((c) => c.id !== 'custom');
-			expect(filtered.length).toBe(7);
+			expect(filtered.length).toBe(9);
 		});
 
 		it('should allow mapping GENERATION_TYPES', () => {
 			const labels = GENERATION_TYPES.map((c) => c.label);
 			expect(labels).toContain('General');
 			expect(labels).toContain('NPC');
-			expect(labels).toHaveLength(8);
+			expect(labels).toHaveLength(10);
 		});
 
 		it('should be readonly/immutable', () => {
 			// Test that we can't modify the array
 			const originalLength = GENERATION_TYPES.length;
-			expect(originalLength).toBe(8);
+			expect(originalLength).toBe(10);
 			// Array should be frozen or readonly (this is more of a TS check)
 		});
 	});
@@ -906,9 +912,180 @@ describe('generationTypes configuration', () => {
 
 		it('should not have typeFields for non-NPC types', () => {
 			const otherTypes = GENERATION_TYPES.filter(c => c.id !== 'npc');
-			otherTypes.forEach(config => {
+			// Only NPC, Combat, Negotiation, and Montage types should have typeFields
+			const typesWithoutFields = GENERATION_TYPES.filter(
+				c => !['npc', 'combat', 'negotiation', 'montage'].includes(c.id)
+			);
+			typesWithoutFields.forEach(config => {
 				expect(config.typeFields).toBeUndefined();
 			});
+		});
+	});
+
+	describe('Combat Encounter (enhanced for Draw Steel - Issue #154)', () => {
+		const combatConfig = GENERATION_TYPES.find((c) => c.id === 'combat');
+
+		it('should have typeFields defined', () => {
+			expect(combatConfig?.typeFields).toBeDefined();
+			expect(Array.isArray(combatConfig?.typeFields)).toBe(true);
+		});
+
+		it('should have exactly 2 typeFields (encounterDifficulty, terrainComplexity)', () => {
+			expect(combatConfig?.typeFields).toHaveLength(2);
+		});
+
+		it('should have encounterDifficulty field', () => {
+			const difficultyField = combatConfig?.typeFields?.find(f => f.key === 'encounterDifficulty');
+			expect(difficultyField).toBeDefined();
+			expect(difficultyField?.label).toBe('Encounter Difficulty');
+			expect(difficultyField?.type).toBe('select');
+		});
+
+		it('should have 4 encounterDifficulty options', () => {
+			const difficultyField = combatConfig?.typeFields?.find(f => f.key === 'encounterDifficulty');
+			expect(difficultyField?.options).toHaveLength(4);
+		});
+
+		it('should have terrainComplexity field', () => {
+			const terrainField = combatConfig?.typeFields?.find(f => f.key === 'terrainComplexity');
+			expect(terrainField).toBeDefined();
+			expect(terrainField?.label).toBe('Terrain Complexity');
+			expect(terrainField?.type).toBe('select');
+		});
+
+		it('should have 3 terrainComplexity options', () => {
+			const terrainField = combatConfig?.typeFields?.find(f => f.key === 'terrainComplexity');
+			expect(terrainField?.options).toHaveLength(3);
+		});
+
+		it('should reference victory points in promptTemplate', () => {
+			expect(combatConfig?.promptTemplate.toLowerCase()).toMatch(/victory point/);
+		});
+
+		it('should reference positioning or tactical in promptTemplate', () => {
+			expect(combatConfig?.promptTemplate.toLowerCase()).toMatch(/positioning|tactical/);
+		});
+
+		it('should reference terrain in promptTemplate', () => {
+			expect(combatConfig?.promptTemplate.toLowerCase()).toContain('terrain');
+		});
+
+		it('should include Victory Point section in suggestedStructure', () => {
+			expect(combatConfig?.suggestedStructure?.toLowerCase()).toMatch(/victory point/);
+		});
+
+		it('should include Terrain or Positioning section in suggestedStructure', () => {
+			expect(combatConfig?.suggestedStructure?.toLowerCase()).toMatch(/terrain|positioning/);
+		});
+	});
+
+	describe('Negotiation generation type (Issue #159)', () => {
+		const negotiationConfig = GENERATION_TYPES.find((c) => c.id === 'negotiation');
+
+		it('should exist with id negotiation', () => {
+			expect(negotiationConfig).toBeDefined();
+			expect(negotiationConfig?.id).toBe('negotiation');
+		});
+
+		it('should have label "Negotiation"', () => {
+			expect(negotiationConfig?.label).toBe('Negotiation');
+		});
+
+		it('should reference interest and patience in promptTemplate', () => {
+			const template = negotiationConfig?.promptTemplate.toLowerCase();
+			expect(template).toContain('interest');
+			expect(template).toContain('patience');
+		});
+
+		it('should reference motivation in promptTemplate', () => {
+			expect(negotiationConfig?.promptTemplate.toLowerCase()).toContain('motivation');
+		});
+
+		it('should reference pitfall in promptTemplate', () => {
+			expect(negotiationConfig?.promptTemplate.toLowerCase()).toContain('pitfall');
+		});
+
+		it('should include Motivations section in suggestedStructure', () => {
+			expect(negotiationConfig?.suggestedStructure?.toLowerCase()).toContain('motivation');
+		});
+
+		it('should include Outcomes section in suggestedStructure', () => {
+			expect(negotiationConfig?.suggestedStructure?.toLowerCase()).toContain('outcome');
+		});
+
+		it('should have typeFields defined', () => {
+			expect(negotiationConfig?.typeFields).toBeDefined();
+			expect(Array.isArray(negotiationConfig?.typeFields)).toBe(true);
+		});
+
+		it('should have exactly 2 typeFields (startingPosition, negotiationStakes)', () => {
+			expect(negotiationConfig?.typeFields).toHaveLength(2);
+		});
+
+		it('should have startingPosition field with 5 options', () => {
+			const startingField = negotiationConfig?.typeFields?.find(f => f.key === 'startingPosition');
+			expect(startingField).toBeDefined();
+			expect(startingField?.label).toBe('Starting Position');
+			expect(startingField?.type).toBe('select');
+			expect(startingField?.options).toHaveLength(5);
+		});
+
+		it('should have negotiationStakes field with 4 options', () => {
+			const stakesField = negotiationConfig?.typeFields?.find(f => f.key === 'negotiationStakes');
+			expect(stakesField).toBeDefined();
+			expect(stakesField?.label).toBe('Stakes');
+			expect(stakesField?.type).toBe('select');
+			expect(stakesField?.options).toHaveLength(4);
+		});
+	});
+
+	describe('Montage generation type (Issue #159)', () => {
+		const montageConfig = GENERATION_TYPES.find((c) => c.id === 'montage');
+
+		it('should exist with id montage', () => {
+			expect(montageConfig).toBeDefined();
+			expect(montageConfig?.id).toBe('montage');
+		});
+
+		it('should have label "Montage"', () => {
+			expect(montageConfig?.label).toBe('Montage');
+		});
+
+		it('should reference challenge in promptTemplate', () => {
+			expect(montageConfig?.promptTemplate.toLowerCase()).toContain('challenge');
+		});
+
+		it('should reference round in promptTemplate', () => {
+			expect(montageConfig?.promptTemplate.toLowerCase()).toContain('round');
+		});
+
+		it('should include Challenges section in suggestedStructure', () => {
+			expect(montageConfig?.suggestedStructure?.toLowerCase()).toContain('challenge');
+		});
+
+		it('should have typeFields defined', () => {
+			expect(montageConfig?.typeFields).toBeDefined();
+			expect(Array.isArray(montageConfig?.typeFields)).toBe(true);
+		});
+
+		it('should have exactly 2 typeFields (montageDifficulty, montageTheme)', () => {
+			expect(montageConfig?.typeFields).toHaveLength(2);
+		});
+
+		it('should have montageDifficulty field with 3 options', () => {
+			const difficultyField = montageConfig?.typeFields?.find(f => f.key === 'montageDifficulty');
+			expect(difficultyField).toBeDefined();
+			expect(difficultyField?.label).toBe('Difficulty');
+			expect(difficultyField?.type).toBe('select');
+			expect(difficultyField?.options).toHaveLength(3);
+		});
+
+		it('should have montageTheme field with 6 options', () => {
+			const themeField = montageConfig?.typeFields?.find(f => f.key === 'montageTheme');
+			expect(themeField).toBeDefined();
+			expect(themeField?.label).toBe('Theme');
+			expect(themeField?.type).toBe('select');
+			expect(themeField?.options).toHaveLength(6);
 		});
 	});
 });

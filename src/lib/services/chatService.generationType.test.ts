@@ -136,6 +136,8 @@ describe('chatService - Generation Type Integration', () => {
 				'location',
 				'plot_hook',
 				'combat',
+			'negotiation',
+			'montage',
 				'item',
 				'faction',
 				'session_prep'
@@ -446,6 +448,8 @@ describe('chatService - Generation Type Integration', () => {
 	describe('Error handling with generationType', () => {
 		it('should handle API errors with generationType', async () => {
 			mockMessagesCreate.mockRejectedValue(new Error('API error'));
+			'negotiation',
+			'montage',
 
 			await expect(
 				sendChatMessage('Test', [], true, undefined, 'npc')
@@ -625,7 +629,9 @@ describe('chatService - Generation Type Integration', () => {
 				combat: /encounter|combat|battle/i,
 				item: /item|artifact|equipment/i,
 				faction: /faction|organization|guild/i,
-				session_prep: /session|prep|planning/i
+				session_prep: /session|prep|planning/i,
+				negotiation: /negotiation|interest|patience/i,
+				montage: /montage|challenge|round/i
 			};
 
 			for (const [type, keyword] of Object.entries(typeKeywords)) {
@@ -1060,5 +1066,155 @@ describe('chatService - Generation Type Integration', () => {
 				expect(systemPrompt).toContain('NPC');
 			});
 		});
+
+	describe('Combat typeFieldValues integration (Issue #154)', () => {
+		beforeEach(() => {
+			mockMessagesCreate.mockClear();
+			mockMessagesStream.mockClear();
+		});
+
+		it('should accept encounterDifficulty in typeFieldValues', async () => {
+			await expect(
+				sendChatMessage('Test', [], true, undefined, 'combat', { encounterDifficulty: 'medium' })
+			).resolves.not.toThrow();
+		});
+
+		it('should include encounterDifficulty in prompt when set', async () => {
+			await sendChatMessage('Generate combat', [], true, undefined, 'combat', {
+				encounterDifficulty: 'deadly'
+			});
+
+			expect(mockMessagesCreate).toHaveBeenCalled();
+			const systemPrompt = mockMessagesCreate.mock.calls[0][0].system.toLowerCase();
+			expect(systemPrompt).toMatch(/deadly|difficulty/);
+		});
+
+		it('should accept terrainComplexity in typeFieldValues', async () => {
+			await expect(
+				sendChatMessage('Test', [], true, undefined, 'combat', { terrainComplexity: 'complex' })
+			).resolves.not.toThrow();
+		});
+
+		it('should include terrainComplexity in prompt when set', async () => {
+			await sendChatMessage('Generate combat', [], true, undefined, 'combat', {
+				terrainComplexity: 'minimal'
+			});
+
+			expect(mockMessagesCreate).toHaveBeenCalled();
+			const systemPrompt = mockMessagesCreate.mock.calls[0][0].system.toLowerCase();
+			expect(systemPrompt).toMatch(/minimal|terrain|complexity/);
+		});
+
+		it('should handle both encounterDifficulty and terrainComplexity together', async () => {
+			await sendChatMessage('Generate combat', [], true, undefined, 'combat', {
+				encounterDifficulty: 'hard',
+				terrainComplexity: 'standard'
+			});
+
+			const systemPrompt = mockMessagesCreate.mock.calls[0][0].system.toLowerCase();
+			expect(systemPrompt).toMatch(/hard|difficulty/);
+			expect(systemPrompt).toMatch(/standard|terrain/);
+		});
+	});
+
+	describe('Negotiation typeFieldValues integration (Issue #159)', () => {
+		beforeEach(() => {
+			mockMessagesCreate.mockClear();
+			mockMessagesStream.mockClear();
+		});
+
+		it('should accept startingPosition in typeFieldValues', async () => {
+			await expect(
+				sendChatMessage('Test', [], true, undefined, 'negotiation', { startingPosition: 'advantage' })
+			).resolves.not.toThrow();
+		});
+
+		it('should include startingPosition in prompt when set', async () => {
+			await sendChatMessage('Generate negotiation', [], true, undefined, 'negotiation', {
+				startingPosition: 'even'
+			});
+
+			expect(mockMessagesCreate).toHaveBeenCalled();
+			const systemPrompt = mockMessagesCreate.mock.calls[0][0].system.toLowerCase();
+			expect(systemPrompt).toMatch(/even|position|balanced/);
+		});
+
+		it('should accept negotiationStakes in typeFieldValues', async () => {
+			await expect(
+				sendChatMessage('Test', [], true, undefined, 'negotiation', { negotiationStakes: 'high' })
+			).resolves.not.toThrow();
+		});
+
+		it('should include negotiationStakes in prompt when set', async () => {
+			await sendChatMessage('Generate negotiation', [], true, undefined, 'negotiation', {
+				negotiationStakes: 'critical'
+			});
+
+			expect(mockMessagesCreate).toHaveBeenCalled();
+			const systemPrompt = mockMessagesCreate.mock.calls[0][0].system.toLowerCase();
+			expect(systemPrompt).toMatch(/critical|stakes/);
+		});
+
+		it('should handle both startingPosition and negotiationStakes together', async () => {
+			await sendChatMessage('Generate negotiation', [], true, undefined, 'negotiation', {
+				startingPosition: 'disadvantage',
+				negotiationStakes: 'moderate'
+			});
+
+			const systemPrompt = mockMessagesCreate.mock.calls[0][0].system.toLowerCase();
+			expect(systemPrompt).toMatch(/disadvantage|position/);
+			expect(systemPrompt).toMatch(/moderate|stakes/);
+		});
+	});
+
+	describe('Montage typeFieldValues integration (Issue #159)', () => {
+		beforeEach(() => {
+			mockMessagesCreate.mockClear();
+			mockMessagesStream.mockClear();
+		});
+
+		it('should accept montageDifficulty in typeFieldValues', async () => {
+			await expect(
+				sendChatMessage('Test', [], true, undefined, 'montage', { montageDifficulty: 'standard' })
+			).resolves.not.toThrow();
+		});
+
+		it('should include montageDifficulty in prompt when set', async () => {
+			await sendChatMessage('Generate montage', [], true, undefined, 'montage', {
+				montageDifficulty: 'hard'
+			});
+
+			expect(mockMessagesCreate).toHaveBeenCalled();
+			const systemPrompt = mockMessagesCreate.mock.calls[0][0].system.toLowerCase();
+			expect(systemPrompt).toMatch(/hard|difficult/);
+		});
+
+		it('should accept montageTheme in typeFieldValues', async () => {
+			await expect(
+				sendChatMessage('Test', [], true, undefined, 'montage', { montageTheme: 'infiltration' })
+			).resolves.not.toThrow();
+		});
+
+		it('should include montageTheme in prompt when set', async () => {
+			await sendChatMessage('Generate montage', [], true, undefined, 'montage', {
+				montageTheme: 'research'
+			});
+
+			expect(mockMessagesCreate).toHaveBeenCalled();
+			const systemPrompt = mockMessagesCreate.mock.calls[0][0].system.toLowerCase();
+			expect(systemPrompt).toMatch(/research|theme/);
+		});
+
+		it('should handle both montageDifficulty and montageTheme together', async () => {
+			await sendChatMessage('Generate montage', [], true, undefined, 'montage', {
+				montageDifficulty: 'easy',
+				montageTheme: 'travel'
+			});
+
+			const systemPrompt = mockMessagesCreate.mock.calls[0][0].system.toLowerCase();
+			expect(systemPrompt).toMatch(/easy|difficulty/);
+			expect(systemPrompt).toMatch(/travel|theme/);
+		});
+	});
 	});
 });

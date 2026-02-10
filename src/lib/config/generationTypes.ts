@@ -217,7 +217,7 @@ export const GENERATION_TYPES: readonly GenerationTypeConfig[] = [
 		label: 'Combat',
 		description: 'Design combat encounters and challenges',
 		icon: 'swords',
-		promptTemplate: `When generating a combat encounter, create an interesting combat or challenge scenario with tactical elements, environmental factors, and clear objectives. Consider pacing and difficulty. Format the response using the suggested structure below.`,
+		promptTemplate: `When generating a combat encounter, create an interesting combat scenario with tactical positioning elements, environmental terrain factors, and clear victory point objectives. Consider pacing and difficulty. Format the response using the suggested structure below.`,
 		suggestedStructure: `## Combat Name
 **Type** (combat, trap, puzzle, social, etc.)
 
@@ -230,10 +230,14 @@ export const GENERATION_TYPES: readonly GenerationTypeConfig[] = [
 - Numbers and capabilities
 - Tactics they might use
 
-## Terrain and Environment
-- Battlefield layout
+## Victory Point Conditions
+- Primary objectives for earning victory points
+- Optional secondary objectives
+
+## Terrain and Positioning
+- Battlefield layout and tactical positioning opportunities
 - Environmental hazards or advantages
-- Interactive elements
+- Interactive terrain elements
 
 ## Objectives
 - Victory conditions
@@ -244,7 +248,258 @@ export const GENERATION_TYPES: readonly GenerationTypeConfig[] = [
 - Experience value
 
 ## Scaling
-- How to adjust difficulty up or down`
+- How to adjust difficulty up or down`,
+		typeFields: [
+			{
+				key: 'encounterDifficulty',
+				label: 'Encounter Difficulty',
+				type: 'select',
+				options: [
+					{
+						value: 'easy',
+						label: 'Easy',
+						description: 'A straightforward encounter with minimal risk'
+					},
+					{
+						value: 'medium',
+						label: 'Medium',
+						description: 'A balanced encounter with moderate challenge'
+					},
+					{
+						value: 'hard',
+						label: 'Hard',
+						description: 'A difficult encounter requiring good tactics'
+					},
+					{
+						value: 'deadly',
+						label: 'Deadly',
+						description: 'An extremely dangerous encounter with high stakes'
+					}
+				],
+				defaultValue: 'medium',
+				promptTemplate: 'This encounter should be {value} difficulty.'
+			},
+			{
+				key: 'terrainComplexity',
+				label: 'Terrain Complexity',
+				type: 'select',
+				options: [
+					{
+						value: 'minimal',
+						label: 'Minimal',
+						description: 'Simple terrain with few tactical elements'
+					},
+					{
+						value: 'standard',
+						label: 'Standard',
+						description: 'Moderate terrain with some tactical opportunities'
+					},
+					{
+						value: 'complex',
+						label: 'Complex',
+						description: 'Rich terrain with many tactical possibilities'
+					}
+				],
+				defaultValue: 'standard',
+				promptTemplate: 'The terrain should have {value} complexity with varied tactical positioning options.'
+			}
+		]
+	},
+	{
+		id: 'negotiation',
+		label: 'Negotiation',
+		description: 'Create negotiation encounters with interests and stakes',
+		icon: 'handshake',
+		promptTemplate: `When generating a negotiation encounter, create an engaging social challenge with clear interests, patience tracks, motivations, and potential pitfalls. Consider the stakes and what each party wants. Format the response using the suggested structure below.`,
+		suggestedStructure: `## Negotiation Title
+**Type** (diplomatic, trade, conflict resolution, etc.)
+
+## Setup
+- Initial situation
+- Who is involved
+
+## Motivations and Interests
+- What each party wants
+- Why they want it
+- Patience levels and triggers
+
+## Stakes
+- What happens if negotiation succeeds
+- What happens if it fails
+- Consequences of different outcomes
+
+## Pitfalls
+- Common mistakes or missteps
+- Things that could derail the negotiation
+- Red lines and deal breakers
+
+## Outcomes
+- Possible resolutions
+- Compromise options
+- Win-win scenarios`,
+		typeFields: [
+			{
+				key: 'startingPosition',
+				label: 'Starting Position',
+				type: 'select',
+				options: [
+					{
+						value: 'strong_advantage',
+						label: 'Strong Advantage',
+						description: 'The party starts with significant leverage'
+					},
+					{
+						value: 'advantage',
+						label: 'Advantage',
+						description: 'The party starts with some leverage'
+					},
+					{
+						value: 'even',
+						label: 'Even',
+						description: 'Both sides start on equal footing'
+					},
+					{
+						value: 'disadvantage',
+						label: 'Disadvantage',
+						description: 'The party starts at a disadvantage'
+					},
+					{
+						value: 'strong_disadvantage',
+						label: 'Strong Disadvantage',
+						description: 'The party starts with significant disadvantage'
+					}
+				],
+				defaultValue: 'even',
+				promptTemplate: 'The party starts the negotiation from a {value} position.'
+			},
+			{
+				key: 'negotiationStakes',
+				label: 'Stakes',
+				type: 'select',
+				options: [
+					{
+						value: 'low',
+						label: 'Low',
+						description: 'Minor consequences, easy to walk away'
+					},
+					{
+						value: 'moderate',
+						label: 'Moderate',
+						description: 'Meaningful consequences worth caring about'
+					},
+					{
+						value: 'high',
+						label: 'High',
+						description: 'Major consequences with significant impact'
+					},
+					{
+						value: 'critical',
+						label: 'Critical',
+						description: 'Life-changing or campaign-defining consequences'
+					}
+				],
+				defaultValue: 'moderate',
+				promptTemplate: 'The stakes of this negotiation are {value}.'
+			}
+		]
+	},
+	{
+		id: 'montage',
+		label: 'Montage',
+		description: 'Design montage challenges with multi-round activities',
+		icon: 'film',
+		promptTemplate: `When generating a montage challenge, create a multi-round sequence with varied challenges and clear round-by-round progression. Consider the theme and difficulty of each challenge. Format the response using the suggested structure below.`,
+		suggestedStructure: `## Montage Title
+**Theme** | **Number of Rounds**
+
+## Overview
+- What the montage represents
+- Time scale and scope
+
+## Challenges by Round
+### Round 1: [Challenge Name]
+- Challenge description
+- Skills or approaches that work
+- Success and failure outcomes
+
+### Round 2: [Challenge Name]
+- Challenge description
+- Skills or approaches that work
+- Success and failure outcomes
+
+### Round 3: [Challenge Name]
+- Challenge description
+- Skills or approaches that work
+- Success and failure outcomes
+
+## Overall Success and Failure
+- What happens if most rounds succeed
+- What happens if most rounds fail
+- Mixed outcome possibilities`,
+		typeFields: [
+			{
+				key: 'montageDifficulty',
+				label: 'Difficulty',
+				type: 'select',
+				options: [
+					{
+						value: 'easy',
+						label: 'Easy',
+						description: 'Simple challenges with low risk'
+					},
+					{
+						value: 'standard',
+						label: 'Standard',
+						description: 'Balanced challenges with moderate difficulty'
+					},
+					{
+						value: 'hard',
+						label: 'Hard',
+						description: 'Difficult challenges requiring creativity'
+					}
+				],
+				defaultValue: 'standard',
+				promptTemplate: 'The montage challenges should be {value} difficulty.'
+			},
+			{
+				key: 'montageTheme',
+				label: 'Theme',
+				type: 'select',
+				options: [
+					{
+						value: 'research',
+						label: 'Research',
+						description: 'Gathering information and learning'
+					},
+					{
+						value: 'travel',
+						label: 'Travel',
+						description: 'Journey and exploration'
+					},
+					{
+						value: 'infiltration',
+						label: 'Infiltration',
+						description: 'Sneaking and stealth operations'
+					},
+					{
+						value: 'preparation',
+						label: 'Preparation',
+						description: 'Getting ready for a big event'
+					},
+					{
+						value: 'crafting',
+						label: 'Crafting',
+						description: 'Building or creating something'
+					},
+					{
+						value: 'social',
+						label: 'Social',
+						description: 'Networking and relationship building'
+					}
+				],
+				promptTemplate: 'The montage should follow a {value} theme.'
+			}
+		]
 	},
 	{
 		id: 'item',

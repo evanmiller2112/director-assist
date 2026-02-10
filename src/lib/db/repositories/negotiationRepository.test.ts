@@ -199,7 +199,7 @@ describe('NegotiationRepository - CRUD Operations', () => {
 				description: 'Persuade the mayor to support our cause',
 				npcName: 'Mayor Thompson',
 				motivations: [
-					{ type: 'reputation', description: 'Cares about public image' },
+					{ type: 'legacy', description: 'Cares about public image' },
 					{ type: 'wealth', description: 'Interested in financial gain' }
 				],
 				pitfalls: [
@@ -1110,7 +1110,7 @@ describe('NegotiationRepository - Integration Tests', () => {
 			npcName: 'Queen Elena',
 			motivations: [
 				{ type: 'justice', description: 'Cares about fairness' },
-				{ type: 'reputation', description: 'Protects her image' }
+				{ type: 'legacy', description: 'Protects her image' }
 			],
 			pitfalls: [
 				{ description: 'Hates being rushed' }

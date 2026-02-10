@@ -22,7 +22,7 @@
 	> = {
 		alliance: {
 			title: 'Alliance Formed!',
-			description: 'Best possible outcome - the NPC is completely won over and offers more than requested.',
+			description: 'Full request secured with ongoing partnership and bonus benefits.',
 			interestRange: '5',
 			icon: CheckCircle2,
 			colorClass: 'text-green-900',
@@ -31,7 +31,7 @@
 		},
 		major_favor: {
 			title: 'Major Favor Granted',
-			description: 'Strong agreement - the NPC agrees to the full request.',
+			description: 'Strong result obtained by the party.',
 			interestRange: '3-4',
 			icon: CheckCircle2,
 			colorClass: 'text-green-800',
@@ -40,7 +40,7 @@
 		},
 		minor_favor: {
 			title: 'Minor Favor',
-			description: 'Limited success - the NPC offers something less than requested.',
+			description: 'Partial concession achieved by the party.',
 			interestRange: '2',
 			icon: Info,
 			colorClass: 'text-amber-800',
@@ -49,7 +49,7 @@
 		},
 		failure: {
 			title: 'Negotiation Failed',
-			description: 'No agreement - the NPC declines the request.',
+			description: 'No agreement reached.',
 			interestRange: '0-1',
 			icon: X,
 			colorClass: 'text-red-900',

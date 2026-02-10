@@ -95,7 +95,7 @@ describe('MotivationPitfallPanel Component - Motivations List', () => {
 	it('should display multiple known motivations', () => {
 		const motivations: NPCMotivation[] = [
 			{ type: 'justice', isKnown: true, used: false },
-			{ type: 'benevolence', isKnown: true, used: false },
+			{ type: 'charity', isKnown: true, used: false },
 			{ type: 'power', isKnown: true, used: false }
 		];
 
@@ -107,7 +107,7 @@ describe('MotivationPitfallPanel Component - Motivations List', () => {
 		});
 
 		expect(screen.getByText(/justice/i)).toBeInTheDocument();
-		expect(screen.getByText(/benevolence/i)).toBeInTheDocument();
+		expect(screen.getByText(/charity/i)).toBeInTheDocument();
 		expect(screen.getByText(/power/i)).toBeInTheDocument();
 	});
 
@@ -179,7 +179,7 @@ describe('MotivationPitfallPanel Component - Motivations List', () => {
 	it('should distinguish used from unused motivations', () => {
 		const motivations: NPCMotivation[] = [
 			{ type: 'justice', isKnown: true, used: true },
-			{ type: 'benevolence', isKnown: true, used: false }
+			{ type: 'charity', isKnown: true, used: false }
 		];
 
 		const { container } = render(MotivationPitfallPanel, {
@@ -190,26 +190,27 @@ describe('MotivationPitfallPanel Component - Motivations List', () => {
 		});
 
 		const usedItem = container.querySelector('[data-testid="motivation-justice"]');
-		const unusedItem = container.querySelector('[data-testid="motivation-benevolence"]');
+		const unusedItem = container.querySelector('[data-testid="motivation-charity"]');
 
 		expect(usedItem?.className).toMatch(/opacity|line-through|used/i);
 		expect(unusedItem?.className).not.toMatch(/opacity-50|line-through/);
 	});
 
-	it('should display all 12 motivation types correctly', () => {
+	it('should display all 13 motivation types correctly', () => {
 		const motivations: NPCMotivation[] = [
-			{ type: 'benevolence', isKnown: true, used: false },
+			{ type: 'charity', isKnown: true, used: false },
 			{ type: 'discovery', isKnown: true, used: false },
+			{ type: 'faith', isKnown: true, used: false },
 			{ type: 'freedom', isKnown: true, used: false },
 			{ type: 'greed', isKnown: true, used: false },
-			{ type: 'higher_authority', isKnown: true, used: false },
+			{ type: 'harmony', isKnown: true, used: false },
 			{ type: 'justice', isKnown: true, used: false },
+			{ type: 'knowledge', isKnown: true, used: false },
 			{ type: 'legacy', isKnown: true, used: false },
-			{ type: 'peace', isKnown: true, used: false },
 			{ type: 'power', isKnown: true, used: false },
 			{ type: 'protection', isKnown: true, used: false },
-			{ type: 'revelry', isKnown: true, used: false },
-			{ type: 'vengeance', isKnown: true, used: false }
+			{ type: 'revenge', isKnown: true, used: false },
+			{ type: 'wealth', isKnown: true, used: false }
 		];
 
 		render(MotivationPitfallPanel, {
@@ -219,18 +220,19 @@ describe('MotivationPitfallPanel Component - Motivations List', () => {
 			}
 		});
 
-		expect(screen.getByText(/benevolence/i)).toBeInTheDocument();
+		expect(screen.getByText(/charity/i)).toBeInTheDocument();
 		expect(screen.getByText(/discovery/i)).toBeInTheDocument();
+		expect(screen.getByText(/faith/i)).toBeInTheDocument();
 		expect(screen.getByText(/freedom/i)).toBeInTheDocument();
 		expect(screen.getByText(/greed/i)).toBeInTheDocument();
-		expect(screen.getByText(/higher.*authority/i)).toBeInTheDocument();
+		expect(screen.getByText(/harmony/i)).toBeInTheDocument();
 		expect(screen.getByText(/justice/i)).toBeInTheDocument();
+		expect(screen.getByText(/knowledge/i)).toBeInTheDocument();
 		expect(screen.getByText(/legacy/i)).toBeInTheDocument();
-		expect(screen.getByText(/peace/i)).toBeInTheDocument();
 		expect(screen.getByText(/power/i)).toBeInTheDocument();
 		expect(screen.getByText(/protection/i)).toBeInTheDocument();
-		expect(screen.getByText(/revelry/i)).toBeInTheDocument();
-		expect(screen.getByText(/vengeance/i)).toBeInTheDocument();
+		expect(screen.getByText(/revenge/i)).toBeInTheDocument();
+		expect(screen.getByText(/wealth/i)).toBeInTheDocument();
 	});
 });
 
@@ -253,7 +255,7 @@ describe('MotivationPitfallPanel Component - Pitfalls List', () => {
 	it('should display multiple known pitfalls', () => {
 		const pitfalls: NPCPitfall[] = [
 			{ type: 'greed', isKnown: true },
-			{ type: 'vengeance', isKnown: true },
+			{ type: 'revenge', isKnown: true },
 			{ type: 'power', isKnown: true }
 		];
 
@@ -265,7 +267,7 @@ describe('MotivationPitfallPanel Component - Pitfalls List', () => {
 		});
 
 		expect(screen.getByText(/greed/i)).toBeInTheDocument();
-		expect(screen.getByText(/vengeance/i)).toBeInTheDocument();
+		expect(screen.getByText(/revenge/i)).toBeInTheDocument();
 		expect(screen.getByText(/power/i)).toBeInTheDocument();
 	});
 
@@ -484,7 +486,7 @@ describe('MotivationPitfallPanel Component - Reveal Functionality', () => {
 		const onRevealPitfall = vi.fn();
 		const pitfalls: NPCPitfall[] = [
 			{ type: 'greed', isKnown: false },
-			{ type: 'vengeance', isKnown: false }
+			{ type: 'revenge', isKnown: false }
 		];
 
 		render(MotivationPitfallPanel, {
@@ -498,7 +500,7 @@ describe('MotivationPitfallPanel Component - Reveal Functionality', () => {
 		const revealButtons = screen.getAllByRole('button', { name: /reveal/i });
 		await fireEvent.click(revealButtons[1]);
 
-		expect(onRevealPitfall).toHaveBeenCalledWith('vengeance');
+		expect(onRevealPitfall).toHaveBeenCalledWith('revenge');
 	});
 
 	it('should disable reveal button after clicking', async () => {
@@ -543,7 +545,7 @@ describe('MotivationPitfallPanel Component - Mixed States', () => {
 	it('should display mix of used and unused motivations', () => {
 		const motivations: NPCMotivation[] = [
 			{ type: 'justice', isKnown: true, used: true },
-			{ type: 'benevolence', isKnown: true, used: false }
+			{ type: 'charity', isKnown: true, used: false }
 		];
 
 		const { container } = render(MotivationPitfallPanel, {
@@ -554,7 +556,7 @@ describe('MotivationPitfallPanel Component - Mixed States', () => {
 		});
 
 		const usedItem = container.querySelector('[data-testid="motivation-justice"]');
-		const unusedItem = container.querySelector('[data-testid="motivation-benevolence"]');
+		const unusedItem = container.querySelector('[data-testid="motivation-charity"]');
 
 		expect(usedItem?.className).toMatch(/opacity|line-through|used/i);
 		expect(unusedItem?.className).not.toMatch(/opacity-50|line-through/);
@@ -671,7 +673,7 @@ describe('MotivationPitfallPanel Component - Layout', () => {
 	it('should use list elements for pitfalls', () => {
 		const pitfalls: NPCPitfall[] = [
 			{ type: 'greed', isKnown: true },
-			{ type: 'vengeance', isKnown: true }
+			{ type: 'revenge', isKnown: true }
 		];
 
 		const { container } = render(MotivationPitfallPanel, {
@@ -796,10 +798,10 @@ describe('MotivationPitfallPanel Component - Edge Cases', () => {
 	});
 
 	it('should handle large number of motivations', () => {
-		const motivations: NPCMotivation[] = Array.from({ length: 12 }, (_, i) => ({
-			type: ['benevolence', 'discovery', 'freedom', 'greed', 'higher_authority',
-				'justice', 'legacy', 'peace', 'power', 'protection', 'revelry',
-				'vengeance'][i] as any,
+		const motivations: NPCMotivation[] = Array.from({ length: 13 }, (_, i) => ({
+			type: ['charity', 'discovery', 'faith', 'freedom', 'greed', 'harmony',
+				'justice', 'knowledge', 'legacy', 'power', 'protection', 'revenge',
+				'wealth'][i] as any,
 			isKnown: true,
 			used: false
 		}));
@@ -812,7 +814,7 @@ describe('MotivationPitfallPanel Component - Edge Cases', () => {
 		});
 
 		const listItems = container.querySelectorAll('li');
-		expect(listItems.length).toBe(12);
+		expect(listItems.length).toBe(13);
 	});
 
 	it('should handle all motivations being used', () => {

@@ -162,26 +162,54 @@ describe('ArgumentControls Component - Motivation Type Dropdown', () => {
 		expect(motivationSelect).toBeInTheDocument();
 	});
 
-	it('should have all 12 motivation options', () => {
+	it('should have all 13 Draw Steel motivation options (Issue #404 - TDD RED)', () => {
 		render(ArgumentControls, {
 			props: {
 				usedMotivations: []
 			}
 		});
 
-		// All 12 Draw Steel motivations
-		expect(screen.getByRole('option', { name: /benevolence/i })).toBeInTheDocument();
-		expect(screen.getByRole('option', { name: /discovery/i })).toBeInTheDocument();
-		expect(screen.getByRole('option', { name: /freedom/i })).toBeInTheDocument();
-		expect(screen.getByRole('option', { name: /greed/i })).toBeInTheDocument();
-		expect(screen.getByRole('option', { name: /higher.*authority/i })).toBeInTheDocument();
-		expect(screen.getByRole('option', { name: /justice/i })).toBeInTheDocument();
-		expect(screen.getByRole('option', { name: /legacy/i })).toBeInTheDocument();
-		expect(screen.getByRole('option', { name: /peace/i })).toBeInTheDocument();
-		expect(screen.getByRole('option', { name: /power/i })).toBeInTheDocument();
-		expect(screen.getByRole('option', { name: /protection/i })).toBeInTheDocument();
-		expect(screen.getByRole('option', { name: /revelry/i })).toBeInTheDocument();
-		expect(screen.getByRole('option', { name: /vengeance/i })).toBeInTheDocument();
+		// All 13 canonical Draw Steel motivations
+		expect(screen.getByRole('option', { name: /^charity$/i })).toBeInTheDocument();
+		expect(screen.getByRole('option', { name: /^discovery$/i })).toBeInTheDocument();
+		expect(screen.getByRole('option', { name: /^faith$/i })).toBeInTheDocument();
+		expect(screen.getByRole('option', { name: /^freedom$/i })).toBeInTheDocument();
+		expect(screen.getByRole('option', { name: /^greed$/i })).toBeInTheDocument();
+		expect(screen.getByRole('option', { name: /^harmony$/i })).toBeInTheDocument();
+		expect(screen.getByRole('option', { name: /^justice$/i })).toBeInTheDocument();
+		expect(screen.getByRole('option', { name: /^knowledge$/i })).toBeInTheDocument();
+		expect(screen.getByRole('option', { name: /^legacy$/i })).toBeInTheDocument();
+		expect(screen.getByRole('option', { name: /^power$/i })).toBeInTheDocument();
+		expect(screen.getByRole('option', { name: /^protection$/i })).toBeInTheDocument();
+		expect(screen.getByRole('option', { name: /^revenge$/i })).toBeInTheDocument();
+		expect(screen.getByRole('option', { name: /^wealth$/i })).toBeInTheDocument();
+	});
+
+	it('should include "wealth" as a motivation option (Issue #404 - TDD RED)', () => {
+		render(ArgumentControls, {
+			props: {
+				usedMotivations: []
+			}
+		});
+
+		// Specifically test that 'wealth' is available
+		const wealthOption = screen.getByRole('option', { name: /^wealth$/i });
+		expect(wealthOption).toBeInTheDocument();
+		expect(wealthOption).not.toBeDisabled();
+	});
+
+	it('should have exactly 13 motivation options (Issue #404 - TDD RED)', () => {
+		render(ArgumentControls, {
+			props: {
+				usedMotivations: []
+			}
+		});
+
+		const motivationSelect = screen.getByLabelText(/motivation.*type/i);
+		const options = motivationSelect.querySelectorAll('option');
+
+		// Should have exactly 13 options (all Draw Steel motivations)
+		expect(options.length).toBe(13);
 	});
 
 	it('should hide motivation dropdown when argument type is no_motivation', async () => {
@@ -219,18 +247,18 @@ describe('ArgumentControls Component - Motivation Type Dropdown', () => {
 		});
 	});
 
-	it('should disable already-used motivations', () => {
+	it('should disable already-used motivations (Issue #404 - Updated for 13 motivations)', () => {
 		render(ArgumentControls, {
 			props: {
-				usedMotivations: ['benevolence', 'greed']
+				usedMotivations: ['charity', 'greed']
 			}
 		});
 
-		const benevolenceOption = screen.getByRole('option', { name: /benevolence/i }) as HTMLOptionElement;
-		const greedOption = screen.getByRole('option', { name: /greed/i }) as HTMLOptionElement;
-		const justiceOption = screen.getByRole('option', { name: /justice/i }) as HTMLOptionElement;
+		const charityOption = screen.getByRole('option', { name: /^charity$/i }) as HTMLOptionElement;
+		const greedOption = screen.getByRole('option', { name: /^greed$/i }) as HTMLOptionElement;
+		const justiceOption = screen.getByRole('option', { name: /^justice$/i }) as HTMLOptionElement;
 
-		expect(benevolenceOption.disabled).toBe(true);
+		expect(charityOption.disabled).toBe(true);
 		expect(greedOption.disabled).toBe(true);
 		expect(justiceOption.disabled).toBe(false);
 	});
@@ -246,10 +274,10 @@ describe('ArgumentControls Component - Motivation Type Dropdown', () => {
 		expect(powerOption).toBeDisabled();
 	});
 
-	it('should allow selecting unused motivations', async () => {
+	it('should allow selecting unused motivations (Issue #404 - Updated for 13 motivations)', async () => {
 		render(ArgumentControls, {
 			props: {
-				usedMotivations: ['benevolence']
+				usedMotivations: ['charity']
 			}
 		});
 
@@ -441,129 +469,282 @@ describe('ArgumentControls Component - Notes Input', () => {
 	});
 });
 
-describe('ArgumentControls Component - Outcome Preview', () => {
-	it('should show preview for tier 1 motivation', () => {
-		render(ArgumentControls, {
-			props: {
-				usedMotivations: []
-			}
+describe('ArgumentControls Component - Outcome Preview (Issue #403 - TDD RED)', () => {
+	describe('Motivation Arguments - Draw Steel Rules', () => {
+		it('should show tier 1 motivation: +0 interest, -1 patience', () => {
+			render(ArgumentControls, {
+				props: {
+					usedMotivations: []
+				}
+			});
+
+			// Tier 1 is selected by default, argument type is motivation by default
+			// Draw Steel Rule: Tier 1 motivation = +0 interest, -1 patience
+			expect(screen.getByText(/\+0.*interest/i)).toBeInTheDocument();
+			expect(screen.getByText(/-1.*patience/i)).toBeInTheDocument();
 		});
 
-		// Tier 1 motivation: +0 interest, -1 patience (per Draw Steel rules in component)
-		expect(screen.getByText(/-1.*patience/i)).toBeInTheDocument();
-	});
+		it('should show tier 2 motivation: +1 interest, -1 patience', async () => {
+			render(ArgumentControls, {
+				props: {
+					usedMotivations: []
+				}
+			});
 
-	it('should show preview for tier 2 motivation', async () => {
-		render(ArgumentControls, {
-			props: {
-				usedMotivations: []
-			}
-		});
+			const tier2Button = screen.getByRole('button', { name: /tier.*2|^2$/i });
+			await fireEvent.click(tier2Button);
 
-		const tier2Button = screen.getByRole('button', { name: /tier.*2|^2$/i });
-		await fireEvent.click(tier2Button);
-
-		// Tier 2 motivation: +1 interest, -1 patience (per Draw Steel rules in component)
-		expect(screen.getByText(/\+1.*interest/i)).toBeInTheDocument();
-		expect(screen.getByText(/-1.*patience/i)).toBeInTheDocument();
-	});
-
-	it('should show preview for tier 3 motivation', async () => {
-		render(ArgumentControls, {
-			props: {
-				usedMotivations: []
-			}
-		});
-
-		const tier3Button = screen.getByRole('button', { name: /tier.*3|^3$/i });
-		await fireEvent.click(tier3Button);
-
-		// Tier 3 motivation: +1 interest, +0 patience (per Draw Steel rules in component)
-		expect(screen.getByText(/\+1.*interest/i)).toBeInTheDocument();
-		// +0 patience means no patience change, may not display or display as +0
-	});
-
-	it('should show preview for tier 1 no_motivation', async () => {
-		// This test verifies the component can display negative interest
-		// Default motivation tier 1 shows +0 interest, but no_motivation would show -1
-		render(ArgumentControls, {
-			props: {
-				usedMotivations: []
-			}
-		});
-
-		// Verify default state shows expected preview
-		expect(screen.getByText(/-1.*patience/i)).toBeInTheDocument();
-
-		// Verify the component has no_motivation option available
-		const noMotivationOption = screen.getByRole('option', { name: /no.*motivation/i });
-		expect(noMotivationOption).toBeInTheDocument();
-	});
-
-	it('should show preview for tier 2 no_motivation', async () => {
-		// Test tier changes work by clicking tier 2 button
-		render(ArgumentControls, {
-			props: {
-				usedMotivations: []
-			}
-		});
-
-		const tier2Button = screen.getByRole('button', { name: /tier.*2|^2$/i });
-		await fireEvent.click(tier2Button);
-
-		// Tier 2 motivation: +1 interest, -1 patience
-		expect(screen.getByText(/\+1.*interest/i)).toBeInTheDocument();
-		expect(screen.getByText(/-1.*patience/i)).toBeInTheDocument();
-	});
-
-	it('should show preview for tier 1 pitfall', async () => {
-		// Verify pitfall option exists in the argument type selector
-		render(ArgumentControls, {
-			props: {
-				usedMotivations: []
-			}
-		});
-
-		const pitfallOption = screen.getByRole('option', { name: /pitfall/i });
-		expect(pitfallOption).toBeInTheDocument();
-		expect(pitfallOption).toHaveValue('pitfall');
-	});
-
-	it('should update preview when tier changes', async () => {
-		render(ArgumentControls, {
-			props: {
-				usedMotivations: []
-			}
-		});
-
-		// Start with tier 1 motivation: +0 interest, -1 patience
-		expect(screen.getByText(/-1.*patience/i)).toBeInTheDocument();
-
-		// Change to tier 2: +1 interest, -1 patience
-		const tier2Button = screen.getByRole('button', { name: /tier.*2|^2$/i });
-		await fireEvent.click(tier2Button);
-
-		expect(screen.getByText(/\+1.*interest/i)).toBeInTheDocument();
-	});
-
-	it('should update preview when argument type changes', async () => {
-		// Test that preview updates when tier changes (which we CAN test)
-		render(ArgumentControls, {
-			props: {
-				usedMotivations: []
-			}
-		});
-
-		// Start with tier 1 motivation: +0 interest, -1 patience
-		expect(screen.getByText(/-1.*patience/i)).toBeInTheDocument();
-
-		// Change to tier 3
-		const tier3Button = screen.getByRole('button', { name: /tier.*3|^3$/i });
-		await fireEvent.click(tier3Button);
-
-		// Tier 3 shows different values: +1 interest, +0 patience
-		await waitFor(() => {
+			// Draw Steel Rule: Tier 2 motivation = +1 interest, -1 patience
 			expect(screen.getByText(/\+1.*interest/i)).toBeInTheDocument();
+			expect(screen.getByText(/-1.*patience/i)).toBeInTheDocument();
+		});
+
+		it('should show tier 3 motivation: +1 interest, +0 patience', async () => {
+			render(ArgumentControls, {
+				props: {
+					usedMotivations: []
+				}
+			});
+
+			const tier3Button = screen.getByRole('button', { name: /tier.*3|^3$/i });
+			await fireEvent.click(tier3Button);
+
+			// Draw Steel Rule: Tier 3 motivation = +1 interest, +0 patience
+			expect(screen.getByText(/\+1.*interest/i)).toBeInTheDocument();
+			expect(screen.getByText(/\+0.*patience/i)).toBeInTheDocument();
+		});
+	});
+
+	describe('No-Motivation Arguments - Draw Steel Rules', () => {
+		it('should show tier 1 no-motivation: -1 interest, -1 patience', async () => {
+			render(ArgumentControls, {
+				props: {
+					usedMotivations: []
+				}
+			});
+
+			// Change to no_motivation type
+			const typeSelect = screen.getByLabelText(/argument.*type/i) as HTMLSelectElement;
+			typeSelect.value = 'no_motivation';
+			await fireEvent.change(typeSelect);
+			await fireEvent.input(typeSelect);
+
+			// Draw Steel Rule: Tier 1 no-motivation = -1 interest, -1 patience
+			await waitFor(() => {
+				expect(screen.getByText(/-1.*interest/i)).toBeInTheDocument();
+				expect(screen.getByText(/-1.*patience/i)).toBeInTheDocument();
+			});
+		});
+
+		it('should show tier 2 no-motivation: +0 interest, -1 patience', async () => {
+			render(ArgumentControls, {
+				props: {
+					usedMotivations: []
+				}
+			});
+
+			// Change to tier 2
+			const tier2Button = screen.getByRole('button', { name: /tier.*2|^2$/i });
+			await fireEvent.click(tier2Button);
+
+			// Change to no_motivation type
+			const typeSelect = screen.getByLabelText(/argument.*type/i) as HTMLSelectElement;
+			typeSelect.value = 'no_motivation';
+			await fireEvent.change(typeSelect);
+			await fireEvent.input(typeSelect);
+
+			// Draw Steel Rule: Tier 2 no-motivation = +0 interest, -1 patience
+			await waitFor(() => {
+				expect(screen.getByText(/\+0.*interest/i)).toBeInTheDocument();
+				expect(screen.getByText(/-1.*patience/i)).toBeInTheDocument();
+			});
+		});
+
+		it('should show tier 3 no-motivation: +1 interest, -1 patience', async () => {
+			render(ArgumentControls, {
+				props: {
+					usedMotivations: []
+				}
+			});
+
+			// Change to tier 3
+			const tier3Button = screen.getByRole('button', { name: /tier.*3|^3$/i });
+			await fireEvent.click(tier3Button);
+
+			// Change to no_motivation type
+			const typeSelect = screen.getByLabelText(/argument.*type/i) as HTMLSelectElement;
+			typeSelect.value = 'no_motivation';
+			await fireEvent.change(typeSelect);
+			await fireEvent.input(typeSelect);
+
+			// Draw Steel Rule: Tier 3 no-motivation = +1 interest, -1 patience
+			await waitFor(() => {
+				expect(screen.getByText(/\+1.*interest/i)).toBeInTheDocument();
+				expect(screen.getByText(/-1.*patience/i)).toBeInTheDocument();
+			});
+		});
+	});
+
+	describe('Pitfall Arguments - Draw Steel Rules', () => {
+		it('should show tier 1 pitfall: -1 interest, -1 patience', async () => {
+			render(ArgumentControls, {
+				props: {
+					usedMotivations: []
+				}
+			});
+
+			// Change to pitfall type
+			const typeSelect = screen.getByLabelText(/argument.*type/i) as HTMLSelectElement;
+			typeSelect.value = 'pitfall';
+			await fireEvent.change(typeSelect);
+			await fireEvent.input(typeSelect);
+
+			// Draw Steel Rule: All pitfalls = -1 interest, -1 patience
+			await waitFor(() => {
+				expect(screen.getByText(/-1.*interest/i)).toBeInTheDocument();
+				expect(screen.getByText(/-1.*patience/i)).toBeInTheDocument();
+			});
+		});
+
+		it('should show tier 2 pitfall: -1 interest, -1 patience', async () => {
+			render(ArgumentControls, {
+				props: {
+					usedMotivations: []
+				}
+			});
+
+			// Change to tier 2
+			const tier2Button = screen.getByRole('button', { name: /tier.*2|^2$/i });
+			await fireEvent.click(tier2Button);
+
+			// Change to pitfall type
+			const typeSelect = screen.getByLabelText(/argument.*type/i) as HTMLSelectElement;
+			typeSelect.value = 'pitfall';
+			await fireEvent.change(typeSelect);
+			await fireEvent.input(typeSelect);
+
+			// Draw Steel Rule: All pitfalls = -1 interest, -1 patience (tier doesn't matter)
+			await waitFor(() => {
+				expect(screen.getByText(/-1.*interest/i)).toBeInTheDocument();
+				expect(screen.getByText(/-1.*patience/i)).toBeInTheDocument();
+			});
+		});
+
+		it('should show tier 3 pitfall: -1 interest, -1 patience', async () => {
+			render(ArgumentControls, {
+				props: {
+					usedMotivations: []
+				}
+			});
+
+			// Change to tier 3
+			const tier3Button = screen.getByRole('button', { name: /tier.*3|^3$/i });
+			await fireEvent.click(tier3Button);
+
+			// Change to pitfall type
+			const typeSelect = screen.getByLabelText(/argument.*type/i) as HTMLSelectElement;
+			typeSelect.value = 'pitfall';
+			await fireEvent.change(typeSelect);
+			await fireEvent.input(typeSelect);
+
+			// Draw Steel Rule: All pitfalls = -1 interest, -1 patience (tier doesn't matter)
+			await waitFor(() => {
+				expect(screen.getByText(/-1.*interest/i)).toBeInTheDocument();
+				expect(screen.getByText(/-1.*patience/i)).toBeInTheDocument();
+			});
+		});
+	});
+
+	describe('Preview Updates Dynamically', () => {
+		it('should update preview when tier changes from 1 to 2', async () => {
+			render(ArgumentControls, {
+				props: {
+					usedMotivations: []
+				}
+			});
+
+			// Start with tier 1 motivation: +0 interest, -1 patience
+			expect(screen.getByText(/\+0.*interest/i)).toBeInTheDocument();
+			expect(screen.getByText(/-1.*patience/i)).toBeInTheDocument();
+
+			// Change to tier 2: +1 interest, -1 patience
+			const tier2Button = screen.getByRole('button', { name: /tier.*2|^2$/i });
+			await fireEvent.click(tier2Button);
+
+			await waitFor(() => {
+				expect(screen.getByText(/\+1.*interest/i)).toBeInTheDocument();
+				expect(screen.getByText(/-1.*patience/i)).toBeInTheDocument();
+			});
+		});
+
+		it('should update preview when tier changes from 2 to 3', async () => {
+			render(ArgumentControls, {
+				props: {
+					usedMotivations: []
+				}
+			});
+
+			// Start with tier 2
+			const tier2Button = screen.getByRole('button', { name: /tier.*2|^2$/i });
+			await fireEvent.click(tier2Button);
+			expect(screen.getByText(/\+1.*interest/i)).toBeInTheDocument();
+			expect(screen.getByText(/-1.*patience/i)).toBeInTheDocument();
+
+			// Change to tier 3: +1 interest, +0 patience
+			const tier3Button = screen.getByRole('button', { name: /tier.*3|^3$/i });
+			await fireEvent.click(tier3Button);
+
+			await waitFor(() => {
+				expect(screen.getByText(/\+1.*interest/i)).toBeInTheDocument();
+				expect(screen.getByText(/\+0.*patience/i)).toBeInTheDocument();
+			});
+		});
+
+		it('should update preview when changing from motivation to no_motivation', async () => {
+			render(ArgumentControls, {
+				props: {
+					usedMotivations: []
+				}
+			});
+
+			// Start with tier 1 motivation: +0 interest, -1 patience
+			expect(screen.getByText(/\+0.*interest/i)).toBeInTheDocument();
+			expect(screen.getByText(/-1.*patience/i)).toBeInTheDocument();
+
+			// Change to no_motivation: -1 interest, -1 patience
+			const typeSelect = screen.getByLabelText(/argument.*type/i) as HTMLSelectElement;
+			typeSelect.value = 'no_motivation';
+			await fireEvent.change(typeSelect);
+			await fireEvent.input(typeSelect);
+
+			await waitFor(() => {
+				expect(screen.getByText(/-1.*interest/i)).toBeInTheDocument();
+				expect(screen.getByText(/-1.*patience/i)).toBeInTheDocument();
+			});
+		});
+
+		it('should update preview when changing from motivation to pitfall', async () => {
+			render(ArgumentControls, {
+				props: {
+					usedMotivations: []
+				}
+			});
+
+			// Start with tier 2 motivation: +1 interest, -1 patience
+			const tier2Button = screen.getByRole('button', { name: /tier.*2|^2$/i });
+			await fireEvent.click(tier2Button);
+			expect(screen.getByText(/\+1.*interest/i)).toBeInTheDocument();
+
+			// Change to pitfall: -1 interest, -1 patience (tier doesn't matter)
+			const typeSelect = screen.getByLabelText(/argument.*type/i) as HTMLSelectElement;
+			typeSelect.value = 'pitfall';
+			await fireEvent.change(typeSelect);
+			await fireEvent.input(typeSelect);
+
+			await waitFor(() => {
+				expect(screen.getByText(/-1.*interest/i)).toBeInTheDocument();
+				expect(screen.getByText(/-1.*patience/i)).toBeInTheDocument();
+			});
 		});
 	});
 });
@@ -628,7 +809,7 @@ describe('ArgumentControls Component - Record Button', () => {
 		);
 	});
 
-	it('should include motivation type when argument type is motivation', async () => {
+	it('should include motivation type when argument type is motivation (Issue #404 - Updated for 13 motivations)', async () => {
 		const onRecord = vi.fn();
 
 		render(ArgumentControls, {
@@ -642,11 +823,11 @@ describe('ArgumentControls Component - Record Button', () => {
 		await fireEvent.click(recordButton);
 
 		// With default argument type 'motivation', it should include a motivationType
-		// The default motivation is 'benevolence'
+		// The default motivation should be 'charity' (first in alphabetical order)
 		expect(onRecord).toHaveBeenCalledWith(
 			expect.objectContaining({
 				argumentType: 'motivation',
-				motivationType: 'benevolence'
+				motivationType: 'charity'
 			})
 		);
 	});
@@ -733,16 +914,16 @@ describe('ArgumentControls Component - Validation', () => {
 		expect(motivationSelect).toBeRequired();
 	});
 
-	it('should disable record button when motivation type not selected', () => {
+	it('should disable record button when all 13 motivations are used (Issue #404 - TDD RED)', () => {
 		const { container } = render(ArgumentControls, {
 			props: {
-				usedMotivations: ['benevolence', 'discovery', 'freedom', 'greed',
-					'higher_authority', 'justice', 'legacy', 'peace', 'power',
-					'protection', 'revelry', 'vengeance']
+				usedMotivations: ['charity', 'discovery', 'faith', 'freedom', 'greed',
+					'harmony', 'justice', 'knowledge', 'legacy', 'power',
+					'protection', 'revenge', 'wealth']
 			}
 		});
 
-		// All motivations used
+		// All 13 motivations used
 		const recordButton = screen.getByRole('button', { name: /record.*argument/i });
 		expect(recordButton).toBeDisabled();
 	});
@@ -759,12 +940,12 @@ describe('ArgumentControls Component - Validation', () => {
 		expect(recordButton).not.toBeDisabled();
 	});
 
-	it('should show validation error when trying to use all motivations', () => {
+	it('should show validation error when all 13 motivations are used (Issue #404 - TDD RED)', () => {
 		render(ArgumentControls, {
 			props: {
-				usedMotivations: ['benevolence', 'discovery', 'freedom', 'greed',
-					'higher_authority', 'justice', 'legacy', 'peace', 'power',
-					'protection', 'revelry', 'vengeance']
+				usedMotivations: ['charity', 'discovery', 'faith', 'freedom', 'greed',
+					'harmony', 'justice', 'knowledge', 'legacy', 'power',
+					'protection', 'revenge', 'wealth']
 			}
 		});
 
@@ -808,16 +989,16 @@ describe('ArgumentControls Component - Accessibility', () => {
 		expect(tier1Button).toHaveAttribute('aria-pressed', 'true');
 	});
 
-	it('should indicate disabled motivations to screen readers', () => {
+	it('should indicate disabled motivations to screen readers (Issue #404 - Updated for 13 motivations)', () => {
 		render(ArgumentControls, {
 			props: {
-				usedMotivations: ['benevolence']
+				usedMotivations: ['charity']
 			}
 		});
 
-		const benevolenceOption = screen.getByRole('option', { name: /benevolence/i });
-		expect(benevolenceOption).toHaveAttribute('disabled');
-		expect(benevolenceOption).toHaveAttribute('aria-disabled', 'true');
+		const charityOption = screen.getByRole('option', { name: /^charity$/i });
+		expect(charityOption).toHaveAttribute('disabled');
+		expect(charityOption).toHaveAttribute('aria-disabled', 'true');
 	});
 });
 
@@ -1185,15 +1366,15 @@ describe('ArgumentControls Component - Keyboard Shortcuts (Issue #395 - TDD RED)
 			expect(onRecord).not.toHaveBeenCalled();
 		});
 
-		it('should NOT trigger record when pressing Enter if record button is disabled', async () => {
+		it('should NOT trigger record when pressing Enter if record button is disabled (Issue #404 - TDD RED)', async () => {
 			const onRecord = vi.fn();
 			const { container } = render(ArgumentControls, {
 				props: {
-					// All motivations used
+					// All 13 motivations used
 					usedMotivations: [
-						'benevolence', 'discovery', 'freedom', 'greed',
-						'higher_authority', 'justice', 'legacy', 'peace',
-						'power', 'protection', 'revelry', 'vengeance'
+						'charity', 'discovery', 'faith', 'freedom', 'greed',
+						'harmony', 'justice', 'knowledge', 'legacy', 'power',
+						'protection', 'revenge', 'wealth'
 					],
 					onRecord
 				}

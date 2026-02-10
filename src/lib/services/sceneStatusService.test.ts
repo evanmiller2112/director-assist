@@ -51,6 +51,12 @@ vi.mock('$lib/stores', () => ({
 	}
 }));
 
+// Mock narrative event service for Issue #425 tests
+const mockCreateFromScene = vi.hoisted(() => vi.fn());
+vi.mock('$lib/services/narrativeEventService', () => ({
+	createFromScene: mockCreateFromScene
+}));
+
 describe('sceneStatusService - startScene', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
@@ -64,7 +70,7 @@ describe('sceneStatusService - startScene', () => {
 			description: 'The adventure begins',
 			tags: [],
 			fields: {
-				status: 'planned',
+				sceneStatus: 'planned',
 				location: 'The Tavern'
 			},
 			links: [],
@@ -76,6 +82,7 @@ describe('sceneStatusService - startScene', () => {
 
 		vi.mocked(entityRepository.getById).mockResolvedValue(mockScene);
 		vi.mocked(entityRepository.update).mockResolvedValue(undefined);
+		mockCreateFromScene.mockResolvedValue({} as BaseEntity);
 
 		await startScene('scene-1');
 
@@ -83,7 +90,7 @@ describe('sceneStatusService - startScene', () => {
 			'scene-1',
 			expect.objectContaining({
 				fields: expect.objectContaining({
-					status: 'active'
+					sceneStatus: 'in_progress'
 				})
 			})
 		);
@@ -96,7 +103,7 @@ describe('sceneStatusService - startScene', () => {
 			name: 'Combat Scene',
 			description: '',
 			tags: [],
-			fields: { status: 'planned' },
+			fields: { sceneStatus: 'planned' },
 			links: [],
 			notes: '',
 			createdAt: new Date(),
@@ -106,6 +113,7 @@ describe('sceneStatusService - startScene', () => {
 
 		vi.mocked(entityRepository.getById).mockResolvedValue(mockScene);
 		vi.mocked(entityRepository.update).mockResolvedValue(undefined);
+		mockCreateFromScene.mockResolvedValue({} as BaseEntity);
 
 		const beforeTime = Date.now();
 		await startScene('scene-2');
@@ -123,6 +131,7 @@ describe('sceneStatusService - startScene', () => {
 
 	it('should throw error if scene does not exist', async () => {
 		vi.mocked(entityRepository.getById).mockResolvedValue(undefined);
+		mockCreateFromScene.mockResolvedValue({} as BaseEntity);
 
 		await expect(startScene('nonexistent-scene')).rejects.toThrow('Scene not found');
 	});
@@ -143,6 +152,7 @@ describe('sceneStatusService - startScene', () => {
 		};
 
 		vi.mocked(entityRepository.getById).mockResolvedValue(mockNpc);
+		mockCreateFromScene.mockResolvedValue({} as BaseEntity);
 
 		await expect(startScene('npc-1')).rejects.toThrow('Entity is not a scene');
 	});
@@ -155,7 +165,7 @@ describe('sceneStatusService - startScene', () => {
 			description: 'Find clues',
 			tags: ['mystery'],
 			fields: {
-				status: 'planned',
+				sceneStatus: 'planned',
 				location: 'Crime Scene',
 				npcs: ['detective-1', 'suspect-2'],
 				customField: 'important data'
@@ -169,6 +179,7 @@ describe('sceneStatusService - startScene', () => {
 
 		vi.mocked(entityRepository.getById).mockResolvedValue(mockScene);
 		vi.mocked(entityRepository.update).mockResolvedValue(undefined);
+		mockCreateFromScene.mockResolvedValue({} as BaseEntity);
 
 		await startScene('scene-3');
 
@@ -176,7 +187,7 @@ describe('sceneStatusService - startScene', () => {
 			'scene-3',
 			expect.objectContaining({
 				fields: expect.objectContaining({
-					status: 'active',
+					sceneStatus: 'in_progress',
 					location: 'Crime Scene',
 					npcs: ['detective-1', 'suspect-2'],
 					customField: 'important data'
@@ -199,7 +210,7 @@ describe('sceneStatusService - completeScene', () => {
 			description: '',
 			tags: [],
 			fields: {
-				status: 'active',
+				sceneStatus: 'in_progress',
 				startedAt: new Date().toISOString()
 			},
 			links: [],
@@ -211,6 +222,7 @@ describe('sceneStatusService - completeScene', () => {
 
 		vi.mocked(entityRepository.getById).mockResolvedValue(mockScene);
 		vi.mocked(entityRepository.update).mockResolvedValue(undefined);
+		mockCreateFromScene.mockResolvedValue({} as BaseEntity);
 
 		await completeScene('scene-4');
 
@@ -218,7 +230,7 @@ describe('sceneStatusService - completeScene', () => {
 			'scene-4',
 			expect.objectContaining({
 				fields: expect.objectContaining({
-					status: 'completed'
+					sceneStatus: 'completed'
 				})
 			})
 		);
@@ -232,7 +244,7 @@ describe('sceneStatusService - completeScene', () => {
 			description: '',
 			tags: [],
 			fields: {
-				status: 'active',
+				sceneStatus: 'in_progress',
 				startedAt: new Date().toISOString()
 			},
 			links: [],
@@ -244,6 +256,7 @@ describe('sceneStatusService - completeScene', () => {
 
 		vi.mocked(entityRepository.getById).mockResolvedValue(mockScene);
 		vi.mocked(entityRepository.update).mockResolvedValue(undefined);
+		mockCreateFromScene.mockResolvedValue({} as BaseEntity);
 
 		const beforeTime = Date.now();
 		await completeScene('scene-5');
@@ -267,7 +280,7 @@ describe('sceneStatusService - completeScene', () => {
 			description: '',
 			tags: [],
 			fields: {
-				status: 'active'
+				sceneStatus: 'in_progress'
 			},
 			links: [],
 			notes: '',
@@ -278,6 +291,7 @@ describe('sceneStatusService - completeScene', () => {
 
 		vi.mocked(entityRepository.getById).mockResolvedValue(mockScene);
 		vi.mocked(entityRepository.update).mockResolvedValue(undefined);
+		mockCreateFromScene.mockResolvedValue({} as BaseEntity);
 
 		await completeScene('scene-6', 'Players successfully negotiated peace treaty');
 
@@ -299,7 +313,7 @@ describe('sceneStatusService - completeScene', () => {
 			description: '',
 			tags: [],
 			fields: {
-				status: 'active',
+				sceneStatus: 'in_progress',
 				whatHappened: 'Existing notes from during the scene'
 			},
 			links: [],
@@ -311,6 +325,7 @@ describe('sceneStatusService - completeScene', () => {
 
 		vi.mocked(entityRepository.getById).mockResolvedValue(mockScene);
 		vi.mocked(entityRepository.update).mockResolvedValue(undefined);
+		mockCreateFromScene.mockResolvedValue({} as BaseEntity);
 
 		await completeScene('scene-7');
 
@@ -326,8 +341,380 @@ describe('sceneStatusService - completeScene', () => {
 
 	it('should throw error if scene does not exist', async () => {
 		vi.mocked(entityRepository.getById).mockResolvedValue(undefined);
+		mockCreateFromScene.mockResolvedValue({} as BaseEntity);
 
 		await expect(completeScene('nonexistent')).rejects.toThrow('Scene not found');
+	});
+});
+
+describe('sceneStatusService - completeScene narrative event integration', () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+	});
+
+	it('should create narrative event when scene is completed', async () => {
+		const mockScene: BaseEntity = {
+			id: 'scene-narrative-1',
+			type: 'scene',
+			name: 'Throne Room Audience',
+			description: 'The party meets the king',
+			tags: [],
+			fields: {
+				sceneStatus: 'in_progress',
+				startedAt: new Date().toISOString()
+			},
+			links: [],
+			notes: '',
+			createdAt: new Date(),
+			updatedAt: new Date(),
+			metadata: {}
+		};
+
+		const mockNarrativeEvent: BaseEntity = {
+			id: 'event-1',
+			type: 'narrative_event',
+			name: 'Throne Room Audience',
+			description: 'The party meets the king',
+			tags: [],
+			fields: {
+				eventType: 'scene',
+				sourceId: 'scene-narrative-1'
+			},
+			links: [],
+			notes: '',
+			createdAt: new Date(),
+			updatedAt: new Date(),
+			metadata: {}
+		};
+
+		vi.mocked(entityRepository.getById).mockResolvedValue(mockScene);
+		vi.mocked(entityRepository.update).mockResolvedValue(undefined);
+		mockCreateFromScene.mockResolvedValue(mockNarrativeEvent);
+
+		await completeScene('scene-narrative-1');
+
+		// Verify createFromScene was called with the scene ID
+		expect(mockCreateFromScene).toHaveBeenCalledWith('scene-narrative-1');
+	});
+
+	it('should create narrative event with eventType="scene"', async () => {
+		const mockScene: BaseEntity = {
+			id: 'scene-narrative-2',
+			type: 'scene',
+			name: 'Market Investigation',
+			description: 'Search for clues in the marketplace',
+			tags: [],
+			fields: {
+				sceneStatus: 'in_progress'
+			},
+			links: [],
+			notes: '',
+			createdAt: new Date(),
+			updatedAt: new Date(),
+			metadata: {}
+		};
+
+		const mockNarrativeEvent: BaseEntity = {
+			id: 'event-2',
+			type: 'narrative_event',
+			name: 'Market Investigation',
+			description: 'Search for clues in the marketplace',
+			tags: [],
+			fields: {
+				eventType: 'scene',
+				sourceId: 'scene-narrative-2'
+			},
+			links: [],
+			notes: '',
+			createdAt: new Date(),
+			updatedAt: new Date(),
+			metadata: {}
+		};
+
+		vi.mocked(entityRepository.getById).mockResolvedValue(mockScene);
+		vi.mocked(entityRepository.update).mockResolvedValue(undefined);
+		mockCreateFromScene.mockResolvedValue(mockNarrativeEvent);
+
+		await completeScene('scene-narrative-2');
+
+		// Verify the narrative event was created
+		expect(mockCreateFromScene).toHaveBeenCalled();
+
+		// The narrative event should have eventType='scene'
+		const createdEvent = await mockCreateFromScene.mock.results[0].value;
+		expect(createdEvent.fields.eventType).toBe('scene');
+	});
+
+	it('should create narrative event with correct sourceId', async () => {
+		const mockScene: BaseEntity = {
+			id: 'scene-unique-123',
+			type: 'scene',
+			name: 'Dragon Negotiation',
+			description: 'Attempting to bargain with the ancient wyrm',
+			tags: [],
+			fields: {
+				sceneStatus: 'in_progress'
+			},
+			links: [],
+			notes: '',
+			createdAt: new Date(),
+			updatedAt: new Date(),
+			metadata: {}
+		};
+
+		const mockNarrativeEvent: BaseEntity = {
+			id: 'event-3',
+			type: 'narrative_event',
+			name: 'Dragon Negotiation',
+			description: 'Attempting to bargain with the ancient wyrm',
+			tags: [],
+			fields: {
+				eventType: 'scene',
+				sourceId: 'scene-unique-123'
+			},
+			links: [],
+			notes: '',
+			createdAt: new Date(),
+			updatedAt: new Date(),
+			metadata: {}
+		};
+
+		vi.mocked(entityRepository.getById).mockResolvedValue(mockScene);
+		vi.mocked(entityRepository.update).mockResolvedValue(undefined);
+		mockCreateFromScene.mockResolvedValue(mockNarrativeEvent);
+
+		await completeScene('scene-unique-123');
+
+		// Verify createFromScene was called with the correct scene ID
+		expect(mockCreateFromScene).toHaveBeenCalledWith('scene-unique-123');
+
+		// The narrative event should have sourceId pointing to the scene
+		const createdEvent = await mockCreateFromScene.mock.results[0].value;
+		expect(createdEvent.fields.sourceId).toBe('scene-unique-123');
+	});
+
+	it('should capture scene name and description in narrative event', async () => {
+		const mockScene: BaseEntity = {
+			id: 'scene-narrative-4',
+			type: 'scene',
+			name: 'Tavern Brawl',
+			description: 'A fight breaks out over a game of cards',
+			tags: [],
+			fields: {
+				sceneStatus: 'in_progress'
+			},
+			links: [],
+			notes: '',
+			createdAt: new Date(),
+			updatedAt: new Date(),
+			metadata: {}
+		};
+
+		const mockNarrativeEvent: BaseEntity = {
+			id: 'event-4',
+			type: 'narrative_event',
+			name: 'Tavern Brawl',
+			description: 'A fight breaks out over a game of cards',
+			tags: [],
+			fields: {
+				eventType: 'scene',
+				sourceId: 'scene-narrative-4'
+			},
+			links: [],
+			notes: '',
+			createdAt: new Date(),
+			updatedAt: new Date(),
+			metadata: {}
+		};
+
+		vi.mocked(entityRepository.getById).mockResolvedValue(mockScene);
+		vi.mocked(entityRepository.update).mockResolvedValue(undefined);
+		mockCreateFromScene.mockResolvedValue(mockNarrativeEvent);
+
+		await completeScene('scene-narrative-4');
+
+		// Verify the narrative event preserves scene name and description
+		const createdEvent = await mockCreateFromScene.mock.results[0].value;
+		expect(createdEvent.name).toBe('Tavern Brawl');
+		expect(createdEvent.description).toBe('A fight breaks out over a game of cards');
+	});
+
+	it('should complete scene even if narrative event creation fails', async () => {
+		const mockScene: BaseEntity = {
+			id: 'scene-resilient-1',
+			type: 'scene',
+			name: 'Resilient Scene',
+			description: 'This scene should complete even if narrative event fails',
+			tags: [],
+			fields: {
+				sceneStatus: 'in_progress'
+			},
+			links: [],
+			notes: '',
+			createdAt: new Date(),
+			updatedAt: new Date(),
+			metadata: {}
+		};
+
+		vi.mocked(entityRepository.getById).mockResolvedValue(mockScene);
+		vi.mocked(entityRepository.update).mockResolvedValue(undefined);
+		// Simulate narrative event creation failure
+		mockCreateFromScene.mockRejectedValue(new Error('Database connection lost'));
+
+		// Should NOT throw - scene completion should succeed despite narrative event failure
+		await expect(completeScene('scene-resilient-1')).resolves.not.toThrow();
+
+		// Scene should still be updated to completed status
+		expect(entityRepository.update).toHaveBeenCalledWith(
+			'scene-resilient-1',
+			expect.objectContaining({
+				fields: expect.objectContaining({
+					sceneStatus: 'completed'
+				})
+			})
+		);
+	});
+
+	it('should log error when narrative event creation fails but continue completion', async () => {
+		const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+		const mockScene: BaseEntity = {
+			id: 'scene-error-log',
+			type: 'scene',
+			name: 'Error Logging Scene',
+			description: 'Testing error handling',
+			tags: [],
+			fields: {
+				sceneStatus: 'in_progress'
+			},
+			links: [],
+			notes: '',
+			createdAt: new Date(),
+			updatedAt: new Date(),
+			metadata: {}
+		};
+
+		vi.mocked(entityRepository.getById).mockResolvedValue(mockScene);
+		vi.mocked(entityRepository.update).mockResolvedValue(undefined);
+		mockCreateFromScene.mockRejectedValue(new Error('Narrative service unavailable'));
+
+		await completeScene('scene-error-log');
+
+		// Error should be logged but not thrown
+		expect(consoleErrorSpy).toHaveBeenCalledWith(
+			expect.stringContaining('Failed to create narrative event'),
+			expect.any(Error)
+		);
+
+		consoleErrorSpy.mockRestore();
+	});
+
+	it('should create narrative event with whatHappened as outcome if provided', async () => {
+		const mockScene: BaseEntity = {
+			id: 'scene-outcome-1',
+			type: 'scene',
+			name: 'Peace Treaty Signing',
+			description: 'Diplomatic scene',
+			tags: [],
+			fields: {
+				sceneStatus: 'in_progress'
+			},
+			links: [],
+			notes: '',
+			createdAt: new Date(),
+			updatedAt: new Date(),
+			metadata: {}
+		};
+
+		const mockNarrativeEvent: BaseEntity = {
+			id: 'event-outcome',
+			type: 'narrative_event',
+			name: 'Peace Treaty Signing',
+			description: 'Diplomatic scene',
+			tags: [],
+			fields: {
+				eventType: 'scene',
+				sourceId: 'scene-outcome-1'
+			},
+			links: [],
+			notes: '',
+			createdAt: new Date(),
+			updatedAt: new Date(),
+			metadata: {}
+		};
+
+		vi.mocked(entityRepository.getById).mockResolvedValue(mockScene);
+		vi.mocked(entityRepository.update).mockResolvedValue(undefined);
+		mockCreateFromScene.mockResolvedValue(mockNarrativeEvent);
+
+		await completeScene('scene-outcome-1', 'The treaty was signed successfully');
+
+		// Scene should be updated with the whatHappened notes
+		expect(entityRepository.update).toHaveBeenCalledWith(
+			'scene-outcome-1',
+			expect.objectContaining({
+				fields: expect.objectContaining({
+					whatHappened: 'The treaty was signed successfully'
+				})
+			})
+		);
+
+		// Narrative event creation should still be called
+		expect(mockCreateFromScene).toHaveBeenCalled();
+	});
+
+	it('should create narrative event after scene is marked as completed', async () => {
+		const mockScene: BaseEntity = {
+			id: 'scene-order-test',
+			type: 'scene',
+			name: 'Order Test Scene',
+			description: 'Testing execution order',
+			tags: [],
+			fields: {
+				sceneStatus: 'in_progress'
+			},
+			links: [],
+			notes: '',
+			createdAt: new Date(),
+			updatedAt: new Date(),
+			metadata: {}
+		};
+
+		const mockNarrativeEvent: BaseEntity = {
+			id: 'event-order',
+			type: 'narrative_event',
+			name: 'Order Test Scene',
+			description: 'Testing execution order',
+			tags: [],
+			fields: {
+				eventType: 'scene',
+				sourceId: 'scene-order-test'
+			},
+			links: [],
+			notes: '',
+			createdAt: new Date(),
+			updatedAt: new Date(),
+			metadata: {}
+		};
+
+		let updateCalledFirst = false;
+		let createCalledSecond = false;
+
+		vi.mocked(entityRepository.getById).mockResolvedValue(mockScene);
+		vi.mocked(entityRepository.update).mockImplementation(async () => {
+			updateCalledFirst = true;
+			return undefined;
+		});
+		mockCreateFromScene.mockImplementation(async () => {
+			createCalledSecond = updateCalledFirst;
+			return mockNarrativeEvent;
+		});
+
+		await completeScene('scene-order-test');
+
+		// Verify scene was updated before narrative event was created
+		expect(updateCalledFirst).toBe(true);
+		expect(createCalledSecond).toBe(true);
 	});
 });
 
@@ -344,7 +731,7 @@ describe('sceneStatusService - getActiveScenes', () => {
 				name: 'Active Scene 1',
 				description: '',
 				tags: [],
-				fields: { status: 'active' },
+				fields: { sceneStatus: 'in_progress' },
 				links: [],
 				notes: '',
 				createdAt: new Date(),
@@ -357,7 +744,7 @@ describe('sceneStatusService - getActiveScenes', () => {
 				name: 'Planned Scene',
 				description: '',
 				tags: [],
-				fields: { status: 'planned' },
+				fields: { sceneStatus: 'planned' },
 				links: [],
 				notes: '',
 				createdAt: new Date(),
@@ -370,7 +757,7 @@ describe('sceneStatusService - getActiveScenes', () => {
 				name: 'Active Scene 2',
 				description: '',
 				tags: [],
-				fields: { status: 'active' },
+				fields: { sceneStatus: 'in_progress' },
 				links: [],
 				notes: '',
 				createdAt: new Date(),
@@ -383,7 +770,7 @@ describe('sceneStatusService - getActiveScenes', () => {
 				name: 'Completed Scene',
 				description: '',
 				tags: [],
-				fields: { status: 'completed' },
+				fields: { sceneStatus: 'completed' },
 				links: [],
 				notes: '',
 				createdAt: new Date(),
@@ -393,6 +780,7 @@ describe('sceneStatusService - getActiveScenes', () => {
 		];
 
 		mockDbEntities.toArray.mockResolvedValue(mockEntities);
+		mockCreateFromScene.mockResolvedValue({} as BaseEntity);
 
 		const activeScenes = await getActiveScenes();
 
@@ -409,7 +797,7 @@ describe('sceneStatusService - getActiveScenes', () => {
 				name: 'Planned',
 				description: '',
 				tags: [],
-				fields: { status: 'planned' },
+				fields: { sceneStatus: 'planned' },
 				links: [],
 				notes: '',
 				createdAt: new Date(),
@@ -419,6 +807,7 @@ describe('sceneStatusService - getActiveScenes', () => {
 		];
 
 		mockDbEntities.toArray.mockResolvedValue(mockEntities);
+		mockCreateFromScene.mockResolvedValue({} as BaseEntity);
 
 		const activeScenes = await getActiveScenes();
 
@@ -433,7 +822,7 @@ describe('sceneStatusService - getActiveScenes', () => {
 				name: 'Active in current campaign',
 				description: '',
 				tags: [],
-				fields: { status: 'active' },
+				fields: { sceneStatus: 'in_progress' },
 				links: [],
 				notes: '',
 				createdAt: new Date(),
@@ -446,7 +835,7 @@ describe('sceneStatusService - getActiveScenes', () => {
 				name: 'Active in other campaign',
 				description: '',
 				tags: [],
-				fields: { status: 'active' },
+				fields: { sceneStatus: 'in_progress' },
 				links: [],
 				notes: '',
 				createdAt: new Date(),
@@ -456,6 +845,7 @@ describe('sceneStatusService - getActiveScenes', () => {
 		];
 
 		mockDbEntities.toArray.mockResolvedValue(mockEntities);
+		mockCreateFromScene.mockResolvedValue({} as BaseEntity);
 
 		const activeScenes = await getActiveScenes();
 
@@ -477,7 +867,7 @@ describe('sceneStatusService - getScenesByStatus', () => {
 				name: 'Planned 1',
 				description: '',
 				tags: [],
-				fields: { status: 'planned' },
+				fields: { sceneStatus: 'planned' },
 				links: [],
 				notes: '',
 				createdAt: new Date(),
@@ -490,7 +880,7 @@ describe('sceneStatusService - getScenesByStatus', () => {
 				name: 'Active',
 				description: '',
 				tags: [],
-				fields: { status: 'active' },
+				fields: { sceneStatus: 'in_progress' },
 				links: [],
 				notes: '',
 				createdAt: new Date(),
@@ -503,7 +893,7 @@ describe('sceneStatusService - getScenesByStatus', () => {
 				name: 'Planned 2',
 				description: '',
 				tags: [],
-				fields: { status: 'planned' },
+				fields: { sceneStatus: 'planned' },
 				links: [],
 				notes: '',
 				createdAt: new Date(),
@@ -513,6 +903,7 @@ describe('sceneStatusService - getScenesByStatus', () => {
 		];
 
 		mockDbEntities.toArray.mockResolvedValue(mockEntities);
+		mockCreateFromScene.mockResolvedValue({} as BaseEntity);
 
 		const plannedScenes = await getScenesByStatus('planned');
 
@@ -529,7 +920,7 @@ describe('sceneStatusService - getScenesByStatus', () => {
 				name: 'Completed 1',
 				description: '',
 				tags: [],
-				fields: { status: 'completed', completedAt: new Date().toISOString() },
+				fields: { sceneStatus: 'completed', completedAt: new Date().toISOString() },
 				links: [],
 				notes: '',
 				createdAt: new Date(),
@@ -542,7 +933,7 @@ describe('sceneStatusService - getScenesByStatus', () => {
 				name: 'Active',
 				description: '',
 				tags: [],
-				fields: { status: 'active' },
+				fields: { sceneStatus: 'in_progress' },
 				links: [],
 				notes: '',
 				createdAt: new Date(),
@@ -552,6 +943,7 @@ describe('sceneStatusService - getScenesByStatus', () => {
 		];
 
 		mockDbEntities.toArray.mockResolvedValue(mockEntities);
+		mockCreateFromScene.mockResolvedValue({} as BaseEntity);
 
 		const completedScenes = await getScenesByStatus('completed');
 
@@ -577,6 +969,7 @@ describe('sceneStatusService - getScenesByStatus', () => {
 		];
 
 		mockDbEntities.toArray.mockResolvedValue(mockEntities);
+		mockCreateFromScene.mockResolvedValue({} as BaseEntity);
 
 		const plannedScenes = await getScenesByStatus('planned');
 

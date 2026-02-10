@@ -42,12 +42,12 @@
 
 	// Get NPC response preview text
 	const responsePreview = $derived(() => {
-		if (interest === 0) return 'Hostile - negotiation will fail';
-		if (interest === 1) return 'Resistant - negotiation will fail';
-		if (interest === 2) return 'Reluctant - minor favor possible';
-		if (interest === 3) return 'Open - major favor possible';
-		if (interest === 4) return 'Willing - major favor likely';
-		return 'Eager - alliance possible';
+		if (interest === 0) return 'Failure - negotiation will fail';
+		if (interest === 1) return 'Failure - negotiation will fail';
+		if (interest === 2) return 'Minor favor possible';
+		if (interest === 3) return 'Major favor possible';
+		if (interest === 4) return 'Major favor likely';
+		return 'Alliance possible';
 	});
 </script>
 

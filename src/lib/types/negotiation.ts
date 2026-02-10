@@ -28,21 +28,21 @@ export type NegotiationStatus = 'preparing' | 'active' | 'completed';
 /**
  * NPC motivation types that can be used in arguments.
  * These represent the core drives that motivate NPCs in negotiations.
+ * Draw Steel canonical 13 motivations.
  */
 export type MotivationType =
-	| 'benevolence'
+	| 'charity'
 	| 'discovery'
+	| 'faith'
 	| 'freedom'
 	| 'greed'
-	| 'higher_authority'
+	| 'harmony'
 	| 'justice'
+	| 'knowledge'
 	| 'legacy'
-	| 'peace'
 	| 'power'
 	| 'protection'
-	| 'reputation'
-	| 'revelry'
-	| 'vengeance'
+	| 'revenge'
 	| 'wealth';
 
 // ============================================================================

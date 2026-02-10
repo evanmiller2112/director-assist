@@ -50,7 +50,7 @@ function createMockNegotiation(overrides?: Partial<NegotiationSession>): Negotia
 		],
 		pitfalls: [
 			{ description: 'Mentions of justice', isKnown: true },
-			{ description: 'Mentions of benevolence', isKnown: false }
+			{ description: 'Mentions of charity', isKnown: false }
 		],
 		arguments: [],
 		createdAt: now,
@@ -297,7 +297,7 @@ describe('Negotiation Store - Derived Values', () => {
 					{ type: 'justice', description: 'Motivated by justice', isKnown: true, timesUsed: 2 }
 				],
 				pitfalls: [
-					{ description: 'Mentions of benevolence', isKnown: true },
+					{ description: 'Mentions of charity', isKnown: true },
 					{ description: 'Mentions of freedom', isKnown: false }
 				]
 			});
@@ -1090,7 +1090,7 @@ describe('Negotiation Store - Argument Recording', () => {
 			const input: RecordArgumentInput = {
 				type: 'pitfall',
 			description: 'Test argument',
-				motivationType: 'benevolence',
+				motivationType: 'charity',
 				tier: 1
 			};
 
@@ -1273,7 +1273,7 @@ describe('Negotiation Store - Motivation and Pitfall Revelation', () => {
 				id,
 				pitfalls: [
 					{ description: 'Mentions of justice', isKnown: true },
-					{ description: 'Mentions of benevolence', isKnown: false }
+					{ description: 'Mentions of charity', isKnown: false }
 				]
 			});
 

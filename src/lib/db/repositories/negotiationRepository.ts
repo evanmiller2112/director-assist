@@ -27,6 +27,7 @@ import type {
 	NegotiationOutcome,
 	MotivationType
 } from '$lib/types/negotiation';
+import { createFromNegotiation } from '$lib/services/narrativeEventService';
 
 // ============================================================================
 // Helper Functions (Exported for Testing)
@@ -241,6 +242,7 @@ export const negotiationRepository = {
 	/**
 	 * Complete negotiation (active -> completed).
 	 * Sets outcome based on current interest level.
+	 * Creates narrative event (wrapped in try/catch to prevent blocking completion).
 	 */
 	async completeNegotiation(id: string): Promise<NegotiationSession> {
 		await ensureDbReady();
@@ -265,6 +267,14 @@ export const negotiationRepository = {
 		};
 
 		await db.negotiationSessions.put(updated);
+
+		// Create narrative event (non-blocking)
+		try {
+			await createFromNegotiation(updated);
+		} catch (error) {
+			console.error('Failed to create narrative event for negotiation:', error);
+		}
+
 		return updated;
 	},
 
@@ -376,6 +386,16 @@ export const negotiationRepository = {
 		}
 
 		await db.negotiationSessions.put(updated);
+
+		// Create narrative event if auto-completed (non-blocking)
+		if (shouldAutoComplete) {
+			try {
+				await createFromNegotiation(updated);
+			} catch (error) {
+				console.error('Failed to create narrative event for auto-completed negotiation:', error);
+			}
+		}
+
 		return updated;
 	},
 

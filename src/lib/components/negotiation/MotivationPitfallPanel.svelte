@@ -35,19 +35,18 @@
 	}: Props = $props();
 
 	const motivationIcons: Record<MotivationType, any> = {
-		benevolence: Heart,
+		charity: Heart,
 		discovery: Search,
+		faith: Users,
 		freedom: Bird,
 		greed: DollarSign,
-		higher_authority: Users,
+		harmony: Handshake,
 		justice: Scale,
+		knowledge: PartyPopper,
 		legacy: Trophy,
-		peace: Handshake,
 		power: Zap,
 		protection: Shield,
-		reputation: Trophy,
-		revelry: PartyPopper,
-		vengeance: Swords,
+		revenge: Swords,
 		wealth: DollarSign
 	};
 

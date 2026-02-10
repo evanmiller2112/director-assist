@@ -498,6 +498,314 @@ describe('NegotiationProgress Component - NPC Response Preview', () => {
 	});
 });
 
+/**
+ * Issue #406: NPC Response Previews Should Use Correct Draw Steel Terminology
+ *
+ * These tests verify that the NPC response preview text:
+ * 1. Uses correct Draw Steel outcome terminology (failure, minor_favor, major_favor, alliance)
+ * 2. Focuses on party achievement rather than NPC emotional states
+ * 3. Does not reference old/incorrect outcome category names
+ *
+ * The 4 Draw Steel outcomes are:
+ * - failure (interest 0-1): Party failed to convince the NPC
+ * - minor_favor (interest 2): NPC grants a small concession
+ * - major_favor (interest 3-4): NPC agrees to significant terms
+ * - alliance (interest 5): NPC becomes a full ally/partner
+ *
+ * RED phase: These tests should FAIL if previews use old terminology
+ * like "Hostile", "Resistant", "Reluctant", "Open", "Willing", "Eager"
+ */
+describe('NegotiationProgress - Issue #406: Correct Draw Steel Outcome Terminology', () => {
+	describe('Failure Outcome (Interest 0-1)', () => {
+		it('should NOT use emotional terms like "Hostile" for interest 0', () => {
+			render(NegotiationProgress, {
+				props: {
+					interest: 0,
+					patience: 3
+				}
+			});
+
+			// Should not contain old emotional terminology
+			expect(screen.queryByText(/hostile/i)).not.toBeInTheDocument();
+		});
+
+		it('should NOT use emotional terms like "Resistant" for interest 1', () => {
+			render(NegotiationProgress, {
+				props: {
+					interest: 1,
+					patience: 3
+				}
+			});
+
+			// Should not contain old emotional terminology
+			expect(screen.queryByText(/resistant/i)).not.toBeInTheDocument();
+		});
+
+		it('should use party-achievement focused language for interest 0', () => {
+			render(NegotiationProgress, {
+				props: {
+					interest: 0,
+					patience: 3
+				}
+			});
+
+			// Should focus on what the party achieved (or failed to achieve)
+			// Acceptable terms: "party failed", "failed to convince", "no agreement", "negotiation will fail"
+			const text = screen.getByText(/failure|will.*fail|failed.*convince|no.*agreement/i);
+			expect(text).toBeInTheDocument();
+			expect(text.textContent).not.toMatch(/hostile/i);
+		});
+
+		it('should use party-achievement focused language for interest 1', () => {
+			render(NegotiationProgress, {
+				props: {
+					interest: 1,
+					patience: 3
+				}
+			});
+
+			// Should focus on what the party achieved (or failed to achieve)
+			const text = screen.getByText(/failure|will.*fail|failed.*convince|no.*agreement/i);
+			expect(text).toBeInTheDocument();
+			expect(text.textContent).not.toMatch(/resistant/i);
+		});
+	});
+
+	describe('Minor Favor Outcome (Interest 2)', () => {
+		it('should NOT use emotional terms like "Reluctant" for interest 2', () => {
+			render(NegotiationProgress, {
+				props: {
+					interest: 2,
+					patience: 3
+				}
+			});
+
+			// Should not contain old emotional terminology
+			expect(screen.queryByText(/reluctant/i)).not.toBeInTheDocument();
+		});
+
+		it('should reference "minor favor" outcome for interest 2', () => {
+			render(NegotiationProgress, {
+				props: {
+					interest: 2,
+					patience: 3
+				}
+			});
+
+			// Must mention "minor favor" or "minor_favor"
+			expect(screen.getByText(/minor.*favor/i)).toBeInTheDocument();
+		});
+
+		it('should use party-achievement focused language for interest 2', () => {
+			render(NegotiationProgress, {
+				props: {
+					interest: 2,
+					patience: 3
+				}
+			});
+
+			// Should focus on what the party will achieve
+			// Acceptable: "minor favor possible", "party can gain small concession", etc.
+			const text = screen.getByText(/minor.*favor/i);
+			expect(text).toBeInTheDocument();
+			expect(text.textContent).not.toMatch(/reluctant|hesitant|wary/i);
+		});
+	});
+
+	describe('Major Favor Outcome (Interest 3-4)', () => {
+		it('should NOT use emotional terms like "Open" for interest 3', () => {
+			render(NegotiationProgress, {
+				props: {
+					interest: 3,
+					patience: 3
+				}
+			});
+
+			// Should not contain old emotional terminology
+			expect(screen.queryByText(/\bopen\b/i)).not.toBeInTheDocument();
+		});
+
+		it('should NOT use emotional terms like "Willing" for interest 4', () => {
+			render(NegotiationProgress, {
+				props: {
+					interest: 4,
+					patience: 3
+				}
+			});
+
+			// Should not contain old emotional terminology
+			expect(screen.queryByText(/willing/i)).not.toBeInTheDocument();
+		});
+
+		it('should reference "major favor" outcome for interest 3', () => {
+			render(NegotiationProgress, {
+				props: {
+					interest: 3,
+					patience: 3
+				}
+			});
+
+			// Must mention "major favor" or "major_favor"
+			expect(screen.getByText(/major.*favor/i)).toBeInTheDocument();
+		});
+
+		it('should reference "major favor" outcome for interest 4', () => {
+			render(NegotiationProgress, {
+				props: {
+					interest: 4,
+					patience: 3
+				}
+			});
+
+			// Must mention "major favor" or "major_favor"
+			expect(screen.getByText(/major.*favor/i)).toBeInTheDocument();
+		});
+
+		it('should use party-achievement focused language for interest 3', () => {
+			render(NegotiationProgress, {
+				props: {
+					interest: 3,
+					patience: 3
+				}
+			});
+
+			// Should focus on what the party will achieve
+			const text = screen.getByText(/major.*favor/i);
+			expect(text).toBeInTheDocument();
+			expect(text.textContent).not.toMatch(/\bopen\b|receptive|interested/i);
+		});
+
+		it('should use party-achievement focused language for interest 4', () => {
+			render(NegotiationProgress, {
+				props: {
+					interest: 4,
+					patience: 3
+				}
+			});
+
+			// Should focus on what the party will achieve
+			const text = screen.getByText(/major.*favor/i);
+			expect(text).toBeInTheDocument();
+			expect(text.textContent).not.toMatch(/willing|ready|eager/i);
+		});
+	});
+
+	describe('Alliance Outcome (Interest 5)', () => {
+		it('should NOT use emotional terms like "Eager" for interest 5', () => {
+			render(NegotiationProgress, {
+				props: {
+					interest: 5,
+					patience: 3
+				}
+			});
+
+			// Should not contain old emotional terminology
+			expect(screen.queryByText(/eager/i)).not.toBeInTheDocument();
+		});
+
+		it('should reference "alliance" outcome for interest 5', () => {
+			render(NegotiationProgress, {
+				props: {
+					interest: 5,
+					patience: 3
+				}
+			});
+
+			// Must mention "alliance"
+			expect(screen.getByText(/alliance/i)).toBeInTheDocument();
+		});
+
+		it('should use party-achievement focused language for interest 5', () => {
+			render(NegotiationProgress, {
+				props: {
+					interest: 5,
+					patience: 3
+				}
+			});
+
+			// Should focus on what the party will achieve
+			const text = screen.getByText(/alliance/i);
+			expect(text).toBeInTheDocument();
+			expect(text.textContent).not.toMatch(/eager|enthusiastic|excited/i);
+		});
+	});
+
+	describe('No Old Outcome Category Names', () => {
+		it('should not reference any old emotional category names across all interest levels', () => {
+			const oldTerms = ['hostile', 'resistant', 'reluctant', 'open', 'willing', 'eager'];
+			const interestLevels = [0, 1, 2, 3, 4, 5];
+
+			interestLevels.forEach((interest) => {
+				const { container } = render(NegotiationProgress, {
+					props: {
+						interest,
+						patience: 3
+					}
+				});
+
+				const text = container.textContent?.toLowerCase() || '';
+
+				oldTerms.forEach((term) => {
+					// Special handling for "open" to avoid false positives
+					if (term === 'open') {
+						expect(text).not.toMatch(/\bopen\b/i);
+					} else {
+						expect(text).not.toContain(term);
+					}
+				});
+			});
+		});
+	});
+
+	describe('Consistent Outcome Mapping', () => {
+		it('should map interest 0 and 1 to failure outcome', () => {
+			const { container: container0 } = render(NegotiationProgress, {
+				props: { interest: 0, patience: 3 }
+			});
+
+			const { container: container1 } = render(NegotiationProgress, {
+				props: { interest: 1, patience: 3 }
+			});
+
+			// Both should reference failure
+			expect(container0.textContent).toMatch(/failure|fail/i);
+			expect(container1.textContent).toMatch(/failure|fail/i);
+		});
+
+		it('should map interest 2 to minor_favor outcome', () => {
+			const { container } = render(NegotiationProgress, {
+				props: { interest: 2, patience: 3 }
+			});
+
+			// Should reference minor favor
+			expect(container.textContent).toMatch(/minor.*favor/i);
+		});
+
+		it('should map interest 3 and 4 to major_favor outcome', () => {
+			const { container: container3 } = render(NegotiationProgress, {
+				props: { interest: 3, patience: 3 }
+			});
+
+			const { container: container4 } = render(NegotiationProgress, {
+				props: { interest: 4, patience: 3 }
+			});
+
+			// Both should reference major favor
+			expect(container3.textContent).toMatch(/major.*favor/i);
+			expect(container4.textContent).toMatch(/major.*favor/i);
+		});
+
+		it('should map interest 5 to alliance outcome', () => {
+			const { container } = render(NegotiationProgress, {
+				props: { interest: 5, patience: 3 }
+			});
+
+			// Should reference alliance
+			expect(container.textContent).toMatch(/alliance/i);
+		});
+	});
+});
+
 describe('NegotiationProgress Component - Accessibility', () => {
 	it('should have accessible label for Interest progress bar', () => {
 		const { container } = render(NegotiationProgress, {

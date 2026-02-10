@@ -11,6 +11,7 @@ import { entityRepository } from '$lib/db/entityRepository';
 import { db } from '$lib/db';
 import { campaignStore } from '$lib/stores';
 import type { BaseEntity } from '$lib/types';
+import { createFromScene } from '$lib/services/narrativeEventService';
 
 /**
  * Start a scene - sets sceneStatus to 'in_progress' and updates startedAt timestamp
@@ -62,6 +63,14 @@ export async function completeScene(sceneId: string, notes?: string): Promise<vo
 			whatHappened
 		}
 	});
+
+	// Create narrative event from completed scene
+	// Use try/catch so narrative event creation failure doesn't block scene completion
+	try {
+		await createFromScene(sceneId);
+	} catch (error) {
+		console.error('Failed to create narrative event for scene:', error);
+	}
 }
 
 /**

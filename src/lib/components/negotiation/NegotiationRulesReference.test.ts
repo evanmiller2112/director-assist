@@ -7,7 +7,7 @@
  * - Collapsible panel (collapsed by default)
  * - Header with book icon and toggle chevron
  * - Argument Outcomes Table showing Interest/Patience changes by tier
- * - The 12 Motivations list
+ * - The 13 Motivations list
  * - Outcomes by Interest Level (0-5)
  */
 
@@ -154,14 +154,14 @@ describe('NegotiationRulesReference Component - Argument Outcomes Table', () => 
 	});
 });
 
-describe('NegotiationRulesReference Component - The 12 Motivations', () => {
-	it('should show The 12 Motivations section when expanded', async () => {
+describe('NegotiationRulesReference Component - The 13 Motivations', () => {
+	it('should show The 13 Motivations section when expanded', async () => {
 		render(NegotiationRulesReference);
 		const header = screen.getByRole('button');
 
 		await fireEvent.click(header);
 
-		expect(screen.getByText(/the.*12.*motivations/i)).toBeInTheDocument();
+		expect(screen.getByText(/the.*13.*motivations/i)).toBeInTheDocument();
 	});
 
 	it('should list Benevolence', async () => {
@@ -170,7 +170,7 @@ describe('NegotiationRulesReference Component - The 12 Motivations', () => {
 
 		await fireEvent.click(header);
 
-		expect(screen.getByText(/benevolence/i)).toBeInTheDocument();
+		expect(screen.getByText(/charity/i)).toBeInTheDocument();
 	});
 
 	it('should list Discovery', async () => {
@@ -200,13 +200,13 @@ describe('NegotiationRulesReference Component - The 12 Motivations', () => {
 		expect(screen.getByText(/greed/i)).toBeInTheDocument();
 	});
 
-	it('should list Higher Authority', async () => {
+	it('should list Faith', async () => {
 		render(NegotiationRulesReference);
 		const header = screen.getByRole('button');
 
 		await fireEvent.click(header);
 
-		expect(screen.getByText(/higher.*authority/i)).toBeInTheDocument();
+		expect(screen.getByText(/faith/i)).toBeInTheDocument();
 	});
 
 	it('should list Justice', async () => {
@@ -233,7 +233,7 @@ describe('NegotiationRulesReference Component - The 12 Motivations', () => {
 
 		await fireEvent.click(header);
 
-		expect(screen.getByText(/peace/i)).toBeInTheDocument();
+		expect(screen.getByText(/harmony/i)).toBeInTheDocument();
 	});
 
 	it('should list Power', async () => {
@@ -260,7 +260,7 @@ describe('NegotiationRulesReference Component - The 12 Motivations', () => {
 
 		await fireEvent.click(header);
 
-		expect(screen.getByText(/revelry/i)).toBeInTheDocument();
+		expect(screen.getByText(/knowledge/i)).toBeInTheDocument();
 	});
 
 	it('should list Vengeance', async () => {
@@ -269,28 +269,29 @@ describe('NegotiationRulesReference Component - The 12 Motivations', () => {
 
 		await fireEvent.click(header);
 
-		expect(screen.getByText(/vengeance/i)).toBeInTheDocument();
+		expect(screen.getByText(/revenge/i)).toBeInTheDocument();
 	});
 
-	it('should display all 12 motivations', async () => {
+	it('should display all 13 motivations', async () => {
 		render(NegotiationRulesReference);
 		const header = screen.getByRole('button');
 
 		await fireEvent.click(header);
 
 		const motivations = [
-			'Benevolence',
+			'Charity',
 			'Discovery',
+			'Faith',
 			'Freedom',
 			'Greed',
-			'Higher Authority',
+			'Harmony',
 			'Justice',
+			'Knowledge',
 			'Legacy',
-			'Peace',
 			'Power',
 			'Protection',
-			'Revelry',
-			'Vengeance'
+			'Revenge',
+			'Wealth'
 		];
 
 		motivations.forEach(motivation => {

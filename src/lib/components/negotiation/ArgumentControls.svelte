@@ -31,25 +31,26 @@
 
 	// Form state
 	let argumentType = $state<'motivation' | 'no_motivation' | 'pitfall'>('motivation');
-	let selectedMotivation = $state<string>('benevolence');
+	let selectedMotivation = $state<string>('charity');
 	let selectedTier = $state<1 | 2 | 3>(1);
 	let playerName = $state('');
 	let notes = $state('');
 
-	// All 12 motivation types
+	// All 13 Draw Steel motivation types
 	const allMotivations: MotivationType[] = [
-		'benevolence',
+		'charity',
 		'discovery',
+		'faith',
 		'freedom',
 		'greed',
-		'higher_authority',
+		'harmony',
 		'justice',
+		'knowledge',
 		'legacy',
-		'peace',
 		'power',
 		'protection',
-		'revelry',
-		'vengeance'
+		'revenge',
+		'wealth'
 	];
 
 	// Check if a motivation is disabled
@@ -65,28 +66,26 @@
 	// - Motivation Appeal: Tier 1 = +0 interest/-1 patience, Tier 2 = +1 interest/-1 patience, Tier 3 = +1 interest/+0 patience
 	// - No Motivation: Tier 1 = -1 interest/-1 patience, Tier 2 = +0 interest/-1 patience, Tier 3 = +1 interest/-1 patience
 	// - Pitfall: Always -1 interest/-1 patience
-	const outcomePreview = $derived(() => {
-		if (argumentType === 'motivation') {
-			if (selectedTier === 1) return { interest: '+0', patience: '-1' };
-			if (selectedTier === 2) return { interest: '+1', patience: '-1' };
-			return { interest: '+1', patience: '+0' };
-		} else if (argumentType === 'no_motivation') {
-			if (selectedTier === 1) return { interest: '-1', patience: '-1' };
-			if (selectedTier === 2) return { interest: '+0', patience: '-1' };
-			return { interest: '+1', patience: '-1' };
-		} else {
-			// pitfall
-			return { interest: '-1', patience: '-1' };
-		}
-	});
+	let outcomePreview = $derived(
+		argumentType === 'motivation'
+			? selectedTier === 1
+				? { interest: '+0', patience: '-1' }
+				: selectedTier === 2
+					? { interest: '+1', patience: '-1' }
+					: { interest: '+1', patience: '+0' }
+			: argumentType === 'no_motivation'
+				? selectedTier === 1
+					? { interest: '-1', patience: '-1' }
+					: selectedTier === 2
+						? { interest: '+0', patience: '-1' }
+						: { interest: '+1', patience: '-1' }
+				: { interest: '-1', patience: '-1' }
+	);
 
 	// Check if record button should be disabled
-	const isRecordDisabled = $derived(() => {
-		if (argumentType === 'motivation' || argumentType === 'pitfall') {
-			return allMotivationsUsed;
-		}
-		return false;
-	});
+	let isRecordDisabled = $derived(
+		(argumentType === 'motivation' || argumentType === 'pitfall') ? allMotivationsUsed : false
+	);
 
 	// Handle record button click
 	function handleRecord() {
@@ -164,7 +163,7 @@
 		// Enter to record
 		if (key === 'enter') {
 			// Check if record button would be enabled
-			if (!isRecordDisabled()) {
+			if (!isRecordDisabled) {
 				handleRecord();
 			}
 			return;
@@ -181,6 +180,7 @@
 		<select
 			id="argument-type"
 			bind:value={argumentType}
+			oninput={(e) => { argumentType = (e.target as HTMLSelectElement).value as 'motivation' | 'no_motivation' | 'pitfall'; }}
 			class="w-full rounded-md border border-gray-300 bg-white px-3 py-2 dark:border-gray-600 dark:bg-gray-800"
 		>
 			<option value="motivation">Motivation</option>
@@ -206,6 +206,7 @@
 						value={motivation}
 						disabled={isMotivationDisabled(motivation)}
 						aria-disabled={isMotivationDisabled(motivation)}
+						aria-label={formatMotivationType(motivation)}
 					>
 						{formatMotivationType(motivation)}
 						{#if isMotivationDisabled(motivation)}(Used){/if}
@@ -229,6 +230,7 @@
 						value={motivation}
 						disabled={isMotivationDisabled(motivation)}
 						aria-disabled={isMotivationDisabled(motivation)}
+						aria-label={formatMotivationType(motivation)}
 					>
 						{formatMotivationType(motivation)}
 						{#if isMotivationDisabled(motivation)}(Used){/if}
@@ -314,8 +316,8 @@
 	<div class="rounded-lg border border-gray-300 bg-gray-50 p-4 dark:border-gray-600 dark:bg-gray-800">
 		<h4 class="text-sm font-medium mb-2">Expected Outcome:</h4>
 		<div class="space-y-1 text-sm text-gray-700 dark:text-gray-300">
-			<div>{outcomePreview().interest} Interest</div>
-			<div>{outcomePreview().patience} Patience</div>
+			<div>{outcomePreview.interest} Interest</div>
+			<div>{outcomePreview.patience} Patience</div>
 		</div>
 	</div>
 
@@ -323,7 +325,7 @@
 	<button
 		type="button"
 		onclick={handleRecord}
-		disabled={isRecordDisabled()}
+		disabled={isRecordDisabled}
 		class="w-full rounded-md bg-blue-600 px-4 py-2 font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-blue-600"
 	>
 		Record Argument

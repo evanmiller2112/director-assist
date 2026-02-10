@@ -336,18 +336,19 @@ describe('NegotiationSetup Component - Motivation Configuration', () => {
 		const addButton = screen.getByRole('button', { name: /add.*motivation/i });
 		await fireEvent.click(addButton);
 
-		expect(screen.getByRole('option', { name: /benevolence/i })).toBeInTheDocument();
+		expect(screen.getByRole('option', { name: /charity/i })).toBeInTheDocument();
 		expect(screen.getByRole('option', { name: /discovery/i })).toBeInTheDocument();
+		expect(screen.getByRole('option', { name: /faith/i })).toBeInTheDocument();
 		expect(screen.getByRole('option', { name: /freedom/i })).toBeInTheDocument();
 		expect(screen.getByRole('option', { name: /greed/i })).toBeInTheDocument();
-		expect(screen.getByRole('option', { name: /higher.*authority/i })).toBeInTheDocument();
+		expect(screen.getByRole('option', { name: /harmony/i })).toBeInTheDocument();
 		expect(screen.getByRole('option', { name: /justice/i })).toBeInTheDocument();
+		expect(screen.getByRole('option', { name: /knowledge/i })).toBeInTheDocument();
 		expect(screen.getByRole('option', { name: /legacy/i })).toBeInTheDocument();
-		expect(screen.getByRole('option', { name: /peace/i })).toBeInTheDocument();
 		expect(screen.getByRole('option', { name: /power/i })).toBeInTheDocument();
 		expect(screen.getByRole('option', { name: /protection/i })).toBeInTheDocument();
-		expect(screen.getByRole('option', { name: /revelry/i })).toBeInTheDocument();
-		expect(screen.getByRole('option', { name: /vengeance/i })).toBeInTheDocument();
+		expect(screen.getByRole('option', { name: /revenge/i })).toBeInTheDocument();
+		expect(screen.getByRole('option', { name: /wealth/i })).toBeInTheDocument();
 	});
 
 	it('should show known toggle for motivation', async () => {
@@ -462,14 +463,14 @@ describe('NegotiationSetup Component - Pitfall Configuration', () => {
 		expect(typeSelect).toBeInTheDocument();
 	});
 
-	it('should have all 12 motivation types in pitfall selector', async () => {
+	it('should have all 13 motivation types in pitfall selector', async () => {
 		render(NegotiationSetup);
 
 		const addButton = screen.getByRole('button', { name: /add.*pitfall/i });
 		await fireEvent.click(addButton);
 
 		// Pitfalls use the same motivation types
-		expect(screen.getByRole('option', { name: /benevolence/i })).toBeInTheDocument();
+		expect(screen.getByRole('option', { name: /charity/i })).toBeInTheDocument();
 		expect(screen.getByRole('option', { name: /justice/i })).toBeInTheDocument();
 		expect(screen.getByRole('option', { name: /power/i })).toBeInTheDocument();
 	});
@@ -723,7 +724,7 @@ describe('NegotiationSetup Component - Create Event', () => {
 			expect.objectContaining({
 				motivations: expect.arrayContaining([
 					expect.objectContaining({
-						type: 'benevolence',
+						type: 'charity',
 						isKnown: false
 					})
 				])

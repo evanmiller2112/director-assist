@@ -25,8 +25,16 @@
 	let { children } = $props();
 	let headerComponent: ReturnType<typeof Header> | undefined = $state();
 
+	// Reactive signal to force backup reminder state re-computation (Issue #423)
+	// localStorage reads are not reactive, so we use this signal to trigger updates
+	let backupDismissSignal = $state(0);
+
 	// Backup reminder state
 	const backupReminderState = $derived.by(() => {
+		// Reference the reactive signal to force re-computation when dismissed
+		// eslint-disable-next-line @typescript-eslint/no-unused-expressions
+		backupDismissSignal;
+
 		// Get entity count (exclude campaign entities from count)
 		const entityCount = entitiesStore.entities.filter((e) => e.type !== 'campaign').length;
 
@@ -94,6 +102,8 @@
 	function handleBackupDismiss() {
 		// Save dismiss time
 		setLastBackupPromptDismissedAt(new Date());
+		// Increment signal to trigger backupReminderState re-computation (Issue #423)
+		backupDismissSignal++;
 	}
 
 	function handleAiSetupGetStarted() {

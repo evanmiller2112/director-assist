@@ -6,7 +6,7 @@
 	 *
 	 * Collapsible reference panel showing Draw Steel negotiation rules:
 	 * - Argument Outcomes Table
-	 * - The 12 Motivations
+	 * - The 13 Motivations
 	 * - Outcomes by Interest Level
 	 */
 
@@ -18,20 +18,21 @@
 		isExpanded = !isExpanded;
 	}
 
-	// The 12 motivations from Draw Steel
+	// The 13 motivations from Draw Steel
 	const motivations = [
-		'Benevolence',
+		'Charity',
 		'Discovery',
+		'Faith',
 		'Freedom',
 		'Greed',
-		'Higher Authority',
+		'Harmony',
 		'Justice',
+		'Knowledge',
 		'Legacy',
-		'Peace',
 		'Power',
 		'Protection',
-		'Revelry',
-		'Vengeance'
+		'Revenge',
+		'Wealth'
 	];
 </script>
 
@@ -166,10 +167,10 @@
 				</div>
 			</section>
 
-			<!-- The 12 Motivations -->
+			<!-- The 13 Motivations -->
 			<section>
 				<h4 class="text-base font-semibold text-slate-900 dark:text-white mb-3">
-					The 12 Motivations
+					The 13 Motivations
 				</h4>
 				<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
 					{#each motivations as motivation}

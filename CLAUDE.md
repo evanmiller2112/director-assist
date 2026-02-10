@@ -49,13 +49,19 @@ For any feature or bug fix, use the appropriate agents in order:
 
 For creating new releases, see `docs/RELEASE_WORKFLOW.md`. The release pipeline:
 
-1. **mergemaster** - Merge feature branch into main
-2. **docs-specialist** - Update changelog and release notes
-3. **git-manager** - Create version tag
-4. **github-project-manager** - Publish GitHub release
+1. **qa-expert** - Pre-release validation (`npm run check`, `vitest run`, `npm run build`)
+2. **mergemaster** - Merge feature branch into main
+3. **qa-expert** - Post-merge validation (re-run check + tests after conflict resolution)
+4. **docs-specialist** - Update changelog, version bump
+5. **git-manager** - Create version tag
+6. **github-project-manager** - Publish GitHub release
+
+**IMPORTANT:** Always validate before AND after merge. Conflict resolution can introduce TypeScript errors.
 
 ```
+"Validate for release" → qa-expert (npm run check, vitest run, npm run build)
 "Merge branch into main" → mergemaster
+"Re-validate after merge" → qa-expert
 "Update changelog" → docs-specialist
 "Create tag vX.Y.Z" → git-manager
 "Publish GitHub release" → github-project-manager

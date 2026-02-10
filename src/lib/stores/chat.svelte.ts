@@ -13,6 +13,8 @@ function createChatStore() {
 	let includeLinkedEntities = $state(true);
 	let generationType = $state<GenerationType>('custom');
 	let typeFieldValues = $state<Record<string, string>>({});
+	let sendAllContext = $state(false);
+	let contextDetailLevel = $state<'summary' | 'full'>('summary');
 
 	return {
 		get messages() {
@@ -38,6 +40,12 @@ function createChatStore() {
 		},
 		get typeFieldValues() {
 			return typeFieldValues;
+		},
+		get sendAllContext() {
+			return sendAllContext;
+		},
+		get contextDetailLevel() {
+			return contextDetailLevel;
 		},
 
 		async load() {
@@ -107,7 +115,9 @@ function createChatStore() {
 						streamingContent = partial;
 					},
 					generationType,
-					typeFieldValues
+					typeFieldValues,
+					sendAllContext,
+					contextDetailLevel
 				);
 
 				// Add assistant message with same conversationId
@@ -205,6 +215,14 @@ function createChatStore() {
 			typeFieldValues = {};
 		},
 
+		setSendAllContext(enabled: boolean) {
+			sendAllContext = enabled;
+		},
+
+		setContextDetailLevel(level: 'summary' | 'full') {
+			contextDetailLevel = level;
+		},
+
 		/**
 		 * Reset store to initial state
 		 * Used when clearing all data or resetting application state
@@ -218,6 +236,8 @@ function createChatStore() {
 			includeLinkedEntities = true;
 			generationType = 'custom';
 			typeFieldValues = {};
+			sendAllContext = false;
+			contextDetailLevel = 'summary';
 		}
 	};
 }

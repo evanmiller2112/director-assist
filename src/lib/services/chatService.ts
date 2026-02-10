@@ -1,11 +1,12 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { buildContext, formatContextForPrompt } from './contextBuilder';
 import { getSelectedModel } from './modelService';
-import type { ChatMessage, GenerationType } from '$lib/types';
+import type { ChatMessage, GenerationType, Campaign } from '$lib/types';
 import type { DebugEntry, ContextSummary } from '$lib/types/debug';
 import { chatRepository } from '$lib/db/repositories';
 import { getGenerationTypeConfig } from '$lib/config/generationTypes';
 import { debugStore } from '$lib/stores/debug.svelte';
+import { campaignStore } from '$lib/stores/campaign.svelte';
 
 const SYSTEM_PROMPT = `You are a TTRPG campaign assistant for Director Assist, helping Directors (Game Masters) with campaign preparation, content generation, and world-building.
 
@@ -40,7 +41,9 @@ export async function sendChatMessage(
 	includeLinked: boolean = true,
 	onStream?: (partial: string) => void,
 	generationType: GenerationType = 'custom',
-	typeFieldValues?: Record<string, string>
+	typeFieldValues?: Record<string, string>,
+	sendAllContext: boolean = false,
+	contextDetailLevel: 'summary' | 'full' = 'summary'
 ): Promise<string> {
 	// Get API key from localStorage
 	const apiKey = typeof window !== 'undefined' ? localStorage.getItem('dm-assist-api-key') : null;
@@ -49,11 +52,32 @@ export async function sendChatMessage(
 		throw new Error('API key not configured. Please add your Anthropic API key in Settings.');
 	}
 
+	// Get campaign data if available
+	let campaignData: Campaign | undefined;
+	if (campaignStore.campaign) {
+		const systemProfile = campaignStore.getCurrentSystemProfile();
+		campaignData = {
+			id: campaignStore.campaign.id,
+			name: campaignStore.campaign.name,
+			description: campaignStore.campaign.description || '',
+			system: systemProfile?.name || '',
+			setting: campaignStore.campaign.summary || '',
+			createdAt: campaignStore.campaign.createdAt,
+			updatedAt: campaignStore.campaign.updatedAt,
+			customEntityTypes: campaignStore.customEntityTypes,
+			entityTypeOverrides: campaignStore.entityTypeOverrides,
+			settings: campaignStore.settings
+		};
+	}
+
 	// Build context from selected entities
 	const context = await buildContext({
 		entityIds: contextEntityIds,
 		includeLinked,
-		maxCharacters: 6000 // Leave room for conversation history
+		sendAll: sendAllContext,
+		detailLevel: contextDetailLevel,
+		campaign: campaignData,
+		maxCharacters: contextDetailLevel === 'full' ? 30000 : 6000 // Leave room for conversation history
 	});
 
 	const contextPrompt = formatContextForPrompt(context);

@@ -920,9 +920,7 @@ describe('RelateCommand Component - Notes Field', () => {
 
 			// Set strength
 			const strengthSelect = screen.getByLabelText(/strength/i) as HTMLSelectElement;
-			strengthSelect.value = 'strong';
-			await fireEvent.input(strengthSelect);
-			await fireEvent.change(strengthSelect);
+			await fireEvent.change(strengthSelect, { target: { value: 'strong' } });
 			await tick();
 
 			// Submit
@@ -1020,9 +1018,7 @@ describe('RelateCommand Component - Notes Field', () => {
 
 				// Set strength
 				const strengthSelect = screen.getByLabelText(/strength/i) as HTMLSelectElement;
-				strengthSelect.value = strength;
-				await fireEvent.input(strengthSelect);
-				await fireEvent.change(strengthSelect);
+				await fireEvent.change(strengthSelect, { target: { value: strength } });
 				await tick();
 
 				// Submit
@@ -1803,9 +1799,7 @@ describe('RelateCommand Component - Notes Field', () => {
 			await fireEvent.input(notesTextarea, { target: { value: 'United against Sauron' } });
 
 			const strengthSelect = screen.getByLabelText(/strength/i) as HTMLSelectElement;
-			strengthSelect.value = 'strong';
-			await fireEvent.input(strengthSelect);
-			await fireEvent.change(strengthSelect);
+			await fireEvent.change(strengthSelect, { target: { value: 'strong' } });
 			await tick();
 
 			const tagsInput = screen.getByLabelText(/tags/i) as HTMLInputElement;
@@ -2624,9 +2618,7 @@ describe('RelateCommand Component - Notes Field', () => {
 			await fireEvent.input(notesTextarea, { target: { value: 'Active member since 3018' } });
 
 			const strengthSelect = screen.getByLabelText(/strength/i) as HTMLSelectElement;
-			strengthSelect.value = 'strong';
-			await fireEvent.input(strengthSelect);
-			await fireEvent.change(strengthSelect);
+			await fireEvent.change(strengthSelect, { target: { value: 'strong' } });
 			await tick();
 
 			const tagsInput = screen.getByLabelText(/tags/i) as HTMLInputElement;

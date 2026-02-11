@@ -25,11 +25,35 @@ import {
 } from '../../../tests/utils/combatTestUtils';
 import type { CombatSession } from '$lib/types/combat';
 
-// Mock page params
-let mockParams = { id: 'combat-123' };
-const mockPage = {
-	params: mockParams
-};
+// Mock page params and combat store - use vi.hoisted() for proper mock hoisting
+const { mockParams, mockPage, mockCurrentCombat, mockCombatStore } = vi.hoisted(() => {
+	const params = { id: 'combat-123' };
+	const page = {
+		params: params
+	};
+	const currentCombat = { value: null as CombatSession | null };
+	return {
+		mockParams: params,
+		mockPage: page,
+		mockCurrentCombat: currentCombat,
+		mockCombatStore: {
+			subscribe: vi.fn(),
+			getById: vi.fn((id: string) => currentCombat.value),
+			update: vi.fn(),
+			startCombat: vi.fn(),
+			nextTurn: vi.fn(),
+			previousTurn: vi.fn(),
+			endRound: vi.fn(),
+			addCombatant: vi.fn(),
+			updateCombatant: vi.fn(),
+			removeCombatant: vi.fn(),
+			addCondition: vi.fn(),
+			removeCondition: vi.fn(),
+			updateHeroPoints: vi.fn(),
+			updateVictoryPoints: vi.fn()
+		}
+	};
+});
 
 vi.mock('$app/stores', () => ({
 	page: {
@@ -40,25 +64,6 @@ vi.mock('$app/stores', () => ({
 	}
 }));
 
-// Mock combat store
-let mockCurrentCombat: CombatSession | null = null;
-const mockCombatStore = {
-	subscribe: vi.fn(),
-	getById: vi.fn((id: string) => mockCurrentCombat),
-	update: vi.fn(),
-	startCombat: vi.fn(),
-	nextTurn: vi.fn(),
-	previousTurn: vi.fn(),
-	endRound: vi.fn(),
-	addCombatant: vi.fn(),
-	updateCombatant: vi.fn(),
-	removeCombatant: vi.fn(),
-	addCondition: vi.fn(),
-	removeCondition: vi.fn(),
-	updateHeroPoints: vi.fn(),
-	updateVictoryPoints: vi.fn()
-};
-
 vi.mock('$lib/stores/combatStore', () => ({
 	combatStore: mockCombatStore
 }));
@@ -66,9 +71,9 @@ vi.mock('$lib/stores/combatStore', () => ({
 describe('Combat Runner Page - Basic Rendering', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
-		mockCurrentCombat = createActiveCombatSession(2, 2);
-		mockCurrentCombat.id = 'combat-123';
-		mockCurrentCombat.name = 'Test Combat';
+		mockCurrentCombat.value = createActiveCombatSession(2, 2);
+		mockCurrentCombat.value.id = 'combat-123';
+		mockCurrentCombat.value.name = 'Test Combat';
 	});
 
 	it('should render without crashing', () => {
@@ -82,7 +87,7 @@ describe('Combat Runner Page - Basic Rendering', () => {
 	});
 
 	it('should display current round number', () => {
-		mockCurrentCombat!.currentRound = 3;
+		mockCurrentCombat.value!.currentRound = 3;
 		render(CombatRunnerPage);
 
 		expect(screen.getByText(/round.*3/i)).toBeInTheDocument();
@@ -92,7 +97,7 @@ describe('Combat Runner Page - Basic Rendering', () => {
 		render(CombatRunnerPage);
 
 		// InitiativeTracker should be present (check for combatant names)
-		mockCurrentCombat!.combatants.forEach(combatant => {
+		mockCurrentCombat.value!.combatants.forEach(combatant => {
 			expect(screen.getByText(combatant.name)).toBeInTheDocument();
 		});
 	});
@@ -105,7 +110,7 @@ describe('Combat Runner Page - Basic Rendering', () => {
 	});
 
 	it('should show "Not Found" message when combat does not exist', () => {
-		mockCurrentCombat = null;
+		mockCurrentCombat.value = null;
 		render(CombatRunnerPage);
 
 		expect(screen.getByText(/combat.*not found/i)).toBeInTheDocument();
@@ -115,23 +120,23 @@ describe('Combat Runner Page - Basic Rendering', () => {
 describe('Combat Runner Page - Initiative Tracker Integration', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
-		mockCurrentCombat = createActiveCombatSession(2, 2);
-		mockCurrentCombat.id = 'combat-123';
+		mockCurrentCombat.value = createActiveCombatSession(2, 2);
+		mockCurrentCombat.value.id = 'combat-123';
 	});
 
 	it('should display all combatants in InitiativeTracker', () => {
 		render(CombatRunnerPage);
 
-		mockCurrentCombat!.combatants.forEach(combatant => {
+		mockCurrentCombat.value!.combatants.forEach(combatant => {
 			expect(screen.getByText(combatant.name)).toBeInTheDocument();
 		});
 	});
 
 	it('should highlight current combatant in InitiativeTracker', () => {
-		mockCurrentCombat!.currentTurn = 1;
+		mockCurrentCombat.value!.currentTurn = 1;
 		render(CombatRunnerPage);
 
-		const currentCombatant = mockCurrentCombat!.combatants[1];
+		const currentCombatant = mockCurrentCombat.value!.combatants[1];
 		const card = screen.getByText(currentCombatant.name).closest('[data-testid="combatant-card"]');
 
 		expect(card).toHaveClass(/current|active/);
@@ -140,7 +145,7 @@ describe('Combat Runner Page - Initiative Tracker Integration', () => {
 	it('should allow selecting a combatant by clicking in InitiativeTracker', async () => {
 		render(CombatRunnerPage);
 
-		const combatant = mockCurrentCombat!.combatants[0];
+		const combatant = mockCurrentCombat.value!.combatants[0];
 		const card = screen.getByText(combatant.name).closest('[data-testid="combatant-card"]');
 
 		await fireEvent.click(card!);
@@ -156,8 +161,8 @@ describe('Combat Runner Page - Initiative Tracker Integration', () => {
 describe('Combat Runner Page - Turn Controls', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
-		mockCurrentCombat = createActiveCombatSession(2, 2);
-		mockCurrentCombat.id = 'combat-123';
+		mockCurrentCombat.value = createActiveCombatSession(2, 2);
+		mockCurrentCombat.value.id = 'combat-123';
 	});
 
 	it('should display "Next Turn" button', () => {
@@ -180,7 +185,7 @@ describe('Combat Runner Page - Turn Controls', () => {
 	});
 
 	it('should call previousTurn when "Previous Turn" button is clicked', async () => {
-		mockCurrentCombat!.currentTurn = 2;
+		mockCurrentCombat.value!.currentTurn = 2;
 		render(CombatRunnerPage);
 
 		const prevButton = screen.getByRole('button', { name: /previous.*turn/i });
@@ -190,8 +195,8 @@ describe('Combat Runner Page - Turn Controls', () => {
 	});
 
 	it('should disable "Previous Turn" button on first turn', () => {
-		mockCurrentCombat!.currentTurn = 0;
-		mockCurrentCombat!.currentRound = 1;
+		mockCurrentCombat.value!.currentTurn = 0;
+		mockCurrentCombat.value!.currentRound = 1;
 		render(CombatRunnerPage);
 
 		const prevButton = screen.getByRole('button', { name: /previous.*turn/i });
@@ -199,14 +204,14 @@ describe('Combat Runner Page - Turn Controls', () => {
 	});
 
 	it('should show "End Round" button on last turn', () => {
-		mockCurrentCombat!.currentTurn = mockCurrentCombat!.combatants.length - 1;
+		mockCurrentCombat.value!.currentTurn = mockCurrentCombat.value!.combatants.length - 1;
 		render(CombatRunnerPage);
 
 		expect(screen.getByRole('button', { name: /end.*round/i })).toBeInTheDocument();
 	});
 
 	it('should call endRound when "End Round" button is clicked', async () => {
-		mockCurrentCombat!.currentTurn = mockCurrentCombat!.combatants.length - 1;
+		mockCurrentCombat.value!.currentTurn = mockCurrentCombat.value!.combatants.length - 1;
 		render(CombatRunnerPage);
 
 		const endRoundButton = screen.getByRole('button', { name: /end.*round/i });
@@ -219,14 +224,14 @@ describe('Combat Runner Page - Turn Controls', () => {
 describe('Combat Runner Page - HP Tracker', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
-		mockCurrentCombat = createActiveCombatSession(2, 2);
-		mockCurrentCombat.id = 'combat-123';
+		mockCurrentCombat.value = createActiveCombatSession(2, 2);
+		mockCurrentCombat.value.id = 'combat-123';
 	});
 
 	it('should show HP tracker when a combatant is selected', async () => {
 		render(CombatRunnerPage);
 
-		const combatant = mockCurrentCombat!.combatants[0];
+		const combatant = mockCurrentCombat.value!.combatants[0];
 		const card = screen.getByText(combatant.name).closest('[data-testid="combatant-card"]');
 		await fireEvent.click(card!);
 
@@ -238,7 +243,7 @@ describe('Combat Runner Page - HP Tracker', () => {
 	it('should display current HP in HP tracker', async () => {
 		render(CombatRunnerPage);
 
-		const combatant = mockCurrentCombat!.combatants[0];
+		const combatant = mockCurrentCombat.value!.combatants[0];
 		const card = screen.getByText(combatant.name).closest('[data-testid="combatant-card"]');
 		await fireEvent.click(card!);
 
@@ -251,7 +256,7 @@ describe('Combat Runner Page - HP Tracker', () => {
 	it('should display max HP in HP tracker', async () => {
 		render(CombatRunnerPage);
 
-		const combatant = mockCurrentCombat!.combatants[0];
+		const combatant = mockCurrentCombat.value!.combatants[0];
 		const card = screen.getByText(combatant.name).closest('[data-testid="combatant-card"]');
 		await fireEvent.click(card!);
 
@@ -264,7 +269,7 @@ describe('Combat Runner Page - HP Tracker', () => {
 	it('should have damage button in HP tracker', async () => {
 		render(CombatRunnerPage);
 
-		const combatant = mockCurrentCombat!.combatants[0];
+		const combatant = mockCurrentCombat.value!.combatants[0];
 		const card = screen.getByText(combatant.name).closest('[data-testid="combatant-card"]');
 		await fireEvent.click(card!);
 
@@ -276,7 +281,7 @@ describe('Combat Runner Page - HP Tracker', () => {
 	it('should have heal button in HP tracker', async () => {
 		render(CombatRunnerPage);
 
-		const combatant = mockCurrentCombat!.combatants[0];
+		const combatant = mockCurrentCombat.value!.combatants[0];
 		const card = screen.getByText(combatant.name).closest('[data-testid="combatant-card"]');
 		await fireEvent.click(card!);
 
@@ -288,7 +293,7 @@ describe('Combat Runner Page - HP Tracker', () => {
 	it('should have temp HP input in HP tracker', async () => {
 		render(CombatRunnerPage);
 
-		const combatant = mockCurrentCombat!.combatants[0];
+		const combatant = mockCurrentCombat.value!.combatants[0];
 		const card = screen.getByText(combatant.name).closest('[data-testid="combatant-card"]');
 		await fireEvent.click(card!);
 
@@ -301,14 +306,14 @@ describe('Combat Runner Page - HP Tracker', () => {
 describe('Combat Runner Page - Condition Manager', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
-		mockCurrentCombat = createActiveCombatSession(2, 2);
-		mockCurrentCombat.id = 'combat-123';
+		mockCurrentCombat.value = createActiveCombatSession(2, 2);
+		mockCurrentCombat.value.id = 'combat-123';
 	});
 
 	it('should show condition manager when a combatant is selected', async () => {
 		render(CombatRunnerPage);
 
-		const combatant = mockCurrentCombat!.combatants[0];
+		const combatant = mockCurrentCombat.value!.combatants[0];
 		const card = screen.getByText(combatant.name).closest('[data-testid="combatant-card"]');
 		await fireEvent.click(card!);
 
@@ -320,7 +325,7 @@ describe('Combat Runner Page - Condition Manager', () => {
 	it('should display "Add Condition" button', async () => {
 		render(CombatRunnerPage);
 
-		const combatant = mockCurrentCombat!.combatants[0];
+		const combatant = mockCurrentCombat.value!.combatants[0];
 		const card = screen.getByText(combatant.name).closest('[data-testid="combatant-card"]');
 		await fireEvent.click(card!);
 
@@ -336,7 +341,7 @@ describe('Combat Runner Page - Condition Manager', () => {
 				{ name: 'Slowed', source: 'Spell', duration: 1 }
 			]
 		});
-		mockCurrentCombat!.combatants[0] = combatant;
+		mockCurrentCombat.value!.combatants[0] = combatant;
 
 		render(CombatRunnerPage);
 
@@ -355,7 +360,7 @@ describe('Combat Runner Page - Condition Manager', () => {
 				{ name: 'Poisoned', source: 'Trap', duration: 3 }
 			]
 		});
-		mockCurrentCombat!.combatants[0] = combatant;
+		mockCurrentCombat.value!.combatants[0] = combatant;
 
 		render(CombatRunnerPage);
 
@@ -373,7 +378,7 @@ describe('Combat Runner Page - Condition Manager', () => {
 				{ name: 'Stunned', source: 'Attack', duration: 1 }
 			]
 		});
-		mockCurrentCombat!.combatants[0] = combatant;
+		mockCurrentCombat.value!.combatants[0] = combatant;
 
 		render(CombatRunnerPage);
 
@@ -391,12 +396,12 @@ describe('Combat Runner Page - Condition Manager', () => {
 describe('Combat Runner Page - Hero Points Display', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
-		mockCurrentCombat = createActiveCombatSession(2, 2);
-		mockCurrentCombat.id = 'combat-123';
+		mockCurrentCombat.value = createActiveCombatSession(2, 2);
+		mockCurrentCombat.value.id = 'combat-123';
 	});
 
 	it('should display hero points counter', () => {
-		mockCurrentCombat!.heroPoints = 3;
+		mockCurrentCombat.value!.heroPoints = 3;
 		render(CombatRunnerPage);
 
 		expect(screen.getByText(/hero points?/i)).toBeInTheDocument();
@@ -416,7 +421,7 @@ describe('Combat Runner Page - Hero Points Display', () => {
 	});
 
 	it('should call updateHeroPoints when spend button is clicked', async () => {
-		mockCurrentCombat!.heroPoints = 3;
+		mockCurrentCombat.value!.heroPoints = 3;
 		render(CombatRunnerPage);
 
 		const spendButton = screen.getByRole('button', { name: /spend.*hero point/i });
@@ -426,7 +431,7 @@ describe('Combat Runner Page - Hero Points Display', () => {
 	});
 
 	it('should disable spend button when hero points are 0', () => {
-		mockCurrentCombat!.heroPoints = 0;
+		mockCurrentCombat.value!.heroPoints = 0;
 		render(CombatRunnerPage);
 
 		const spendButton = screen.getByRole('button', { name: /spend.*hero point/i });
@@ -437,12 +442,12 @@ describe('Combat Runner Page - Hero Points Display', () => {
 describe('Combat Runner Page - Victory Points Display', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
-		mockCurrentCombat = createActiveCombatSession(2, 2);
-		mockCurrentCombat.id = 'combat-123';
+		mockCurrentCombat.value = createActiveCombatSession(2, 2);
+		mockCurrentCombat.value.id = 'combat-123';
 	});
 
 	it('should display victory points counter', () => {
-		mockCurrentCombat!.victoryPoints = 5;
+		mockCurrentCombat.value!.victoryPoints = 5;
 		render(CombatRunnerPage);
 
 		expect(screen.getByText(/victory points?/i)).toBeInTheDocument();
@@ -462,7 +467,7 @@ describe('Combat Runner Page - Victory Points Display', () => {
 	});
 
 	it('should call updateVictoryPoints when increment button is clicked', async () => {
-		mockCurrentCombat!.victoryPoints = 2;
+		mockCurrentCombat.value!.victoryPoints = 2;
 		render(CombatRunnerPage);
 
 		const addButton = screen.getByRole('button', { name: /add.*victory point|\+/i });
@@ -475,8 +480,8 @@ describe('Combat Runner Page - Victory Points Display', () => {
 describe('Combat Runner Page - Add Combatant', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
-		mockCurrentCombat = createActiveCombatSession(2, 2);
-		mockCurrentCombat.id = 'combat-123';
+		mockCurrentCombat.value = createActiveCombatSession(2, 2);
+		mockCurrentCombat.value.id = 'combat-123';
 	});
 
 	it('should display "Add Combatant" button', () => {
@@ -515,27 +520,27 @@ describe('Combat Runner Page - Add Combatant', () => {
 describe('Combat Runner Page - Combat Status Indicator', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
-		mockCurrentCombat = createActiveCombatSession(2, 2);
-		mockCurrentCombat.id = 'combat-123';
+		mockCurrentCombat.value = createActiveCombatSession(2, 2);
+		mockCurrentCombat.value.id = 'combat-123';
 	});
 
 	it('should display "Active" status badge for active combat', () => {
-		mockCurrentCombat!.status = 'active';
+		mockCurrentCombat.value!.status = 'active';
 		render(CombatRunnerPage);
 
 		expect(screen.getByText(/active/i)).toBeInTheDocument();
 	});
 
 	it('should display "Paused" status badge for paused combat', () => {
-		mockCurrentCombat!.status = 'paused';
+		mockCurrentCombat.value!.status = 'paused';
 		render(CombatRunnerPage);
 
 		expect(screen.getByText(/paused/i)).toBeInTheDocument();
 	});
 
 	it('should display "Preparing" status badge for preparing combat', () => {
-		mockCurrentCombat = createMockCombatSession({ status: 'preparing', name: 'Test' });
-		mockCurrentCombat.id = 'combat-123';
+		mockCurrentCombat.value = createMockCombatSession({ status: 'preparing', name: 'Test' });
+		mockCurrentCombat.value.id = 'combat-123';
 		render(CombatRunnerPage);
 
 		expect(screen.getByText(/preparing/i)).toBeInTheDocument();
@@ -545,8 +550,8 @@ describe('Combat Runner Page - Combat Status Indicator', () => {
 describe('Combat Runner Page - Accessibility', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
-		mockCurrentCombat = createActiveCombatSession(2, 2);
-		mockCurrentCombat.id = 'combat-123';
+		mockCurrentCombat.value = createActiveCombatSession(2, 2);
+		mockCurrentCombat.value.id = 'combat-123';
 	});
 
 	it('should have proper heading hierarchy', () => {
@@ -584,9 +589,9 @@ describe('Combat Runner Page - Edge Cases', () => {
 	});
 
 	it('should handle combat with no combatants', () => {
-		mockCurrentCombat = createMockCombatSession({ name: 'Empty Combat' });
-		mockCurrentCombat.id = 'combat-123';
-		mockCurrentCombat.combatants = [];
+		mockCurrentCombat.value = createMockCombatSession({ name: 'Empty Combat' });
+		mockCurrentCombat.value.id = 'combat-123';
+		mockCurrentCombat.value.combatants = [];
 
 		render(CombatRunnerPage);
 
@@ -594,8 +599,8 @@ describe('Combat Runner Page - Edge Cases', () => {
 	});
 
 	it('should handle combat with only heroes', () => {
-		mockCurrentCombat = createActiveCombatSession(3, 0);
-		mockCurrentCombat.id = 'combat-123';
+		mockCurrentCombat.value = createActiveCombatSession(3, 0);
+		mockCurrentCombat.value.id = 'combat-123';
 
 		render(CombatRunnerPage);
 
@@ -603,8 +608,8 @@ describe('Combat Runner Page - Edge Cases', () => {
 	});
 
 	it('should handle combat with only creatures', () => {
-		mockCurrentCombat = createActiveCombatSession(0, 3);
-		mockCurrentCombat.id = 'combat-123';
+		mockCurrentCombat.value = createActiveCombatSession(0, 3);
+		mockCurrentCombat.value.id = 'combat-123';
 
 		render(CombatRunnerPage);
 
@@ -612,7 +617,7 @@ describe('Combat Runner Page - Edge Cases', () => {
 	});
 
 	it('should handle invalid combat ID', () => {
-		mockCurrentCombat = null;
+		mockCurrentCombat.value = null;
 		mockParams.id = 'invalid-id';
 
 		render(CombatRunnerPage);

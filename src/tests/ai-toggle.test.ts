@@ -31,100 +31,122 @@ import { render, screen, fireEvent } from '@testing-library/svelte';
 import EntitySummary from '$lib/components/entity/EntitySummary.svelte';
 import SettingsPage from '../routes/settings/+page.svelte';
 
-// Mock stores
-let aiEnabled = false;
+// Mock stores - must be defined in vi.hoisted() to be available during hoisting
+const {
+	mockAiSettings,
+	mockCampaignStore,
+	mockUiStore,
+	mockNotificationStore,
+	mockEntitiesStore,
+	mockLocalStorage,
+	getAiEnabled,
+	setAiEnabled
+} = vi.hoisted(() => {
+	let aiEnabled = false;
 
-const mockAiSettings = {
-	get aiEnabled() {
-		return aiEnabled;
-	},
-	get isEnabled() {
-		return aiEnabled;
-	},
-	load: vi.fn(),
-	setEnabled: vi.fn(),
-	toggle: vi.fn()
-};
-
-const mockCampaignStore = {
-	campaign: {
-		id: 'test-campaign',
-		type: 'campaign' as const,
-		name: 'Test Campaign',
-		description: 'Test',
-		tags: [],
-		fields: { system: 'Test System' },
-		links: [],
-		notes: '',
-		createdAt: new Date(),
-		updatedAt: new Date(),
-		metadata: {}
-	},
-	customEntityTypes: [],
-	entityTypeOverrides: [],
-	allCampaigns: [],
-	activeCampaignId: 'test-campaign',
-	load: vi.fn(),
-	setActiveCampaign: vi.fn()
-};
-
-const mockUiStore = {
-	sidebarOpen: true,
-	chatPanelOpen: false,
-	theme: 'light' as const,
-	toggleSidebar: vi.fn(),
-	toggleChatPanel: vi.fn(),
-	loadTheme: vi.fn(),
-	setTheme: vi.fn()
-};
-
-const mockNotificationStore = {
-	notifications: [],
-	success: vi.fn(),
-	error: vi.fn(),
-	info: vi.fn(),
-	warning: vi.fn(),
-	dismiss: vi.fn()
-};
-
-const mockEntitiesStore = {
-	entities: [],
-	filteredEntities: [],
-	searchQuery: '',
-	availableRelationshipTypes: [],
-	relationshipFilter: {},
-	setSearchQuery: vi.fn(),
-	load: vi.fn(),
-	create: vi.fn(),
-	update: vi.fn(),
-	delete: vi.fn(),
-	getById: vi.fn(),
-	getByType: vi.fn(),
-	addLink: vi.fn(),
-	removeLink: vi.fn(),
-	getLinkedWithRelationships: vi.fn(() => []),
-	filterByRelatedTo: vi.fn(),
-	filterByRelationshipType: vi.fn(),
-	filterByHasRelationships: vi.fn(),
-	setRelationshipFilter: vi.fn(),
-	clearRelationshipFilter: vi.fn()
-};
-
-const mockLocalStorage = (() => {
-	let store: Record<string, string> = {};
-	return {
-		getItem: (key: string) => store[key] || null,
-		setItem: (key: string, value: string) => {
-			store[key] = value;
+	const mockAiSettings = {
+		get aiEnabled() {
+			return aiEnabled;
 		},
-		removeItem: (key: string) => {
-			delete store[key];
+		get isEnabled() {
+			return aiEnabled;
 		},
-		clear: () => {
-			store = {};
-		}
+		load: vi.fn(),
+		setEnabled: vi.fn(),
+		toggle: vi.fn()
 	};
-})();
+
+	const mockCampaignStore = {
+		campaign: {
+			id: 'test-campaign',
+			type: 'campaign' as const,
+			name: 'Test Campaign',
+			description: 'Test',
+			tags: [],
+			fields: { system: 'Test System' },
+			links: [],
+			notes: '',
+			createdAt: new Date(),
+			updatedAt: new Date(),
+			metadata: {}
+		},
+		customEntityTypes: [],
+		entityTypeOverrides: [],
+		allCampaigns: [],
+		activeCampaignId: 'test-campaign',
+		load: vi.fn(),
+		setActiveCampaign: vi.fn()
+	};
+
+	const mockUiStore = {
+		sidebarOpen: true,
+		chatPanelOpen: false,
+		theme: 'light' as const,
+		toggleSidebar: vi.fn(),
+		toggleChatPanel: vi.fn(),
+		loadTheme: vi.fn(),
+		setTheme: vi.fn()
+	};
+
+	const mockNotificationStore = {
+		notifications: [],
+		success: vi.fn(),
+		error: vi.fn(),
+		info: vi.fn(),
+		warning: vi.fn(),
+		dismiss: vi.fn()
+	};
+
+	const mockEntitiesStore = {
+		entities: [],
+		filteredEntities: [],
+		searchQuery: '',
+		availableRelationshipTypes: [],
+		relationshipFilter: {},
+		setSearchQuery: vi.fn(),
+		load: vi.fn(),
+		create: vi.fn(),
+		update: vi.fn(),
+		delete: vi.fn(),
+		getById: vi.fn(),
+		getByType: vi.fn(),
+		addLink: vi.fn(),
+		removeLink: vi.fn(),
+		getLinkedWithRelationships: vi.fn(() => []),
+		filterByRelatedTo: vi.fn(),
+		filterByRelationshipType: vi.fn(),
+		filterByHasRelationships: vi.fn(),
+		setRelationshipFilter: vi.fn(),
+		clearRelationshipFilter: vi.fn()
+	};
+
+	const mockLocalStorage = (() => {
+		let store: Record<string, string> = {};
+		return {
+			getItem: (key: string) => store[key] || null,
+			setItem: (key: string, value: string) => {
+				store[key] = value;
+			},
+			removeItem: (key: string) => {
+				delete store[key];
+			},
+			clear: () => {
+				store = {};
+			}
+		};
+	})();
+
+	return {
+		mockAiSettings,
+		mockCampaignStore,
+		mockUiStore,
+		mockNotificationStore,
+		mockEntitiesStore,
+		mockLocalStorage,
+		getAiEnabled: () => aiEnabled,
+		setAiEnabled: (value: boolean) => { aiEnabled = value; }
+	};
+});
 
 Object.defineProperty(global, 'localStorage', {
 	value: mockLocalStorage,
@@ -140,7 +162,7 @@ vi.mock('$lib/stores', () => ({
 }));
 
 vi.mock('$lib/services', () => ({
-	hasGenerationApiKey: () => aiEnabled && !!mockLocalStorage.getItem('dm-assist-api-key'),
+	hasGenerationApiKey: () => getAiEnabled() && !!mockLocalStorage.getItem('dm-assist-api-key'),
 	fetchModels: vi.fn(() => Promise.resolve([])),
 	getSelectedModel: vi.fn(() => ''),
 	setSelectedModel: vi.fn(),
@@ -165,7 +187,7 @@ describe.skip('AI Toggle Integration Tests (Issue #122) - All skipped due to Sve
 	beforeEach(() => {
 		vi.clearAllMocks();
 		mockLocalStorage.clear();
-		aiEnabled = false;
+		setAiEnabled(false);
 	});
 
 	// Note: Header component tests removed due to rendering complexity with HeaderSearch component.
@@ -191,7 +213,7 @@ describe.skip('AI Toggle Integration Tests (Issue #122) - All skipped due to Sve
 		};
 
 		it('should show sparkles icon in header when AI is enabled', async () => {
-			aiEnabled = true;
+			setAiEnabled(true);
 			mockLocalStorage.setItem('dm-assist-api-key', 'test-key');
 			const { container } = render(EntitySummary, { props: { entity: mockEntity, editable: true } });
 
@@ -207,7 +229,7 @@ describe.skip('AI Toggle Integration Tests (Issue #122) - All skipped due to Sve
 		});
 
 		it('should hide sparkles icon in header when AI is disabled', async () => {
-			aiEnabled = false;
+			setAiEnabled(false);
 			const { container } = render(EntitySummary, { props: { entity: mockEntity, editable: true } });
 
 			// Wait for component to render
@@ -221,7 +243,7 @@ describe.skip('AI Toggle Integration Tests (Issue #122) - All skipped due to Sve
 		});
 
 		it('should hide generate button when AI is disabled', async () => {
-			aiEnabled = false;
+			setAiEnabled(false);
 			render(EntitySummary, { props: { entity: mockEntity, editable: true } });
 
 			// Generate button should NOT be visible
@@ -230,7 +252,7 @@ describe.skip('AI Toggle Integration Tests (Issue #122) - All skipped due to Sve
 		});
 
 		it('should show generate button when AI is enabled and has API key', async () => {
-			aiEnabled = true;
+			setAiEnabled(true);
 			mockLocalStorage.setItem('dm-assist-api-key', 'test-key');
 			render(EntitySummary, { props: { entity: mockEntity, editable: true } });
 
@@ -241,7 +263,7 @@ describe.skip('AI Toggle Integration Tests (Issue #122) - All skipped due to Sve
 		});
 
 		it('should still show existing summary when AI is disabled', async () => {
-			aiEnabled = false;
+			setAiEnabled(false);
 			const entityWithSummary = {
 				...mockEntity,
 				summary: 'This is an existing AI-generated summary'
@@ -253,7 +275,7 @@ describe.skip('AI Toggle Integration Tests (Issue #122) - All skipped due to Sve
 		});
 
 		it('should allow editing existing summary when AI is disabled', async () => {
-			aiEnabled = false;
+			setAiEnabled(false);
 			const entityWithSummary = {
 				...mockEntity,
 				summary: 'Existing summary'
@@ -274,7 +296,7 @@ describe.skip('AI Toggle Integration Tests (Issue #122) - All skipped due to Sve
 		});
 
 		it('should show appropriate message when AI is disabled and no summary exists', async () => {
-			aiEnabled = false;
+			setAiEnabled(false);
 			render(EntitySummary, { props: { entity: mockEntity, editable: false } });
 
 			// Should show message that AI is disabled
@@ -283,7 +305,7 @@ describe.skip('AI Toggle Integration Tests (Issue #122) - All skipped due to Sve
 		});
 
 		it('should show appropriate message when AI is enabled but no API key', async () => {
-			aiEnabled = true;
+			setAiEnabled(true);
 			mockLocalStorage.clear();
 			render(EntitySummary, { props: { entity: mockEntity, editable: false } });
 
@@ -295,7 +317,7 @@ describe.skip('AI Toggle Integration Tests (Issue #122) - All skipped due to Sve
 
 	describe('Settings Page - AI Toggle', () => {
 		it('should display AI toggle switch when AI is disabled', async () => {
-			aiEnabled = false;
+			setAiEnabled(false);
 			render(SettingsPage);
 
 			// Should have a toggle for AI features - get all instances and check the last one
@@ -305,7 +327,7 @@ describe.skip('AI Toggle Integration Tests (Issue #122) - All skipped due to Sve
 		});
 
 		it('should display AI toggle switch when AI is enabled', async () => {
-			aiEnabled = true;
+			setAiEnabled(true);
 			render(SettingsPage);
 
 			// Should have a toggle that is checked - get all instances and check the last one
@@ -315,7 +337,7 @@ describe.skip('AI Toggle Integration Tests (Issue #122) - All skipped due to Sve
 		});
 
 		it('should call aiSettings.toggle() when toggle is clicked', async () => {
-			aiEnabled = false;
+			setAiEnabled(false);
 			render(SettingsPage);
 
 			const toggles = screen.getAllByRole('switch', { name: /enable ai features/i });
@@ -325,7 +347,7 @@ describe.skip('AI Toggle Integration Tests (Issue #122) - All skipped due to Sve
 		});
 
 		it('should show helper text explaining AI toggle behavior', async () => {
-			aiEnabled = false;
+			setAiEnabled(false);
 			render(SettingsPage);
 
 			// Should have helper text mentioning AI features and existing summaries - get all and check last
@@ -335,7 +357,7 @@ describe.skip('AI Toggle Integration Tests (Issue #122) - All skipped due to Sve
 		});
 
 		it('should show API key section when AI is enabled', async () => {
-			aiEnabled = true;
+			setAiEnabled(true);
 			render(SettingsPage);
 
 			// API key input should be visible (exact match to avoid matching other labels)
@@ -345,7 +367,7 @@ describe.skip('AI Toggle Integration Tests (Issue #122) - All skipped due to Sve
 		});
 
 		it('should hide API key section when AI is disabled', async () => {
-			aiEnabled = false;
+			setAiEnabled(false);
 			render(SettingsPage);
 
 			// API key input should NOT be visible (exact match to avoid matching other labels)
@@ -354,7 +376,7 @@ describe.skip('AI Toggle Integration Tests (Issue #122) - All skipped due to Sve
 		});
 
 		it('should hide model selection when AI is disabled', async () => {
-			aiEnabled = false;
+			setAiEnabled(false);
 			render(SettingsPage);
 
 			// Claude Model select should NOT be visible

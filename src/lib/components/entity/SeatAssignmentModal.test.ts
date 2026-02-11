@@ -27,6 +27,8 @@
 
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/svelte';
+import userEvent from '@testing-library/user-event';
+import { tick } from 'svelte';
 import type { BaseEntity } from '$lib/types';
 import type { SeatAssignment } from '$lib/types/campaign';
 import SeatAssignmentModal from './SeatAssignmentModal.svelte';
@@ -94,7 +96,8 @@ describe('SeatAssignmentModal Component - Visibility', () => {
 				}
 			});
 
-			expect(screen.getByText(/seat 3/i)).toBeInTheDocument();
+			// Component shows "Assign Seat {seatIndex + 1}" so seatIndex 3 shows "Assign Seat 4"
+			expect(screen.getByText(/assign seat 4/i)).toBeInTheDocument();
 
 	});
 });
@@ -215,7 +218,9 @@ describe('SeatAssignmentModal Component - Character Dropdown', () => {
 			const options = Array.from(characterDropdown.querySelectorAll('option'));
 			const optionTexts = options.map(opt => opt.textContent);
 
-			expect(optionTexts).toContain(/none|select/i);
+			// Component has "-- Select a character --" as first option
+			const hasSelectOption = optionTexts.some(text => text && /select/i.test(text));
+			expect(hasSelectOption).toBe(true);
 
 	});
 
@@ -282,24 +287,28 @@ describe('SeatAssignmentModal Component - Save Functionality', () => {
 	it('should call onSave with selected character when Save clicked', async () => {
 		const onSave = vi.fn();
 
+		const { component } = render(SeatAssignmentModal, {
+			props: {
+				open: true,
+				seatIndex: 1,
+				characters: mockCharacters,
+				onSave,
+				onClose: vi.fn()
+			}
+		});
 
-			render(SeatAssignmentModal, {
-				props: {
-					open: true,
-					seatIndex: 1,
-					characters: mockCharacters,
-					onSave,
-					onClose: vi.fn()
-				}
-			});
+		const characterDropdown = screen.getByLabelText(/character/i) as HTMLSelectElement;
+		// Manually set the value and dispatch events to trigger Svelte 5 reactivity
+		characterDropdown.value = 'char-1';
+		await fireEvent.input(characterDropdown);
+		await fireEvent.change(characterDropdown);
+		await tick();
 
-			const characterDropdown = screen.getByLabelText(/character/i);
-			await fireEvent.change(characterDropdown, { target: { value: 'char-1' } });
+		const saveButton = screen.getByRole('button', { name: /save/i });
+		await fireEvent.click(saveButton);
+		await tick();
 
-			const saveButton = screen.getByRole('button', { name: /save/i });
-			await fireEvent.click(saveButton);
-
-			expect(onSave).toHaveBeenCalledWith('char-1');
+		expect(onSave).toHaveBeenCalledWith('char-1');
 
 	});
 
@@ -414,8 +423,10 @@ describe('SeatAssignmentModal Component - Cancel Functionality', () => {
 				}
 			});
 
-			const backdrop = screen.getByRole('dialog').parentElement;
-			await fireEvent.click(backdrop!);
+			// The dialog element IS the backdrop (line 72-80 in component)
+			const backdrop = screen.getByRole('dialog');
+			await fireEvent.click(backdrop);
+			await tick();
 
 			expect(onClose).toHaveBeenCalled();
 
@@ -523,23 +534,27 @@ describe('SeatAssignmentModal Component - Clear Button', () => {
 			characterId: 'char-1'
 		};
 
+		const onSave = vi.fn();
+		const onClose = vi.fn();
 
-			render(SeatAssignmentModal, {
-				props: {
-					open: true,
-					seatIndex: 1,
-					currentAssignment,
-					characters: mockCharacters,
-					onSave: vi.fn(),
-					onClose: vi.fn()
-				}
-			});
+		render(SeatAssignmentModal, {
+			props: {
+				open: true,
+				seatIndex: 1,
+				currentAssignment,
+				characters: mockCharacters,
+				onSave,
+				onClose
+			}
+		});
 
-			const clearButton = screen.getByRole('button', { name: /clear/i });
-			await fireEvent.click(clearButton);
+		const clearButton = screen.getByRole('button', { name: /clear/i });
+		await fireEvent.click(clearButton);
+		await tick();
 
-			const characterDropdown = screen.getByLabelText(/character/i) as HTMLSelectElement;
-			expect(characterDropdown.value).toBe('');
+		// Clear button calls onSave(undefined) and onClose() (see handleClear in component)
+		expect(onSave).toHaveBeenCalledWith(undefined);
+		expect(onClose).toHaveBeenCalled();
 
 	});
 });

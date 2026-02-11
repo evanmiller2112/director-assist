@@ -26,8 +26,8 @@ import type { AISuggestion } from '$lib/types';
 vi.mock('$lib/db/repositories', () => ({
 	suggestionRepository: {
 		getAll: vi.fn(() => ({
-			subscribe: vi.fn((callback) => {
-				callback([]);
+			subscribe: vi.fn((observer: any) => {
+				observer.next([]);
 				return { unsubscribe: vi.fn() };
 			})
 		})),
@@ -90,8 +90,9 @@ describe('Suggestions Store - B3 Methods', () => {
 
 		// Mock repository to return mock suggestions
 		vi.mocked(suggestionRepository.getAll).mockReturnValue({
-			subscribe: vi.fn((callback) => {
-				callback(mockSuggestions);
+			subscribe: vi.fn((observer: any) => {
+				// Call observer.next() synchronously to update state
+				observer.next(mockSuggestions);
 				return { unsubscribe: vi.fn() };
 			})
 		} as any);
@@ -296,8 +297,9 @@ describe('Suggestions Store - B4 New Methods', () => {
 
 		// Mock repository
 		vi.mocked(suggestionRepository.getAll).mockReturnValue({
-			subscribe: vi.fn((callback) => {
-				callback([mockSuggestion]);
+			subscribe: vi.fn((observer: any) => {
+				// Call observer.next() synchronously to update state
+				observer.next([mockSuggestion]);
 				return { unsubscribe: vi.fn() };
 			})
 		} as any);
@@ -429,8 +431,8 @@ describe('Suggestions Store - B4 New Methods', () => {
 			];
 
 			vi.mocked(suggestionRepository.getAll).mockReturnValue({
-				subscribe: vi.fn((callback) => {
-					callback(multipleSuggestions);
+				subscribe: vi.fn((observer: any) => {
+					observer.next(multipleSuggestions);
 					return { unsubscribe: vi.fn() };
 				})
 			} as any);
@@ -609,8 +611,8 @@ describe('Suggestions Store - B4 New Methods', () => {
 			];
 
 			vi.mocked(suggestionRepository.getAll).mockReturnValue({
-				subscribe: vi.fn((callback) => {
-					callback(suggestions);
+				subscribe: vi.fn((observer: any) => {
+					observer.next(suggestions);
 					return { unsubscribe: vi.fn() };
 				})
 			} as any);

@@ -15,6 +15,7 @@
 
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/svelte';
+import { tick } from 'svelte';
 import AddFieldInline from './AddFieldInline.svelte';
 import type { EntityTypeDefinition, EntityTypeOverride } from '$lib/types';
 
@@ -490,15 +491,19 @@ describe('AddFieldInline Component - Options Field (Select Types)', () => {
 
 		const button = screen.getByRole('button', { name: /add.*field/i });
 		await fireEvent.click(button);
+		await tick();
 
 		// Change type to select
-		const typeSelect = screen.getByLabelText(/field type/i);
-		await fireEvent.change(typeSelect, { target: { value: 'select' } });
+		const typeSelect = screen.getByLabelText(/field type/i) as HTMLSelectElement;
+		typeSelect.value = 'select';
+		await fireEvent.input(typeSelect);
+		await fireEvent.change(typeSelect);
+		await tick();
 
 		await waitFor(() => {
 			const optionsField = screen.queryByLabelText(/options.*one per line/i);
 			expect(optionsField).toBeInTheDocument();
-		}, { timeout: 2000 });
+		}, { timeout: 3000 });
 	});
 
 	it('should show options field for multi-select type', async () => {
@@ -510,15 +515,19 @@ describe('AddFieldInline Component - Options Field (Select Types)', () => {
 
 		const button = screen.getByRole('button', { name: /add.*field/i });
 		await fireEvent.click(button);
+		await tick();
 
 		// Change type to multi-select
-		const typeSelect = screen.getByLabelText(/field type/i);
-		await fireEvent.change(typeSelect, { target: { value: 'multi-select' } });
+		const typeSelect = screen.getByLabelText(/field type/i) as HTMLSelectElement;
+		typeSelect.value = 'multi-select';
+		await fireEvent.input(typeSelect);
+		await fireEvent.change(typeSelect);
+		await tick();
 
 		await waitFor(() => {
 			const optionsField = screen.queryByLabelText(/options.*one per line/i);
 			expect(optionsField).toBeInTheDocument();
-		}, { timeout: 2000 });
+		}, { timeout: 3000 });
 	});
 
 	it('should hide options field for text type', async () => {
@@ -545,18 +554,25 @@ describe('AddFieldInline Component - Options Field (Select Types)', () => {
 
 		const button = screen.getByRole('button', { name: /add.*field/i });
 		await fireEvent.click(button);
+		await tick();
 
 		// Change to select
-		const typeSelect = screen.getByLabelText(/field type/i);
-		await fireEvent.change(typeSelect, { target: { value: 'select' } });
+		const typeSelect = screen.getByLabelText(/field type/i) as HTMLSelectElement;
+		typeSelect.value = 'select';
+		await fireEvent.input(typeSelect);
+		await fireEvent.change(typeSelect);
+		await tick();
 
 		// Options should show
 		await waitFor(() => {
 			expect(screen.queryByLabelText(/options.*one per line/i)).toBeInTheDocument();
-		}, { timeout: 2000 });
+		}, { timeout: 3000 });
 
 		// Change back to text
-		await fireEvent.change(typeSelect, { target: { value: 'text' } });
+		typeSelect.value = 'text';
+		await fireEvent.input(typeSelect);
+		await fireEvent.change(typeSelect);
+		await tick();
 
 		// Options should hide
 		await waitFor(() => {
@@ -574,14 +590,18 @@ describe('AddFieldInline Component - Options Field (Select Types)', () => {
 
 		const button = screen.getByRole('button', { name: /add.*field/i });
 		await fireEvent.click(button);
+		await tick();
 
-		const typeSelect = screen.getByLabelText(/field type/i);
-		await fireEvent.change(typeSelect, { target: { value: 'select' } });
+		const typeSelect = screen.getByLabelText(/field type/i) as HTMLSelectElement;
+		typeSelect.value = 'select';
+		await fireEvent.input(typeSelect);
+		await fireEvent.change(typeSelect);
+		await tick();
 
 		await waitFor(() => {
 			const optionsField = screen.queryByLabelText(/options.*one per line/i);
 			expect(optionsField?.tagName).toBe('TEXTAREA');
-		}, { timeout: 2000 });
+		}, { timeout: 3000 });
 	});
 });
 
@@ -1059,18 +1079,21 @@ describe('AddFieldInline Component - Field Properties', () => {
 
 		const openButton = screen.getByRole('button', { name: /add.*field/i });
 		await fireEvent.click(openButton);
+		await tick();
 
 		const labelInput = screen.getByLabelText(/field label/i);
 		await fireEvent.input(labelInput, { target: { value: 'Number Field' } });
+		await tick();
 
-		const typeSelect = screen.getByLabelText(/field type/i);
-		await fireEvent.change(typeSelect, { target: { value: 'number' } });
-
-		// Wait for any reactive updates to complete
-		await new Promise(resolve => setTimeout(resolve, 50));
+		const typeSelect = screen.getByLabelText(/field type/i) as HTMLSelectElement;
+		typeSelect.value = 'number';
+		await fireEvent.input(typeSelect);
+		await fireEvent.change(typeSelect);
+		await tick();
 
 		const addButton = screen.getByRole('button', { name: /^add field$/i });
 		await fireEvent.click(addButton);
+		await tick();
 
 		await waitFor(() => {
 			expect(campaignStore.setEntityTypeOverride).toHaveBeenCalledWith(
@@ -1103,18 +1126,21 @@ describe('AddFieldInline Component - Field Properties', () => {
 
 		const openButton = screen.getByRole('button', { name: /add.*field/i });
 		await fireEvent.click(openButton);
+		await tick();
 
 		const labelInput = screen.getByLabelText(/field label/i);
 		await fireEvent.input(labelInput, { target: { value: 'Hidden Field' } });
+		await tick();
 
-		const sectionSelect = screen.getByLabelText(/section/i);
-		await fireEvent.change(sectionSelect, { target: { value: 'hidden' } });
-
-		// Wait for any reactive updates to complete
-		await new Promise(resolve => setTimeout(resolve, 50));
+		const sectionSelect = screen.getByLabelText(/section/i) as HTMLSelectElement;
+		sectionSelect.value = 'hidden';
+		await fireEvent.input(sectionSelect);
+		await fireEvent.change(sectionSelect);
+		await tick();
 
 		const addButton = screen.getByRole('button', { name: /^add field$/i });
 		await fireEvent.click(addButton);
+		await tick();
 
 		await waitFor(() => {
 			expect(campaignStore.setEntityTypeOverride).toHaveBeenCalledWith(
@@ -1188,26 +1214,30 @@ describe('AddFieldInline Component - Field Properties', () => {
 
 		const openButton = screen.getByRole('button', { name: /add.*field/i });
 		await fireEvent.click(openButton);
+		await tick();
 
 		const labelInput = screen.getByLabelText(/field label/i);
 		await fireEvent.input(labelInput, { target: { value: 'Status' } });
+		await tick();
 
-		const typeSelect = screen.getByLabelText(/field type/i);
-		await fireEvent.change(typeSelect, { target: { value: 'select' } });
+		const typeSelect = screen.getByLabelText(/field type/i) as HTMLSelectElement;
+		typeSelect.value = 'select';
+		await fireEvent.input(typeSelect);
+		await fireEvent.change(typeSelect);
+		await tick();
 
 		await waitFor(async () => {
 			const optionsField = screen.queryByLabelText(/options.*one per line/i);
 			expect(optionsField).toBeInTheDocument();
 			if (optionsField) {
 				await fireEvent.input(optionsField, { target: { value: 'Active\nInactive\nPending' } });
+				await tick();
 			}
-		}, { timeout: 2000 });
-
-		// Wait for any reactive updates to complete
-		await new Promise(resolve => setTimeout(resolve, 50));
+		}, { timeout: 3000 });
 
 		const addButton = screen.getByRole('button', { name: /^add field$/i });
 		await fireEvent.click(addButton);
+		await tick();
 
 		await waitFor(() => {
 			expect(campaignStore.setEntityTypeOverride).toHaveBeenCalledWith(

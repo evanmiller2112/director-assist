@@ -19,8 +19,12 @@ import AddCombatantModal from './AddCombatantModal.svelte';
 import { createMockEntity } from '../../../tests/utils/testUtils';
 import type { BaseEntity } from '$lib/types';
 
-// Mock entities store
-let mockEntities: BaseEntity[] = [];
+// Mock entities store - use vi.hoisted() for proper mock hoisting
+const { mockEntities } = vi.hoisted(() => {
+	return {
+		mockEntities: [] as BaseEntity[]
+	};
+});
 
 vi.mock('$lib/stores', () => ({
 	entitiesStore: {
@@ -33,7 +37,7 @@ vi.mock('$lib/stores', () => ({
 describe('AddCombatantModal - Modal Visibility', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
-		mockEntities = [];
+		mockEntities.length = 0;
 	});
 
 	it('should not be visible when open prop is false', () => {
@@ -65,7 +69,7 @@ describe('AddCombatantModal - Modal Visibility', () => {
 describe('AddCombatantModal - Type Toggle', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
-		mockEntities = [];
+		mockEntities.length = 0;
 	});
 
 	it('should display Hero/Creature type toggle', () => {
@@ -107,12 +111,12 @@ describe('AddCombatantModal - Type Toggle', () => {
 describe('AddCombatantModal - Entity Selection', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
-		mockEntities = [
+		mockEntities.splice(0, mockEntities.length, 
 			createMockEntity({ id: 'char-1', name: 'Thorin', type: 'character' }),
 			createMockEntity({ id: 'char-2', name: 'Gandalf', type: 'character' }),
 			createMockEntity({ id: 'npc-1', name: 'Goblin King', type: 'npc' }),
 			createMockEntity({ id: 'npc-2', name: 'Dragon', type: 'npc' })
-		];
+		);
 	});
 
 	it('should have entity search input', () => {
@@ -176,7 +180,7 @@ describe('AddCombatantModal - Entity Selection', () => {
 	});
 
 	it('should show "No entities" message when no entities of type exist', () => {
-		mockEntities = [];
+		mockEntities.length = 0;
 		render(AddCombatantModal, { props: { open: true } });
 
 		expect(screen.getByText(/no.*entities/i)).toBeInTheDocument();
@@ -186,9 +190,9 @@ describe('AddCombatantModal - Entity Selection', () => {
 describe('AddCombatantModal - Common Fields', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
-		mockEntities = [
+		mockEntities.splice(0, mockEntities.length, 
 			createMockEntity({ id: 'char-1', name: 'Hero', type: 'character' })
-		];
+		);
 	});
 
 	it('should have HP input field', () => {
@@ -246,9 +250,9 @@ describe('AddCombatantModal - Common Fields', () => {
 describe('AddCombatantModal - Hero-Specific Fields', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
-		mockEntities = [
+		mockEntities.splice(0, mockEntities.length, 
 			createMockEntity({ id: 'char-1', name: 'Hero', type: 'character' })
-		];
+		);
 	});
 
 	it('should show heroic resource fields when Hero type is selected', () => {
@@ -308,9 +312,9 @@ describe('AddCombatantModal - Hero-Specific Fields', () => {
 describe('AddCombatantModal - Creature-Specific Fields', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
-		mockEntities = [
+		mockEntities.splice(0, mockEntities.length, 
 			createMockEntity({ id: 'npc-1', name: 'Monster', type: 'npc' })
-		];
+		);
 	});
 
 	it('should show threat level field when Creature type is selected', async () => {
@@ -373,10 +377,10 @@ describe('AddCombatantModal - Creature-Specific Fields', () => {
 describe('AddCombatantModal - Form Submission', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
-		mockEntities = [
+		mockEntities.splice(0, mockEntities.length, 
 			createMockEntity({ id: 'char-1', name: 'Hero', type: 'character' }),
 			createMockEntity({ id: 'npc-1', name: 'Monster', type: 'npc' })
-		];
+		);
 	});
 
 	it('should have "Add" button', () => {
@@ -534,9 +538,9 @@ describe('AddCombatantModal - Form Submission', () => {
 describe('AddCombatantModal - Form Validation', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
-		mockEntities = [
+		mockEntities.splice(0, mockEntities.length, 
 			createMockEntity({ id: 'char-1', name: 'Hero', type: 'character' })
-		];
+		);
 	});
 
 	it('should show error when HP is greater than Max HP', async () => {
@@ -585,9 +589,9 @@ describe('AddCombatantModal - Form Validation', () => {
 describe('AddCombatantModal - Accessibility', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
-		mockEntities = [
+		mockEntities.splice(0, mockEntities.length, 
 			createMockEntity({ id: 'char-1', name: 'Hero', type: 'character' })
-		];
+		);
 	});
 
 	it('should have proper ARIA attributes on dialog', () => {
@@ -645,17 +649,17 @@ describe('AddCombatantModal - Edge Cases', () => {
 	});
 
 	it('should handle empty entities list', () => {
-		mockEntities = [];
+		mockEntities.length = 0;
 		render(AddCombatantModal, { props: { open: true } });
 
 		expect(screen.getByText(/no.*entities/i)).toBeInTheDocument();
 	});
 
 	it('should clear form when switching between Hero and Creature', async () => {
-		mockEntities = [
+		mockEntities.splice(0, mockEntities.length, 
 			createMockEntity({ id: 'char-1', name: 'Hero', type: 'character' }),
 			createMockEntity({ id: 'npc-1', name: 'Monster', type: 'npc' })
-		];
+		);
 
 		render(AddCombatantModal, { props: { open: true } });
 
@@ -675,9 +679,9 @@ describe('AddCombatantModal - Edge Cases', () => {
 	});
 
 	it('should reset form when modal is closed and reopened', async () => {
-		mockEntities = [
+		mockEntities.splice(0, mockEntities.length, 
 			createMockEntity({ id: 'char-1', name: 'Hero', type: 'character' })
-		];
+		);
 
 		const onClose = vi.fn();
 		const { rerender } = render(AddCombatantModal, { props: { open: true, onClose } });
@@ -697,13 +701,13 @@ describe('AddCombatantModal - Edge Cases', () => {
 	});
 
 	it('should handle very long entity names', () => {
-		mockEntities = [
+		mockEntities.splice(0, mockEntities.length, 
 			createMockEntity({
 				id: 'char-1',
 				name: 'This Is A Very Long Entity Name That Should Truncate Or Wrap',
 				type: 'character'
 			})
-		];
+		);
 
 		render(AddCombatantModal, { props: { open: true } });
 
@@ -714,10 +718,10 @@ describe('AddCombatantModal - Edge Cases', () => {
 describe('AddCombatantModal - Quick-Add Mode (Issue #233)', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
-		mockEntities = [
+		mockEntities.splice(0, mockEntities.length, 
 			createMockEntity({ id: 'char-1', name: 'Hero', type: 'character' }),
 			createMockEntity({ id: 'npc-1', name: 'Monster', type: 'npc' })
-		];
+		);
 	});
 
 	describe('Mode Toggle', () => {
@@ -987,9 +991,9 @@ describe('AddCombatantModal - Quick-Add Mode (Issue #233)', () => {
 describe('AddCombatantModal - Optional Fields in Entity Mode (Issue #233)', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
-		mockEntities = [
+		mockEntities.splice(0, mockEntities.length, 
 			createMockEntity({ id: 'char-1', name: 'Hero', type: 'character' })
-		];
+		);
 	});
 
 	describe('Optional Max HP', () => {
@@ -1136,7 +1140,7 @@ describe('AddCombatantModal - Optional Fields in Entity Mode (Issue #233)', () =
 describe('Quick Add - Threat Level (Issue #240)', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
-		mockEntities = [];
+		mockEntities.length = 0;
 	});
 
 	describe('Threat Level Visibility', () => {
@@ -1555,10 +1559,10 @@ describe('Quick Add - Threat Level (Issue #240)', () => {
 describe('AddCombatantModal - Token Indicator Field (Issue #300)', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
-		mockEntities = [
+		mockEntities.splice(0, mockEntities.length, 
 			createMockEntity({ id: 'char-1', name: 'Hero', type: 'character' }),
 			createMockEntity({ id: 'npc-1', name: 'Monster', type: 'npc' })
-		];
+		);
 	});
 
 	describe('Token Indicator in Entity Mode', () => {

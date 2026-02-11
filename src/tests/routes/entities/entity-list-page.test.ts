@@ -106,12 +106,14 @@ describe('Entity List Page - Quick-Link Creation (Issue #77)', () => {
 		it('should render a Link button on each entity card', () => {
 			render(EntityListPage);
 
-			const entityCards = screen.getAllByRole('link');
+			// Get only entity cards (which have data-testid="entity-card")
+			const entityCards = screen.getAllByTestId('entity-card');
 			expect(entityCards.length).toBeGreaterThan(0);
 
 			// Each entity card should have a Link button somewhere in its hierarchy
+			// Note: Buttons have opacity-0 by default, so we need to query for hidden elements
 			entityCards.forEach(card => {
-				const linkButton = within(card).queryByRole('button', { name: /link/i });
+				const linkButton = within(card).queryByRole('button', { name: /link/i, hidden: true });
 				expect(linkButton).toBeInTheDocument();
 			});
 		});
@@ -489,9 +491,9 @@ describe('Entity List Page - Quick-Link Creation (Issue #77)', () => {
 		it('should be positioned within or near the entity card', () => {
 			render(EntityListPage);
 
-			const entityCards = screen.getAllByRole('link');
+			const entityCards = screen.getAllByTestId('entity-card');
 			const firstCard = entityCards[0];
-			const linkButton = within(firstCard).getByRole('button', { name: /link/i });
+			const linkButton = within(firstCard).getByRole('button', { name: /link/i, hidden: true });
 
 			// Button should be within the card's DOM tree
 			expect(firstCard.contains(linkButton)).toBe(true);
@@ -500,7 +502,7 @@ describe('Entity List Page - Quick-Link Creation (Issue #77)', () => {
 		it('should apply group hover pattern to parent card', () => {
 			render(EntityListPage);
 
-			const entityCards = screen.getAllByRole('link');
+			const entityCards = screen.getAllByTestId('entity-card');
 			const firstCard = entityCards[0];
 
 			// Card should have 'group' class for Tailwind group-hover to work

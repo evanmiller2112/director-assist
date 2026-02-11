@@ -21,6 +21,7 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/svelte';
+import { tick } from 'svelte';
 import EditRelationshipModal from './EditRelationshipModal.svelte';
 import type { BaseEntity, EntityLink } from '$lib/types';
 import { createMockEntity } from '../../../tests/utils/testUtils';
@@ -844,10 +845,12 @@ describe('EditRelationshipModal - Reactivity: Edge Cases', () => {
 		// Clear relationship to trigger validation error
 		const relationshipInput = screen.getByLabelText(/relationship.*type/i) as HTMLInputElement;
 		await fireEvent.input(relationshipInput, { target: { value: '' } });
+		await tick();
 
 		// Try to save
 		const saveButton = screen.getByRole('button', { name: /save/i });
 		await fireEvent.click(saveButton);
+		await tick();
 
 		// Should show error
 		expect(screen.getByText(/relationship.*required/i)).toBeInTheDocument();
@@ -870,6 +873,7 @@ describe('EditRelationshipModal - Reactivity: Edge Cases', () => {
 			onClose,
 			onSave
 		});
+		await tick();
 
 		// Error should be cleared with new link
 		expect(screen.queryByText(/relationship.*required/i)).not.toBeInTheDocument();

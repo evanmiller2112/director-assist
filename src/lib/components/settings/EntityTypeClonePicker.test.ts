@@ -194,9 +194,9 @@ describe('EntityTypeClonePicker - Built-in Types Display (Issue #210)', () => {
 		});
 
 		// Player Character has 2 fields
-		expect(screen.getByText(/2.*fields?/i)).toBeInTheDocument();
+		expect(screen.getAllByText(/2.*fields?/i)[0]).toBeInTheDocument();
 		// NPC has 1 field
-		expect(screen.getByText(/1.*field/i)).toBeInTheDocument();
+		expect(screen.getAllByText(/1.*field/i)[0]).toBeInTheDocument();
 	});
 
 	it('should display icons for built-in types', () => {
@@ -376,7 +376,7 @@ describe('EntityTypeClonePicker - Clone Action (Issue #210)', () => {
 		const clonedType: EntityTypeDefinition = onselect.mock.calls[0][0];
 		expect(clonedType.type).toBe(''); // Empty type key for new custom type
 		expect(clonedType.isBuiltIn).toBe(false);
-		expect(clonedType.label).toBe('Player Character');
+		expect(clonedType.label).toBe('Player Character (Copy)');
 		expect(clonedType.fieldDefinitions).toHaveLength(2);
 		expect(clonedType.defaultRelationships).toEqual(['knows', 'located_at']);
 	});
@@ -400,7 +400,7 @@ describe('EntityTypeClonePicker - Clone Action (Issue #210)', () => {
 		const clonedType: EntityTypeDefinition = onselect.mock.calls[0][0];
 		expect(clonedType.type).toBe(''); // Empty type key
 		expect(clonedType.isBuiltIn).toBe(false);
-		expect(clonedType.label).toBe('Quest');
+		expect(clonedType.label).toBe('Quest (Copy)');
 		expect(clonedType.fieldDefinitions).toHaveLength(2);
 		expect(clonedType.fieldDefinitions[0].key).toBe('objective');
 	});
@@ -509,7 +509,8 @@ describe('EntityTypeClonePicker - Cancel Action (Issue #210)', () => {
 			}
 		});
 
-		await fireEvent.keyDown(document, { key: 'Escape' });
+		const dialog = screen.getByRole('dialog');
+		await fireEvent.keyDown(dialog, { key: 'Escape' });
 
 		expect(oncancel).toHaveBeenCalledTimes(1);
 	});

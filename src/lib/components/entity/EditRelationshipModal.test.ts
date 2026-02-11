@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import type { MockedFunction } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/svelte';
+import { tick } from 'svelte';
 import EditRelationshipModal from './EditRelationshipModal.svelte';
 import { createMockEntity } from '../../../tests/utils/testUtils';
 import type { BaseEntity, EntityLink } from '$lib/types';
@@ -430,10 +431,12 @@ describe('EditRelationshipModal - Save Functionality', () => {
 		// Edit the relationship
 		const relationshipInput = screen.getByLabelText(/relationship.*type/i) as HTMLInputElement;
 		await fireEvent.input(relationshipInput, { target: { value: 'corrupted_by' } });
+		await tick();
 
 		// Click Save
 		const saveButton = screen.getByRole('button', { name: /save/i });
 		await fireEvent.click(saveButton);
+		await tick();
 
 		expect(onSave).toHaveBeenCalledTimes(1);
 		expect(onSave).toHaveBeenCalledWith(

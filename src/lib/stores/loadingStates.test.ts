@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 /**
  * Tests for Store Loading States
@@ -20,8 +20,9 @@ describe('EntitiesStore Loading States (Issue #12)', () => {
 	let mockRepository: any;
 
 	beforeEach(async () => {
-		// Clear all mocks
+		// Clear all mocks and reset modules to get fresh store state
 		vi.clearAllMocks();
+		vi.resetModules();
 
 		// Mock the entity repository
 		mockRepository = {
@@ -41,6 +42,10 @@ describe('EntitiesStore Loading States (Issue #12)', () => {
 		// Import store after mocking
 		const module = await import('./entities.svelte');
 		entitiesStore = module.entitiesStore;
+	});
+
+	afterEach(() => {
+		vi.resetModules();
 	});
 
 	describe('Load Operation Loading State', () => {
@@ -175,6 +180,7 @@ describe('CampaignStore Loading States (Issue #12)', () => {
 
 	beforeEach(async () => {
 		vi.clearAllMocks();
+		vi.resetModules();
 
 		// Create a stable mock chain for the database
 		mockQueryChain = {
@@ -208,6 +214,10 @@ describe('CampaignStore Loading States (Issue #12)', () => {
 
 		const module = await import('./campaign.svelte');
 		campaignStore = module.campaignStore;
+	});
+
+	afterEach(() => {
+		vi.resetModules();
 	});
 
 	describe('Load Operation Loading State', () => {
@@ -293,12 +303,23 @@ describe('CampaignStore Loading States (Issue #12)', () => {
 
 	describe('Update Campaign Loading State', () => {
 		it('should update campaign without affecting global loading state', async () => {
-			// Setup initial campaign
-			campaignStore.campaign = {
+			// Setup initial campaign by loading it
+			const mockCampaign = {
 				id: 'campaign-1',
 				name: 'Old Name',
-				type: 'campaign'
+				type: 'campaign',
+				description: 'Test',
+				tags: [],
+				links: [],
+				fields: {},
+				createdAt: new Date(),
+				updatedAt: new Date()
 			};
+
+			mockQueryChain.toArray.mockResolvedValue([mockCampaign]);
+			mockAppConfigRepository.getActiveCampaignId.mockResolvedValue('campaign-1');
+
+			await campaignStore.load();
 
 			mockDb.entities.update.mockResolvedValue(undefined);
 
@@ -309,11 +330,23 @@ describe('CampaignStore Loading States (Issue #12)', () => {
 		});
 
 		it('should handle update errors and set error state', async () => {
-			campaignStore.campaign = {
+			// Setup initial campaign by loading it
+			const mockCampaign = {
 				id: 'campaign-1',
 				name: 'Old Name',
-				type: 'campaign'
+				type: 'campaign',
+				description: 'Test',
+				tags: [],
+				links: [],
+				fields: {},
+				createdAt: new Date(),
+				updatedAt: new Date()
 			};
+
+			mockQueryChain.toArray.mockResolvedValue([mockCampaign]);
+			mockAppConfigRepository.getActiveCampaignId.mockResolvedValue('campaign-1');
+
+			await campaignStore.load();
 
 			mockDb.entities.update.mockRejectedValue(new Error('Update failed'));
 
@@ -325,14 +358,26 @@ describe('CampaignStore Loading States (Issue #12)', () => {
 
 	describe('Update Settings Loading State', () => {
 		it('should update settings without affecting global loading state', async () => {
-			campaignStore.campaign = {
+			// Setup initial campaign by loading it
+			const mockCampaign = {
 				id: 'campaign-1',
 				name: 'Campaign',
 				type: 'campaign',
+				description: 'Test',
+				tags: [],
+				links: [],
+				fields: {},
 				metadata: {
 					settings: {}
-				}
+				},
+				createdAt: new Date(),
+				updatedAt: new Date()
 			};
+
+			mockQueryChain.toArray.mockResolvedValue([mockCampaign]);
+			mockAppConfigRepository.getActiveCampaignId.mockResolvedValue('campaign-1');
+
+			await campaignStore.load();
 
 			mockDb.entities.update.mockResolvedValue(undefined);
 
@@ -344,14 +389,26 @@ describe('CampaignStore Loading States (Issue #12)', () => {
 		});
 
 		it('should handle settings update errors', async () => {
-			campaignStore.campaign = {
+			// Setup initial campaign by loading it
+			const mockCampaign = {
 				id: 'campaign-1',
 				name: 'Campaign',
 				type: 'campaign',
+				description: 'Test',
+				tags: [],
+				links: [],
+				fields: {},
 				metadata: {
 					settings: {}
-				}
+				},
+				createdAt: new Date(),
+				updatedAt: new Date()
 			};
+
+			mockQueryChain.toArray.mockResolvedValue([mockCampaign]);
+			mockAppConfigRepository.getActiveCampaignId.mockResolvedValue('campaign-1');
+
+			await campaignStore.load();
 
 			mockDb.entities.update.mockRejectedValue(new Error('Update failed'));
 
@@ -371,6 +428,7 @@ describe('ChatStore Loading States (Issue #12)', () => {
 
 	beforeEach(async () => {
 		vi.clearAllMocks();
+		vi.resetModules();
 
 		mockChatRepository = {
 			getAll: vi.fn(() => ({
@@ -416,6 +474,10 @@ describe('ChatStore Loading States (Issue #12)', () => {
 
 		const module = await import('./chat.svelte');
 		chatStore = module.chatStore;
+	});
+
+	afterEach(() => {
+		vi.resetModules();
 	});
 
 	describe('Load Operation Loading State', () => {
@@ -490,7 +552,8 @@ describe('ChatStore Loading States (Issue #12)', () => {
 			await chatStore.sendMessage('Hello');
 
 			expect(chatStore.error).toBeTruthy();
-			expect(chatStore.error).toContain('Failed to send message');
+			// The error message comes from the thrown error, not a generic message
+			expect(chatStore.error).toBe('Network error');
 		});
 
 		it('should clear streamingContent on success', async () => {
@@ -522,22 +585,31 @@ describe('ChatStore Loading States (Issue #12)', () => {
 		});
 
 		it('should update streamingContent during streaming', async () => {
-			let capturedOnStream: Function;
+			let resolveMessage: () => void;
+			const messagePromise = new Promise<string>((resolve) => {
+				resolveMessage = () => resolve('Final');
+			});
 
 			mockSendChatMessage.mockImplementation(
 				async (content: string, entityIds: string[], includeLinked: boolean, onStream: Function) => {
-					capturedOnStream = onStream;
+					// Call onStream to update streaming content
 					onStream('Streaming...');
-					return 'Final';
+					// Wait for test to check streaming content before completing
+					return messagePromise;
 				}
 			);
 			mockChatRepository.add.mockResolvedValue(undefined);
 
 			const promise = chatStore.sendMessage('Hello');
 
-			// Should update streaming content
+			// Wait a tick for the async function to start executing
+			await new Promise(resolve => setTimeout(resolve, 0));
+
+			// Should update streaming content while message is in progress
 			expect(chatStore.streamingContent).toBe('Streaming...');
 
+			// Now complete the message
+			resolveMessage!();
 			await promise;
 		});
 

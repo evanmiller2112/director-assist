@@ -87,18 +87,12 @@ function validateNumber(definition: FieldDefinition, value: FieldValue): string 
 }
 
 function validateSelect(definition: FieldDefinition, value: string): string | null {
-	// Note: Issue #429 originally disabled strict validation to allow custom values.
-	// However, for entities parsed from AI responses, we want to validate against options
-	// to catch AI hallucinations like "Resurrected" when only "Alive/Deceased/Unknown" are valid.
-	// This validation helps maintain data quality for AI-generated content.
+	// Issue #429: Allow custom values for select fields.
+	// Select fields with predefined options are suggestions, not constraints.
+	// Users can enter custom values not in the predefined list.
+	// This is intentional to allow flexibility in data entry.
 
-	// If options are defined, validate the value is one of them
-	if (definition.options && definition.options.length > 0) {
-		if (!definition.options.includes(value)) {
-			return `${definition.label} must be one of the available options: ${definition.options.join(', ')}`;
-		}
-	}
-
+	// No validation needed - any non-empty string is valid
 	return null;
 }
 

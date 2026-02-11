@@ -136,19 +136,6 @@ describe('QuickAddModal Component - Close Behavior', () => {
 		expect(onClose).toHaveBeenCalledTimes(1);
 	});
 
-	it.skip('should call onClose callback when backdrop is clicked - TBD', async () => {
-		const onClose = vi.fn();
-		render(QuickAddModal, { props: { open: true, onClose } });
-
-		// Find the backdrop (dialog element itself or a backdrop div)
-		const dialog = screen.getByRole('dialog');
-
-		// Click on the backdrop (parent of dialog content)
-		await fireEvent.click(dialog);
-
-		expect(onClose).toHaveBeenCalledTimes(1);
-	});
-
 	it('should NOT call onClose when clicking inside modal content', async () => {
 		const onClose = vi.fn();
 		render(QuickAddModal, { props: { open: true, onClose } });
@@ -479,19 +466,6 @@ describe('QuickAddModal Component - Keyboard Navigation', () => {
 			expect(button).not.toHaveAttribute('tabindex', '-1');
 		});
 	});
-
-	it.skip('should handle Enter key on entity type button - TBD', async () => {
-		render(QuickAddModal, { props: { open: true } });
-
-		const characterButton = screen.getByText('Player Character').closest('button');
-		characterButton!.focus();
-
-		// Press Enter key
-		await fireEvent.keyDown(characterButton!, { key: 'Enter' });
-
-		// Should navigate
-		expect(goto).toHaveBeenCalledWith('/entities/character/new');
-	});
 });
 
 describe('QuickAddModal Component - Accessibility', () => {
@@ -623,21 +597,6 @@ describe('QuickAddModal Component - Edge Cases', () => {
 		render(QuickAddModal, { props: { open: true } });
 
 		expect(screen.getByText('Very Long Entity Type Name That Might Wrap')).toBeInTheDocument();
-	});
-
-	it.skip('should handle rapid consecutive searches - TBD', async () => {
-		render(QuickAddModal, { props: { open: true } });
-
-		const searchInput = screen.getByRole('textbox');
-
-		// Rapidly change search value
-		await fireEvent.input(searchInput, { target: { value: 'a' } });
-		await fireEvent.input(searchInput, { target: { value: 'ab' } });
-		await fireEvent.input(searchInput, { target: { value: 'abc' } });
-		await fireEvent.input(searchInput, { target: { value: '' } });
-
-		// Should not error and should show all types
-		expect(screen.getByText('Player Character')).toBeInTheDocument();
 	});
 
 	it('should handle multiple rapid open/close cycles', async () => {

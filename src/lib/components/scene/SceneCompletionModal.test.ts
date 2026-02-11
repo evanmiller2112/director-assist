@@ -330,18 +330,6 @@ describe('SceneCompletionModal Component - Keyboard Interaction', () => {
 
 		expect(mockOnCancel).toHaveBeenCalled();
 	});
-
-	it.skip('should focus textarea when modal opens', () => {
-		// SKIPPED: Auto-focus behavior is not implemented
-		// This test documents expected future behavior
-		expect(true).toBe(true);
-	});
-
-	it.skip('should trap focus within modal', async () => {
-		// SKIPPED: Focus trap is not currently implemented
-		// This test documents expected future accessibility enhancement
-		expect(true).toBe(true);
-	});
 });
 
 describe('SceneCompletionModal Component - Accessibility', () => {
@@ -376,12 +364,6 @@ describe('SceneCompletionModal Component - Accessibility', () => {
 
 		const dialog = screen.getByRole('dialog');
 		expect(dialog).toHaveAttribute('aria-labelledby');
-	});
-
-	it.skip('should have aria-describedby for dialog description', () => {
-		// SKIPPED: aria-describedby is not currently implemented
-		// This test documents expected future accessibility enhancement
-		expect(true).toBe(true);
 	});
 
 	it('should have aria-modal attribute', () => {

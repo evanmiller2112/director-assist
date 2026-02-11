@@ -223,51 +223,6 @@ describe('getSystemAwareEntityType - Draw Steel Encounter', () => {
 		// system modifications cannot be applied to non-existent types
 		expect(result).toBeUndefined();
 	});
-
-	it.skip('should include victoryPoints field in Draw Steel encounter', () => {
-		// Skipped: encounter entity type doesn't exist yet
-		const result = getSystemAwareEntityType('encounter', DRAW_STEEL_PROFILE);
-		const victoryPointsField = result?.fieldDefinitions.find((f) => f.key === 'victoryPoints');
-		expect(victoryPointsField).toBeDefined();
-		expect(victoryPointsField?.label).toBe('Victory Points');
-		expect(victoryPointsField?.type).toBe('number');
-	});
-
-	it.skip('should include negotiationDC field in Draw Steel encounter', () => {
-		// Skipped: encounter entity type doesn't exist yet
-		const result = getSystemAwareEntityType('encounter', DRAW_STEEL_PROFILE);
-		const negotiationDCField = result?.fieldDefinitions.find((f) => f.key === 'negotiationDC');
-		expect(negotiationDCField).toBeDefined();
-		expect(negotiationDCField?.label).toBe('Negotiation DC');
-		expect(negotiationDCField?.type).toBe('number');
-	});
-
-	it.skip('should override encounterType options for Draw Steel', () => {
-		// Skipped: encounter entity type doesn't exist yet
-		const result = getSystemAwareEntityType('encounter', DRAW_STEEL_PROFILE);
-		const encounterTypeField = result?.fieldDefinitions.find((f) => f.key === 'encounterType');
-		if (encounterTypeField?.options) {
-			expect(encounterTypeField.options).toContain('combat');
-			expect(encounterTypeField.options).toContain('negotiation');
-			expect(encounterTypeField.options).toContain('montage');
-		}
-	});
-
-	it.skip('should maintain base encounter fields', () => {
-		// Skipped: encounter entity type doesn't exist yet
-		const result = getSystemAwareEntityType('encounter', DRAW_STEEL_PROFILE);
-		const fields = result?.fieldDefinitions || [];
-		expect(fields.find((f) => f.key === 'encounterType')).toBeDefined();
-	});
-
-	it.skip('should mark Draw Steel encounter fields as not required by default', () => {
-		// Skipped: encounter entity type doesn't exist yet
-		const result = getSystemAwareEntityType('encounter', DRAW_STEEL_PROFILE);
-		const victoryPointsField = result?.fieldDefinitions.find((f) => f.key === 'victoryPoints');
-		const negotiationDCField = result?.fieldDefinitions.find((f) => f.key === 'negotiationDC');
-		expect(victoryPointsField?.required).toBe(false);
-		expect(negotiationDCField?.required).toBe(false);
-	});
 });
 
 describe('getSystemAwareEntityType - Other Entity Types', () => {

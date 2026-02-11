@@ -153,7 +153,7 @@ describe('Header Component - Search Integration', () => {
 			const menuButton = screen.getByLabelText(/toggle sidebar/i);
 			await fireEvent.click(menuButton);
 
-			expect(mockUiStore.toggleSidebar).toHaveBeenCalled();
+			expect(mockUiStore.toggleMobileSidebar).toHaveBeenCalled();
 		});
 	});
 

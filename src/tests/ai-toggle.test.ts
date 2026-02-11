@@ -2,34 +2,52 @@
  * Integration Tests for AI Toggle Feature
  *
  * Issue #122: Add 'AI Off' toggle to disable all AI features
+ * Issue #465 (section 2): Fix 15 skipped tests blocked by dynamic import timeouts
  *
  * TESTING STRATEGY:
  * - Focus on individual component testing rather than full page integration
  * - Test components in isolation with different AI enabled states
  * - Verify visibility and behavior of AI-related UI elements
  *
- * CURRENT STATUS:
- * All tests in this file are skipped due to fundamental limitations with mocking Svelte 5 components
- * that have complex dependencies. The issues are:
+ * COMPONENTS TESTED:
+ * - EntitySummary: Tests AI toggle behavior in entity summary display
+ * - SettingsPage: Tests AI mode selection (off/suggestions/full) and related UI
  *
- * 1. Static imports cause "Cannot access before initialization" errors because vi.mock() is hoisted
- * 2. Dynamic imports timeout in Vitest when loading Svelte components with many dependencies
- * 3. The components (EntitySummary, SettingsPage) rely on multiple stores and services that are
- *    difficult to mock in isolation without triggering circular dependency issues
- *
- * The AI toggle functionality has been manually tested and verified to work correctly.
- * These tests document the expected behavior for future reference.
- *
- * ALTERNATIVE TESTING APPROACHES:
- * - E2E tests using Playwright would be more suitable for these integration scenarios
- * - Component-level tests should focus on simpler, more isolated components
- * - The core AI toggle logic in the stores can be unit tested separately
+ * MOCKING APPROACH:
+ * - Mock all stores ($lib/stores) and services ($lib/services) used by the components
+ * - Mock $app/stores to provide page context
+ * - Mock complex child components (SystemSelector, LoadingButton, etc.) with simple Svelte mocks
+ * - Mock database and repository dependencies
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/svelte';
 import EntitySummary from '$lib/components/entity/EntitySummary.svelte';
 import SettingsPage from '../routes/settings/+page.svelte';
+
+// Mock $app/stores - must be at the top level
+const { mockPageStore } = vi.hoisted(() => ({
+	mockPageStore: {
+		subscribe: vi.fn((callback) => {
+			callback({
+				url: new URL('http://localhost/settings'),
+				params: {},
+				route: { id: null },
+				status: 200,
+				error: null,
+				data: {},
+				form: undefined
+			});
+			return () => {};
+		})
+	}
+}));
+
+vi.mock('$app/stores', () => ({
+	page: mockPageStore,
+	navigating: { subscribe: vi.fn(() => () => {}) },
+	updated: { subscribe: vi.fn(() => () => {}) }
+}));
 
 // Mock stores - must be defined in vi.hoisted() to be available during hoisting
 const {
@@ -38,11 +56,13 @@ const {
 	mockUiStore,
 	mockNotificationStore,
 	mockEntitiesStore,
+	mockDebugStore,
 	mockLocalStorage,
 	getAiEnabled,
 	setAiEnabled
 } = vi.hoisted(() => {
 	let aiEnabled = false;
+	let aiMode: 'off' | 'suggestions' | 'full' = 'off';
 
 	const mockAiSettings = {
 		get aiEnabled() {
@@ -51,8 +71,15 @@ const {
 		get isEnabled() {
 			return aiEnabled;
 		},
+		get aiMode() {
+			return aiMode;
+		},
 		load: vi.fn(),
 		setEnabled: vi.fn(),
+		setMode: vi.fn((mode: 'off' | 'suggestions' | 'full') => {
+			aiMode = mode;
+			aiEnabled = mode !== 'off';
+		}),
 		toggle: vi.fn()
 	};
 
@@ -75,7 +102,9 @@ const {
 		allCampaigns: [],
 		activeCampaignId: 'test-campaign',
 		load: vi.fn(),
-		setActiveCampaign: vi.fn()
+		setActiveCampaign: vi.fn(),
+		getCurrentSystemProfile: vi.fn(() => ({ id: 'draw-steel', name: 'Draw Steel' })),
+		setSystemProfile: vi.fn()
 	};
 
 	const mockUiStore = {
@@ -120,6 +149,12 @@ const {
 		clearRelationshipFilter: vi.fn()
 	};
 
+	const mockDebugStore = {
+		enabled: false,
+		load: vi.fn(),
+		setEnabled: vi.fn()
+	};
+
 	const mockLocalStorage = (() => {
 		let store: Record<string, string> = {};
 		return {
@@ -142,6 +177,7 @@ const {
 		mockUiStore,
 		mockNotificationStore,
 		mockEntitiesStore,
+		mockDebugStore,
 		mockLocalStorage,
 		getAiEnabled: () => aiEnabled,
 		setAiEnabled: (value: boolean) => { aiEnabled = value; }
@@ -158,7 +194,8 @@ vi.mock('$lib/stores', () => ({
 	uiStore: mockUiStore,
 	notificationStore: mockNotificationStore,
 	entitiesStore: mockEntitiesStore,
-	aiSettings: mockAiSettings
+	aiSettings: mockAiSettings,
+	debugStore: mockDebugStore
 }));
 
 vi.mock('$lib/services', () => ({
@@ -175,7 +212,13 @@ vi.mock('$lib/services', () => ({
 		contextBudgetAllocation: 50,
 		autoGenerateSummaries: false
 	})),
-	setRelationshipContextSettings: vi.fn()
+	setRelationshipContextSettings: vi.fn(),
+	getLastExportedAt: vi.fn(() => null),
+	getDaysSinceExport: vi.fn(() => null),
+	setLastExportedAt: vi.fn(),
+	setLastMilestoneReached: vi.fn(),
+	refreshAllStores: vi.fn(),
+	resetAllStores: vi.fn()
 }));
 
 vi.mock('$lib/services/summaryService', () => ({
@@ -183,19 +226,72 @@ vi.mock('$lib/services/summaryService', () => ({
 	generateSummary: vi.fn(() => Promise.resolve({ success: true, summary: 'Test summary' }))
 }));
 
-describe.skip('AI Toggle Integration Tests (Issue #122) - All skipped due to Svelte 5 mocking limitations', () => {
+// Mock db and repositories (used by SettingsPage)
+vi.mock('$lib/db', () => ({
+	db: {
+		entities: { toArray: vi.fn(() => Promise.resolve([])) },
+		chatMessages: { toArray: vi.fn(() => Promise.resolve([])), clear: vi.fn(), bulkAdd: vi.fn() },
+		campaign: { clear: vi.fn() },
+		appConfig: { clear: vi.fn(), put: vi.fn() },
+		combatSessions: { toArray: vi.fn(() => Promise.resolve([])), clear: vi.fn(), bulkAdd: vi.fn() },
+		montageSessions: { toArray: vi.fn(() => Promise.resolve([])), clear: vi.fn(), bulkAdd: vi.fn() },
+		negotiationSessions: { toArray: vi.fn(() => Promise.resolve([])), clear: vi.fn(), bulkAdd: vi.fn() },
+		suggestions: { clear: vi.fn() },
+		transaction: vi.fn((mode, tables, callback) => callback())
+	}
+}));
+
+vi.mock('$lib/db/repositories', () => ({
+	entityRepository: {},
+	chatRepository: {},
+	appConfigRepository: {
+		getActiveCampaignId: vi.fn(() => Promise.resolve('test-campaign'))
+	}
+}));
+
+vi.mock('$lib/db/migrations/migrateCampaignToEntity', () => ({
+	convertOldCampaignToEntity: vi.fn()
+}));
+
+// Mock the settings components that SettingsPage imports
+vi.mock('$lib/components/settings/PlayerExportModal.svelte', async () => {
+	const MockPlayerExportModal = (await import('./mocks/components/MockPlayerExportModal.svelte')).default;
+	return {
+		default: MockPlayerExportModal
+	};
+});
+
+vi.mock('$lib/components/settings/ForgeSteelImportModal.svelte', async () => {
+	const MockForgeSteelImportModal = (await import('./mocks/components/MockForgeSteelImportModal.svelte')).default;
+	return {
+		default: MockForgeSteelImportModal
+	};
+});
+
+vi.mock('$lib/components/settings', async () => {
+	const MockSystemSelector = (await import('./mocks/components/MockSystemSelector.svelte')).default;
+	const MockCampaignLinkingSettings = (await import('./mocks/components/MockCampaignLinkingSettings.svelte')).default;
+	return {
+		SystemSelector: MockSystemSelector,
+		CampaignLinkingSettings: MockCampaignLinkingSettings
+	};
+});
+
+vi.mock('$lib/components/ui/LoadingButton.svelte', async () => {
+	const MockLoadingButton = (await import('./mocks/components/MockLoadingButton.svelte')).default;
+	return {
+		default: MockLoadingButton
+	};
+});
+
+describe('AI Toggle Integration Tests (Issue #122)', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 		mockLocalStorage.clear();
 		setAiEnabled(false);
+		mockAiSettings.setMode('off');
 	});
 
-	// Note: Header component tests removed due to rendering complexity with HeaderSearch component.
-	// The chat button visibility is implicitly tested through the Settings page tests and
-	// can be verified manually. The key AI toggle logic is covered by EntitySummary tests.
-
-	// NOTE: Entity Summary component tests are individually skipped due to module import timing issues in Vitest with Svelte components.
-	// The AI toggle functionality is verified through manual testing and the implementation review.
 	describe('EntitySummary Component', () => {
 		const mockEntity = {
 			id: 'test-entity',
@@ -315,68 +411,72 @@ describe.skip('AI Toggle Integration Tests (Issue #122) - All skipped due to Sve
 		});
 	});
 
-	describe('Settings Page - AI Toggle', () => {
-		it('should display AI toggle switch when AI is disabled', async () => {
-			setAiEnabled(false);
-			render(SettingsPage);
+	describe('Settings Page - AI Mode Selection', () => {
+		it('should display AI mode radio buttons with "Off" selected when AI is disabled', async () => {
+			mockAiSettings.setMode('off');
+			const { container } = render(SettingsPage);
 
-			// Should have a toggle for AI features - get all instances and check the last one
-			const toggles = screen.getAllByRole('switch', { name: /enable ai features/i });
-			expect(toggles.length).toBeGreaterThan(0);
-			expect(toggles[toggles.length - 1]).not.toBeChecked();
+			// Radio buttons have name="aiMode" in the HTML
+			const radios = container.querySelectorAll('input[name="aiMode"]');
+			expect(radios.length).toBeGreaterThan(0);
+
+			const offRadio = Array.from(radios).find(r => (r as HTMLInputElement).value === 'off');
+			expect(offRadio).toBeInTheDocument();
+			expect(offRadio).toBeChecked();
 		});
 
-		it('should display AI toggle switch when AI is enabled', async () => {
-			setAiEnabled(true);
-			render(SettingsPage);
+		it('should display AI mode radio buttons with "Suggestions Only" available', async () => {
+			mockAiSettings.setMode('suggestions');
+			const { container } = render(SettingsPage);
 
-			// Should have a toggle that is checked - get all instances and check the last one
-			const toggles = screen.getAllByRole('switch', { name: /enable ai features/i });
-			expect(toggles.length).toBeGreaterThan(0);
-			expect(toggles[toggles.length - 1]).toBeChecked();
+			const radios = container.querySelectorAll('input[name="aiMode"]');
+			const suggestionsRadio = Array.from(radios).find(r => (r as HTMLInputElement).value === 'suggestions');
+			expect(suggestionsRadio).toBeInTheDocument();
+			expect(suggestionsRadio).toBeChecked();
 		});
 
-		it('should call aiSettings.toggle() when toggle is clicked', async () => {
-			setAiEnabled(false);
-			render(SettingsPage);
+		it('should call aiSettings.setMode() when a different mode is selected', async () => {
+			mockAiSettings.setMode('off');
+			const { container } = render(SettingsPage);
 
-			const toggles = screen.getAllByRole('switch', { name: /enable ai features/i });
-			await fireEvent.click(toggles[toggles.length - 1]);
-
-			expect(mockAiSettings.toggle).toHaveBeenCalled();
+			const radios = container.querySelectorAll('input[name="aiMode"]');
+			const suggestionsRadio = Array.from(radios).find(r => (r as HTMLInputElement).value === 'suggestions');
+			if (suggestionsRadio) {
+				await fireEvent.click(suggestionsRadio);
+				expect(mockAiSettings.setMode).toHaveBeenCalledWith('suggestions');
+			}
 		});
 
-		it('should show helper text explaining AI toggle behavior', async () => {
-			setAiEnabled(false);
+		it('should show descriptive text for AI modes', async () => {
+			mockAiSettings.setMode('off');
 			render(SettingsPage);
 
-			// Should have helper text mentioning AI features and existing summaries - get all and check last
-			const helperTexts = screen.getAllByText(/disable all ai.*existing summaries/i);
-			expect(helperTexts.length).toBeGreaterThan(0);
-			expect(helperTexts[helperTexts.length - 1]).toBeInTheDocument();
+			// Should have descriptive text for each mode
+			expect(screen.getByText(/AI features disabled/i)).toBeInTheDocument();
+			expect(screen.getByText(/AI suggests content, you choose what to accept/i)).toBeInTheDocument();
+			expect(screen.getByText(/AI automatically generates content/i)).toBeInTheDocument();
 		});
 
-		it('should show API key section when AI is enabled', async () => {
-			setAiEnabled(true);
+		it('should show API key section when AI is enabled (suggestions mode)', async () => {
+			mockAiSettings.setMode('suggestions');
 			render(SettingsPage);
 
-			// API key input should be visible (exact match to avoid matching other labels)
-			const apiKeyInputs = screen.getAllByLabelText(/^API Key$/i);
-			expect(apiKeyInputs.length).toBeGreaterThan(0);
-			expect(apiKeyInputs[apiKeyInputs.length - 1]).toBeInTheDocument();
+			// API key input should be visible
+			const apiKeyInput = screen.getByLabelText(/^API Key$/i);
+			expect(apiKeyInput).toBeInTheDocument();
 		});
 
-		it('should hide API key section when AI is disabled', async () => {
-			setAiEnabled(false);
+		it('should hide API key section when AI is disabled (off mode)', async () => {
+			mockAiSettings.setMode('off');
 			render(SettingsPage);
 
-			// API key input should NOT be visible (exact match to avoid matching other labels)
+			// API key input should NOT be visible
 			const apiKeyInput = screen.queryByLabelText(/^API Key$/i);
 			expect(apiKeyInput).not.toBeInTheDocument();
 		});
 
 		it('should hide model selection when AI is disabled', async () => {
-			setAiEnabled(false);
+			mockAiSettings.setMode('off');
 			render(SettingsPage);
 
 			// Claude Model select should NOT be visible

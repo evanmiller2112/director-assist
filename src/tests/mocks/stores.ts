@@ -142,6 +142,7 @@ export function createMockUiStore() {
 		chatPanelOpen: false,
 		theme: 'light',
 		toggleSidebar: vi.fn(),
+		toggleMobileSidebar: vi.fn(),
 		toggleChatPanel: vi.fn(),
 		loadTheme: vi.fn()
 	};

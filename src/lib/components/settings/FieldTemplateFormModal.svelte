@@ -35,7 +35,7 @@
 			name = template.name;
 			description = template.description || '';
 			category = (template.category === 'draw-steel' ? 'draw-steel' : 'user') as 'user' | 'draw-steel';
-			fieldDefinitions = structuredClone(template.fieldDefinitions);
+			fieldDefinitions = $state.snapshot(template.fieldDefinitions);
 		}
 	});
 
@@ -100,7 +100,7 @@
 			name: name.trim(),
 			description: description.trim(),
 			category,
-			fieldDefinitions: structuredClone(fieldDefinitions),
+			fieldDefinitions: $state.snapshot(fieldDefinitions),
 			createdAt: template?.createdAt || now,
 			updatedAt: now
 		};

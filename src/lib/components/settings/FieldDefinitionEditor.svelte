@@ -181,7 +181,7 @@
 			existingKeys.add(key);
 
 			return {
-				...structuredClone(field),
+				...field,
 				key,
 				order: startOrder + index + 1
 			};

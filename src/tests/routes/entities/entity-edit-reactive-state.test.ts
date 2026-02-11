@@ -35,6 +35,10 @@ vi.mock('$lib/stores', async () => {
 		},
 		get notificationStore() {
 			return mockNotificationStore;
+		},
+		aiSettings: {
+			providers: [],
+			currentProvider: null
 		}
 	};
 });

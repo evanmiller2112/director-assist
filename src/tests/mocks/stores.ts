@@ -115,6 +115,7 @@ export function createMockCampaignStore() {
 		activeCampaignId: 'test-campaign',
 		load: vi.fn(),
 		setActiveCampaign: vi.fn(),
+		getCurrentSystemProfile: vi.fn(() => 'Test System'),
 		// Campaign linking getters (Issue #48)
 		get enforceCampaignLinking(): boolean {
 			const settings = (store.campaign?.metadata as any)?.settings;

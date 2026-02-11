@@ -488,7 +488,6 @@ describe('sidebarOrderService', () => {
 					'location',
 					'faction',
 					'item',
-					'encounter',
 					'session',
 					'scene',
 					'deity',
@@ -555,9 +554,9 @@ describe('sidebarOrderService', () => {
 		});
 
 		describe('Expected Count', () => {
-			it('should return exactly 13 built-in types', () => {
+			it('should return exactly 12 built-in types', () => {
 				const order = getDefaultOrder();
-				expect(order.length).toBe(13);
+				expect(order.length).toBe(12);
 			});
 		});
 

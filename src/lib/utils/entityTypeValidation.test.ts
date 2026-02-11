@@ -944,13 +944,14 @@ describe('Type Key Uniqueness Validation', () => {
 			'location',
 			'faction',
 			'item',
-			'encounter',
 			'session',
+			'scene',
 			'deity',
 			'timeline_event',
 			'world_rule',
 			'player_profile',
-			'campaign'
+			'campaign',
+			'narrative_event'
 		];
 
 		builtInTypes.forEach((typeKey) => {

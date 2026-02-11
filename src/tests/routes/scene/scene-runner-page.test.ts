@@ -31,20 +31,24 @@ vi.mock('$app/navigation', () => ({
 }));
 
 // Mock page store
-const mockPageStore = {
-	subscribe: vi.fn((callback) => {
-		callback({ params: { id: 'scene-test-id' } });
-		return () => {};
-	})
-};
+const { mockPageStore } = vi.hoisted(() => ({
+	mockPageStore: {
+		subscribe: vi.fn((callback) => {
+			callback({ params: { id: 'scene-test-id' } });
+			return () => {};
+		})
+	}
+}));
 
 vi.mock('$app/stores', () => ({
 	page: mockPageStore
 }));
 
 // Mock entity repository
-const mockGetById = vi.fn();
-const mockUpdate = vi.fn();
+const { mockGetById, mockUpdate } = vi.hoisted(() => ({
+	mockGetById: vi.fn(),
+	mockUpdate: vi.fn()
+}));
 
 vi.mock('$lib/db/entityRepository', () => ({
 	entityRepository: {
@@ -54,8 +58,10 @@ vi.mock('$lib/db/entityRepository', () => ({
 }));
 
 // Mock scene status service
-const mockStartScene = vi.fn();
-const mockCompleteScene = vi.fn();
+const { mockStartScene, mockCompleteScene } = vi.hoisted(() => ({
+	mockStartScene: vi.fn(),
+	mockCompleteScene: vi.fn()
+}));
 
 vi.mock('$lib/services/sceneStatusService', () => ({
 	startScene: mockStartScene,

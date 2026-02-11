@@ -45,6 +45,7 @@ describe('Conversation Store', () => {
 
 		mockConversationRepository = {
 			getAll: vi.fn(() => mockObservable),
+			getAllWithMetadata: vi.fn(() => mockObservable),
 			create: vi.fn(async (name?: string) => ({
 				id: `conv-${Date.now()}`,
 				name: name || `New Conversation ${Date.now()}`,
@@ -61,10 +62,42 @@ describe('Conversation Store', () => {
 			clearActiveConversationId: vi.fn(async () => {})
 		};
 
+		// Mock chatRepository
+		const mockChatRepository = {
+			getAll: vi.fn(() => ({ subscribe: vi.fn() })),
+			add: vi.fn(),
+			clearAll: vi.fn()
+		};
+
 		// Mock the dependencies
 		vi.doMock('$lib/db/repositories', () => ({
 			conversationRepository: mockConversationRepository,
-			appConfigRepository: mockAppConfigRepository
+			appConfigRepository: mockAppConfigRepository,
+			chatRepository: mockChatRepository,
+			combatRepository: {
+				getAll: vi.fn(() => ({ subscribe: vi.fn() })),
+				create: vi.fn(),
+				update: vi.fn(),
+				delete: vi.fn()
+			},
+			montageRepository: {
+				getAll: vi.fn(() => ({ subscribe: vi.fn() })),
+				create: vi.fn(),
+				update: vi.fn(),
+				delete: vi.fn()
+			},
+			creatureRepository: {
+				getAll: vi.fn(() => ({ subscribe: vi.fn() })),
+				create: vi.fn(),
+				update: vi.fn(),
+				delete: vi.fn()
+			},
+			negotiationRepository: {
+				getAll: vi.fn(() => ({ subscribe: vi.fn() })),
+				create: vi.fn(),
+				update: vi.fn(),
+				delete: vi.fn()
+			}
 		}));
 
 		// Import fresh store instance

@@ -54,7 +54,7 @@ describe('GenerationTypeSelector Component', () => {
 		it('should render all generation type options', () => {
 			render(GenerationTypeSelector);
 			const options = screen.getAllByRole('option');
-			expect(options.length).toBe(8); // All 8 generation types
+			expect(options.length).toBe(10); // All 10 generation types
 		});
 	});
 
@@ -79,9 +79,14 @@ describe('GenerationTypeSelector Component', () => {
 			expect(screen.getByRole('option', { name: /Plot Hook/i })).toBeInTheDocument();
 		});
 
-		it('should have "Encounter" option', () => {
+		it('should have "Negotiation" option', () => {
 			render(GenerationTypeSelector);
-			expect(screen.getByRole('option', { name: /Encounter/i })).toBeInTheDocument();
+			expect(screen.getByRole('option', { name: /Negotiation/i })).toBeInTheDocument();
+		});
+
+		it('should have "Montage" option', () => {
+			render(GenerationTypeSelector);
+			expect(screen.getByRole('option', { name: /Montage/i })).toBeInTheDocument();
 		});
 
 		it('should have "Item" option', () => {
@@ -116,7 +121,7 @@ describe('GenerationTypeSelector Component', () => {
 			const options = screen.getAllByRole('option');
 			expect(options[0]).toHaveTextContent(/General/i);
 			// Other types can be in any logical order
-			expect(options.length).toBe(8);
+			expect(options.length).toBe(10);
 		});
 	});
 
@@ -406,7 +411,7 @@ describe('GenerationTypeSelector Component', () => {
 		it('should still show all options in compact mode', () => {
 			render(GenerationTypeSelector, { props: { compact: true } });
 			const options = screen.getAllByRole('option');
-			expect(options.length).toBe(8);
+			expect(options.length).toBe(10);
 		});
 
 		it('should maintain functionality in compact mode', async () => {
@@ -584,6 +589,8 @@ describe('GenerationTypeSelector Component', () => {
 				'location',
 				'plot_hook',
 				'combat',
+				'negotiation',
+				'montage',
 				'item',
 				'faction',
 				'session_prep'
@@ -593,7 +600,7 @@ describe('GenerationTypeSelector Component', () => {
 				await fireEvent.change(select, { target: { value: type } });
 			}
 
-			expect(onChange).toHaveBeenCalledTimes(8);
+			expect(onChange).toHaveBeenCalledTimes(10);
 		});
 
 		it('should maintain state across re-renders', async () => {

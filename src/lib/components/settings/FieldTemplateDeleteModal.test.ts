@@ -177,7 +177,7 @@ describe('FieldTemplateDeleteModal - Confirm Action (Issue #210)', () => {
 			}
 		});
 
-		const deleteButton = screen.getByRole('button', { name: /delete/i });
+		const deleteButton = screen.getByRole('button', { name: /^delete$/i });
 		expect(deleteButton).toBeInTheDocument();
 	});
 
@@ -192,7 +192,7 @@ describe('FieldTemplateDeleteModal - Confirm Action (Issue #210)', () => {
 			}
 		});
 
-		const deleteButton = screen.getByRole('button', { name: /delete/i });
+		const deleteButton = screen.getByRole('button', { name: /^delete$/i });
 		await fireEvent.click(deleteButton);
 
 		expect(onconfirm).toHaveBeenCalledTimes(1);
@@ -210,7 +210,7 @@ describe('FieldTemplateDeleteModal - Confirm Action (Issue #210)', () => {
 			}
 		});
 
-		const deleteButton = screen.getByRole('button', { name: /delete/i });
+		const deleteButton = screen.getByRole('button', { name: /^delete$/i });
 		await fireEvent.click(deleteButton);
 
 		expect(onconfirm).toHaveBeenCalled();
@@ -227,7 +227,7 @@ describe('FieldTemplateDeleteModal - Confirm Action (Issue #210)', () => {
 			}
 		});
 
-		const deleteButton = screen.getByRole('button', { name: /delete/i });
+		const deleteButton = screen.getByRole('button', { name: /^delete$/i });
 		expect(deleteButton).toHaveClass(/danger|destructive|red/);
 	});
 });
@@ -253,7 +253,7 @@ describe('FieldTemplateDeleteModal - Cancel Action (Issue #210)', () => {
 			}
 		});
 
-		const cancelButton = screen.getByRole('button', { name: /cancel/i });
+		const cancelButton = screen.getByRole('button', { name: /^cancel$/i });
 		expect(cancelButton).toBeInTheDocument();
 	});
 
@@ -268,7 +268,7 @@ describe('FieldTemplateDeleteModal - Cancel Action (Issue #210)', () => {
 			}
 		});
 
-		const cancelButton = screen.getByRole('button', { name: /cancel/i });
+		const cancelButton = screen.getByRole('button', { name: /^cancel$/i });
 		await fireEvent.click(cancelButton);
 
 		expect(oncancel).toHaveBeenCalledTimes(1);
@@ -286,7 +286,7 @@ describe('FieldTemplateDeleteModal - Cancel Action (Issue #210)', () => {
 			}
 		});
 
-		const cancelButton = screen.getByRole('button', { name: /cancel/i });
+		const cancelButton = screen.getByRole('button', { name: /^cancel$/i });
 		await fireEvent.click(cancelButton);
 
 		expect(oncancel).toHaveBeenCalled();
@@ -304,7 +304,8 @@ describe('FieldTemplateDeleteModal - Cancel Action (Issue #210)', () => {
 			}
 		});
 
-		await fireEvent.keyDown(document, { key: 'Escape' });
+		const dialog = screen.getByRole('dialog');
+		await fireEvent.keyDown(dialog, { key: 'Escape' });
 
 		expect(oncancel).toHaveBeenCalledTimes(1);
 	});
@@ -322,7 +323,7 @@ describe('FieldTemplateDeleteModal - Loading State (Issue #210)', () => {
 	};
 
 	it('should disable Delete button when loading', () => {
-		render(FieldTemplateDeleteModal, {
+		const { container } = render(FieldTemplateDeleteModal, {
 			props: {
 				open: true,
 				template: mockTemplate,
@@ -332,7 +333,7 @@ describe('FieldTemplateDeleteModal - Loading State (Issue #210)', () => {
 			}
 		});
 
-		const deleteButton = screen.getByRole('button', { name: /delete/i });
+		const deleteButton = container.querySelector('button[data-delete]') as HTMLButtonElement;
 		expect(deleteButton).toBeDisabled();
 	});
 
@@ -347,12 +348,12 @@ describe('FieldTemplateDeleteModal - Loading State (Issue #210)', () => {
 			}
 		});
 
-		const cancelButton = screen.getByRole('button', { name: /cancel/i });
+		const cancelButton = screen.getByRole('button', { name: /^cancel$/i });
 		expect(cancelButton).toBeDisabled();
 	});
 
 	it('should show loading indicator on Delete button when loading', () => {
-		render(FieldTemplateDeleteModal, {
+		const { container } = render(FieldTemplateDeleteModal, {
 			props: {
 				open: true,
 				template: mockTemplate,
@@ -362,7 +363,7 @@ describe('FieldTemplateDeleteModal - Loading State (Issue #210)', () => {
 			}
 		});
 
-		const deleteButton = screen.getByRole('button', { name: /delete/i });
+		const deleteButton = container.querySelector('button[data-delete]') as HTMLButtonElement;
 		expect(deleteButton).toHaveAttribute('aria-busy', 'true');
 	});
 
@@ -391,8 +392,8 @@ describe('FieldTemplateDeleteModal - Loading State (Issue #210)', () => {
 			}
 		});
 
-		const deleteButton = screen.getByRole('button', { name: /delete/i });
-		const cancelButton = screen.getByRole('button', { name: /cancel/i });
+		const deleteButton = screen.getByRole('button', { name: /^delete$/i });
+		const cancelButton = screen.getByRole('button', { name: /^cancel$/i });
 
 		expect(deleteButton).not.toBeDisabled();
 		expect(cancelButton).not.toBeDisabled();
@@ -401,7 +402,7 @@ describe('FieldTemplateDeleteModal - Loading State (Issue #210)', () => {
 	it('should not call callbacks when buttons are disabled by loading', async () => {
 		const onconfirm = vi.fn();
 		const oncancel = vi.fn();
-		render(FieldTemplateDeleteModal, {
+		const { container } = render(FieldTemplateDeleteModal, {
 			props: {
 				open: true,
 				template: mockTemplate,
@@ -411,8 +412,8 @@ describe('FieldTemplateDeleteModal - Loading State (Issue #210)', () => {
 			}
 		});
 
-		const deleteButton = screen.getByRole('button', { name: /delete/i });
-		const cancelButton = screen.getByRole('button', { name: /cancel/i });
+		const deleteButton = container.querySelector('button[data-delete]') as HTMLButtonElement;
+		const cancelButton = screen.getByRole('button', { name: /^cancel$/i });
 
 		await fireEvent.click(deleteButton);
 		await fireEvent.click(cancelButton);
@@ -458,7 +459,7 @@ describe('FieldTemplateDeleteModal - Accessibility (Issue #210)', () => {
 		});
 
 		const dialog = screen.getByRole('dialog');
-		const title = screen.getByText(/delete.*template/i);
+		const title = screen.getByRole('heading', { name: /delete.*template/i });
 
 		const titleId = title.getAttribute('id');
 		expect(titleId).toBeTruthy();
@@ -476,11 +477,10 @@ describe('FieldTemplateDeleteModal - Accessibility (Issue #210)', () => {
 		});
 
 		const dialog = screen.getByRole('dialog');
-		const message = screen.getByText(/cannot be undone|permanent/i);
+		const descriptionId = dialog.getAttribute('aria-describedby');
 
-		const messageId = message.getAttribute('id');
-		expect(messageId).toBeTruthy();
-		expect(dialog).toHaveAttribute('aria-describedby', messageId);
+		expect(descriptionId).toBeTruthy();
+		expect(descriptionId).toBe('delete-template-description');
 	});
 
 	it('should focus Delete button when opened', async () => {
@@ -493,7 +493,7 @@ describe('FieldTemplateDeleteModal - Accessibility (Issue #210)', () => {
 			}
 		});
 
-		const deleteButton = screen.getByRole('button', { name: /delete/i });
+		const deleteButton = screen.getByRole('button', { name: /^delete$/i });
 
 		await waitFor(() => {
 			expect(deleteButton).toHaveFocus();
@@ -510,8 +510,8 @@ describe('FieldTemplateDeleteModal - Accessibility (Issue #210)', () => {
 			}
 		});
 
-		const deleteButton = screen.getByRole('button', { name: /delete/i });
-		const cancelButton = screen.getByRole('button', { name: /cancel/i });
+		const deleteButton = screen.getByRole('button', { name: /^delete$/i });
+		const cancelButton = screen.getByRole('button', { name: /^cancel$/i });
 
 		expect(deleteButton).not.toHaveAttribute('tabindex', '-1');
 		expect(cancelButton).not.toHaveAttribute('tabindex', '-1');

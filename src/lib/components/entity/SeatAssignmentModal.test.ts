@@ -298,10 +298,8 @@ describe('SeatAssignmentModal Component - Save Functionality', () => {
 		});
 
 		const characterDropdown = screen.getByLabelText(/character/i) as HTMLSelectElement;
-		// Manually set the value and dispatch events to trigger Svelte 5 reactivity
-		characterDropdown.value = 'char-1';
-		await fireEvent.input(characterDropdown);
-		await fireEvent.change(characterDropdown);
+		// Use fireEvent.change with target value to trigger Svelte 5 reactivity
+		await fireEvent.change(characterDropdown, { target: { value: 'char-1' } });
 		await tick();
 
 		const saveButton = screen.getByRole('button', { name: /save/i });

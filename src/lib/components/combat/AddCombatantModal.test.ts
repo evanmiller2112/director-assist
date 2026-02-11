@@ -487,8 +487,8 @@ describe('AddCombatantModal - Form Submission', () => {
 		const onAdd = vi.fn();
 		render(AddCombatantModal, { props: { open: true, onAdd } });
 
-		// Switch to creature type
-		const creatureButton = screen.getAllByRole('button', { name: /creature/i })[1]; // Get type toggle, not from entity mode
+		// Switch to creature type - in From Entity mode, there's only one Creature button (the type toggle)
+		const creatureButton = await waitFor(() => screen.getByRole('button', { name: /creature/i }));
 		await fireEvent.click(creatureButton);
 		await tick();
 
@@ -502,8 +502,10 @@ describe('AddCombatantModal - Form Submission', () => {
 		await fireEvent.input(screen.getByLabelText(/max.*hp.*optional/i), { target: { value: '25' } });
 		await fireEvent.input(screen.getByLabelText(/^ac/i), { target: { value: '14' } });
 
-		const threatSelect = screen.getByLabelText(/threat.*level/i);
-		await fireEvent.change(threatSelect, { target: { value: '2' } });
+		const threatSelect = screen.getByLabelText(/threat.*level/i) as HTMLSelectElement;
+		threatSelect.value = '2';
+		await fireEvent.change(threatSelect);
+		await tick();
 
 		const addButton = screen.getByRole('button', { name: /^add$/i });
 		await fireEvent.click(addButton);
@@ -585,8 +587,23 @@ describe('AddCombatantModal - Form Validation', () => {
 	});
 
 	it('should show error when Max HP is 0 or negative', async () => {
+		mockEntities.splice(0, mockEntities.length,
+			createMockEntity({ id: 'char-1', name: 'Hero', type: 'character' })
+		);
+
 		render(AddCombatantModal, { props: { open: true } });
 
+		// Select an entity first (default mode is "From Entity")
+		// Wait for entity list and find the entity button (not the type toggle)
+		const entityButtons = await waitFor(() => screen.getAllByRole('button'));
+		const heroEntityButton = entityButtons.find(btn =>
+			btn.textContent === 'Hero' && btn.classList.contains('border-slate-200')
+		);
+		await fireEvent.click(heroEntityButton!);
+		await tick();
+
+		// Now fill in fields - need to fill HP first to enable validation
+		await fireEvent.input(screen.getByLabelText(/^hit points$/i), { target: { value: '10' } });
 		await fireEvent.input(screen.getByLabelText(/max.*hp.*optional/i), { target: { value: '0' } });
 		await tick();
 
@@ -691,9 +708,8 @@ describe('AddCombatantModal - Edge Cases', () => {
 		await fireEvent.input(screen.getByLabelText(/resource.*name/i), { target: { value: 'Victories' } });
 		await tick();
 
-		// Switch to creature
-		const creatureButtons = screen.getAllByRole('button', { name: /creature/i });
-		const creatureTypeButton = creatureButtons[1]; // Second one is type toggle in entity mode
+		// Switch to creature - in From Entity mode, there's only one Creature button (the type toggle)
+		const creatureTypeButton = await waitFor(() => screen.getByRole('button', { name: /creature/i }));
 		await fireEvent.click(creatureTypeButton);
 		await tick();
 
@@ -858,7 +874,7 @@ describe('AddCombatantModal - Quick-Add Mode (Issue #233)', () => {
 			await fireEvent.click(quickAddButton);
 
 			await waitFor(() => {
-				expect(screen.getByLabelText(/^hit points$/i)).toBeInTheDocument();
+				expect(screen.getByLabelText(/^hp$/i)).toBeInTheDocument();
 			});
 		});
 
@@ -970,7 +986,7 @@ describe('AddCombatantModal - Quick-Add Mode (Issue #233)', () => {
 
 			await waitFor(async () => {
 				const nameInput = screen.getByLabelText(/^name$/i);
-				const hpInput = screen.getByLabelText(/^hit points$/i);
+				const hpInput = screen.getByLabelText(/^hp$/i);
 
 				await fireEvent.input(nameInput, { target: { value: 'Orc' } });
 				await fireEvent.input(hpInput, { target: { value: '20' } });
@@ -1021,7 +1037,7 @@ describe('AddCombatantModal - Quick-Add Mode (Issue #233)', () => {
 
 			await waitFor(async () => {
 				const nameInput = screen.getByLabelText(/^name$/i);
-				const hpInput = screen.getByLabelText(/^hit points$/i);
+				const hpInput = screen.getByLabelText(/^hp$/i);
 
 				await fireEvent.input(nameInput, { target: { value: 'Minion' } });
 				await fireEvent.input(hpInput, { target: { value: '10' } });
@@ -1403,7 +1419,7 @@ describe('Quick Add - Threat Level (Issue #240)', () => {
 
 			// Fill in creature form
 			const nameInput = screen.getByLabelText(/^combatant name$/i);
-			const hpInput = screen.getByLabelText(/^hit points$/i);
+			const hpInput = screen.getByLabelText(/^hp$/i);
 			await fireEvent.input(nameInput, { target: { value: 'Goblin Warrior' } });
 			await fireEvent.input(hpInput, { target: { value: '25' } });
 			await tick();
@@ -1447,7 +1463,7 @@ describe('Quick Add - Threat Level (Issue #240)', () => {
 
 			// Fill in hero form
 			const nameInput = screen.getByLabelText(/^combatant name$/i);
-			const hpInput = screen.getByLabelText(/^hit points$/i);
+			const hpInput = screen.getByLabelText(/^hp$/i);
 			await fireEvent.input(nameInput, { target: { value: 'Brave Knight' } });
 			await fireEvent.input(hpInput, { target: { value: '40' } });
 			await tick();
@@ -1489,7 +1505,7 @@ describe('Quick Add - Threat Level (Issue #240)', () => {
 
 			// Fill in creature form
 			const nameInput = screen.getByLabelText(/^combatant name$/i);
-			const hpInput = screen.getByLabelText(/^hit points$/i);
+			const hpInput = screen.getByLabelText(/^hp$/i);
 			await fireEvent.input(nameInput, { target: { value: 'Basic Goblin' } });
 			await fireEvent.input(hpInput, { target: { value: '15' } });
 			await tick();
@@ -1800,7 +1816,7 @@ describe('AddCombatantModal - Token Indicator Field (Issue #300)', () => {
 
 			await waitFor(async () => {
 				const nameInput = screen.getByLabelText(/^name$/i);
-				const hpInput = screen.getByLabelText(/^hit points$/i);
+				const hpInput = screen.getByLabelText(/^hp$/i);
 				const tokenInput = screen.getByLabelText(/token.*indicator/i);
 
 				await fireEvent.input(nameInput, { target: { value: 'Goblin' } });
@@ -1830,7 +1846,7 @@ describe('AddCombatantModal - Token Indicator Field (Issue #300)', () => {
 
 			await waitFor(async () => {
 				const nameInput = screen.getByLabelText(/^name$/i);
-				const hpInput = screen.getByLabelText(/^hit points$/i);
+				const hpInput = screen.getByLabelText(/^hp$/i);
 
 				await fireEvent.input(nameInput, { target: { value: 'Orc' } });
 				await fireEvent.input(hpInput, { target: { value: '20' } });

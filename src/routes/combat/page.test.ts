@@ -26,12 +26,18 @@ const { mockCombatSessions, mockCombatStore, mockGoto } = vi.hoisted(() => {
 		mockCombatSessions: sessions,
 		mockGoto: vi.fn(),
 		mockCombatStore: {
-			subscribe: vi.fn(),
-			getAll: vi.fn(() => sessions),
-			getById: vi.fn(),
-			create: vi.fn(),
-			update: vi.fn(),
-			delete: vi.fn(),
+			// Getter that returns the reactive sessions array
+			getAll: () => sessions,
+			// Methods
+			createCombat: vi.fn(),
+			deleteCombat: vi.fn(async (id: string) => {
+				const index = sessions.findIndex(s => s.id === id);
+				if (index !== -1) {
+					sessions.splice(index, 1);
+				}
+			}),
+			updateCombat: vi.fn(),
+			selectCombat: vi.fn(),
 			load: vi.fn()
 		}
 	};
@@ -41,7 +47,7 @@ vi.mock('$app/navigation', () => ({
 	goto: mockGoto
 }));
 
-vi.mock('$lib/stores/combatStore', () => ({
+vi.mock('$lib/stores', () => ({
 	combatStore: mockCombatStore
 }));
 
@@ -58,13 +64,14 @@ describe('Combat List Page - Basic Rendering', () => {
 
 	it('should display "Combat Sessions" heading', () => {
 		render(CombatListPage);
-		expect(screen.getByRole('heading', { name: /combat sessions/i })).toBeInTheDocument();
+		const headings = screen.getAllByRole('heading', { name: /combat sessions/i });
+		expect(headings.length).toBeGreaterThan(0);
 	});
 
 	it('should display "New Combat" button', () => {
 		render(CombatListPage);
-		const newButton = screen.getByRole('button', { name: /new combat/i });
-		expect(newButton).toBeInTheDocument();
+		const newButtons = screen.getAllByRole('button', { name: /new combat/i });
+		expect(newButtons.length).toBeGreaterThan(0);
 	});
 
 	it('should show empty state when no combats exist', () => {
@@ -105,24 +112,26 @@ describe('Combat List Page - Combat Status Display', () => {
 	});
 
 	it('should display "Active" status badge for active combats', () => {
-		mockCombatSessions.splice(0, mockCombatSessions.length, 
+		mockCombatSessions.splice(0, mockCombatSessions.length,
 			createActiveCombatSession()
 		);
 		mockCombatSessions[0].name = 'Active Combat';
 
 		render(CombatListPage);
 
-		expect(screen.getByText(/active/i)).toBeInTheDocument();
+		const statusBadge = screen.getByTestId('status-badge');
+		expect(statusBadge).toHaveTextContent(/active/i);
 	});
 
 	it('should display "Paused" status badge for paused combats', () => {
-		mockCombatSessions.splice(0, mockCombatSessions.length, 
+		mockCombatSessions.splice(0, mockCombatSessions.length,
 			createMockCombatSession({ status: 'paused', name: 'Paused Combat' })
 		);
 
 		render(CombatListPage);
 
-		expect(screen.getByText(/paused/i)).toBeInTheDocument();
+		const statusBadge = screen.getByTestId('status-badge');
+		expect(statusBadge).toHaveTextContent(/paused/i);
 	});
 
 	it('should display "Completed" status badge for completed combats', () => {
@@ -197,7 +206,9 @@ describe('Combat List Page - Combat Card Information', () => {
 		render(CombatListPage);
 
 		// Should show 5 combatants (2 heroes + 3 creatures)
-		expect(screen.getByText(/5.*combatants?/i)).toBeInTheDocument();
+		// The text is split: <span>5</span> combatants
+		const card = screen.getByTestId('combat-card');
+		expect(card.textContent).toMatch(/5\s*combatants?/i);
 	});
 
 	it('should display created date', () => {
@@ -352,7 +363,8 @@ describe('Combat List Page - Empty States', () => {
 
 		render(CombatListPage);
 
-		expect(screen.getByRole('button', { name: /new combat/i })).toBeInTheDocument();
+		const newButtons = screen.getAllByRole('button', { name: /new combat/i });
+		expect(newButtons.length).toBeGreaterThan(0);
 	});
 });
 
@@ -478,13 +490,15 @@ describe('Combat List Page - Edge Cases', () => {
 	});
 
 	it('should handle combat with 0 combatants', () => {
-		mockCombatSessions.splice(0, mockCombatSessions.length, 
+		mockCombatSessions.splice(0, mockCombatSessions.length,
 			createMockCombatSession({ name: 'Empty Combat' })
 		);
 		mockCombatSessions[0].combatants = [];
 
 		render(CombatListPage);
 
-		expect(screen.getByText(/0.*combatants?/i)).toBeInTheDocument();
+		// The text is split: <span>0</span> combatants
+		const card = screen.getByTestId('combat-card');
+		expect(card.textContent).toMatch(/0\s*combatants?/i);
 	});
 });

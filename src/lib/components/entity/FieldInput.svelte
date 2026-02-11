@@ -199,7 +199,7 @@
 	function isValidDice(dice: string): boolean {
 		if (!dice) return true;
 		// Pattern: XdY or XdY+Z or XdY-Z (where X, Y, Z are numbers)
-		const dicePattern = /^\d+d\d+([+\-]\d+)?$/i;
+		const dicePattern = /^\d+d\d+([+-]\d+)?$/i;
 		return dicePattern.test(dice.trim());
 	}
 

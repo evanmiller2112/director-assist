@@ -42,7 +42,7 @@
 	<div class="flex items-center gap-4">
 		<button
 			class="btn btn-ghost p-2 lg:hidden"
-			onclick={() => uiStore.toggleSidebar()}
+			onclick={() => uiStore.toggleMobileSidebar()}
 			aria-label="Toggle sidebar"
 		>
 			<Menu class="w-5 h-5 text-slate-700 dark:text-slate-300" />

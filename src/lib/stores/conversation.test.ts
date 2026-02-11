@@ -151,10 +151,10 @@ describe('Conversation Store', () => {
 	});
 
 	describe('load() Method', () => {
-		it('should call conversationRepository.getAll', async () => {
+		it('should call conversationRepository.getAllWithMetadata', async () => {
 			await conversationStore.load();
 
-			expect(mockConversationRepository.getAll).toHaveBeenCalled();
+			expect(mockConversationRepository.getAllWithMetadata).toHaveBeenCalled();
 		});
 
 		it('should subscribe to observable', async () => {
@@ -239,7 +239,7 @@ describe('Conversation Store', () => {
 		});
 
 		it('should handle load errors from catch block', async () => {
-			mockConversationRepository.getAll.mockImplementation(() => {
+			mockConversationRepository.getAllWithMetadata.mockImplementation(() => {
 				throw new Error('Repository error');
 			});
 
@@ -694,7 +694,7 @@ describe('Conversation Store', () => {
 		it('should handle all operations in sequence', async () => {
 			// Load
 			await conversationStore.load();
-			expect(mockConversationRepository.getAll).toHaveBeenCalled();
+			expect(mockConversationRepository.getAllWithMetadata).toHaveBeenCalled();
 
 			// Create
 			mockConversationRepository.create.mockResolvedValue({

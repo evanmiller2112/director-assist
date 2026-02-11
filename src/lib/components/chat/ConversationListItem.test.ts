@@ -89,8 +89,10 @@ describe('ConversationListItem Component - Basic Rendering (Issue #42)', () => {
 		});
 
 		// Should show some relative time text (implementation will determine exact format)
-		// Could be "X hours ago", "X minutes ago", etc.
-		const timeElement = screen.getByText(/ago|minute|hour|day/i);
+		// Could be "X hours ago", "X minutes ago", or a date string if > 7 days
+		// The test date is 2026-01-19, which is in the past from today (2026-02-11)
+		// That's > 7 days, so it will show as a date string like "1/19/2026"
+		const timeElement = screen.getByText(/ago|minute|hour|day|\/2026|2026/i);
 		expect(timeElement).toBeInTheDocument();
 	});
 
@@ -126,7 +128,8 @@ describe('ConversationListItem Component - Basic Rendering (Issue #42)', () => {
 			}
 		});
 
-		expect(screen.getByText(/0|empty/i)).toBeInTheDocument();
+		// The component displays "0" in the message count badge
+		expect(screen.getByText('0')).toBeInTheDocument();
 	});
 
 	it('should display long conversation names gracefully', () => {

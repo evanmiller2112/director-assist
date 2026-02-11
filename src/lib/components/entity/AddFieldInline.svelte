@@ -223,7 +223,11 @@
 				<!-- Field Type -->
 				<div>
 					<label for="field-type" class="label">Field Type</label>
-					<select id="field-type" class="input" bind:value={fieldType}>
+					<select
+						id="field-type"
+						class="input"
+						bind:value={fieldType}
+					>
 						{#each FIELD_TYPES as type}
 							<option value={type.value}>{type.label}</option>
 						{/each}
@@ -239,6 +243,7 @@
 							class="input min-h-[80px]"
 							bind:value={fieldOptions}
 							placeholder="Option 1&#10;Option 2&#10;Option 3"
+							aria-label="Options (one per line)"
 						></textarea>
 					</div>
 				{/if}

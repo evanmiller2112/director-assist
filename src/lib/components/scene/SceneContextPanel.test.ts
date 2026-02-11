@@ -137,8 +137,9 @@ describe('SceneContextPanel Component - Location Display', () => {
 			}
 		});
 
-		// Should not crash, may show "Location not found" or hide location section
-		expect(screen.queryByText(/location.*not.*found|unknown.*location/i)).toBeInTheDocument();
+		// Should not crash and should show "Location not found" message
+		await screen.findByText(/location not found/i);
+		expect(screen.getByText(/location not found/i)).toBeInTheDocument();
 	});
 
 	it('should make location name clickable', async () => {
@@ -507,7 +508,9 @@ describe('SceneContextPanel Component - Loading States', () => {
 			}
 		});
 
-		expect(screen.getByText(/loading|fetching/i)).toBeInTheDocument();
+		// Should show loading indicators (there will be multiple - one for location, one for NPCs)
+		const loadingElements = screen.getAllByText(/loading/i);
+		expect(loadingElements.length).toBeGreaterThan(0);
 	});
 
 	it('should replace loading indicator with content when loaded', async () => {

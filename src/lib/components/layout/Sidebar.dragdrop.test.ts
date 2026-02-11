@@ -72,16 +72,6 @@ describe('Sidebar Drag and Drop (Issue #205 - RED Phase)', () => {
 	});
 
 	describe('Data Structure Requirements for svelte-dnd-action', () => {
-		it.skip('should transform EntityTypeDefinition items to include id property for dndzone', () => {
-			/**
-			 * SKIPPED: This test documents a feature that was planned but not implemented.
-			 * The actual component uses simple moveUp/moveDown buttons, not svelte-dnd-action.
-			 */
-
-			// This test is kept for documentation purposes but skipped
-			expect(true).toBe(true);
-		});
-
 		it('should use EntityType.type as the unique identifier for each item', () => {
 			/**
 			 * Verifies that type is used as the unique identifier (already a property)
@@ -120,29 +110,9 @@ describe('Sidebar Drag and Drop (Issue #205 - RED Phase)', () => {
 				expect(typeof type.type).toBe('string');
 			});
 		});
-
-		it.skip('should ensure all orderedTypes items have unique non-empty id values', () => {
-			/**
-			 * SKIPPED: This test documents a feature that was planned but not implemented.
-			 * The actual component uses simple moveUp/moveDown buttons, not svelte-dnd-action.
-			 */
-
-			// This test is kept for documentation purposes but skipped
-			expect(true).toBe(true);
-		});
 	});
 
 	describe('handleDndConsider Event Handler', () => {
-		it.skip('should update orderedTypes when consider event fires during drag', () => {
-			/**
-			 * SKIPPED: This test documents a feature that was planned but not implemented.
-			 * The actual component uses simple moveUp/moveDown buttons, not svelte-dnd-action.
-			 */
-
-			// This test is kept for documentation purposes but skipped
-			expect(true).toBe(true);
-		});
-
 		it('should preserve all EntityTypeDefinition properties while adding id', () => {
 			/**
 			 * RED TEST: Ensures the transformation adds id without losing data
@@ -186,16 +156,6 @@ describe('Sidebar Drag and Drop (Issue #205 - RED Phase)', () => {
 	});
 
 	describe('handleDndFinalize Event Handler', () => {
-		it.skip('should persist new order to localStorage when drag finishes', () => {
-			/**
-			 * SKIPPED: This test documents a feature that was planned but not implemented.
-			 * The actual component uses simple moveUp/moveDown buttons, not svelte-dnd-action.
-			 */
-
-			// This test is kept for documentation purposes but skipped
-			expect(true).toBe(true);
-		});
-
 		it('should extract type values correctly from items with id', () => {
 			/**
 			 * RED TEST: Validates the extraction logic in handleDndFinalize
@@ -262,16 +222,6 @@ describe('Sidebar Drag and Drop (Issue #205 - RED Phase)', () => {
 	});
 
 	describe('Integration with svelte-dnd-action Library', () => {
-		it.skip('should provide items array with id property to dndzone directive', () => {
-			/**
-			 * SKIPPED: This test documents a feature that was planned but not implemented.
-			 * The actual component uses simple moveUp/moveDown buttons, not svelte-dnd-action.
-			 */
-
-			// This test is kept for documentation purposes but skipped
-			expect(true).toBe(true);
-		});
-
 		it('should use type as the unique key in each block', () => {
 			/**
 			 * Ensures the component uses entityType.type as the Svelte each key

@@ -1026,44 +1026,6 @@ describe('HeaderSearch Component', () => {
 		 * Commands receive context and arguments
 		 */
 
-		it.skip('should execute command on Enter key - TBD', async () => {
-			render(HeaderSearch);
-
-			const input = screen.getByRole('combobox') as HTMLInputElement;
-			await fireEvent.input(input, { target: { value: '/settings' } });
-
-			await waitFor(() => {
-				expect(screen.getByRole('listbox')).toBeInTheDocument();
-			});
-
-			// Press Enter to execute command
-			await fireEvent.keyDown(input, createKeyboardEvent('Enter'));
-
-			// Should navigate (goto would be called)
-			await waitFor(() => {
-				expect(goto).toHaveBeenCalled();
-			});
-		});
-
-		it.skip('should execute command with argument - TBD', async () => {
-			render(HeaderSearch);
-
-			const input = screen.getByRole('combobox') as HTMLInputElement;
-			await fireEvent.input(input, { target: { value: '/new npc' } });
-
-			await waitFor(() => {
-				expect(screen.getByRole('listbox')).toBeInTheDocument();
-			});
-
-			// Press Enter
-			await fireEvent.keyDown(input, createKeyboardEvent('Enter'));
-
-			// Should execute "new" command with "npc" argument
-			await waitFor(() => {
-				expect(goto).toHaveBeenCalled();
-			});
-		});
-
 		it('should execute command on click', async () => {
 			render(HeaderSearch);
 
@@ -1080,42 +1042,6 @@ describe('HeaderSearch Component', () => {
 			// Should execute command
 			await waitFor(() => {
 				expect(goto).toHaveBeenCalled();
-			});
-		});
-
-		it.skip('should close dropdown after executing command - TBD', async () => {
-			render(HeaderSearch);
-
-			const input = screen.getByRole('combobox') as HTMLInputElement;
-			await fireEvent.input(input, { target: { value: '/settings' } });
-
-			await waitFor(() => {
-				expect(screen.getByRole('listbox')).toBeInTheDocument();
-			});
-
-			await fireEvent.keyDown(input, createKeyboardEvent('Enter'));
-
-			// Dropdown should close
-			await waitFor(() => {
-				expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
-			});
-		});
-
-		it.skip('should clear input after executing command - TBD', async () => {
-			render(HeaderSearch);
-
-			const input = screen.getByRole('combobox') as HTMLInputElement;
-			await fireEvent.input(input, { target: { value: '/settings' } });
-
-			await waitFor(() => {
-				expect(screen.getByRole('listbox')).toBeInTheDocument();
-			});
-
-			await fireEvent.keyDown(input, createKeyboardEvent('Enter'));
-
-			// Input should be cleared
-			await waitFor(() => {
-				expect(input.value).toBe('');
 			});
 		});
 
@@ -1209,24 +1135,6 @@ describe('HeaderSearch Component', () => {
 			// Navigation behavior tested in real browser
 			const options = screen.getAllByRole('option');
 			expect(options.length).toBeGreaterThan(0);
-		});
-
-		it.skip('should close command dropdown with Escape - TBD', async () => {
-			render(HeaderSearch);
-
-			const input = screen.getByRole('combobox') as HTMLInputElement;
-			await fireEvent.input(input, { target: { value: '/' } });
-
-			await waitFor(() => {
-				expect(screen.getByRole('listbox')).toBeInTheDocument();
-			});
-
-			await fireEvent.keyDown(input, createKeyboardEvent('Escape'));
-
-			// Dropdown should close
-			await waitFor(() => {
-				expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
-			});
 		});
 
 		it('should support mouse hover to select commands', async () => {

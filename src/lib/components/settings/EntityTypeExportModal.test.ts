@@ -12,7 +12,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/svelte';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/svelte';
 import EntityTypeExportModal from './EntityTypeExportModal.svelte';
 import type { EntityTypeDefinition } from '$lib/types';
 
@@ -157,7 +157,8 @@ describe('EntityTypeExportModal - Entity Type Display (Issue #210)', () => {
 		});
 
 		// Should show some indication of the export format/structure
-		expect(screen.getByText(/preview|export format|json/i)).toBeInTheDocument();
+		expect(screen.getByText(/export format/i)).toBeInTheDocument();
+		expect(screen.getByText(/^json$/i)).toBeInTheDocument();
 	});
 });
 
@@ -293,12 +294,30 @@ describe('EntityTypeExportModal - Download Action (Issue #210)', () => {
 	beforeEach(() => {
 		mockLink = {
 			click: vi.fn(),
-			setAttribute: vi.fn(),
-			style: {}
+			style: {},
+			href: '',
+			download: ''
 		} as any;
-		vi.spyOn(document, 'createElement').mockReturnValue(mockLink);
-		vi.spyOn(document.body, 'appendChild').mockImplementation(() => mockLink);
-		vi.spyOn(document.body, 'removeChild').mockImplementation(() => mockLink);
+		const originalCreateElement = document.createElement.bind(document);
+		const createElementSpy = vi.spyOn(document, 'createElement');
+		createElementSpy.mockImplementation(((tagName: string) => {
+			if (tagName.toLowerCase() === 'a') {
+				return mockLink;
+			}
+			return originalCreateElement(tagName);
+		}) as any);
+		const originalAppendChild = document.body.appendChild.bind(document.body);
+		const appendChildSpy = vi.spyOn(document.body, 'appendChild');
+		appendChildSpy.mockImplementation(((node: Node) => {
+			if (node === mockLink) return mockLink as any;
+			return originalAppendChild(node);
+		}) as any);
+		const originalRemoveChild = document.body.removeChild.bind(document.body);
+		const removeChildSpy = vi.spyOn(document.body, 'removeChild');
+		removeChildSpy.mockImplementation(((node: Node) => {
+			if (node === mockLink) return mockLink as any;
+			return originalRemoveChild(node);
+		}) as any);
 		vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:mock-url');
 		vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
 	});
@@ -316,7 +335,7 @@ describe('EntityTypeExportModal - Download Action (Issue #210)', () => {
 			}
 		});
 
-		const downloadButton = screen.getByRole('button', { name: /download|export/i });
+		const downloadButton = screen.getByRole('button', { name: /^download$/i });
 		expect(downloadButton).toBeInTheDocument();
 	});
 
@@ -329,7 +348,7 @@ describe('EntityTypeExportModal - Download Action (Issue #210)', () => {
 			}
 		});
 
-		const downloadButton = screen.getByRole('button', { name: /download|export/i });
+		const downloadButton = screen.getByRole('button', { name: /^download$/i });
 		await fireEvent.click(downloadButton);
 
 		expect(mockLink.click).toHaveBeenCalled();
@@ -344,14 +363,11 @@ describe('EntityTypeExportModal - Download Action (Issue #210)', () => {
 			}
 		});
 
-		const downloadButton = screen.getByRole('button', { name: /download|export/i });
+		const downloadButton = screen.getByRole('button', { name: /^download$/i });
 		await fireEvent.click(downloadButton);
 
 		// Filename should be: {type}-entity-type.json
-		expect(mockLink.setAttribute).toHaveBeenCalledWith(
-			'download',
-			expect.stringMatching(/quest.*entity.*type\.json/i)
-		);
+		expect(mockLink.download).toMatch(/quest-entity-type\.json/i);
 	});
 
 	it('should include metadata in export when provided', async () => {
@@ -370,7 +386,7 @@ describe('EntityTypeExportModal - Download Action (Issue #210)', () => {
 		const licenseInput = screen.getByLabelText(/license/i);
 		await fireEvent.input(licenseInput, { target: { value: 'MIT' } });
 
-		const downloadButton = screen.getByRole('button', { name: /download|export/i });
+		const downloadButton = screen.getByRole('button', { name: /^download$/i });
 		await fireEvent.click(downloadButton);
 
 		// Verify blob was created (metadata would be in the blob)
@@ -379,9 +395,10 @@ describe('EntityTypeExportModal - Download Action (Issue #210)', () => {
 
 	it('should create valid JSON blob', async () => {
 		let blobContent: string | null = null;
+		const OriginalBlob = global.Blob;
 		vi.spyOn(global, 'Blob').mockImplementation(function(this: Blob, content: any[]) {
 			blobContent = content[0];
-			return new Blob(content, { type: 'application/json' });
+			return new OriginalBlob(content, { type: 'application/json' });
 		} as any);
 
 		render(EntityTypeExportModal, {
@@ -392,7 +409,7 @@ describe('EntityTypeExportModal - Download Action (Issue #210)', () => {
 			}
 		});
 
-		const downloadButton = screen.getByRole('button', { name: /download|export/i });
+		const downloadButton = screen.getByRole('button', { name: /^download$/i });
 		await fireEvent.click(downloadButton);
 
 		expect(blobContent).toBeTruthy();
@@ -402,9 +419,10 @@ describe('EntityTypeExportModal - Download Action (Issue #210)', () => {
 
 	it('should include version and generator info in export', async () => {
 		let blobContent: string | null = null;
+		const OriginalBlob = global.Blob;
 		vi.spyOn(global, 'Blob').mockImplementation(function(this: Blob, content: any[]) {
 			blobContent = content[0];
-			return new Blob(content, { type: 'application/json' });
+			return new OriginalBlob(content, { type: 'application/json' });
 		} as any);
 
 		render(EntityTypeExportModal, {
@@ -415,7 +433,7 @@ describe('EntityTypeExportModal - Download Action (Issue #210)', () => {
 			}
 		});
 
-		const downloadButton = screen.getByRole('button', { name: /download|export/i });
+		const downloadButton = screen.getByRole('button', { name: /^download$/i });
 		await fireEvent.click(downloadButton);
 
 		const exportData = JSON.parse(blobContent!);
@@ -449,7 +467,7 @@ describe('EntityTypeExportModal - Close Action (Issue #210)', () => {
 			}
 		});
 
-		const closeButton = screen.getByRole('button', { name: /close|cancel/i });
+		const closeButton = screen.getByRole('button', { name: /^close$/i });
 		expect(closeButton).toBeInTheDocument();
 	});
 
@@ -463,7 +481,7 @@ describe('EntityTypeExportModal - Close Action (Issue #210)', () => {
 			}
 		});
 
-		const closeButton = screen.getByRole('button', { name: /close|cancel/i });
+		const closeButton = screen.getByRole('button', { name: /^close$/i });
 		await fireEvent.click(closeButton);
 
 		expect(onclose).toHaveBeenCalledTimes(1);
@@ -479,7 +497,8 @@ describe('EntityTypeExportModal - Close Action (Issue #210)', () => {
 			}
 		});
 
-		await fireEvent.keyDown(document, { key: 'Escape' });
+		const dialog = screen.getByRole('dialog');
+		await fireEvent.keyDown(dialog, { key: 'Escape' });
 
 		expect(onclose).toHaveBeenCalledTimes(1);
 	});

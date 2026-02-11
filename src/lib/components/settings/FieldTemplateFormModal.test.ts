@@ -12,7 +12,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/svelte';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/svelte';
 import FieldTemplateFormModal from './FieldTemplateFormModal.svelte';
 import type { FieldTemplate } from '$lib/types';
 
@@ -359,7 +359,8 @@ describe('FieldTemplateFormModal - Field Definition Editor (Issue #210)', () => 
 			}
 		});
 
-		const addButton = screen.getByRole('button', { name: /add field/i });
+		// Query within the entire component for Add Field button
+		const addButton = screen.getAllByRole('button', { name: /add field/i })[0];
 		expect(addButton).toBeInTheDocument();
 	});
 
@@ -372,11 +373,11 @@ describe('FieldTemplateFormModal - Field Definition Editor (Issue #210)', () => 
 			}
 		});
 
-		const addButton = screen.getByRole('button', { name: /add field/i });
+		const addButton = screen.getAllByRole('button', { name: /add field/i })[0];
 		await fireEvent.click(addButton);
 
 		// Should show field definition form
-		expect(screen.getByLabelText(/field.*name|label/i)).toBeInTheDocument();
+		expect(screen.getByLabelText(/^label$/i)).toBeInTheDocument();
 	});
 
 	it('should allow removing field definitions', async () => {
@@ -401,7 +402,7 @@ describe('FieldTemplateFormModal - Field Definition Editor (Issue #210)', () => 
 			}
 		});
 
-		const removeButton = screen.getByRole('button', { name: /remove|delete.*field/i });
+		const removeButton = screen.getByRole('button', { name: /delete field/i });
 		expect(removeButton).toBeInTheDocument();
 	});
 
@@ -414,12 +415,12 @@ describe('FieldTemplateFormModal - Field Definition Editor (Issue #210)', () => 
 			}
 		});
 
-		const addButton = screen.getByRole('button', { name: /add field/i });
+		const addButton = screen.getAllByRole('button', { name: /add field/i })[0];
 		await fireEvent.click(addButton);
 
 		// Should show field editor with editable properties
-		expect(screen.getByLabelText(/field.*name|label/i)).toBeInTheDocument();
-		expect(screen.getByLabelText(/field.*type/i)).toBeInTheDocument();
+		expect(screen.getByLabelText(/^label$/i)).toBeInTheDocument();
+		expect(screen.getByLabelText(/^field type$/i)).toBeInTheDocument();
 	});
 });
 
@@ -433,11 +434,12 @@ describe('FieldTemplateFormModal - Validation (Issue #210)', () => {
 			}
 		});
 
-		const submitButton = screen.getByRole('button', { name: /create|save/i });
+		const dialog = screen.getByRole('dialog');
+		const submitButton = within(dialog).getByRole('button', { name: /^create$/i });
 		await fireEvent.click(submitButton);
 
 		// Should show validation error
-		expect(screen.getByText(/name.*required/i)).toBeInTheDocument();
+		expect(screen.getByText(/name is required/i)).toBeInTheDocument();
 	});
 
 	it('should disable submit button when form is invalid', () => {
@@ -449,7 +451,8 @@ describe('FieldTemplateFormModal - Validation (Issue #210)', () => {
 			}
 		});
 
-		const submitButton = screen.getByRole('button', { name: /create|save/i });
+		const dialog = screen.getByRole('dialog');
+		const submitButton = within(dialog).getByRole('button', { name: /^create$/i });
 		expect(submitButton).toBeDisabled();
 	});
 
@@ -465,7 +468,8 @@ describe('FieldTemplateFormModal - Validation (Issue #210)', () => {
 		const nameInput = screen.getByLabelText(/name/i);
 		await fireEvent.input(nameInput, { target: { value: 'Valid Name' } });
 
-		const submitButton = screen.getByRole('button', { name: /create|save/i });
+		const dialog = screen.getByRole('dialog');
+		const submitButton = within(dialog).getByRole('button', { name: /^create$/i });
 		await waitFor(() => {
 			expect(submitButton).not.toBeDisabled();
 		});
@@ -484,7 +488,7 @@ describe('FieldTemplateFormModal - Validation (Issue #210)', () => {
 		await fireEvent.focus(nameInput);
 		await fireEvent.blur(nameInput);
 
-		expect(screen.getByText(/name.*required/i)).toBeInTheDocument();
+		expect(screen.getByText(/name is required/i)).toBeInTheDocument();
 	});
 
 	it('should clear validation errors when field is corrected', async () => {
@@ -498,10 +502,10 @@ describe('FieldTemplateFormModal - Validation (Issue #210)', () => {
 
 		const nameInput = screen.getByLabelText(/name/i);
 		await fireEvent.blur(nameInput);
-		expect(screen.getByText(/name.*required/i)).toBeInTheDocument();
+		expect(screen.getByText(/name is required/i)).toBeInTheDocument();
 
 		await fireEvent.input(nameInput, { target: { value: 'Valid Name' } });
-		expect(screen.queryByText(/name.*required/i)).not.toBeInTheDocument();
+		expect(screen.queryByText(/name is required/i)).not.toBeInTheDocument();
 	});
 });
 
@@ -522,7 +526,8 @@ describe('FieldTemplateFormModal - Submit Action (Issue #210)', () => {
 		const descriptionInput = screen.getByLabelText(/description/i);
 		await fireEvent.input(descriptionInput, { target: { value: 'Test description' } });
 
-		const submitButton = screen.getByRole('button', { name: /create/i });
+		const dialog = screen.getByRole('dialog');
+		const submitButton = within(dialog).getByRole('button', { name: /^create$/i });
 		await fireEvent.click(submitButton);
 
 		await waitFor(() => {
@@ -562,7 +567,8 @@ describe('FieldTemplateFormModal - Submit Action (Issue #210)', () => {
 		const nameInput = screen.getByLabelText(/name/i);
 		await fireEvent.input(nameInput, { target: { value: 'Updated Name' } });
 
-		const submitButton = screen.getByRole('button', { name: /save/i });
+		const dialog = screen.getByRole('dialog');
+		const submitButton = within(dialog).getByRole('button', { name: /^save$/i });
 		await fireEvent.click(submitButton);
 
 		await waitFor(() => {
@@ -590,10 +596,11 @@ describe('FieldTemplateFormModal - Submit Action (Issue #210)', () => {
 		await fireEvent.input(nameInput, { target: { value: 'Test Template' } });
 
 		// Add a field (simplified - actual implementation may vary)
-		const addButton = screen.getByRole('button', { name: /add field/i });
+		const addButton = screen.getAllByRole('button', { name: /add field/i })[0];
 		await fireEvent.click(addButton);
 
-		const submitButton = screen.getByRole('button', { name: /create/i });
+		const dialog = screen.getByRole('dialog');
+		const submitButton = within(dialog).getByRole('button', { name: /^create$/i });
 		await fireEvent.click(submitButton);
 
 		await waitFor(() => {
@@ -617,7 +624,8 @@ describe('FieldTemplateFormModal - Submit Action (Issue #210)', () => {
 		const nameInput = screen.getByLabelText(/name/i);
 		await fireEvent.input(nameInput, { target: { value: 'Test' } });
 
-		const submitButton = screen.getByRole('button', { name: /create/i });
+		const dialog = screen.getByRole('dialog');
+		const submitButton = within(dialog).getByRole('button', { name: /^create$/i });
 		await fireEvent.click(submitButton);
 
 		await waitFor(() => {
@@ -653,7 +661,8 @@ describe('FieldTemplateFormModal - Submit Action (Issue #210)', () => {
 		const nameInput = screen.getByLabelText(/name/i);
 		await fireEvent.input(nameInput, { target: { value: 'Updated' } });
 
-		const submitButton = screen.getByRole('button', { name: /save/i });
+		const dialog = screen.getByRole('dialog');
+		const submitButton = within(dialog).getByRole('button', { name: /^save$/i });
 		await fireEvent.click(submitButton);
 
 		await waitFor(() => {
@@ -675,7 +684,8 @@ describe('FieldTemplateFormModal - Cancel Action (Issue #210)', () => {
 			}
 		});
 
-		const cancelButton = screen.getByRole('button', { name: /cancel/i });
+		const dialog = screen.getByRole('dialog');
+		const cancelButton = within(dialog).getByRole('button', { name: /^cancel$/i });
 		expect(cancelButton).toBeInTheDocument();
 	});
 
@@ -689,7 +699,8 @@ describe('FieldTemplateFormModal - Cancel Action (Issue #210)', () => {
 			}
 		});
 
-		const cancelButton = screen.getByRole('button', { name: /cancel/i });
+		const dialog = screen.getByRole('dialog');
+		const cancelButton = within(dialog).getByRole('button', { name: /^cancel$/i });
 		await fireEvent.click(cancelButton);
 
 		expect(oncancel).toHaveBeenCalledTimes(1);
@@ -705,7 +716,8 @@ describe('FieldTemplateFormModal - Cancel Action (Issue #210)', () => {
 			}
 		});
 
-		await fireEvent.keyDown(document, { key: 'Escape' });
+		const dialog = screen.getByRole('dialog');
+		await fireEvent.keyDown(dialog, { key: 'Escape' });
 
 		expect(oncancel).toHaveBeenCalledTimes(1);
 	});
@@ -721,7 +733,8 @@ describe('FieldTemplateFormModal - Cancel Action (Issue #210)', () => {
 			}
 		});
 
-		const cancelButton = screen.getByRole('button', { name: /cancel/i });
+		const dialog = screen.getByRole('dialog');
+		const cancelButton = within(dialog).getByRole('button', { name: /^cancel$/i });
 		await fireEvent.click(cancelButton);
 
 		expect(onsubmit).not.toHaveBeenCalled();

@@ -64,11 +64,11 @@ describe('EntityTypeTemplateGallery - Clone Existing Type Option (Issue #210)', 
 			}
 		});
 
-		const cloneCard = screen.getByText(/clone existing type/i).closest('div, section, button');
+		const cloneCard = screen.getAllByText(/clone existing type/i)[0].closest('button');
 		expect(cloneCard).toBeTruthy();
 
 		// Should have an icon (like Copy, Duplicate, etc.)
-		const icons = within(cloneCard as HTMLElement).queryAllByRole('img', { hidden: true });
+		const icons = (cloneCard as HTMLElement).querySelectorAll('svg');
 		expect(icons.length).toBeGreaterThan(0);
 	});
 
@@ -96,7 +96,7 @@ describe('EntityTypeTemplateGallery - Clone Option Interaction (Issue #210)', ()
 			}
 		});
 
-		const cloneCard = screen.getByText(/clone existing type/i).closest('button');
+		const cloneCard = screen.getAllByText(/clone existing type/i)[0].closest('button');
 		expect(cloneCard).toBeTruthy();
 
 		await fireEvent.click(cloneCard!);
@@ -115,7 +115,7 @@ describe('EntityTypeTemplateGallery - Clone Option Interaction (Issue #210)', ()
 			}
 		});
 
-		const cloneCard = screen.getByText(/clone existing type/i).closest('button');
+		const cloneCard = screen.getAllByText(/clone existing type/i)[0].closest('button');
 		await fireEvent.click(cloneCard!);
 
 		expect(onCloneExisting).toHaveBeenCalled();
@@ -131,12 +131,9 @@ describe('EntityTypeTemplateGallery - Clone Option Interaction (Issue #210)', ()
 			}
 		});
 
-		const cloneCard = screen.getByText(/clone existing type/i).closest('button');
-
-		// Should not throw error
-		await expect(async () => {
-			await fireEvent.click(cloneCard!);
-		}).not.toThrow();
+		// Clone option should not be shown when callback is not provided
+		const cloneTexts = screen.queryAllByText(/clone existing type/i);
+		expect(cloneTexts.length).toBe(0);
 	});
 
 	it('should allow clicking Clone option multiple times', async () => {
@@ -149,7 +146,7 @@ describe('EntityTypeTemplateGallery - Clone Option Interaction (Issue #210)', ()
 			}
 		});
 
-		const cloneCard = screen.getByText(/clone existing type/i).closest('button');
+		const cloneCard = screen.getAllByText(/clone existing type/i)[0].closest('button');
 
 		await fireEvent.click(cloneCard!);
 		await fireEvent.click(cloneCard!);
@@ -207,7 +204,7 @@ describe('EntityTypeTemplateGallery - Clone Option Accessibility (Issue #210)', 
 			}
 		});
 
-		const cloneCard = screen.getByText(/clone existing type/i).closest('button');
+		const cloneCard = screen.getAllByText(/clone existing type/i)[0].closest('button');
 		expect(cloneCard).toHaveAccessibleName();
 	});
 
@@ -220,7 +217,7 @@ describe('EntityTypeTemplateGallery - Clone Option Accessibility (Issue #210)', 
 			}
 		});
 
-		const cloneCard = screen.getByText(/clone existing type/i).closest('button');
+		const cloneCard = screen.getAllByText(/clone existing type/i)[0].closest('button');
 		expect(cloneCard).not.toHaveAttribute('tabindex', '-1');
 	});
 
@@ -234,7 +231,7 @@ describe('EntityTypeTemplateGallery - Clone Option Accessibility (Issue #210)', 
 			}
 		});
 
-		const cloneCard = screen.getByText(/clone existing type/i).closest('button');
+		const cloneCard = screen.getAllByText(/clone existing type/i)[0].closest('button');
 		cloneCard!.focus();
 
 		await fireEvent.keyDown(cloneCard!, { key: 'Enter' });
@@ -251,7 +248,7 @@ describe('EntityTypeTemplateGallery - Clone Option Accessibility (Issue #210)', 
 			}
 		});
 
-		const cloneCard = screen.getByText(/clone existing type/i).closest('button');
+		const cloneCard = screen.getAllByText(/clone existing type/i)[0].closest('button');
 		const ariaLabel = cloneCard!.getAttribute('aria-label') || cloneCard!.textContent;
 
 		expect(ariaLabel).toMatch(/clone/i);
@@ -316,7 +313,7 @@ describe('EntityTypeTemplateGallery - Edge Cases for Clone Option (Issue #210)',
 			}
 		});
 
-		const cloneCard = screen.getByText(/clone existing type/i).closest('button');
+		const cloneCard = screen.getAllByText(/clone existing type/i)[0].closest('button');
 
 		// Rapid clicks
 		await fireEvent.click(cloneCard!);

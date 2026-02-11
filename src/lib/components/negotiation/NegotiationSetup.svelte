@@ -46,19 +46,18 @@
 	let pitfallError = $state('');
 
 	const motivationTypes: MotivationType[] = [
-		'benevolence',
+		'charity',
 		'discovery',
+		'faith',
 		'freedom',
 		'greed',
-		'higher_authority',
+		'harmony',
 		'justice',
+		'knowledge',
 		'legacy',
-		'peace',
 		'power',
 		'protection',
-		'reputation',
-		'revelry',
-		'vengeance',
+		'revenge',
 		'wealth'
 	];
 
@@ -70,7 +69,7 @@
 	}
 
 	function addMotivation() {
-		motivations.push({ type: 'benevolence', isKnown: false });
+		motivations.push({ type: 'charity', isKnown: false });
 		motivationError = '';
 	}
 

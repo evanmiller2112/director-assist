@@ -528,7 +528,7 @@ describe('NetworkEdgeDetails Component - Edge Updates', () => {
 		await rerender({ edge: edge2 });
 
 		expect(screen.getByText('Second Source')).toBeInTheDocument();
-		expect(screen.getByText(/allied_with/i)).toBeInTheDocument();
+		expect(screen.getByText(/allied.*with/i)).toBeInTheDocument();
 		expect(screen.queryByText('First Source')).not.toBeInTheDocument();
 	});
 
@@ -577,7 +577,8 @@ describe('NetworkEdgeDetails Component - Edge Cases', () => {
 			}
 		});
 
-		expect(screen.getByText(/very_long_relationship/i)).toBeInTheDocument();
+		// The component formats relationship names, so look for the formatted version
+		expect(screen.getByText(/very.*long.*relationship/i)).toBeInTheDocument();
 	});
 
 	it('should handle edge with very long entity names', () => {

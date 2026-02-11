@@ -427,7 +427,7 @@ describe('TurnControls Component - Round Display', () => {
 	it('should display turn counter', () => {
 		const combat = createActiveCombatSession();
 		combat.currentTurn = 3;
-		combat.combatants = Array(5).fill(null);
+		combat.combatants = Array(5).fill(null).map((_, i) => createMockHeroCombatant({ name: `Hero ${i + 1}` }));
 
 		render(TurnControls, {
 			props: {
@@ -437,7 +437,8 @@ describe('TurnControls Component - Round Display', () => {
 			}
 		});
 
-		expect(screen.getByText(/turn.*4.*5/i)).toBeInTheDocument(); // 1-indexed for display
+		// Component shows "Turn 4 of 5" in separate elements
+		expect(screen.getByText(/turn 4 of 5/i)).toBeInTheDocument();
 	});
 });
 

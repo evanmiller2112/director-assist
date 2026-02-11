@@ -19,31 +19,42 @@ import { createMockCombatSession, createActiveCombatSession, createCompletedComb
 import { goto } from '$app/navigation';
 import type { CombatSession } from '$lib/types/combat';
 
-// Mock navigation
+// Mock navigation and combat store - use vi.hoisted() for proper mock hoisting
+const { mockCombatSessions, mockCombatStore, mockGoto } = vi.hoisted(() => {
+	const sessions: CombatSession[] = [];
+	return {
+		mockCombatSessions: sessions,
+		mockGoto: vi.fn(),
+		mockCombatStore: {
+			// Getter that returns the reactive sessions array
+			getAll: () => sessions,
+			// Methods
+			createCombat: vi.fn(),
+			deleteCombat: vi.fn(async (id: string) => {
+				const index = sessions.findIndex(s => s.id === id);
+				if (index !== -1) {
+					sessions.splice(index, 1);
+				}
+			}),
+			updateCombat: vi.fn(),
+			selectCombat: vi.fn(),
+			load: vi.fn()
+		}
+	};
+});
+
 vi.mock('$app/navigation', () => ({
-	goto: vi.fn()
+	goto: mockGoto
 }));
 
-// Mock combat store
-let mockCombatSessions: CombatSession[] = [];
-const mockCombatStore = {
-	subscribe: vi.fn(),
-	getAll: vi.fn(() => mockCombatSessions),
-	getById: vi.fn(),
-	create: vi.fn(),
-	update: vi.fn(),
-	delete: vi.fn(),
-	load: vi.fn()
-};
-
-vi.mock('$lib/stores/combatStore', () => ({
+vi.mock('$lib/stores', () => ({
 	combatStore: mockCombatStore
 }));
 
 describe('Combat List Page - Basic Rendering', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
-		mockCombatSessions = [];
+		mockCombatSessions.length = 0;
 	});
 
 	it('should render without crashing', () => {
@@ -53,28 +64,29 @@ describe('Combat List Page - Basic Rendering', () => {
 
 	it('should display "Combat Sessions" heading', () => {
 		render(CombatListPage);
-		expect(screen.getByRole('heading', { name: /combat sessions/i })).toBeInTheDocument();
+		const headings = screen.getAllByRole('heading', { name: /combat sessions/i });
+		expect(headings.length).toBeGreaterThan(0);
 	});
 
 	it('should display "New Combat" button', () => {
 		render(CombatListPage);
-		const newButton = screen.getByRole('button', { name: /new combat/i });
-		expect(newButton).toBeInTheDocument();
+		const newButtons = screen.getAllByRole('button', { name: /new combat/i });
+		expect(newButtons.length).toBeGreaterThan(0);
 	});
 
 	it('should show empty state when no combats exist', () => {
-		mockCombatSessions = [];
+		mockCombatSessions.length = 0;
 		render(CombatListPage);
 
 		expect(screen.getByText(/no combat sessions/i)).toBeInTheDocument();
 	});
 
 	it('should display all combat sessions from the store', () => {
-		mockCombatSessions = [
+		mockCombatSessions.splice(0, mockCombatSessions.length, 
 			createMockCombatSession({ id: 'combat-1', name: 'Dragon Fight' }),
 			createMockCombatSession({ id: 'combat-2', name: 'Bandit Ambush' }),
 			createMockCombatSession({ id: 'combat-3', name: 'Boss Battle' })
-		];
+		);
 
 		render(CombatListPage);
 
@@ -90,9 +102,9 @@ describe('Combat List Page - Combat Status Display', () => {
 	});
 
 	it('should display "Preparing" status badge for preparing combats', () => {
-		mockCombatSessions = [
+		mockCombatSessions.splice(0, mockCombatSessions.length, 
 			createMockCombatSession({ status: 'preparing', name: 'Test Combat' })
-		];
+		);
 
 		render(CombatListPage);
 
@@ -100,30 +112,32 @@ describe('Combat List Page - Combat Status Display', () => {
 	});
 
 	it('should display "Active" status badge for active combats', () => {
-		mockCombatSessions = [
+		mockCombatSessions.splice(0, mockCombatSessions.length,
 			createActiveCombatSession()
-		];
+		);
 		mockCombatSessions[0].name = 'Active Combat';
 
 		render(CombatListPage);
 
-		expect(screen.getByText(/active/i)).toBeInTheDocument();
+		const statusBadge = screen.getByTestId('status-badge');
+		expect(statusBadge).toHaveTextContent(/active/i);
 	});
 
 	it('should display "Paused" status badge for paused combats', () => {
-		mockCombatSessions = [
+		mockCombatSessions.splice(0, mockCombatSessions.length,
 			createMockCombatSession({ status: 'paused', name: 'Paused Combat' })
-		];
+		);
 
 		render(CombatListPage);
 
-		expect(screen.getByText(/paused/i)).toBeInTheDocument();
+		const statusBadge = screen.getByTestId('status-badge');
+		expect(statusBadge).toHaveTextContent(/paused/i);
 	});
 
 	it('should display "Completed" status badge for completed combats', () => {
-		mockCombatSessions = [
+		mockCombatSessions.splice(0, mockCombatSessions.length, 
 			createCompletedCombatSession()
-		];
+		);
 		mockCombatSessions[0].name = 'Finished Combat';
 
 		render(CombatListPage);
@@ -132,12 +146,12 @@ describe('Combat List Page - Combat Status Display', () => {
 	});
 
 	it('should display different styled badges for different statuses', () => {
-		mockCombatSessions = [
+		mockCombatSessions.splice(0, mockCombatSessions.length, 
 			createMockCombatSession({ id: 'c1', status: 'preparing', name: 'Prep' }),
 			createActiveCombatSession(),
 			createMockCombatSession({ id: 'c3', status: 'paused', name: 'Pause' }),
 			createCompletedCombatSession()
-		];
+		);
 
 		render(CombatListPage);
 
@@ -152,9 +166,9 @@ describe('Combat List Page - Combat Card Information', () => {
 	});
 
 	it('should display combat name on card', () => {
-		mockCombatSessions = [
+		mockCombatSessions.splice(0, mockCombatSessions.length, 
 			createMockCombatSession({ name: 'Test Combat Name' })
-		];
+		);
 
 		render(CombatListPage);
 
@@ -162,12 +176,12 @@ describe('Combat List Page - Combat Card Information', () => {
 	});
 
 	it('should display combat description if provided', () => {
-		mockCombatSessions = [
+		mockCombatSessions.splice(0, mockCombatSessions.length, 
 			createMockCombatSession({
 				name: 'Test Combat',
 				description: 'A dangerous encounter'
 			})
-		];
+		);
 
 		render(CombatListPage);
 
@@ -175,9 +189,9 @@ describe('Combat List Page - Combat Card Information', () => {
 	});
 
 	it('should display current round for active combats', () => {
-		mockCombatSessions = [
+		mockCombatSessions.splice(0, mockCombatSessions.length, 
 			createActiveCombatSession()
-		];
+		);
 		mockCombatSessions[0].currentRound = 3;
 
 		render(CombatListPage);
@@ -187,19 +201,21 @@ describe('Combat List Page - Combat Card Information', () => {
 
 	it('should display number of combatants', () => {
 		const combat = createActiveCombatSession(2, 3);
-		mockCombatSessions = [combat];
+		mockCombatSessions.splice(0, mockCombatSessions.length, combat);
 
 		render(CombatListPage);
 
 		// Should show 5 combatants (2 heroes + 3 creatures)
-		expect(screen.getByText(/5.*combatants?/i)).toBeInTheDocument();
+		// The text is split: <span>5</span> combatants
+		const card = screen.getByTestId('combat-card');
+		expect(card.textContent).toMatch(/5\s*combatants?/i);
 	});
 
 	it('should display created date', () => {
 		const createdDate = new Date('2026-01-15T10:00:00');
-		mockCombatSessions = [
+		mockCombatSessions.splice(0, mockCombatSessions.length, 
 			createMockCombatSession({ createdAt: createdDate, name: 'Test Combat' })
-		];
+		);
 
 		render(CombatListPage);
 
@@ -220,13 +236,13 @@ describe('Combat List Page - Navigation', () => {
 		const newButton = screen.getByRole('button', { name: /new combat/i });
 		await fireEvent.click(newButton);
 
-		expect(goto).toHaveBeenCalledWith('/combat/new');
+		expect(mockGoto).toHaveBeenCalledWith('/combat/new');
 	});
 
 	it('should make combat cards clickable', () => {
-		mockCombatSessions = [
+		mockCombatSessions.splice(0, mockCombatSessions.length, 
 			createMockCombatSession({ id: 'combat-1', name: 'Test Combat' })
-		];
+		);
 
 		render(CombatListPage);
 
@@ -235,30 +251,30 @@ describe('Combat List Page - Navigation', () => {
 	});
 
 	it('should navigate to combat detail when card is clicked', async () => {
-		mockCombatSessions = [
+		mockCombatSessions.splice(0, mockCombatSessions.length, 
 			createMockCombatSession({ id: 'combat-123', name: 'Test Combat' })
-		];
+		);
 
 		render(CombatListPage);
 
 		const card = screen.getByText('Test Combat').closest('[data-testid="combat-card"]');
 		await fireEvent.click(card!);
 
-		expect(goto).toHaveBeenCalledWith('/combat/combat-123');
+		expect(mockGoto).toHaveBeenCalledWith('/combat/combat-123');
 	});
 
 	it('should navigate to correct combat ID when multiple combats exist', async () => {
-		mockCombatSessions = [
+		mockCombatSessions.splice(0, mockCombatSessions.length, 
 			createMockCombatSession({ id: 'combat-1', name: 'First Combat' }),
 			createMockCombatSession({ id: 'combat-2', name: 'Second Combat' })
-		];
+		);
 
 		render(CombatListPage);
 
 		const secondCard = screen.getByText('Second Combat').closest('[data-testid="combat-card"]');
 		await fireEvent.click(secondCard!);
 
-		expect(goto).toHaveBeenCalledWith('/combat/combat-2');
+		expect(mockGoto).toHaveBeenCalledWith('/combat/combat-2');
 	});
 });
 
@@ -268,12 +284,12 @@ describe('Combat List Page - Combat Filtering and Sorting', () => {
 	});
 
 	it('should display all status types together', () => {
-		mockCombatSessions = [
+		mockCombatSessions.splice(0, mockCombatSessions.length, 
 			createMockCombatSession({ status: 'preparing', name: 'Prep Combat' }),
 			createActiveCombatSession(),
 			createMockCombatSession({ status: 'paused', name: 'Paused Combat' }),
 			createCompletedCombatSession()
-		];
+		);
 
 		render(CombatListPage);
 
@@ -294,7 +310,7 @@ describe('Combat List Page - Combat Filtering and Sorting', () => {
 			updatedAt: new Date('2026-01-20')
 		});
 
-		mockCombatSessions = [older, newer];
+		mockCombatSessions.splice(0, mockCombatSessions.length, older, newer);
 
 		render(CombatListPage);
 
@@ -305,11 +321,11 @@ describe('Combat List Page - Combat Filtering and Sorting', () => {
 	});
 
 	it('should prioritize active combats over others', () => {
-		mockCombatSessions = [
+		mockCombatSessions.splice(0, mockCombatSessions.length, 
 			createCompletedCombatSession(),
 			createActiveCombatSession(),
 			createMockCombatSession({ status: 'preparing', name: 'Prep' })
-		];
+		);
 		mockCombatSessions[1].name = 'Active Fight';
 
 		render(CombatListPage);
@@ -327,7 +343,7 @@ describe('Combat List Page - Empty States', () => {
 	});
 
 	it('should show empty state message when no combats exist', () => {
-		mockCombatSessions = [];
+		mockCombatSessions.length = 0;
 
 		render(CombatListPage);
 
@@ -335,7 +351,7 @@ describe('Combat List Page - Empty States', () => {
 	});
 
 	it('should show "Get Started" message in empty state', () => {
-		mockCombatSessions = [];
+		mockCombatSessions.length = 0;
 
 		render(CombatListPage);
 
@@ -343,11 +359,12 @@ describe('Combat List Page - Empty States', () => {
 	});
 
 	it('should show New Combat button in empty state', () => {
-		mockCombatSessions = [];
+		mockCombatSessions.length = 0;
 
 		render(CombatListPage);
 
-		expect(screen.getByRole('button', { name: /new combat/i })).toBeInTheDocument();
+		const newButtons = screen.getAllByRole('button', { name: /new combat/i });
+		expect(newButtons.length).toBeGreaterThan(0);
 	});
 });
 
@@ -357,9 +374,9 @@ describe('Combat List Page - Accessibility', () => {
 	});
 
 	it('should have proper ARIA labels on combat cards', () => {
-		mockCombatSessions = [
+		mockCombatSessions.splice(0, mockCombatSessions.length, 
 			createMockCombatSession({ name: 'Test Combat' })
-		];
+		);
 
 		render(CombatListPage);
 
@@ -368,9 +385,9 @@ describe('Combat List Page - Accessibility', () => {
 	});
 
 	it('should have keyboard accessible combat cards', () => {
-		mockCombatSessions = [
+		mockCombatSessions.splice(0, mockCombatSessions.length, 
 			createMockCombatSession({ name: 'Test Combat' })
-		];
+		);
 
 		render(CombatListPage);
 
@@ -379,9 +396,9 @@ describe('Combat List Page - Accessibility', () => {
 	});
 
 	it('should trigger navigation on Enter key', async () => {
-		mockCombatSessions = [
+		mockCombatSessions.splice(0, mockCombatSessions.length, 
 			createMockCombatSession({ id: 'combat-1', name: 'Test Combat' })
-		];
+		);
 
 		render(CombatListPage);
 
@@ -389,7 +406,7 @@ describe('Combat List Page - Accessibility', () => {
 		card.focus();
 		await fireEvent.keyDown(card, { key: 'Enter' });
 
-		expect(goto).toHaveBeenCalledWith('/combat/combat-1');
+		expect(mockGoto).toHaveBeenCalledWith('/combat/combat-1');
 	});
 
 	it('should have descriptive button text', () => {
@@ -406,11 +423,11 @@ describe('Combat List Page - Responsive Design', () => {
 	});
 
 	it('should render combat cards in a grid layout', () => {
-		mockCombatSessions = [
+		mockCombatSessions.splice(0, mockCombatSessions.length, 
 			createMockCombatSession({ name: 'Combat 1' }),
 			createMockCombatSession({ name: 'Combat 2' }),
 			createMockCombatSession({ name: 'Combat 3' })
-		];
+		);
 
 		const { container } = render(CombatListPage);
 
@@ -419,9 +436,9 @@ describe('Combat List Page - Responsive Design', () => {
 	});
 
 	it('should display cards responsively', () => {
-		mockCombatSessions = [
+		mockCombatSessions.splice(0, mockCombatSessions.length, 
 			createMockCombatSession({ name: 'Combat 1' })
-		];
+		);
 
 		const { container } = render(CombatListPage);
 
@@ -436,12 +453,12 @@ describe('Combat List Page - Edge Cases', () => {
 	});
 
 	it('should handle combat with no description', () => {
-		mockCombatSessions = [
+		mockCombatSessions.splice(0, mockCombatSessions.length, 
 			createMockCombatSession({
 				name: 'Test Combat',
 				description: undefined
 			})
-		];
+		);
 
 		render(CombatListPage);
 
@@ -449,11 +466,11 @@ describe('Combat List Page - Edge Cases', () => {
 	});
 
 	it('should handle combat with very long name', () => {
-		mockCombatSessions = [
+		mockCombatSessions.splice(0, mockCombatSessions.length, 
 			createMockCombatSession({
 				name: 'This Is A Very Long Combat Session Name That Should Wrap Or Truncate Properly'
 			})
-		];
+		);
 
 		render(CombatListPage);
 
@@ -461,9 +478,10 @@ describe('Combat List Page - Edge Cases', () => {
 	});
 
 	it('should handle many combat sessions', () => {
-		mockCombatSessions = Array.from({ length: 50 }, (_, i) =>
+		const manyCombats = Array.from({ length: 50 }, (_, i) =>
 			createMockCombatSession({ id: `combat-${i}`, name: `Combat ${i + 1}` })
 		);
+		mockCombatSessions.splice(0, mockCombatSessions.length, ...manyCombats);
 
 		render(CombatListPage);
 
@@ -472,13 +490,15 @@ describe('Combat List Page - Edge Cases', () => {
 	});
 
 	it('should handle combat with 0 combatants', () => {
-		mockCombatSessions = [
+		mockCombatSessions.splice(0, mockCombatSessions.length,
 			createMockCombatSession({ name: 'Empty Combat' })
-		];
+		);
 		mockCombatSessions[0].combatants = [];
 
 		render(CombatListPage);
 
-		expect(screen.getByText(/0.*combatants?/i)).toBeInTheDocument();
+		// The text is split: <span>0</span> combatants
+		const card = screen.getByTestId('combat-card');
+		expect(card.textContent).toMatch(/0\s*combatants?/i);
 	});
 });

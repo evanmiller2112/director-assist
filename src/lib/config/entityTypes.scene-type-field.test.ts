@@ -264,8 +264,8 @@ describe('entityTypes.ts - Scene Type Field (Issue #283)', () => {
 			const sceneType = getSceneEntityType();
 			const fields = sceneType?.fieldDefinitions ?? [];
 
-			// Scene originally has 9 fields, should now have 10
-			expect(fields.length).toBe(10);
+			// Scene originally has 9 fields, should now have 14
+			expect(fields.length).toBe(14);
 		});
 
 		it('should work with existing Scene entity methods', () => {

@@ -658,8 +658,8 @@ describe('ArgumentCard Component - Motivation Type Display', () => {
 			props: { argument }
 		});
 
-		// Should not have motivation type badges for all 12 types
-		expect(screen.queryByText(/benevolence/i)).not.toBeInTheDocument();
+		// Should not have motivation type badges for all 13 types
+		expect(screen.queryByText(/charity/i)).not.toBeInTheDocument();
 		expect(screen.queryByText(/justice/i)).not.toBeInTheDocument();
 	});
 
@@ -668,7 +668,7 @@ describe('ArgumentCard Component - Motivation Type Display', () => {
 			id: '1',
 			type: 'motivation',
 		description: 'Test argument',
-			motivationType: 'higher_authority',
+			motivationType: 'faith',
 			tier: 1,
 			interestChange: 1,
 			patienceChange: 0,
@@ -679,7 +679,7 @@ describe('ArgumentCard Component - Motivation Type Display', () => {
 			props: { argument }
 		});
 
-		expect(screen.getByText(/higher.*authority/i)).toBeInTheDocument();
+		expect(screen.getByText(/faith/i)).toBeInTheDocument();
 	});
 });
 

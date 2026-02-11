@@ -87,8 +87,12 @@ function validateNumber(definition: FieldDefinition, value: FieldValue): string 
 }
 
 function validateSelect(definition: FieldDefinition, value: string): string | null {
-	// Issue #429: Allow custom values not in predefined options
-	// Validation now accepts any string value for select fields
+	// Issue #429: Allow custom values for select fields.
+	// Select fields with predefined options are suggestions, not constraints.
+	// Users can enter custom values not in the predefined list.
+	// This is intentional to allow flexibility in data entry.
+
+	// No validation needed - any non-empty string is valid
 	return null;
 }
 

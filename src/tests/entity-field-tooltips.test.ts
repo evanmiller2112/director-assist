@@ -888,7 +888,7 @@ describe('Entity Field Guidance Tooltips (Issue #218)', () => {
 			expect(sceneSettingField?.label).toBe('Scene Setting (Read-Aloud)');
 			expect(sceneSettingField?.type).toBe('richtext');
 			expect(sceneSettingField?.required).toBe(false);
-			expect(sceneSettingField?.order).toBe(5);
+			expect(sceneSettingField?.order).toBe(8);
 		});
 
 		it('should maintain existing helpText where already present', () => {

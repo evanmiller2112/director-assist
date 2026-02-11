@@ -144,6 +144,11 @@ describe('Player Character Entity - Form UI Configuration (Issue #97)', () => {
 			const existingFieldKeys = [
 				'playerName',
 				'concept',
+				'ancestry',
+				'culture',
+				'career',
+				'heroClass',
+				'subclass',
 				'background',
 				'personality',
 				'goals',
@@ -157,10 +162,10 @@ describe('Player Character Entity - Form UI Configuration (Issue #97)', () => {
 			});
 		});
 
-		it('should have correct total field count (7 fields)', () => {
+		it('should have correct total field count (12 fields)', () => {
 			characterType = getCharacterType();
 
-			expect(characterType.fieldDefinitions).toHaveLength(7);
+			expect(characterType.fieldDefinitions).toHaveLength(12);
 		});
 
 		it('should maintain Player Character icon as "user"', () => {
@@ -204,7 +209,7 @@ describe('Player Character Entity - Form UI Configuration (Issue #97)', () => {
 			characterType = getCharacterType();
 			const orderValues = characterType.fieldDefinitions.map((f) => f.order).sort((a, b) => a - b);
 
-			// Should be [1, 2, 3, 4, 5, 6, 7]
+			// Should be [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
 			for (let i = 0; i < orderValues.length; i++) {
 				expect(orderValues[i]).toBe(i + 1);
 			}

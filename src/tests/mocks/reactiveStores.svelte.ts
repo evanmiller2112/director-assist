@@ -1,15 +1,30 @@
+/**
+ * Reactive Mock Stores for Svelte 5 Testing
+ *
+ * These stores use Svelte 5 $state() runes to enable proper reactivity
+ * in component tests. Unlike the plain JavaScript mock stores, these
+ * will trigger Svelte's reactivity system when values change.
+ */
+
 import { vi } from 'vitest';
 import type { BaseEntity } from '$lib/types';
 
 /**
- * Creates a mock entities store for testing
+ * Creates a reactive mock entities store using Svelte 5 $state
  */
-export function createMockEntitiesStore(entities: BaseEntity[] = []) {
-	let searchQuery = '';
-	let _entities = entities;
-	let _availableRelationshipTypes: string[] = [];
+export function createReactiveMockEntitiesStore(initialEntities: BaseEntity[] = []) {
+	// Use $state to make these values reactive
+	let searchQuery = $state('');
+	let _entities = $state<BaseEntity[]>(initialEntities);
+	let _availableRelationshipTypes = $state<string[]>([]);
+	let _relationshipFilter = $state<{
+		relatedToEntityId?: string;
+		relationshipType?: string;
+		hasRelationships?: boolean;
+	}>({});
 
-	const filteredEntities = () => {
+	// Derived computed value for filtered entities
+	const filteredEntities = $derived(() => {
 		if (!searchQuery) return _entities;
 		const query = searchQuery.toLowerCase();
 		return _entities.filter(
@@ -18,15 +33,9 @@ export function createMockEntitiesStore(entities: BaseEntity[] = []) {
 				e.description.toLowerCase().includes(query) ||
 				e.tags.some((t) => t.toLowerCase().includes(query))
 		);
-	};
+	});
 
-	let _relationshipFilter: {
-		relatedToEntityId?: string;
-		relationshipType?: string;
-		hasRelationships?: boolean;
-	} = {};
-
-	return {
+	const store = {
 		get entities() {
 			return _entities;
 		},
@@ -52,12 +61,11 @@ export function createMockEntitiesStore(entities: BaseEntity[] = []) {
 		create: vi.fn(),
 		update: vi.fn(),
 		delete: vi.fn(),
-		getById: vi.fn(),
-		getByType: vi.fn(),
+		getById: vi.fn((id: string) => _entities.find(e => e.id === id)),
+		getByType: vi.fn((type: string) => _entities.filter(e => e.type === type)),
 		addLink: vi.fn(),
 		removeLink: vi.fn(),
 		getLinkedWithRelationships: vi.fn(() => []),
-		// Relationship filter methods (Issue #78)
 		filterByRelatedTo: vi.fn((entityId: string) => {
 			_relationshipFilter = { ..._relationshipFilter, relatedToEntityId: entityId };
 		}),
@@ -73,20 +81,24 @@ export function createMockEntitiesStore(entities: BaseEntity[] = []) {
 		clearRelationshipFilter: vi.fn(() => {
 			_relationshipFilter = {};
 		}),
-		// Update method for tests
+		// Test helper to update entities reactively
 		_setEntities: (newEntities: BaseEntity[]) => {
 			_entities = newEntities;
+			// Also update the getById mock to use the new entities
+			store.getById = vi.fn((id: string) => _entities.find(e => e.id === id));
 		}
 	};
+
+	return store;
 }
 
 /**
- * Creates a mock campaign store for testing
+ * Creates a reactive mock campaign store using Svelte 5 $state
  */
-export function createMockCampaignStore() {
-	const campaign = {
+export function createReactiveMockCampaignStore() {
+	const campaign = $state({
 		id: 'test-campaign',
-		type: 'campaign',
+		type: 'campaign' as const,
 		name: 'Test Campaign',
 		description: 'Test campaign description',
 		tags: [] as string[],
@@ -105,27 +117,40 @@ export function createMockCampaignStore() {
 				defaultCampaignId: undefined
 			}
 		} as Record<string, unknown>
-	};
+	});
+
+	let customEntityTypes = $state<Array<unknown>>([]);
+	let entityTypeOverrides = $state<Array<unknown>>([]);
+	let allCampaigns = $state([campaign]);
+	let activeCampaignId = $state('test-campaign');
 
 	const store = {
-		campaign,
-		customEntityTypes: [] as Array<unknown>,
-		entityTypeOverrides: [] as Array<unknown>,
-		allCampaigns: [campaign] as typeof campaign[],
-		activeCampaignId: 'test-campaign',
+		get campaign() {
+			return campaign;
+		},
+		get customEntityTypes() {
+			return customEntityTypes;
+		},
+		get entityTypeOverrides() {
+			return entityTypeOverrides;
+		},
+		get allCampaigns() {
+			return allCampaigns;
+		},
+		get activeCampaignId() {
+			return activeCampaignId;
+		},
 		load: vi.fn(),
 		setActiveCampaign: vi.fn(),
 		getCurrentSystemProfile: vi.fn(() => 'Test System'),
-		// Campaign linking getters (Issue #48)
 		get enforceCampaignLinking(): boolean {
-			const settings = (store.campaign?.metadata as any)?.settings;
+			const settings = (campaign?.metadata as any)?.settings;
 			return settings?.enforceCampaignLinking ?? false;
 		},
 		get defaultCampaignId(): string | undefined {
-			const settings = (store.campaign?.metadata as any)?.settings;
+			const settings = (campaign?.metadata as any)?.settings;
 			return settings?.defaultCampaignId;
 		},
-		// Campaign linking methods (Issue #48)
 		setEnforceCampaignLinking: vi.fn(),
 		setDefaultCampaignId: vi.fn()
 	};
@@ -134,38 +159,11 @@ export function createMockCampaignStore() {
 }
 
 /**
- * Creates a mock UI store for testing
+ * Creates a reactive mock AI settings store using Svelte 5 $state
  */
-export function createMockUiStore() {
-	return {
-		sidebarOpen: true,
-		chatPanelOpen: false,
-		theme: 'light',
-		toggleSidebar: vi.fn(),
-		toggleChatPanel: vi.fn(),
-		loadTheme: vi.fn()
-	};
-}
+export function createReactiveMockAiSettings(enabled = false) {
+	let aiEnabled = $state(enabled);
 
-/**
- * Creates a mock notification store for testing
- */
-export function createMockNotificationStore() {
-	return {
-		notifications: [],
-		success: vi.fn(),
-		error: vi.fn(),
-		info: vi.fn(),
-		warning: vi.fn(),
-		dismiss: vi.fn()
-	};
-}
-
-/**
- * Creates a mock AI settings store for testing
- */
-export function createMockAiSettings(enabled = false) {
-	let aiEnabled = enabled;
 	return {
 		get aiEnabled() {
 			return aiEnabled;
@@ -174,7 +172,6 @@ export function createMockAiSettings(enabled = false) {
 			return aiEnabled;
 		},
 		load: vi.fn(async () => {
-			// Check for API keys and stored preference
 			const hasApiKey =
 				!!localStorage.getItem('dm-assist-api-key') ||
 				!!localStorage.getItem('ai-provider-anthropic-apikey') ||

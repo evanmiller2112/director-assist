@@ -91,16 +91,16 @@
 		const maxHpNum = parseInt(maxHp, 10);
 
 		if (hp && hpNum < 0) {
-			newErrors.hp = 'Stamina must be positive';
+			newErrors.hp = 'HP must be positive';
 		}
 
 		if (maxHp && maxHpNum <= 0) {
-			newErrors.maxHp = 'Max Stamina must be greater than 0';
+			newErrors.maxHp = 'Max HP must be greater than 0';
 		}
 
 		// Only validate HP <= maxHp if both are provided
 		if (hp && maxHp && maxHpNum > 0 && hpNum > maxHpNum) {
-			newErrors.hp = 'Stamina cannot exceed Max Stamina';
+			newErrors.hp = 'HP cannot exceed Max HP';
 		}
 
 		if (combatantType === 'hero') {
@@ -329,7 +329,7 @@
 
 						<!-- Quick HP -->
 						<div>
-							<label for="quick-hp" class="label">Stamina</label>
+							<label for="quick-hp" class="label">HP</label>
 							<input
 								id="quick-hp"
 								type="number"
@@ -337,8 +337,8 @@
 								bind:value={quickHp}
 								min="1"
 								step="1"
-								placeholder="Current Stamina"
-								aria-label="Stamina"
+								placeholder="Current HP"
+								aria-label="HP"
 							/>
 						</div>
 
@@ -420,7 +420,11 @@
 					<div>
 						{#if availableEntities.length === 0}
 							<p class="text-sm text-slate-500 dark:text-slate-400 text-center py-4">
-								No {combatantType === 'hero' ? 'characters' : 'NPCs'} {searchQuery ? 'found' : 'available'}
+								{#if searchQuery}
+									No entities found
+								{:else}
+									No {combatantType === 'hero' ? 'characters' : 'NPCs'} available
+								{/if}
 							</p>
 						{:else}
 							<div class="space-y-2 max-h-48 overflow-y-auto">
@@ -441,12 +445,11 @@
 					</div>
 
 					<!-- Stats -->
-					{#if selectedEntity}
-						<div class="space-y-4 pt-4 border-t border-slate-200 dark:border-slate-700">
-							<!-- HP -->
-							<div class="grid grid-cols-2 gap-4">
+					<div class="space-y-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+						<!-- HP -->
+						<div class="grid grid-cols-2 gap-4">
 								<div>
-									<label for="hp" class="label">Stamina</label>
+									<label for="hp" class="label">Hit Points</label>
 									<input
 										id="hp"
 										type="number"
@@ -454,14 +457,14 @@
 										bind:value={hp}
 										min="0"
 										step="1"
-										aria-label="Stamina"
+										aria-label="Hit Points"
 									/>
 									{#if errors.hp}
 										<p class="text-xs text-red-600 dark:text-red-400 mt-1">{errors.hp}</p>
 									{/if}
 								</div>
 								<div>
-									<label for="max-hp" class="label">Max Stamina (optional)</label>
+									<label for="max-hp" class="label">Max HP (optional)</label>
 									<input
 										id="max-hp"
 										type="number"
@@ -470,16 +473,16 @@
 										min="1"
 										step="1"
 										placeholder="Optional"
-										aria-label="Max Stamina"
+										aria-label="Maximum"
 									/>
 									{#if errors.maxHp}
 										<p class="text-xs text-red-600 dark:text-red-400 mt-1">{errors.maxHp}</p>
 									{/if}
 								</div>
-							</div>
+						</div>
 
-							<!-- AC and Initiative -->
-							<div class="grid grid-cols-2 gap-4">
+						<!-- AC and Initiative -->
+						<div class="grid grid-cols-2 gap-4">
 								<div>
 									<label for="ac" class="label">AC (Armor Class)</label>
 									<input
@@ -503,10 +506,10 @@
 										aria-label="Initiative"
 									/>
 								</div>
-							</div>
+						</div>
 
-							<!-- Hero-specific: Heroic Resource -->
-							{#if combatantType === 'hero'}
+						<!-- Hero-specific: Heroic Resource -->
+						{#if combatantType === 'hero'}
 								<div class="space-y-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
 									<h3 class="font-medium text-blue-900 dark:text-blue-100">Heroic Resource (optional)</h3>
 
@@ -560,11 +563,11 @@
 											/>
 										</div>
 									</div>
-								</div>
-							{/if}
+							</div>
+						{/if}
 
-							<!-- Creature-specific: Threat Level -->
-							{#if combatantType === 'creature'}
+						<!-- Creature-specific: Threat Level -->
+						{#if combatantType === 'creature'}
 								<div>
 									<label for="threat-level" class="label">Threat Level</label>
 									<select id="threat-level" class="input" bind:value={threat} aria-label="Threat level">
@@ -572,10 +575,9 @@
 										<option value="2">2 - Elite</option>
 										<option value="3">3 - Boss</option>
 									</select>
-								</div>
-							{/if}
-						</div>
-					{/if}
+							</div>
+						{/if}
+					</div>
 
 					<!-- Token Indicator (always visible in entity mode) -->
 					<div>

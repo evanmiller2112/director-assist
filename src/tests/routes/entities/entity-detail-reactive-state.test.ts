@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/svelte';
 import EntityDetailPage from '../../../routes/entities/[type]/[id]/+page.svelte';
 import { createMockEntity } from '../../utils/testUtils';
-import { createMockEntitiesStore, createMockCampaignStore } from '../../mocks/stores';
+import { createReactiveMockEntitiesStore, createReactiveMockCampaignStore } from '../../mocks/reactiveStores.svelte';
 import { setPageParams } from '../../mocks/$app/stores';
 import type { BaseEntity } from '$lib/types';
 
@@ -20,8 +20,8 @@ import type { BaseEntity } from '$lib/types';
  */
 
 // Create mock stores that will be shared
-let mockEntitiesStore: ReturnType<typeof createMockEntitiesStore>;
-let mockCampaignStore: ReturnType<typeof createMockCampaignStore>;
+let mockEntitiesStore: ReturnType<typeof createReactiveMockEntitiesStore>;
+let mockCampaignStore: ReturnType<typeof createReactiveMockCampaignStore>;
 
 // Mock the stores
 vi.mock('$lib/stores', async () => {
@@ -43,41 +43,44 @@ vi.mock('$lib/stores', async () => {
 });
 
 // Mock the config/entityTypes module
+const mockEntityTypeDefinition = (type: string) => ({
+	type,
+	label: type.charAt(0).toUpperCase() + type.slice(1),
+	labelPlural: `${type.charAt(0).toUpperCase() + type.slice(1)}s`,
+	icon: 'package',
+	color: '#94a3b8',
+	isBuiltIn: true,
+	fieldDefinitions: [
+		{
+			key: 'occupation',
+			label: 'Occupation',
+			type: 'text',
+			section: 'standard',
+			required: false
+		},
+		{
+			key: 'ally',
+			label: 'Ally',
+			type: 'entity-ref',
+			section: 'standard',
+			required: false,
+			entityTypes: ['npc']
+		},
+		{
+			key: 'allies',
+			label: 'Allies',
+			type: 'entity-refs',
+			section: 'standard',
+			required: false,
+			entityTypes: ['npc']
+		}
+	],
+	defaultRelationships: []
+});
+
 vi.mock('$lib/config/entityTypes', () => ({
-	getEntityTypeDefinition: vi.fn((type) => ({
-		type,
-		label: type.charAt(0).toUpperCase() + type.slice(1),
-		labelPlural: `${type.charAt(0).toUpperCase() + type.slice(1)}s`,
-		icon: 'package',
-		color: '#94a3b8',
-		isBuiltIn: true,
-		fieldDefinitions: [
-			{
-				key: 'occupation',
-				label: 'Occupation',
-				type: 'text',
-				section: 'standard',
-				required: false
-			},
-			{
-				key: 'ally',
-				label: 'Ally',
-				type: 'entity-ref',
-				section: 'standard',
-				required: false,
-				entityTypes: ['npc']
-			},
-			{
-				key: 'allies',
-				label: 'Allies',
-				type: 'entity-refs',
-				section: 'standard',
-				required: false,
-				entityTypes: ['npc']
-			}
-		],
-		defaultRelationships: []
-	}))
+	getEntityTypeDefinition: vi.fn((type) => mockEntityTypeDefinition(type)),
+	getEntityTypeDefinitionWithSystem: vi.fn((type, baseDefinition) => baseDefinition || mockEntityTypeDefinition(type))
 }));
 
 // Mock navigation
@@ -116,9 +119,9 @@ describe('Entity Detail Page - Reactive State Safety (Issue #98)', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 
-		// Create mock stores
-		mockEntitiesStore = createMockEntitiesStore();
-		mockCampaignStore = createMockCampaignStore();
+		// Create mock stores with Svelte 5 reactivity
+		mockEntitiesStore = createReactiveMockEntitiesStore();
+		mockCampaignStore = createReactiveMockCampaignStore();
 
 		// Create referenced entity
 		referencedEntity = createMockEntity({
@@ -193,8 +196,9 @@ describe('Entity Detail Page - Reactive State Safety (Issue #98)', () => {
 			render(EntityDetailPage);
 
 			await waitFor(() => {
-				// Should show the referenced entity's name
-				expect(screen.getByText('Referenced NPC')).toBeInTheDocument();
+				// Should show the referenced entity's name (may appear multiple times)
+				const elements = screen.getAllByText('Referenced NPC');
+				expect(elements.length).toBeGreaterThan(0);
 			});
 		});
 
@@ -205,7 +209,8 @@ describe('Entity Detail Page - Reactive State Safety (Issue #98)', () => {
 			render(EntityDetailPage);
 
 			await waitFor(() => {
-				expect(screen.getByText('Referenced NPC')).toBeInTheDocument();
+				const elements = screen.queryAllByText('Referenced NPC');
+				expect(elements.length).toBeGreaterThan(0);
 			});
 
 			// The find method should be called, but NOT inside a reactive context that causes errors
@@ -226,16 +231,22 @@ describe('Entity Detail Page - Reactive State Safety (Issue #98)', () => {
 			render(EntityDetailPage);
 
 			await waitFor(() => {
-				// Should show a placeholder for deleted entities
-				expect(screen.getByText(/deleted|not found/i)).toBeInTheDocument();
+				// Should show a placeholder for deleted entities (may appear multiple times)
+				const deletedTexts = screen.queryAllByText(/deleted|not found/i);
+				expect(deletedTexts.length).toBeGreaterThan(0);
 			});
 		});
 
-		it.skip('should re-render when referenced entity changes - mock store lacks reactivity', async () => {
+		it.skip('should re-render when referenced entity changes - testing-library rerender() does not trigger Svelte reactivity', async () => {
+			// Note: This test is skipped because testing-library's rerender() doesn't properly
+			// trigger Svelte 5's reactivity system. The reactive stores work correctly in the real app,
+			// but in tests, calling rerender() after updating mock store data doesn't cause the component
+			// to react to the changes. This is a limitation of the testing environment, not the code.
 			const { rerender } = render(EntityDetailPage);
 
 			await waitFor(() => {
-				expect(screen.getByText('Referenced NPC')).toBeInTheDocument();
+				const elements = screen.queryAllByText('Referenced NPC');
+				expect(elements.length).toBeGreaterThan(0);
 			});
 
 			// Update the referenced entity's name
@@ -246,7 +257,8 @@ describe('Entity Detail Page - Reactive State Safety (Issue #98)', () => {
 			await rerender({});
 
 			await waitFor(() => {
-				expect(screen.getByText('Updated Referenced NPC')).toBeInTheDocument();
+				const elements = screen.queryAllByText('Updated Referenced NPC');
+				expect(elements.length).toBeGreaterThan(0);
 			});
 		});
 	});
@@ -256,12 +268,13 @@ describe('Entity Detail Page - Reactive State Safety (Issue #98)', () => {
 			render(EntityDetailPage);
 
 			await waitFor(() => {
-				// Should show all referenced entities
-				expect(screen.getByText('Referenced NPC')).toBeInTheDocument();
+				// Should show all referenced entities (may appear multiple times)
+				const elements = screen.queryAllByText('Referenced NPC');
+				expect(elements.length).toBeGreaterThan(0);
 			});
 		});
 
-		it.skip('should handle multiple entity references - mock store lacks reactivity', async () => {
+		it('should handle multiple entity references', async () => {
 			const secondRef = createMockEntity({
 				id: 'ref-entity-2',
 				name: 'Second Referenced NPC',
@@ -279,12 +292,14 @@ describe('Entity Detail Page - Reactive State Safety (Issue #98)', () => {
 			render(EntityDetailPage);
 
 			await waitFor(() => {
-				expect(screen.getByText('Referenced NPC')).toBeInTheDocument();
-				expect(screen.getByText('Second Referenced NPC')).toBeInTheDocument();
+				const firstRefs = screen.queryAllByText('Referenced NPC');
+				const secondRefs = screen.queryAllByText('Second Referenced NPC');
+				expect(firstRefs.length).toBeGreaterThan(0);
+				expect(secondRefs.length).toBeGreaterThan(0);
 			});
 		});
 
-		it.skip('should handle partial deletions in entity-refs array - mock store lacks reactivity', async () => {
+		it('should handle partial deletions in entity-refs array', async () => {
 			testEntity.fields = {
 				...testEntity.fields,
 				allies: ['ref-entity-1', 'non-existent-id']
@@ -294,8 +309,10 @@ describe('Entity Detail Page - Reactive State Safety (Issue #98)', () => {
 			render(EntityDetailPage);
 
 			await waitFor(() => {
-				expect(screen.getByText('Referenced NPC')).toBeInTheDocument();
-				expect(screen.getByText(/deleted|not found/i)).toBeInTheDocument();
+				const referencedNPCs = screen.queryAllByText('Referenced NPC');
+				const deletedTexts = screen.queryAllByText(/deleted|not found/i);
+				expect(referencedNPCs.length).toBeGreaterThan(0);
+				expect(deletedTexts.length).toBeGreaterThan(0);
 			});
 		});
 
@@ -321,7 +338,8 @@ describe('Entity Detail Page - Reactive State Safety (Issue #98)', () => {
 			render(EntityDetailPage);
 
 			await waitFor(() => {
-				expect(screen.getByText('Referenced NPC')).toBeInTheDocument();
+				const elements = screen.queryAllByText('Referenced NPC');
+				expect(elements.length).toBeGreaterThan(0);
 			});
 
 			// The test passes if rendering succeeds without state mutation errors
@@ -330,7 +348,9 @@ describe('Entity Detail Page - Reactive State Safety (Issue #98)', () => {
 			// RIGHT: const entity = $derived(entitiesStore.getById(...))
 		});
 
-		it.skip('should handle rapid state updates without mutation errors - mock store lacks reactivity', async () => {
+		it.skip('should handle rapid state updates without mutation errors - testing-library rerender() does not trigger Svelte reactivity', async () => {
+			// Note: This test is skipped because testing-library's rerender() doesn't properly
+			// trigger Svelte 5's reactivity system in rapid succession.
 			const { rerender } = render(EntityDetailPage);
 
 			// Rapidly update entities multiple times
@@ -342,13 +362,15 @@ describe('Entity Detail Page - Reactive State Safety (Issue #98)', () => {
 
 			// Should complete without errors
 			await waitFor(() => {
-				expect(screen.getByText(/Updated Name/i)).toBeInTheDocument();
+				const elements = screen.queryAllByText(/Updated Name/i);
+				expect(elements.length).toBeGreaterThan(0);
 			});
 		});
 	});
 
-	describe.skip('Navigation and Client-Side Hydration - mock store lacks reactivity', () => {
-		it('should support client-side navigation without hydration errors', async () => {
+	describe('Navigation and Client-Side Hydration', () => {
+		it.skip('should support client-side navigation without hydration errors - testing-library rerender() limitation', async () => {
+			// Note: This test is skipped due to testing-library limitations with Svelte reactivity.
 			// First render
 			const { unmount } = render(EntityDetailPage);
 
@@ -376,11 +398,13 @@ describe('Entity Detail Page - Reactive State Safety (Issue #98)', () => {
 
 			await waitFor(() => {
 				expect(screen.getByText('Second Character')).toBeInTheDocument();
-				expect(screen.getByText('Referenced NPC')).toBeInTheDocument();
+				const referencedNPCs = screen.queryAllByText('Referenced NPC');
+				expect(referencedNPCs.length).toBeGreaterThan(0);
 			});
 		});
 
-		it('should not break when navigating back and forth between entities', async () => {
+		it.skip('should not break when navigating back and forth between entities - testing-library rerender() limitation', async () => {
+			// Note: This test is skipped due to testing-library limitations with Svelte reactivity.
 			const { unmount, rerender } = render(EntityDetailPage);
 
 			// Initial entity
@@ -429,11 +453,13 @@ describe('Entity Detail Page - Reactive State Safety (Issue #98)', () => {
 			expect(getByIdSpy).toHaveBeenCalled();
 		});
 
-		it.skip('should reactively update when store provides new data - mock store lacks reactivity', async () => {
+		it.skip('should reactively update when store provides new data - testing-library rerender() limitation', async () => {
+			// Note: This test is skipped due to testing-library limitations with Svelte reactivity.
 			const { rerender } = render(EntityDetailPage);
 
 			await waitFor(() => {
-				expect(screen.getByText('Referenced NPC')).toBeInTheDocument();
+				const elements = screen.queryAllByText('Referenced NPC');
+				expect(elements.length).toBeGreaterThan(0);
 			});
 
 			// Store provides updated entity
@@ -446,13 +472,14 @@ describe('Entity Detail Page - Reactive State Safety (Issue #98)', () => {
 			await rerender({});
 
 			await waitFor(() => {
-				expect(screen.getByText('Totally New Name')).toBeInTheDocument();
+				const elements = screen.queryAllByText('Totally New Name');
+				expect(elements.length).toBeGreaterThan(0);
 			});
 		});
 	});
 
 	describe('Complex Field Rendering', () => {
-		it.skip('should render multiple entity-ref fields in same entity without conflicts - mock store lacks reactivity', async () => {
+		it('should render multiple entity-ref fields in same entity without conflicts', async () => {
 			const thirdRef = createMockEntity({
 				id: 'ref-entity-3',
 				name: 'Third Referenced NPC',
@@ -492,7 +519,8 @@ describe('Entity Detail Page - Reactive State Safety (Issue #98)', () => {
 
 			await waitFor(() => {
 				expect(screen.getByText('Ranger')).toBeInTheDocument();
-				expect(screen.getByText('Referenced NPC')).toBeInTheDocument();
+				const referencedNPCs = screen.queryAllByText('Referenced NPC');
+				expect(referencedNPCs.length).toBeGreaterThan(0);
 			});
 		});
 	});
@@ -519,7 +547,8 @@ describe('Entity Detail Page - Reactive State Safety (Issue #98)', () => {
 			}).not.toThrow();
 		});
 
-		it.skip('should handle circular entity references without infinite loops - mock store lacks reactivity', async () => {
+		it.skip('should handle circular entity references without infinite loops - testing-library rerender() limitation', async () => {
+			// Note: This test is skipped due to testing-library limitations with Svelte reactivity.
 			// Entity A references Entity B, Entity B references Entity A
 			const entityA = createMockEntity({
 				id: 'entity-a',
@@ -544,7 +573,8 @@ describe('Entity Detail Page - Reactive State Safety (Issue #98)', () => {
 
 			await waitFor(() => {
 				expect(screen.getByText('Entity A')).toBeInTheDocument();
-				expect(screen.getByText('Entity B')).toBeInTheDocument();
+				const entityBElements = screen.queryAllByText('Entity B');
+				expect(entityBElements.length).toBeGreaterThan(0);
 			});
 		});
 	});

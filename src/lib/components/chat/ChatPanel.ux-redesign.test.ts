@@ -57,6 +57,16 @@ vi.mock('$lib/stores', () => ({
 	campaignStore: {
 		customEntityTypes: [],
 		entityTypeOverrides: []
+	},
+	debugStore: {
+		isEnabled: false,
+		enabled: false,
+		logs: [],
+		addLog: vi.fn(),
+		clear: vi.fn(),
+		enable: vi.fn(),
+		disable: vi.fn(),
+		load: vi.fn()
 	}
 }));
 
@@ -188,10 +198,10 @@ describe('ChatPanel Component - Collapsible Conversations Section (Issue #203)',
 	it('should have a chevron toggle button for conversations section', () => {
 		render(ChatPanel);
 
+		// The conversations toggle is in the ConversationSidebar component
 		// Look for chevron button near "Conversations" header
 		const chevronButton = screen.queryByRole('button', { name: /toggle conversations/i }) ||
-			screen.queryByRole('button', { name: /expand conversations/i }) ||
-			screen.queryByRole('button', { name: /collapse conversations/i });
+			screen.queryByRole('button', { name: /expand conversations/i });
 
 		expect(chevronButton).toBeInTheDocument();
 	});

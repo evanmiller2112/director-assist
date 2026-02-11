@@ -45,6 +45,7 @@ describe('Conversation Store', () => {
 
 		mockConversationRepository = {
 			getAll: vi.fn(() => mockObservable),
+			getAllWithMetadata: vi.fn(() => mockObservable),
 			create: vi.fn(async (name?: string) => ({
 				id: `conv-${Date.now()}`,
 				name: name || `New Conversation ${Date.now()}`,
@@ -61,10 +62,42 @@ describe('Conversation Store', () => {
 			clearActiveConversationId: vi.fn(async () => {})
 		};
 
+		// Mock chatRepository
+		const mockChatRepository = {
+			getAll: vi.fn(() => ({ subscribe: vi.fn() })),
+			add: vi.fn(),
+			clearAll: vi.fn()
+		};
+
 		// Mock the dependencies
 		vi.doMock('$lib/db/repositories', () => ({
 			conversationRepository: mockConversationRepository,
-			appConfigRepository: mockAppConfigRepository
+			appConfigRepository: mockAppConfigRepository,
+			chatRepository: mockChatRepository,
+			combatRepository: {
+				getAll: vi.fn(() => ({ subscribe: vi.fn() })),
+				create: vi.fn(),
+				update: vi.fn(),
+				delete: vi.fn()
+			},
+			montageRepository: {
+				getAll: vi.fn(() => ({ subscribe: vi.fn() })),
+				create: vi.fn(),
+				update: vi.fn(),
+				delete: vi.fn()
+			},
+			creatureRepository: {
+				getAll: vi.fn(() => ({ subscribe: vi.fn() })),
+				create: vi.fn(),
+				update: vi.fn(),
+				delete: vi.fn()
+			},
+			negotiationRepository: {
+				getAll: vi.fn(() => ({ subscribe: vi.fn() })),
+				create: vi.fn(),
+				update: vi.fn(),
+				delete: vi.fn()
+			}
 		}));
 
 		// Import fresh store instance
@@ -118,10 +151,10 @@ describe('Conversation Store', () => {
 	});
 
 	describe('load() Method', () => {
-		it('should call conversationRepository.getAll', async () => {
+		it('should call conversationRepository.getAllWithMetadata', async () => {
 			await conversationStore.load();
 
-			expect(mockConversationRepository.getAll).toHaveBeenCalled();
+			expect(mockConversationRepository.getAllWithMetadata).toHaveBeenCalled();
 		});
 
 		it('should subscribe to observable', async () => {
@@ -206,7 +239,7 @@ describe('Conversation Store', () => {
 		});
 
 		it('should handle load errors from catch block', async () => {
-			mockConversationRepository.getAll.mockImplementation(() => {
+			mockConversationRepository.getAllWithMetadata.mockImplementation(() => {
 				throw new Error('Repository error');
 			});
 
@@ -661,7 +694,7 @@ describe('Conversation Store', () => {
 		it('should handle all operations in sequence', async () => {
 			// Load
 			await conversationStore.load();
-			expect(mockConversationRepository.getAll).toHaveBeenCalled();
+			expect(mockConversationRepository.getAllWithMetadata).toHaveBeenCalled();
 
 			// Create
 			mockConversationRepository.create.mockResolvedValue({

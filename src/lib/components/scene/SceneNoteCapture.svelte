@@ -19,9 +19,12 @@ let isSaving = $state(false);
 let lastSaved = $state<Date | null>(null);
 
 // Debounced save with 1000ms delay
-function handleInput(event: Event) {
-	const target = event.target as HTMLTextAreaElement;
-	notes = target.value;
+// Use $effect to watch notes changes and trigger save
+$effect(() => {
+	// Skip if notes haven't changed from initial or are empty
+	if (notes === initialNotes || notes === '') {
+		return;
+	}
 
 	// Clear existing timer
 	if (saveTimer) {
@@ -32,9 +35,20 @@ function handleInput(event: Event) {
 	saveTimer = setTimeout(() => {
 		saveNotes();
 	}, 1000);
-}
+
+	// Cleanup function
+	return () => {
+		if (saveTimer) {
+			clearTimeout(saveTimer);
+		}
+	};
+});
 
 async function saveNotes() {
+	if (!notes || notes === initialNotes) {
+		return;
+	}
+
 	isSaving = true;
 	try {
 		await onSave(sceneId, notes);
@@ -43,13 +57,6 @@ async function saveNotes() {
 		isSaving = false;
 	}
 }
-
-// Update notes when initialNotes prop changes
-$effect(() => {
-	if (initialNotes !== notes && initialNotes !== undefined) {
-		notes = initialNotes;
-	}
-});
 </script>
 
 <div class="scene-note-capture">
@@ -60,8 +67,7 @@ $effect(() => {
 	<textarea
 		id="scene-notes-{sceneId}"
 		class="w-full h-32 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-		value={notes}
-		oninput={handleInput}
+		bind:value={notes}
 		placeholder="Record what happened during this scene..."
 		data-testid="scene-notes-textarea"
 	></textarea>

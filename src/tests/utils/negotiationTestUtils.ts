@@ -111,7 +111,7 @@ export function createPreparingNegotiationSession(): NegotiationSession {
 		patience: 5,
 		motivations: [
 			createMockMotivation({ type: 'justice', description: 'Values fairness', isKnown: true }),
-			createMockMotivation({ type: 'peace', description: 'Seeks harmony', isKnown: false })
+			createMockMotivation({ type: 'harmony', description: 'Seeks harmony', isKnown: false })
 		],
 		pitfalls: [
 			createMockPitfall({ description: 'Mentions of war', isKnown: true })
@@ -125,7 +125,7 @@ export function createPreparingNegotiationSession(): NegotiationSession {
 export function createActiveNegotiationSession(): NegotiationSession {
 	const motivations = [
 		createMockMotivation({ type: 'justice', description: 'Values fairness', isKnown: true, timesUsed: 2 }),
-		createMockMotivation({ type: 'peace', description: 'Seeks harmony', isKnown: true, timesUsed: 1 }),
+		createMockMotivation({ type: 'harmony', description: 'Seeks harmony', isKnown: true, timesUsed: 1 }),
 		createMockMotivation({ type: 'protection', description: 'Protects the weak', isKnown: false, timesUsed: 0 })
 	];
 
@@ -150,7 +150,7 @@ export function createActiveNegotiationSession(): NegotiationSession {
 			type: 'motivation',
 			tier: 1,
 			description: 'Suggest a peaceful resolution',
-			motivationType: 'peace',
+			motivationType: 'harmony',
 			interestChange: 1,
 			patienceChange: -1,
 			playerName: 'Hero 2'

@@ -17,9 +17,36 @@
  * - Accessible button with clear labeling
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/svelte';
 import GenerateSuggestionsButton from './GenerateSuggestionsButton.svelte';
+
+// Mock notificationStore
+const mockNotificationStore = vi.hoisted(() => ({
+	success: vi.fn(),
+	error: vi.fn(),
+	info: vi.fn(),
+	warning: vi.fn()
+}));
+
+vi.mock('$lib/stores/notifications.svelte', () => ({
+	notificationStore: mockNotificationStore
+}));
+
+// Suppress console.error during tests to avoid stderr noise
+let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
+
+beforeEach(() => {
+	consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+	mockNotificationStore.success.mockClear();
+	mockNotificationStore.error.mockClear();
+	mockNotificationStore.info.mockClear();
+	mockNotificationStore.warning.mockClear();
+});
+
+afterEach(() => {
+	consoleErrorSpy.mockRestore();
+});
 
 describe('GenerateSuggestionsButton Component - Basic Rendering', () => {
 	it('should render without crashing', () => {
@@ -459,8 +486,10 @@ describe('GenerateSuggestionsButton Component - Error Handling', () => {
 		await fireEvent.click(button);
 
 		await waitFor(() => {
-			// Should show error message or toast
-			expect(screen.queryByText(/error|failed/i)).toBeInTheDocument();
+			// Component shows error via notificationStore.error() (line 118 in component)
+			expect(mockNotificationStore.error).toHaveBeenCalledWith(
+				expect.stringMatching(/failed.*try again/i)
+			);
 		});
 	});
 
@@ -516,8 +545,11 @@ describe('GenerateSuggestionsButton Component - Error Handling', () => {
 		await fireEvent.click(button);
 
 		await waitFor(() => {
-			expect(screen.queryByText(/timeout|error/i)).toBeInTheDocument();
-		});
+			// Component shows timeout error via notificationStore.error() (line 114 in component)
+			expect(mockNotificationStore.error).toHaveBeenCalledWith(
+				expect.stringMatching(/timeout.*try again/i)
+			);
+		}, { timeout: 5000 });
 	});
 
 	it('should provide user-friendly error messages', async () => {
@@ -535,9 +567,10 @@ describe('GenerateSuggestionsButton Component - Error Handling', () => {
 		await fireEvent.click(button);
 
 		await waitFor(() => {
-			// Should translate error into user-friendly message
-			const errorMessage = screen.queryByText(/error|failed|try again/i);
-			expect(errorMessage).toBeInTheDocument();
+			// Component shows API key error via notificationStore.error() (line 112 in component)
+			expect(mockNotificationStore.error).toHaveBeenCalledWith(
+				expect.stringMatching(/API key.*settings/i)
+			);
 		});
 	});
 });
@@ -1058,9 +1091,10 @@ describe('GenerateSuggestionsButton Component - Success Feedback', () => {
 		await fireEvent.click(button);
 
 		await waitFor(() => {
-			// Should show success message
-			const successMessage = screen.queryByText(/success|generated|complete/i);
-			expect(successMessage).toBeInTheDocument();
+			// Component shows success via notificationStore.success() (lines 100-102 in component)
+			expect(mockNotificationStore.success).toHaveBeenCalledWith(
+				expect.stringMatching(/generated.*suggestion/i)
+			);
 		});
 	});
 
@@ -1079,9 +1113,10 @@ describe('GenerateSuggestionsButton Component - Success Feedback', () => {
 		await fireEvent.click(button);
 
 		await waitFor(() => {
-			// Should show count of suggestions
-			const feedback = screen.queryByText(/\d+.*suggestion/i);
-			expect(feedback).toBeInTheDocument();
+			// Component counts empty fields and shows count in success message (lines 95-102)
+			expect(mockNotificationStore.success).toHaveBeenCalledWith(
+				expect.stringMatching(/generated 2 suggestions/i)
+			);
 		});
 	});
 

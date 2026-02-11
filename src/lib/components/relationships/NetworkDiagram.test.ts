@@ -10,11 +10,22 @@
  * These tests should FAIL until the implementation is complete.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest';
 import { render, screen } from '@testing-library/svelte';
 import NetworkDiagram from './NetworkDiagram.svelte';
 import type { RelationshipMap } from '$lib/db/repositories/entityRepository';
 import type { EntityType } from '$lib/types';
+
+// Mock vis.js Network to prevent canvas errors in test environment
+vi.mock('vis-network', () => {
+	return {
+		Network: class MockNetwork {
+			on = vi.fn();
+			setData = vi.fn();
+			destroy = vi.fn();
+		}
+	};
+});
 
 describe('NetworkDiagram Component - Basic Rendering', () => {
 	it('should render container element with correct role', () => {

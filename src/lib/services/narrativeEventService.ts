@@ -8,6 +8,7 @@
 import { entityRepository } from '$lib/db/repositories/entityRepository';
 import type { CombatSession } from '$lib/types/combat';
 import type { MontageSession } from '$lib/types/montage';
+import type { NegotiationSession } from '$lib/types/negotiation';
 import type { BaseEntity, NewEntity } from '$lib/types';
 
 /**
@@ -69,6 +70,39 @@ export async function createFromMontage(montage: MontageSession): Promise<BaseEn
 			eventType: 'montage',
 			sourceId: montage.id,
 			outcome: montage.outcome
+		},
+		links: [],
+		notes: '',
+		metadata: {}
+	};
+
+	// Persist and return
+	return await entityRepository.create(newEntity);
+}
+
+/**
+ * Create a narrative event from a completed negotiation session.
+ *
+ * @param negotiation - The negotiation session to convert into a narrative event
+ * @returns The created narrative event entity
+ * @throws Error if negotiation is not completed or repository creation fails
+ */
+export async function createFromNegotiation(negotiation: NegotiationSession): Promise<BaseEntity> {
+	// Validate negotiation status
+	if (negotiation.status !== 'completed') {
+		throw new Error('Cannot create narrative event from negotiation that is not completed');
+	}
+
+	// Create NewEntity for narrative event
+	const newEntity: NewEntity = {
+		type: 'narrative_event',
+		name: negotiation.name,
+		description: negotiation.description || '',
+		tags: [],
+		fields: {
+			eventType: 'negotiation',
+			sourceId: negotiation.id,
+			outcome: negotiation.outcome
 		},
 		links: [],
 		notes: '',

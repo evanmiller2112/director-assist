@@ -182,8 +182,10 @@ describe('FieldTemplatePicker - Template Display (Issue #210)', () => {
 		});
 
 		// Should show categories (Draw Steel, User, etc.)
-		expect(screen.getByText(/draw steel|draw-steel/i)).toBeInTheDocument();
-		expect(screen.getByText(/user|custom/i)).toBeInTheDocument();
+		expect(screen.getByText(/draw steel/i)).toBeInTheDocument();
+		// There are multiple "User" labels, so use getAllByText
+		const userLabels = screen.getAllByText(/user/i);
+		expect(userLabels.length).toBeGreaterThan(0);
 	});
 
 	it('should render each template as a selectable card', () => {

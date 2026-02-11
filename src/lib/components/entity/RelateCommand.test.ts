@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/svelte';
+import { tick } from 'svelte';
 import RelateCommand from './RelateCommand.svelte';
 import { createMockEntity } from '../../../tests/utils/testUtils';
 import { createMockEntitiesStore, createMockCampaignStore } from '../../../tests/mocks/stores';
@@ -324,7 +325,8 @@ describe('RelateCommand Component - Notes Field', () => {
 					testNotes, // notes should be the 5th parameter
 					undefined, // strength
 					expect.any(Object), // metadata
-					undefined // reverseRelationship
+					undefined, // reverseRelationship
+					undefined // playerVisible
 				);
 			});
 		});
@@ -364,7 +366,8 @@ describe('RelateCommand Component - Notes Field', () => {
 					'', // Empty string
 					undefined, // strength
 					expect.any(Object), // metadata
-					undefined // reverseRelationship
+					undefined, // reverseRelationship
+					undefined // playerVisible
 				);
 			});
 		});
@@ -409,7 +412,8 @@ describe('RelateCommand Component - Notes Field', () => {
 					specialNotes,
 					undefined, // strength
 					expect.any(Object), // metadata
-					undefined // reverseRelationship
+					undefined, // reverseRelationship
+					undefined // playerVisible
 				);
 			});
 		});
@@ -455,7 +459,8 @@ describe('RelateCommand Component - Notes Field', () => {
 					'Important note with spaces',
 					undefined, // strength
 					expect.any(Object), // metadata
-					undefined // reverseRelationship
+					undefined, // reverseRelationship
+					undefined // playerVisible
 				);
 			});
 		});
@@ -506,7 +511,8 @@ describe('RelateCommand Component - Notes Field', () => {
 					'Bidirectional note',
 					undefined, // strength
 					expect.any(Object), // metadata
-					undefined // reverseRelationship
+					undefined, // reverseRelationship
+					undefined // playerVisible
 				);
 			});
 		});
@@ -556,7 +562,8 @@ describe('RelateCommand Component - Notes Field', () => {
 					'Unidirectional note',
 					undefined, // strength
 					expect.any(Object), // metadata
-					undefined // reverseRelationship
+					undefined, // reverseRelationship
+					undefined // playerVisible
 				);
 			});
 		});
@@ -914,6 +921,7 @@ describe('RelateCommand Component - Notes Field', () => {
 			// Set strength
 			const strengthSelect = screen.getByLabelText(/strength/i) as HTMLSelectElement;
 			await fireEvent.change(strengthSelect, { target: { value: 'strong' } });
+			await tick();
 
 			// Submit
 			const submitButton = screen.getByRole('button', { name: /create link/i });
@@ -929,7 +937,8 @@ describe('RelateCommand Component - Notes Field', () => {
 					'', // notes
 					'strong', // strength
 					expect.any(Object), // metadata
-					undefined // reverseRelationship
+					undefined, // reverseRelationship
+					undefined // playerVisible
 				);
 			});
 		});
@@ -973,7 +982,8 @@ describe('RelateCommand Component - Notes Field', () => {
 					'',
 					undefined, // strength should be undefined for "none"
 					expect.any(Object),
-					undefined // reverseRelationship
+					undefined, // reverseRelationship
+					undefined // playerVisible
 				);
 			});
 		});
@@ -1009,6 +1019,7 @@ describe('RelateCommand Component - Notes Field', () => {
 				// Set strength
 				const strengthSelect = screen.getByLabelText(/strength/i) as HTMLSelectElement;
 				await fireEvent.change(strengthSelect, { target: { value: strength } });
+				await tick();
 
 				// Submit
 				const submitButton = screen.getByRole('button', { name: /create link/i });
@@ -1024,7 +1035,8 @@ describe('RelateCommand Component - Notes Field', () => {
 						expect.any(String),
 						strength, // Should match the selected strength
 						expect.any(Object),
-						undefined // reverseRelationship
+						undefined, // reverseRelationship
+						undefined // playerVisible
 					);
 				});
 
@@ -1222,7 +1234,9 @@ describe('RelateCommand Component - Notes Field', () => {
 			await fireEvent.input(relationshipInput, { target: { value: 'member_of' } });
 
 			const tagsInput = screen.getByLabelText(/tags/i) as HTMLInputElement;
-			await fireEvent.input(tagsInput, { target: { value: 'important, quest, fellowship' } });
+			tagsInput.value = 'important, quest, fellowship';
+			await fireEvent.input(tagsInput);
+			await tick();
 
 			// Submit
 			const submitButton = screen.getByRole('button', { name: /create link/i });
@@ -1240,7 +1254,8 @@ describe('RelateCommand Component - Notes Field', () => {
 					expect.objectContaining({
 						tags: ['important', 'quest', 'fellowship']
 					}),
-					undefined // reverseRelationship
+					undefined, // reverseRelationship
+					undefined // playerVisible
 				);
 			});
 		});
@@ -1268,7 +1283,9 @@ describe('RelateCommand Component - Notes Field', () => {
 
 			// Add tags with extra spaces
 			const tagsInput = screen.getByLabelText(/tags/i) as HTMLInputElement;
-			await fireEvent.input(tagsInput, { target: { value: '  tag1  ,  tag2  , tag3  ' } });
+			tagsInput.value = '  tag1  ,  tag2  , tag3  ';
+			await fireEvent.input(tagsInput);
+			await tick();
 
 			// Submit
 			const submitButton = screen.getByRole('button', { name: /create link/i });
@@ -1286,7 +1303,8 @@ describe('RelateCommand Component - Notes Field', () => {
 					expect.objectContaining({
 						tags: ['tag1', 'tag2', 'tag3']
 					}),
-					undefined // reverseRelationship
+					undefined, // reverseRelationship
+					undefined // playerVisible
 				);
 			});
 		});
@@ -1347,7 +1365,9 @@ describe('RelateCommand Component - Notes Field', () => {
 			await fireEvent.input(relationshipInput, { target: { value: 'member_of' } });
 
 			const tagsInput = screen.getByLabelText(/tags/i) as HTMLInputElement;
-			await fireEvent.input(tagsInput, { target: { value: 'important' } });
+			tagsInput.value = 'important';
+			await fireEvent.input(tagsInput);
+			await tick();
 
 			// Submit
 			const submitButton = screen.getByRole('button', { name: /create link/i });
@@ -1365,7 +1385,8 @@ describe('RelateCommand Component - Notes Field', () => {
 					expect.objectContaining({
 						tags: ['important']
 					}),
-					undefined // reverseRelationship
+					undefined, // reverseRelationship
+					undefined // playerVisible
 				);
 			});
 		});
@@ -1582,7 +1603,9 @@ describe('RelateCommand Component - Notes Field', () => {
 			await fireEvent.input(relationshipInput, { target: { value: 'rival_of' } });
 
 			const tensionSlider = screen.getByLabelText(/tension/i) as HTMLInputElement;
-			await fireEvent.input(tensionSlider, { target: { value: '85' } });
+			tensionSlider.value = '85';
+			await fireEvent.input(tensionSlider);
+			await tick();
 
 			// Submit
 			const submitButton = screen.getByRole('button', { name: /create link/i });
@@ -1600,7 +1623,8 @@ describe('RelateCommand Component - Notes Field', () => {
 					expect.objectContaining({
 						tension: 85
 					}),
-					undefined // reverseRelationship
+					undefined, // reverseRelationship
+					undefined // playerVisible
 				);
 			});
 		});
@@ -1665,7 +1689,9 @@ describe('RelateCommand Component - Notes Field', () => {
 			await fireEvent.input(relationshipInput, { target: { value: 'enemy_of' } });
 
 			let tensionSlider = screen.getByLabelText(/tension/i) as HTMLInputElement;
-			await fireEvent.input(tensionSlider, { target: { value: '100' } });
+			tensionSlider.value = '100';
+			await fireEvent.input(tensionSlider);
+			await tick();
 
 			// Submit
 			let submitButton = screen.getByRole('button', { name: /create link/i });
@@ -1683,7 +1709,8 @@ describe('RelateCommand Component - Notes Field', () => {
 					expect.objectContaining({
 						tension: 100
 					}),
-					undefined // reverseRelationship
+					undefined, // reverseRelationship
+					undefined // playerVisible
 				);
 			});
 
@@ -1715,10 +1742,14 @@ describe('RelateCommand Component - Notes Field', () => {
 			await fireEvent.input(relationshipInput, { target: { value: 'complex_relationship' } });
 
 			const tagsInput = screen.getByLabelText(/tags/i) as HTMLInputElement;
-			await fireEvent.input(tagsInput, { target: { value: 'political, personal' } });
+			tagsInput.value = 'political, personal';
+			await fireEvent.input(tagsInput);
+			await tick();
 
 			const tensionSlider = screen.getByLabelText(/tension/i) as HTMLInputElement;
-			await fireEvent.input(tensionSlider, { target: { value: '65' } });
+			tensionSlider.value = '65';
+			await fireEvent.input(tensionSlider);
+			await tick();
 
 			// Submit
 			const submitButton = screen.getByRole('button', { name: /create link/i });
@@ -1737,7 +1768,8 @@ describe('RelateCommand Component - Notes Field', () => {
 						tags: ['political', 'personal'],
 						tension: 65
 					}),
-					undefined // reverseRelationship
+					undefined, // reverseRelationship
+					undefined // playerVisible
 				);
 			});
 		});
@@ -1768,12 +1800,17 @@ describe('RelateCommand Component - Notes Field', () => {
 
 			const strengthSelect = screen.getByLabelText(/strength/i) as HTMLSelectElement;
 			await fireEvent.change(strengthSelect, { target: { value: 'strong' } });
+			await tick();
 
 			const tagsInput = screen.getByLabelText(/tags/i) as HTMLInputElement;
-			await fireEvent.input(tagsInput, { target: { value: 'quest, fellowship, war' } });
+			tagsInput.value = 'quest, fellowship, war';
+			await fireEvent.input(tagsInput);
+			await tick();
 
 			const tensionSlider = screen.getByLabelText(/tension/i) as HTMLInputElement;
-			await fireEvent.input(tensionSlider, { target: { value: '30' } });
+			tensionSlider.value = '30';
+			await fireEvent.input(tensionSlider);
+			await tick();
 
 			// Ensure bidirectional is checked
 			const bidirectionalCheckbox = screen.getByLabelText(/bidirectional/i) as HTMLInputElement;
@@ -1796,7 +1833,8 @@ describe('RelateCommand Component - Notes Field', () => {
 						tags: ['quest', 'fellowship', 'war'],
 						tension: 30
 					}),
-					undefined // reverseRelationship
+					undefined, // reverseRelationship
+					undefined // playerVisible
 				);
 			});
 		});
@@ -1839,7 +1877,8 @@ describe('RelateCommand Component - Notes Field', () => {
 					'', // empty notes
 					undefined, // no strength
 					expect.any(Object), // metadata may be empty
-					undefined // reverseRelationship
+					undefined, // reverseRelationship
+					undefined // playerVisible
 				);
 			});
 		});
@@ -1919,7 +1958,8 @@ describe('RelateCommand Component - Notes Field', () => {
 					'Old friends',
 					undefined, // no strength
 					expect.any(Object), // metadata
-					undefined // reverseRelationship
+					undefined, // reverseRelationship
+					undefined // playerVisible
 				);
 			});
 		});
@@ -2357,7 +2397,8 @@ describe('RelateCommand Component - Notes Field', () => {
 					'', // notes
 					undefined, // strength
 					expect.any(Object), // metadata
-					'has_member' // reverseRelationship
+					'has_member', // reverseRelationship
+					undefined // playerVisible
 				);
 			});
 		});
@@ -2578,12 +2619,17 @@ describe('RelateCommand Component - Notes Field', () => {
 
 			const strengthSelect = screen.getByLabelText(/strength/i) as HTMLSelectElement;
 			await fireEvent.change(strengthSelect, { target: { value: 'strong' } });
+			await tick();
 
 			const tagsInput = screen.getByLabelText(/tags/i) as HTMLInputElement;
-			await fireEvent.input(tagsInput, { target: { value: 'fellowship, quest' } });
+			tagsInput.value = 'fellowship, quest';
+			await fireEvent.input(tagsInput);
+			await tick();
 
 			const tensionSlider = screen.getByLabelText(/tension/i) as HTMLInputElement;
-			await fireEvent.input(tensionSlider, { target: { value: '20' } });
+			tensionSlider.value = '20';
+			await fireEvent.input(tensionSlider);
+			await tick();
 
 			// Check asymmetric checkbox and fill in reverse relationship
 			const asymmetricCheckbox = screen.getByLabelText(
@@ -2617,7 +2663,8 @@ describe('RelateCommand Component - Notes Field', () => {
 						tags: ['fellowship', 'quest'],
 						tension: 20
 					}),
-					'has_member' // reverseRelationship
+					'has_member', // reverseRelationship
+					undefined // playerVisible
 				);
 			});
 		});

@@ -20,7 +20,12 @@
 		hasAnyApiKey,
 		shouldShowAiSetupBanner
 	} from '$lib/services';
-	import { goto } from '$app/navigation';
+	import { goto, afterNavigate } from '$app/navigation';
+
+	// Close mobile sidebar on navigation
+	afterNavigate(() => {
+		uiStore.closeMobileSidebar();
+	});
 
 	let { children } = $props();
 	let headerComponent: ReturnType<typeof Header> | undefined = $state();
@@ -117,7 +122,17 @@
 
 <div class="dashboard-layout">
 	<Header bind:this={headerComponent} />
-	<Sidebar />
+	<Sidebar mobileOpen={uiStore.mobileSidebarOpen} />
+
+	<!-- Mobile sidebar backdrop -->
+	{#if uiStore.mobileSidebarOpen}
+		<button
+			class="sidebar-backdrop lg:hidden"
+			onclick={() => uiStore.closeMobileSidebar()}
+			aria-label="Close sidebar"
+		></button>
+	{/if}
+
 	<main class="dashboard-main">
 		<div class="flex-1 overflow-y-auto p-6">
 			<!-- AI setup reminder banner -->

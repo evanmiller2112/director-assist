@@ -1,6 +1,7 @@
 // UI state store using Svelte 5 runes
 function createUIStore() {
 	let sidebarCollapsed = $state(false);
+	let mobileSidebarOpen = $state(false);
 	let chatPanelOpen = $state(false);
 	let activeModal = $state<string | null>(null);
 	let selectedEntityId = $state<string | null>(null);
@@ -23,6 +24,9 @@ function createUIStore() {
 		get sidebarCollapsed() {
 			return sidebarCollapsed;
 		},
+		get mobileSidebarOpen() {
+			return mobileSidebarOpen;
+		},
 		get chatPanelOpen() {
 			return chatPanelOpen;
 		},
@@ -41,6 +45,14 @@ function createUIStore() {
 
 		toggleSidebar() {
 			sidebarCollapsed = !sidebarCollapsed;
+		},
+
+		toggleMobileSidebar() {
+			mobileSidebarOpen = !mobileSidebarOpen;
+		},
+
+		closeMobileSidebar() {
+			mobileSidebarOpen = false;
 		},
 
 		toggleChatPanel() {

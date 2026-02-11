@@ -19,13 +19,19 @@ export {
 	formatRelatedEntityEntry,
 	formatRelationshipContextForPrompt,
 	getRelationshipContextStats,
-	buildPrivacySafeSummary
+	buildPrivacySafeSummary,
+	buildGroupedRelationshipContext,
+	formatGroupedEntityEntry,
+	formatGroupedRelationshipContextForPrompt
 } from './relationshipContextBuilder';
 export type {
 	RelationshipContextOptions,
 	RelatedEntityContext,
 	RelationshipContext,
-	RelationshipContextStats
+	RelationshipContextStats,
+	RelationshipInfo,
+	GroupedRelatedEntityContext,
+	GroupedRelationshipContext
 } from './relationshipContextBuilder';
 
 // Relationship summary generation service

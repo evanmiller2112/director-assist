@@ -23,10 +23,15 @@ import {
 	formatRelationshipContextForPrompt,
 	getRelationshipContextStats,
 	buildPrivacySafeSummary,
+	buildGroupedRelationshipContext,
+	formatGroupedRelationshipContextForPrompt,
 	type RelationshipContextOptions,
 	type RelatedEntityContext,
 	type RelationshipContext,
-	type RelationshipContextStats
+	type RelationshipContextStats,
+	type RelationshipInfo,
+	type GroupedRelatedEntityContext,
+	type GroupedRelationshipContext
 } from './relationshipContextBuilder';
 import type { BaseEntity, EntityId, EntityType } from '$lib/types';
 
@@ -964,6 +969,127 @@ describe('relationshipContextBuilder', () => {
 			});
 		});
 
+		describe('Multiple Relationships to Same Entity (Bug Fix)', () => {
+			it('should preserve all relationships to the same entity (no overwriting)', async () => {
+				// Create source entity with 3 different relationships to the same target NPC
+				const sourceWithMultiLinks: BaseEntity = {
+					...sourceEntity,
+					links: [
+						{
+							id: 'link-1',
+							sourceId: 'char-001',
+							targetId: 'npc-001',
+							targetType: 'npc',
+							relationship: 'friend_of',
+							bidirectional: false
+						},
+						{
+							id: 'link-2',
+							sourceId: 'char-001',
+							targetId: 'npc-001',
+							targetType: 'npc',
+							relationship: 'trained_by',
+							bidirectional: false
+						},
+						{
+							id: 'link-3',
+							sourceId: 'char-001',
+							targetId: 'npc-001',
+							targetType: 'npc',
+							relationship: 'saved_by',
+							bidirectional: false
+						}
+					]
+				};
+
+				vi.mocked(entityRepository.getById).mockResolvedValueOnce(sourceWithMultiLinks);
+				vi.mocked(entityRepository.getByIds).mockResolvedValueOnce([relatedNPC]);
+				vi.mocked(entityRepository.getEntitiesLinkingTo).mockResolvedValueOnce([]);
+
+				const result = await buildRelationshipContext('char-001');
+
+				// Should have 3 separate entries, one for each relationship
+				expect(result.relatedEntities.length).toBe(3);
+
+				// Verify all three relationship types are present
+				const relationships = result.relatedEntities.map((e) => e.relationship);
+				expect(relationships).toContain('friend_of');
+				expect(relationships).toContain('trained_by');
+				expect(relationships).toContain('saved_by');
+
+				// All should reference the same entity
+				const entityIds = result.relatedEntities.map((e) => e.entityId);
+				expect(entityIds.every((id) => id === 'npc-001')).toBe(true);
+			});
+
+			it('should use composite key to track multiple relationships per entity', async () => {
+				// Same setup: multiple relationships to same entity
+				const sourceWithMultiLinks: BaseEntity = {
+					...sourceEntity,
+					links: [
+						{
+							id: 'link-1',
+							sourceId: 'char-001',
+							targetId: 'npc-001',
+							targetType: 'npc',
+							relationship: 'friend_of',
+							bidirectional: false,
+							strength: 'strong',
+							notes: 'Childhood friend'
+						},
+						{
+							id: 'link-2',
+							sourceId: 'char-001',
+							targetId: 'npc-001',
+							targetType: 'npc',
+							relationship: 'trained_by',
+							bidirectional: false,
+							strength: 'moderate',
+							notes: 'Mentor in combat'
+						},
+						{
+							id: 'link-3',
+							sourceId: 'char-001',
+							targetId: 'npc-001',
+							targetType: 'npc',
+							relationship: 'saved_by',
+							bidirectional: false,
+							strength: 'weak',
+							notes: 'Once during battle'
+						}
+					]
+				};
+
+				vi.mocked(entityRepository.getById).mockResolvedValueOnce(sourceWithMultiLinks);
+				vi.mocked(entityRepository.getByIds).mockResolvedValueOnce([relatedNPC]);
+				vi.mocked(entityRepository.getEntitiesLinkingTo).mockResolvedValueOnce([]);
+
+				const result = await buildRelationshipContext('char-001', {
+					includeStrength: true,
+					includeNotes: true
+				});
+
+				// Should have 3 entries with different relationships
+				expect(result.relatedEntities.length).toBe(3);
+
+				// Find each relationship and verify its unique properties
+				const friendEntry = result.relatedEntities.find((e) => e.relationship === 'friend_of');
+				expect(friendEntry).toBeDefined();
+				expect(friendEntry?.strength).toBe('strong');
+				expect(friendEntry?.notes).toBe('Childhood friend');
+
+				const trainedEntry = result.relatedEntities.find((e) => e.relationship === 'trained_by');
+				expect(trainedEntry).toBeDefined();
+				expect(trainedEntry?.strength).toBe('moderate');
+				expect(trainedEntry?.notes).toBe('Mentor in combat');
+
+				const savedEntry = result.relatedEntities.find((e) => e.relationship === 'saved_by');
+				expect(savedEntry).toBeDefined();
+				expect(savedEntry?.strength).toBe('weak');
+				expect(savedEntry?.notes).toBe('Once during battle');
+			});
+		});
+
 		describe('Edge Cases', () => {
 			it('should handle non-existent entity gracefully', async () => {
 				vi.mocked(entityRepository.getById).mockResolvedValueOnce(undefined);
@@ -1670,6 +1796,619 @@ describe('relationshipContextBuilder', () => {
 
 			// Should be truncated to reasonable length (e.g., 500 chars)
 			expect(summary.length).toBeLessThan(1000);
+		});
+	});
+
+	describe('buildGroupedRelationshipContext', () => {
+		it('should group multiple relationships to the same entity', async () => {
+			// Create source with 3 relationships to the same NPC
+			const sourceWithMultiLinks: BaseEntity = {
+				...sourceEntity,
+				links: [
+					{
+						id: 'link-1',
+						sourceId: 'char-001',
+						targetId: 'npc-001',
+						targetType: 'npc',
+						relationship: 'friend_of',
+						bidirectional: false
+					},
+					{
+						id: 'link-2',
+						sourceId: 'char-001',
+						targetId: 'npc-001',
+						targetType: 'npc',
+						relationship: 'trained_by',
+						bidirectional: false
+					},
+					{
+						id: 'link-3',
+						sourceId: 'char-001',
+						targetId: 'npc-001',
+						targetType: 'npc',
+						relationship: 'saved_by',
+						bidirectional: false
+					}
+				]
+			};
+
+			vi.mocked(entityRepository.getById).mockResolvedValueOnce(sourceWithMultiLinks);
+			vi.mocked(entityRepository.getByIds).mockResolvedValueOnce([relatedNPC]);
+			vi.mocked(entityRepository.getEntitiesLinkingTo).mockResolvedValueOnce([]);
+
+			const result = await buildGroupedRelationshipContext('char-001');
+
+			// Should have 1 grouped entity entry
+			expect(result.relatedEntities.length).toBe(1);
+
+			// That entry should have 3 relationships
+			const groupedEntry = result.relatedEntities[0];
+			expect(groupedEntry.relationships.length).toBe(3);
+
+			// Verify all three relationships are present
+			const relationshipTypes = groupedEntry.relationships.map((r) => r.relationship);
+			expect(relationshipTypes).toContain('friend_of');
+			expect(relationshipTypes).toContain('trained_by');
+			expect(relationshipTypes).toContain('saved_by');
+		});
+
+		it('should include entity summary only once per grouped entity', async () => {
+			const sourceWithMultiLinks: BaseEntity = {
+				...sourceEntity,
+				links: [
+					{
+						id: 'link-1',
+						sourceId: 'char-001',
+						targetId: 'npc-001',
+						targetType: 'npc',
+						relationship: 'friend_of',
+						bidirectional: false
+					},
+					{
+						id: 'link-2',
+						sourceId: 'char-001',
+						targetId: 'npc-001',
+						targetType: 'npc',
+						relationship: 'trained_by',
+						bidirectional: false
+					}
+				]
+			};
+
+			vi.mocked(entityRepository.getById).mockResolvedValueOnce(sourceWithMultiLinks);
+			vi.mocked(entityRepository.getByIds).mockResolvedValueOnce([relatedNPC]);
+			vi.mocked(entityRepository.getEntitiesLinkingTo).mockResolvedValueOnce([]);
+
+			const result = await buildGroupedRelationshipContext('char-001');
+
+			const groupedEntry = result.relatedEntities[0];
+
+			// Should have one summary string
+			expect(groupedEntry.summary).toBeDefined();
+			expect(typeof groupedEntry.summary).toBe('string');
+
+			// Summary should appear only once in the entry
+			expect(groupedEntry.summary).toContain('Captain Roderick');
+		});
+
+		it('should return correct GroupedRelationshipContext structure', async () => {
+			vi.mocked(entityRepository.getById).mockResolvedValueOnce(sourceEntity);
+			vi.mocked(entityRepository.getByIds).mockResolvedValueOnce([
+				relatedFaction,
+				relatedLocation,
+				relatedNPC
+			]);
+			vi.mocked(entityRepository.getEntitiesLinkingTo).mockResolvedValueOnce([]);
+
+			const result = await buildGroupedRelationshipContext('char-001');
+
+			// Verify structure
+			expect(result.sourceEntityId).toBe('char-001');
+			expect(result.sourceEntityName).toBe('Aldric the Brave');
+			expect(result.relatedEntities).toBeInstanceOf(Array);
+			expect(typeof result.totalCharacters).toBe('number');
+			expect(typeof result.truncated).toBe('boolean');
+		});
+
+		it('should include all relationship details in RelationshipInfo', async () => {
+			const sourceWithDetailedLinks: BaseEntity = {
+				...sourceEntity,
+				links: [
+					{
+						id: 'link-1',
+						sourceId: 'char-001',
+						targetId: 'npc-001',
+						targetType: 'npc',
+						relationship: 'friend_of',
+						bidirectional: false,
+						strength: 'strong',
+						notes: 'Best friend'
+					}
+				]
+			};
+
+			vi.mocked(entityRepository.getById).mockResolvedValueOnce(sourceWithDetailedLinks);
+			vi.mocked(entityRepository.getByIds).mockResolvedValueOnce([relatedNPC]);
+			vi.mocked(entityRepository.getEntitiesLinkingTo).mockResolvedValueOnce([]);
+
+			const result = await buildGroupedRelationshipContext('char-001', {
+				includeStrength: true,
+				includeNotes: true
+			});
+
+			const relationshipInfo = result.relatedEntities[0].relationships[0];
+
+			// Verify RelationshipInfo structure
+			expect(relationshipInfo.relationship).toBe('friend_of');
+			expect(relationshipInfo.direction).toBe('outgoing');
+			expect(relationshipInfo.depth).toBe(1);
+			expect(relationshipInfo.strength).toBe('strong');
+			expect(relationshipInfo.notes).toBe('Best friend');
+		});
+
+		it('should handle mixed single and multiple relationships', async () => {
+			// Two entities: one with 1 relationship, one with 2
+			const sourceWithMixedLinks: BaseEntity = {
+				...sourceEntity,
+				links: [
+					{
+						id: 'link-1',
+						sourceId: 'char-001',
+						targetId: 'faction-001',
+						targetType: 'faction',
+						relationship: 'member_of',
+						bidirectional: false
+					},
+					{
+						id: 'link-2',
+						sourceId: 'char-001',
+						targetId: 'npc-001',
+						targetType: 'npc',
+						relationship: 'friend_of',
+						bidirectional: false
+					},
+					{
+						id: 'link-3',
+						sourceId: 'char-001',
+						targetId: 'npc-001',
+						targetType: 'npc',
+						relationship: 'trained_by',
+						bidirectional: false
+					}
+				]
+			};
+
+			vi.mocked(entityRepository.getById).mockResolvedValueOnce(sourceWithMixedLinks);
+			vi.mocked(entityRepository.getByIds).mockResolvedValueOnce([relatedFaction, relatedNPC]);
+			vi.mocked(entityRepository.getEntitiesLinkingTo).mockResolvedValueOnce([]);
+
+			const result = await buildGroupedRelationshipContext('char-001');
+
+			// Should have 2 grouped entries (one per unique entity)
+			expect(result.relatedEntities.length).toBe(2);
+
+			// Find the faction and npc entries
+			const factionEntry = result.relatedEntities.find((e) => e.entityId === 'faction-001');
+			const npcEntry = result.relatedEntities.find((e) => e.entityId === 'npc-001');
+
+			expect(factionEntry).toBeDefined();
+			expect(factionEntry?.relationships.length).toBe(1);
+
+			expect(npcEntry).toBeDefined();
+			expect(npcEntry?.relationships.length).toBe(2);
+		});
+
+		it('should respect maxRelatedEntities as count of unique entities', async () => {
+			// Create source with multiple relationships to 3 different entities (5 total relationships)
+			const sourceWithManyLinks: BaseEntity = {
+				...sourceEntity,
+				links: [
+					{
+						id: 'link-1',
+						sourceId: 'char-001',
+						targetId: 'faction-001',
+						targetType: 'faction',
+						relationship: 'member_of',
+						bidirectional: false
+					},
+					{
+						id: 'link-2',
+						sourceId: 'char-001',
+						targetId: 'faction-001',
+						targetType: 'faction',
+						relationship: 'leads',
+						bidirectional: false
+					},
+					{
+						id: 'link-3',
+						sourceId: 'char-001',
+						targetId: 'npc-001',
+						targetType: 'npc',
+						relationship: 'friend_of',
+						bidirectional: false
+					},
+					{
+						id: 'link-4',
+						sourceId: 'char-001',
+						targetId: 'loc-001',
+						targetType: 'location',
+						relationship: 'located_at',
+						bidirectional: false
+					},
+					{
+						id: 'link-5',
+						sourceId: 'char-001',
+						targetId: 'loc-001',
+						targetType: 'location',
+						relationship: 'owns',
+						bidirectional: false
+					}
+				]
+			};
+
+			vi.mocked(entityRepository.getById).mockResolvedValueOnce(sourceWithManyLinks);
+			vi.mocked(entityRepository.getByIds).mockResolvedValueOnce([
+				relatedFaction,
+				relatedNPC,
+				relatedLocation
+			]);
+			vi.mocked(entityRepository.getEntitiesLinkingTo).mockResolvedValueOnce([]);
+
+			const result = await buildGroupedRelationshipContext('char-001', {
+				maxRelatedEntities: 2
+			});
+
+			// Should limit to 2 unique entities (not 2 relationships)
+			expect(result.relatedEntities.length).toBeLessThanOrEqual(2);
+
+			// Should set truncated to true
+			expect(result.truncated).toBe(true);
+		});
+
+		it('should respect maxCharacters limit on grouped format', async () => {
+			// Create entities with very long summaries
+			const longNPC = {
+				...relatedNPC,
+				summary: 'A'.repeat(3000)
+			};
+
+			const sourceWithLinks: BaseEntity = {
+				...sourceEntity,
+				links: [
+					{
+						id: 'link-1',
+						sourceId: 'char-001',
+						targetId: 'npc-001',
+						targetType: 'npc',
+						relationship: 'friend_of',
+						bidirectional: false
+					},
+					{
+						id: 'link-2',
+						sourceId: 'char-001',
+						targetId: 'npc-001',
+						targetType: 'npc',
+						relationship: 'trained_by',
+						bidirectional: false
+					}
+				]
+			};
+
+			vi.mocked(entityRepository.getById).mockResolvedValueOnce(sourceWithLinks);
+			vi.mocked(entityRepository.getByIds).mockResolvedValueOnce([longNPC]);
+			vi.mocked(entityRepository.getEntitiesLinkingTo).mockResolvedValueOnce([]);
+
+			const result = await buildGroupedRelationshipContext('char-001', {
+				maxCharacters: 500
+			});
+
+			expect(result.totalCharacters).toBeLessThanOrEqual(500);
+		});
+
+		it('should handle incoming and outgoing relationships to same entity', async () => {
+			// Create NPC that has both outgoing link to char-001 and receives link from char-001
+			const npcWithBothDirections: BaseEntity = {
+				...relatedNPC,
+				links: [
+					{
+						id: 'link-incoming',
+						sourceId: 'npc-001',
+						targetId: 'char-001',
+						targetType: 'character',
+						relationship: 'mentors',
+						bidirectional: false
+					}
+				]
+			};
+
+			const sourceWithOutgoing: BaseEntity = {
+				...sourceEntity,
+				links: [
+					{
+						id: 'link-outgoing',
+						sourceId: 'char-001',
+						targetId: 'npc-001',
+						targetType: 'npc',
+						relationship: 'trained_by',
+						bidirectional: false
+					}
+				]
+			};
+
+			// Use mockImplementation for isolation from prior test mock state
+			vi.mocked(entityRepository.getById).mockReset().mockResolvedValue(sourceWithOutgoing);
+			vi.mocked(entityRepository.getByIds).mockReset().mockResolvedValue([npcWithBothDirections]);
+			vi.mocked(entityRepository.getEntitiesLinkingTo).mockReset().mockResolvedValue([
+				npcWithBothDirections
+			]);
+
+			const result = await buildGroupedRelationshipContext('char-001', {
+				direction: 'both'
+			});
+
+			// Should have one grouped entry for the NPC
+			const npcEntry = result.relatedEntities.find((e) => e.entityId === 'npc-001');
+			expect(npcEntry).toBeDefined();
+
+			// Should have 2 relationships: one outgoing, one incoming
+			expect(npcEntry?.relationships.length).toBe(2);
+
+			const directions = npcEntry?.relationships.map((r) => r.direction);
+			expect(directions).toContain('outgoing');
+			expect(directions).toContain('incoming');
+		});
+
+		it('should correctly calculate totalCharacters for grouped format', async () => {
+			const sourceWithMultiLinks: BaseEntity = {
+				...sourceEntity,
+				links: [
+					{
+						id: 'link-1',
+						sourceId: 'char-001',
+						targetId: 'npc-001',
+						targetType: 'npc',
+						relationship: 'friend_of',
+						bidirectional: false
+					},
+					{
+						id: 'link-2',
+						sourceId: 'char-001',
+						targetId: 'npc-001',
+						targetType: 'npc',
+						relationship: 'trained_by',
+						bidirectional: false
+					}
+				]
+			};
+
+			vi.mocked(entityRepository.getById).mockResolvedValueOnce(sourceWithMultiLinks);
+			vi.mocked(entityRepository.getByIds).mockResolvedValueOnce([relatedNPC]);
+			vi.mocked(entityRepository.getEntitiesLinkingTo).mockResolvedValueOnce([]);
+
+			const result = await buildGroupedRelationshipContext('char-001');
+
+			// totalCharacters should reflect the formatted grouped output
+			expect(result.totalCharacters).toBeGreaterThan(0);
+			expect(typeof result.totalCharacters).toBe('number');
+
+			// Verify it matches the formatted output length
+			const formatted = formatGroupedRelationshipContextForPrompt(result);
+			// Allow some margin for header/footer
+			expect(Math.abs(formatted.length - result.totalCharacters)).toBeLessThan(100);
+		});
+	});
+
+	describe('formatGroupedRelationshipContextForPrompt', () => {
+		it('should format entity name and type once with all relationships listed', async () => {
+			// Build grouped context first
+			const sourceWithMultiLinks: BaseEntity = {
+				...sourceEntity,
+				links: [
+					{
+						id: 'link-1',
+						sourceId: 'char-001',
+						targetId: 'npc-001',
+						targetType: 'npc',
+						relationship: 'friend_of',
+						bidirectional: false
+					},
+					{
+						id: 'link-2',
+						sourceId: 'char-001',
+						targetId: 'npc-001',
+						targetType: 'npc',
+						relationship: 'trained_by',
+						bidirectional: false
+					}
+				]
+			};
+
+			vi.mocked(entityRepository.getById).mockResolvedValueOnce(sourceWithMultiLinks);
+			vi.mocked(entityRepository.getByIds).mockResolvedValueOnce([relatedNPC]);
+			vi.mocked(entityRepository.getEntitiesLinkingTo).mockResolvedValueOnce([]);
+
+			const context = await buildGroupedRelationshipContext('char-001');
+			const formatted = formatGroupedRelationshipContextForPrompt(context);
+
+			// Entity name should appear only once (not repeated for each relationship)
+			const nameOccurrences = (formatted.match(/Captain Roderick/g) || []).length;
+			expect(nameOccurrences).toBe(1);
+
+			// Both relationships should be listed
+			expect(formatted).toContain('friend_of');
+			expect(formatted).toContain('trained_by');
+		});
+
+		it('should include header with source entity name', async () => {
+			vi.mocked(entityRepository.getById).mockResolvedValueOnce(sourceEntity);
+			vi.mocked(entityRepository.getByIds).mockResolvedValueOnce([relatedFaction]);
+			vi.mocked(entityRepository.getEntitiesLinkingTo).mockResolvedValueOnce([]);
+
+			const context = await buildGroupedRelationshipContext('char-001');
+			const formatted = formatGroupedRelationshipContextForPrompt(context);
+
+			expect(formatted).toContain('=== Relationships for');
+			expect(formatted).toContain('Aldric the Brave');
+		});
+
+		it('should include strength when present', async () => {
+			const sourceWithStrength: BaseEntity = {
+				...sourceEntity,
+				links: [
+					{
+						id: 'link-1',
+						sourceId: 'char-001',
+						targetId: 'npc-001',
+						targetType: 'npc',
+						relationship: 'friend_of',
+						bidirectional: false,
+						strength: 'strong'
+					}
+				]
+			};
+
+			vi.mocked(entityRepository.getById).mockResolvedValueOnce(sourceWithStrength);
+			vi.mocked(entityRepository.getByIds).mockResolvedValueOnce([relatedNPC]);
+			vi.mocked(entityRepository.getEntitiesLinkingTo).mockResolvedValueOnce([]);
+
+			const context = await buildGroupedRelationshipContext('char-001', {
+				includeStrength: true
+			});
+			const formatted = formatGroupedRelationshipContextForPrompt(context);
+
+			expect(formatted).toContain('[Strength: strong]');
+		});
+
+		it('should include notes when present', async () => {
+			const sourceWithNotes: BaseEntity = {
+				...sourceEntity,
+				links: [
+					{
+						id: 'link-1',
+						sourceId: 'char-001',
+						targetId: 'npc-001',
+						targetType: 'npc',
+						relationship: 'friend_of',
+						bidirectional: false,
+						notes: 'Met in battle'
+					}
+				]
+			};
+
+			vi.mocked(entityRepository.getById).mockResolvedValueOnce(sourceWithNotes);
+			vi.mocked(entityRepository.getByIds).mockResolvedValueOnce([relatedNPC]);
+			vi.mocked(entityRepository.getEntitiesLinkingTo).mockResolvedValueOnce([]);
+
+			const context = await buildGroupedRelationshipContext('char-001', {
+				includeNotes: true
+			});
+			const formatted = formatGroupedRelationshipContextForPrompt(context);
+
+			expect(formatted).toContain('[Notes: Met in battle]');
+		});
+
+		it('should handle empty relatedEntities', async () => {
+			const isolatedEntity: BaseEntity = {
+				...sourceEntity,
+				links: []
+			};
+
+			vi.mocked(entityRepository.getById).mockResolvedValueOnce(isolatedEntity);
+			vi.mocked(entityRepository.getEntitiesLinkingTo).mockResolvedValueOnce([]);
+
+			const context = await buildGroupedRelationshipContext('char-001');
+			const formatted = formatGroupedRelationshipContextForPrompt(context);
+
+			expect(formatted).toContain('=== Relationships for');
+			expect(formatted).toContain('No relationships found');
+		});
+
+		it('should indicate truncation', async () => {
+			// Create scenario that will truncate
+			const manyLinks = Array.from({ length: 30 }, (_, i) => ({
+				id: `link-${i}`,
+				sourceId: 'char-001',
+				targetId: `entity-${i}`,
+				targetType: 'npc' as EntityType,
+				relationship: 'knows',
+				bidirectional: false
+			}));
+
+			const sourceWithMany = { ...sourceEntity, links: manyLinks };
+			const manyEntities = Array.from({ length: 30 }, (_, i) => ({
+				...relatedNPC,
+				id: `entity-${i}`,
+				name: `Entity ${i}`
+			}));
+
+			vi.mocked(entityRepository.getById).mockResolvedValueOnce(sourceWithMany);
+			vi.mocked(entityRepository.getByIds).mockResolvedValueOnce(manyEntities);
+			vi.mocked(entityRepository.getEntitiesLinkingTo).mockResolvedValueOnce([]);
+
+			const context = await buildGroupedRelationshipContext('char-001', {
+				maxRelatedEntities: 5
+			});
+			const formatted = formatGroupedRelationshipContextForPrompt(context);
+
+			expect(context.truncated).toBe(true);
+			expect(formatted.toLowerCase()).toContain('truncated');
+		});
+
+		it('should produce fewer characters than ungrouped format for duplicate entities', async () => {
+			// Create source with 3 relationships to same entity
+			const sourceWithMultiLinks: BaseEntity = {
+				...sourceEntity,
+				links: [
+					{
+						id: 'link-1',
+						sourceId: 'char-001',
+						targetId: 'npc-001',
+						targetType: 'npc',
+						relationship: 'friend_of',
+						bidirectional: false
+					},
+					{
+						id: 'link-2',
+						sourceId: 'char-001',
+						targetId: 'npc-001',
+						targetType: 'npc',
+						relationship: 'trained_by',
+						bidirectional: false
+					},
+					{
+						id: 'link-3',
+						sourceId: 'char-001',
+						targetId: 'npc-001',
+						targetType: 'npc',
+						relationship: 'saved_by',
+						bidirectional: false
+					}
+				]
+			};
+
+			// Get both grouped and ungrouped contexts
+			vi.mocked(entityRepository.getById).mockResolvedValueOnce(sourceWithMultiLinks);
+			vi.mocked(entityRepository.getByIds).mockResolvedValueOnce([relatedNPC]);
+			vi.mocked(entityRepository.getEntitiesLinkingTo).mockResolvedValueOnce([]);
+
+			const groupedContext = await buildGroupedRelationshipContext('char-001');
+			const groupedFormatted = formatGroupedRelationshipContextForPrompt(groupedContext);
+
+			// Get ungrouped for comparison (need to reset mocks)
+			vi.mocked(entityRepository.getById).mockResolvedValueOnce(sourceWithMultiLinks);
+			vi.mocked(entityRepository.getByIds).mockResolvedValueOnce([relatedNPC]);
+			vi.mocked(entityRepository.getEntitiesLinkingTo).mockResolvedValueOnce([]);
+
+			const ungroupedContext = await buildRelationshipContext('char-001');
+			const ungroupedFormatted = formatRelationshipContextForPrompt(ungroupedContext);
+
+			// Grouped format should be shorter because entity summary appears only once
+			expect(groupedFormatted.length).toBeLessThan(ungroupedFormatted.length);
+
+			// Verify significant savings (at least 20% reduction)
+			const savings = ungroupedFormatted.length - groupedFormatted.length;
+			const savingsPercent = (savings / ungroupedFormatted.length) * 100;
+			expect(savingsPercent).toBeGreaterThan(20);
 		});
 	});
 });

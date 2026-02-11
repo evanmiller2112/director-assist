@@ -7,6 +7,56 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.0] - 2026-02-11
+
+### Added
+
+**Relationship Templates (Issue #146)**
+- 16 built-in relationship templates across 4 categories: Social, Professional, Family, Faction
+- Category grouping organizes templates by relationship context
+- Template fields: type (relationship type), defaultStrength (weak/moderate/strong), isBidirectional, suggestedNotes
+- localStorage-based CRUD operations for custom templates with SSR-safe implementation
+- RelationshipTemplate type definitions with CreateRelationshipTemplateInput and UpdateRelationshipTemplateInput
+- relationshipTemplateService provides getAll, getById, getByCategory, create, update, delete operations
+- Built-in templates include: Friend, Enemy, Mentor, Rival (Social), Employer, Employee, Colleague, Business Partner (Professional), Parent, Child, Sibling, Spouse (Family), Leader, Member, Ally, Competitor (Faction)
+- 85 comprehensive tests covering template configuration and service operations
+
+**Relationship Timeline View (Issue #145)**
+- New relationshipTimelineService for building timeline visualizations from entity relationships
+- RelationshipTimelineEvent type captures when and how entities became connected
+- buildTimelineEvents() extracts temporal data from entity links and related entities
+- filterTimelineEvents() supports filtering by entity, relationship type, strength, date range, and text search
+- getAvailableFilterOptions() provides dynamic filter values based on existing data
+- Bidirectional relationship deduplication prevents duplicate timeline entries
+- Timeline events include: entities involved, relationship type, strength, date, description, tags
+- 32 tests covering timeline event building, filtering, and deduplication
+
+**AI: Optimize Relationship Context (Issue #418)**
+- Fixed critical composite key overwriting bug where multiple relationships to same entity only showed last relationship
+- buildGroupedRelationshipContext() groups relationships by target entity for clearer AI context
+- formatGroupedEntityEntry() creates structured summaries with all relationship types listed
+- formatGroupedRelationshipContextForPrompt() generates optimized prompt text with grouped relationships
+- Privacy-safe summaries now strip duplicate entity names from relationship descriptions
+- More efficient context usage: one entity entry lists all relationship types instead of separate entries per type
+- Enhanced relationshipContextBuilder with grouping logic and duplicate name cleanup
+- 87 comprehensive tests covering grouped context building and privacy-safe formatting
+
+**UI: Allow Multiple Relationships to Same Entity (Issue #417)**
+- Removed entity-level link filter allowing multiple relationship types to same target entity
+- Link count badges display number of existing relationships per entity in RelateCommand
+- Duplicate relationship type validation prevents adding same relationship type twice
+- Existing relationships display section shows current links when selecting entity
+- Enhanced RelateCommand.svelte with relationship display and validation feedback
+- Users can now create "ally_of" and "mentor_of" relationships to same entity
+- 85 tests covering multi-relationship UI, validation, and badge display
+
+### Changed
+
+**Test Suite Health**
+- 250 test files with 12,129 tests passing
+- 65 skipped tests (down from previous milestones)
+- 14 pre-existing errors (unchanged)
+
 ## [1.5.1] - 2026-02-11
 
 ### Added

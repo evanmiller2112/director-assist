@@ -28,3 +28,31 @@ export interface BulkActionType {
 	type: 'delete' | 'updateStrength' | 'addTag';
 	payload?: unknown;
 }
+
+/**
+ * Relationship Template
+ * Issue #146: Pre-configured relationship patterns to speed up relationship creation
+ */
+export interface RelationshipTemplate {
+	id: string;
+	name: string;
+	relationship: string;
+	reverseRelationship?: string;
+	bidirectional: boolean;
+	strength?: 'strong' | 'moderate' | 'weak';
+	category?: string;
+	description?: string;
+	isBuiltIn: boolean;
+}
+
+/**
+ * Input type for creating a new custom relationship template
+ * Omits id and isBuiltIn as these are set by the service
+ */
+export type CreateRelationshipTemplateInput = Omit<RelationshipTemplate, 'id' | 'isBuiltIn'>;
+
+/**
+ * Input type for updating an existing custom relationship template
+ * Allows partial updates, omits id and isBuiltIn as these are immutable
+ */
+export type UpdateRelationshipTemplateInput = Partial<Omit<RelationshipTemplate, 'id' | 'isBuiltIn'>>;

@@ -45,17 +45,13 @@
 		'leads'
 	];
 
-	// Filter entities based on search and exclude source entity and already linked
+	// Filter entities based on search and exclude source entity only
 	const filteredEntities = $derived.by(() => {
 		const query = searchQuery.toLowerCase();
-		const linkedIds = sourceEntity.links.map((l) => l.targetId);
 
 		return entitiesStore.entities.filter((e) => {
 			// Exclude source entity itself
 			if (e.id === sourceEntity.id) return false;
-
-			// Exclude already linked entities
-			if (linkedIds.includes(e.id)) return false;
 
 			// Apply search filter
 			if (query) {
@@ -68,6 +64,21 @@
 
 			return true;
 		});
+	});
+
+	// Compute link counts for each entity
+	const linkCountsByEntity = $derived.by(() => {
+		const counts = new Map<string, number>();
+		for (const link of sourceEntity.links) {
+			counts.set(link.targetId, (counts.get(link.targetId) || 0) + 1);
+		}
+		return counts;
+	});
+
+	// Get existing links to the selected entity
+	const existingLinksToSelected = $derived.by(() => {
+		if (!selectedEntity) return [];
+		return sourceEntity.links.filter((l) => l.targetId === selectedEntity.id);
 	});
 
 	function handleClose() {
@@ -95,6 +106,15 @@
 	async function handleSubmit() {
 		if (!selectedEntity || !relationship.trim()) {
 			errorMessage = 'Please select an entity and enter a relationship';
+			return;
+		}
+
+		// Check for duplicate relationship type
+		const isDuplicate = sourceEntity.links.some(
+			(l) => l.targetId === selectedEntity.id && l.relationship === relationship.trim()
+		);
+		if (isDuplicate) {
+			errorMessage = `A "${relationship.trim()}" relationship already exists with ${selectedEntity.name}`;
 			return;
 		}
 
@@ -149,6 +169,17 @@
 		if (!showAsymmetricOptions) {
 			reverseRelationship = '';
 		}
+	});
+
+	// Track previous relationship value to detect changes
+	let previousRelationship = $state('');
+
+	// Clear "already exists" error when relationship input changes
+	$effect(() => {
+		if (relationship !== previousRelationship && errorMessage.includes('already exists')) {
+			errorMessage = '';
+		}
+		previousRelationship = relationship;
 	});
 
 	// Close on escape key
@@ -243,6 +274,14 @@
 												{/if}
 											</div>
 										</div>
+										{#if linkCountsByEntity.get(entity.id)}
+											<span
+												data-testid="link-count-badge"
+												class="px-2 py-1 text-xs font-medium bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full flex-shrink-0"
+											>
+												{linkCountsByEntity.get(entity.id)}
+											</span>
+										{/if}
 									</div>
 								</button>
 							{/each}
@@ -279,6 +318,22 @@
 							</div>
 						{/if}
 
+						<!-- Existing relationships display -->
+						{#if existingLinksToSelected.length > 0}
+							<div class="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+								<p class="text-sm font-medium text-blue-900 dark:text-blue-200 mb-2">
+									Existing links ({existingLinksToSelected.length})
+								</p>
+								<div class="flex flex-wrap gap-2">
+									{#each existingLinksToSelected as link}
+										<span class="px-2 py-1 text-xs font-medium bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded">
+											{link.relationship}
+										</span>
+									{/each}
+								</div>
+							</div>
+						{/if}
+
 						<!-- Relationship input -->
 						<div>
 							<label for="relationship" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
@@ -289,14 +344,16 @@
 								type="text"
 								bind:value={relationship}
 								placeholder="e.g., member_of, knows, located_at"
-								list="common-relationships"
+								list={existingLinksToSelected.length > 0 ? undefined : "common-relationships"}
 								class="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
 							/>
-							<datalist id="common-relationships">
-								{#each commonRelationships as rel}
-									<option value={rel}>{rel.replace(/_/g, ' ')}</option>
-								{/each}
-							</datalist>
+							{#if existingLinksToSelected.length === 0}
+								<datalist id="common-relationships">
+									{#each commonRelationships as rel}
+										<option value={rel}>{rel.replace(/_/g, ' ')}</option>
+									{/each}
+								</datalist>
+							{/if}
 							<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
 								How {sourceEntity.name} relates to {selectedEntity.name}
 							</p>
@@ -375,8 +432,8 @@
 							</label>
 						</div>
 
-						<!-- Asymmetric relationship options (only shown when bidirectional is true) -->
-						{#if bidirectional}
+						<!-- Asymmetric relationship options (only shown when bidirectional is true and no existing links) -->
+						{#if bidirectional && existingLinksToSelected.length === 0}
 							<div class="flex items-center gap-2">
 								<input
 									id="asymmetric"

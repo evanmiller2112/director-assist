@@ -7,6 +7,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.1] - 2026-02-11
+
+### Added
+
+**Mobile Support - Responsive Shell Layout (Issue #467, Epic #466)**
+- Responsive CSS grid layout: single column on mobile, two-column with sidebar at lg (1024px+)
+- Sidebar renders as a slide-in overlay drawer on mobile with backdrop
+- Sidebar auto-closes on page navigation in mobile mode
+- `100vh` replaced with `100dvh` for proper mobile browser address bar handling
+- Panel min-width (320px) now only applies on desktop
+- New `mobileSidebarOpen` UI store state with toggle/close methods
+- Hamburger menu button wired to mobile sidebar drawer
+
+**Narrative Automation (Issues #425, #426)**
+- Scene completion now auto-creates narrative trail events
+- Negotiation completion now auto-creates narrative trail events
+
+### Changed
+
+**Negotiation Refinements (Issues #403, #404, #405, #406)**
+- Fixed outcomePreview in ArgumentControls with inline derived expression
+- Updated all motivation types to canonical Draw Steel 13 motivations
+- Party-achievement-focused outcome descriptions in NegotiationOutcomeDisplay
+- Draw Steel outcome terminology in NegotiationProgress response previews
+
+### Fixed
+
+**Backup & Reactivity (Issue #423)**
+- Fixed backup reminder banner dismiss with reactive state signal
+
+**Test Suite Health (Issues #451, #452, #453, #463, #464)**
+- Fixed 293 test failures: outdated expectations, missing mock exports, mock hoisting violations
+- Removed 331 dead/orphaned skipped tests across the test suite
+
+**Lint Fixes**
+- Removed unnecessary regex escape characters failing CI
+
 ### Added
 
 **Narrative Trail System (Epic #397, Issues #398-401)**

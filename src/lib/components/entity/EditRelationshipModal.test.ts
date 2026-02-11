@@ -357,7 +357,7 @@ describe('EditRelationshipModal - Form Editing', () => {
 		await fireEvent.input(tensionInput, { target: { value: '150' } });
 
 		// Should show validation error or clamp value
-		const saveButton = screen.getByRole('button', { name: /save/i });
+		const saveButton = screen.getAllByRole('button', { name: /save/i }).find(btn => btn.tagName === 'BUTTON')!;
 		await fireEvent.click(saveButton);
 
 		// onSave should either not be called or should clamp the value
@@ -419,7 +419,7 @@ describe('EditRelationshipModal - Save Functionality', () => {
 			props: { open: true, sourceEntity, targetEntity, link, onClose, onSave }
 		});
 
-		const saveButton = screen.getByRole('button', { name: /save/i });
+		const saveButton = screen.getAllByRole('button', { name: /save/i }).find(btn => btn.tagName === 'BUTTON')!;
 		expect(saveButton).toBeInTheDocument();
 	});
 
@@ -434,7 +434,7 @@ describe('EditRelationshipModal - Save Functionality', () => {
 		await tick();
 
 		// Click Save
-		const saveButton = screen.getByRole('button', { name: /save/i });
+		const saveButton = screen.getAllByRole('button', { name: /save/i }).find(btn => btn.tagName === 'BUTTON')!;
 		await fireEvent.click(saveButton);
 		await tick();
 
@@ -462,7 +462,7 @@ describe('EditRelationshipModal - Save Functionality', () => {
 		await fireEvent.input(notesTextarea, { target: { value: 'Fatal temptation' } });
 
 		// Click Save
-		const saveButton = screen.getByRole('button', { name: /save/i });
+		const saveButton = screen.getAllByRole('button', { name: /save/i }).find(btn => btn.tagName === 'BUTTON')!;
 		await fireEvent.click(saveButton);
 
 		expect(onSave).toHaveBeenCalledWith(
@@ -482,7 +482,7 @@ describe('EditRelationshipModal - Save Functionality', () => {
 		const tensionInput = screen.getByLabelText(/tension/i) as HTMLInputElement;
 		await fireEvent.input(tensionInput, { target: { value: '95' } });
 
-		const saveButton = screen.getByRole('button', { name: /save/i });
+		const saveButton = screen.getAllByRole('button', { name: /save/i }).find(btn => btn.tagName === 'BUTTON')!;
 		await fireEvent.click(saveButton);
 
 		expect(onSave).toHaveBeenCalledWith(
@@ -499,7 +499,7 @@ describe('EditRelationshipModal - Save Functionality', () => {
 			props: { open: true, sourceEntity, targetEntity, link, onClose, onSave }
 		});
 
-		const saveButton = screen.getByRole('button', { name: /save/i });
+		const saveButton = screen.getAllByRole('button', { name: /save/i }).find(btn => btn.tagName === 'BUTTON')!;
 		await fireEvent.click(saveButton);
 
 		await waitFor(() => {
@@ -527,7 +527,7 @@ describe('EditRelationshipModal - Save Functionality', () => {
 			props: { open: true, sourceEntity, targetEntity, link, onClose, onSave: slowSave }
 		});
 
-		const saveButton = screen.getByRole('button', { name: /save/i });
+		const saveButton = screen.getAllByRole('button', { name: /save/i }).find(btn => btn.tagName === 'BUTTON')!;
 		await fireEvent.click(saveButton);
 
 		// Button should show loading state
@@ -542,7 +542,7 @@ describe('EditRelationshipModal - Save Functionality', () => {
 			props: { open: true, sourceEntity, targetEntity, link, onClose, onSave: errorSave }
 		});
 
-		const saveButton = screen.getByRole('button', { name: /save/i });
+		const saveButton = screen.getAllByRole('button', { name: /save/i }).find(btn => btn.tagName === 'BUTTON')!;
 		await fireEvent.click(saveButton);
 
 		await waitFor(() => {
@@ -600,7 +600,7 @@ describe('EditRelationshipModal - Cancel Functionality', () => {
 			props: { open: true, sourceEntity, targetEntity, link, onClose, onSave }
 		});
 
-		const cancelButton = screen.getByRole('button', { name: /cancel/i });
+		const cancelButton = screen.getAllByRole('button', { name: /cancel/i }).find(btn => btn.tagName === 'BUTTON')!;
 		expect(cancelButton).toBeInTheDocument();
 	});
 
@@ -609,7 +609,7 @@ describe('EditRelationshipModal - Cancel Functionality', () => {
 			props: { open: true, sourceEntity, targetEntity, link, onClose, onSave }
 		});
 
-		const cancelButton = screen.getByRole('button', { name: /cancel/i });
+		const cancelButton = screen.getAllByRole('button', { name: /cancel/i }).find(btn => btn.tagName === 'BUTTON')!;
 		await fireEvent.click(cancelButton);
 
 		expect(onClose).toHaveBeenCalledTimes(1);
@@ -625,7 +625,7 @@ describe('EditRelationshipModal - Cancel Functionality', () => {
 		await fireEvent.input(notesTextarea, { target: { value: 'This should not be saved' } });
 
 		// Click Cancel
-		const cancelButton = screen.getByRole('button', { name: /cancel/i });
+		const cancelButton = screen.getAllByRole('button', { name: /cancel/i }).find(btn => btn.tagName === 'BUTTON')!;
 		await fireEvent.click(cancelButton);
 
 		expect(onSave).not.toHaveBeenCalled();
@@ -641,7 +641,7 @@ describe('EditRelationshipModal - Cancel Functionality', () => {
 		await fireEvent.input(notesTextarea, { target: { value: 'Modified notes' } });
 
 		// Click Cancel
-		const cancelButton = screen.getByRole('button', { name: /cancel/i });
+		const cancelButton = screen.getAllByRole('button', { name: /cancel/i }).find(btn => btn.tagName === 'BUTTON')!;
 		await fireEvent.click(cancelButton);
 
 		// Reopen modal
@@ -861,10 +861,10 @@ describe('EditRelationshipModal - Accessibility', () => {
 			props: { open: true, sourceEntity, targetEntity, link, onClose, onSave }
 		});
 
-		const saveButton = screen.getByRole('button', { name: /save/i });
+		const saveButton = screen.getAllByRole('button', { name: /save/i }).find(btn => btn.tagName === 'BUTTON')!;
 		expect(saveButton).toHaveAccessibleName();
 
-		const cancelButton = screen.getByRole('button', { name: /cancel/i });
+		const cancelButton = screen.getAllByRole('button', { name: /cancel/i }).find(btn => btn.tagName === 'BUTTON')!;
 		expect(cancelButton).toHaveAccessibleName();
 	});
 
@@ -873,7 +873,7 @@ describe('EditRelationshipModal - Accessibility', () => {
 			props: { open: true, sourceEntity, targetEntity, link, onClose, onSave }
 		});
 
-		const buttons = screen.getAllByRole('button');
+		const buttons = screen.getAllByRole('button').filter(btn => btn.tagName === 'BUTTON');
 		buttons.forEach((button) => {
 			expect(button).toHaveAttribute('type', 'button');
 		});
@@ -947,7 +947,7 @@ describe('EditRelationshipModal - Form Validation', () => {
 		const relationshipInput = screen.getByLabelText(/relationship.*type/i) as HTMLInputElement;
 		await fireEvent.input(relationshipInput, { target: { value: '' } });
 
-		const saveButton = screen.getByRole('button', { name: /save/i });
+		const saveButton = screen.getAllByRole('button', { name: /save/i }).find(btn => btn.tagName === 'BUTTON')!;
 		await fireEvent.click(saveButton);
 
 		// Should show validation error
@@ -1097,7 +1097,7 @@ describe('EditRelationshipModal - Bidirectional Toggle', () => {
 		const bidirectionalCheckbox = screen.getByLabelText(/bidirectional/i) as HTMLInputElement;
 		await fireEvent.click(bidirectionalCheckbox);
 
-		const saveButton = screen.getByRole('button', { name: /save/i });
+		const saveButton = screen.getAllByRole('button', { name: /save/i }).find(btn => btn.tagName === 'BUTTON')!;
 		await fireEvent.click(saveButton);
 
 		expect(onSave).toHaveBeenCalledWith(
@@ -1120,7 +1120,7 @@ describe('EditRelationshipModal - Bidirectional Toggle', () => {
 		const bidirectionalCheckbox = screen.getByLabelText(/bidirectional/i) as HTMLInputElement;
 		await fireEvent.click(bidirectionalCheckbox);
 
-		const saveButton = screen.getByRole('button', { name: /save/i });
+		const saveButton = screen.getAllByRole('button', { name: /save/i }).find(btn => btn.tagName === 'BUTTON')!;
 		await fireEvent.click(saveButton);
 
 		expect(onSave).toHaveBeenCalledWith(
@@ -1139,7 +1139,7 @@ describe('EditRelationshipModal - Bidirectional Toggle', () => {
 		await fireEvent.click(bidirectionalCheckbox);
 		expect(bidirectionalCheckbox.checked).toBe(true);
 
-		const cancelButton = screen.getByRole('button', { name: /cancel/i });
+		const cancelButton = screen.getAllByRole('button', { name: /cancel/i }).find(btn => btn.tagName === 'BUTTON')!;
 		await fireEvent.click(cancelButton);
 
 		expect(onSave).not.toHaveBeenCalled();

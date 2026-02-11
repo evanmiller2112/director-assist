@@ -1459,6 +1459,8 @@ ${longDescription}`;
 			});
 
 			it('should detect invalid select values when value does not match options', () => {
+				// NOTE: Per Issue #429, select fields allow custom values (not in options list).
+				// This is intentional to allow flexibility. This test verifies that behavior.
 				const customType: EntityTypeDefinition = {
 					type: 'npc',
 					label: 'NPC',
@@ -1486,8 +1488,9 @@ ${longDescription}`;
 				const result = parseAIResponse(responseText, { customTypes: [customType] });
 
 				expect(result.entities).toHaveLength(1);
-				expect(result.entities[0].validationErrors).toHaveProperty('status');
-				expect(result.entities[0].validationErrors.status).toContain('must be one of the available options');
+				// Custom values are allowed for select fields (Issue #429)
+				expect(result.entities[0].validationErrors).toEqual({});
+				expect(result.entities[0].fields.status).toBe('Resurrected');
 			});
 
 			it('should detect missing required fields', () => {

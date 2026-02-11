@@ -227,7 +227,9 @@ describe('Chat Store - Generation Type Extension', () => {
 				expect.any(Boolean),
 				expect.any(Function),
 				'npc', // generationType should be passed as 5th argument
-				expect.any(Object) // typeFieldValues should be passed as 6th argument
+				expect.any(Object), // typeFieldValues should be passed as 6th argument
+				expect.any(Boolean), // sendAllContext
+				expect.any(String) // contextDetailLevel
 			);
 		});
 
@@ -242,7 +244,9 @@ describe('Chat Store - Generation Type Extension', () => {
 				expect.any(Boolean),
 				expect.any(Function),
 				'custom',
-				expect.any(Object) // typeFieldValues
+				expect.any(Object), // typeFieldValues
+				expect.any(Boolean), // sendAllContext
+				expect.any(String) // contextDetailLevel
 			);
 		});
 
@@ -270,7 +274,9 @@ describe('Chat Store - Generation Type Extension', () => {
 					expect.any(Boolean),
 					expect.any(Function),
 					type,
-					expect.any(Object) // typeFieldValues
+					expect.any(Object), // typeFieldValues
+					expect.any(Boolean), // sendAllContext
+					expect.any(String) // contextDetailLevel
 				);
 			}
 		});
@@ -288,7 +294,9 @@ describe('Chat Store - Generation Type Extension', () => {
 				expect.any(Boolean),
 				expect.any(Function),
 				'npc',
-				expect.any(Object) // typeFieldValues
+				expect.any(Object), // typeFieldValues
+				expect.any(Boolean), // sendAllContext
+				expect.any(String) // contextDetailLevel
 			);
 		});
 
@@ -305,7 +313,9 @@ describe('Chat Store - Generation Type Extension', () => {
 				false,
 				expect.any(Function),
 				'location',
-				expect.any(Object) // typeFieldValues
+				expect.any(Object), // typeFieldValues
+				expect.any(Boolean), // sendAllContext
+				expect.any(String) // contextDetailLevel
 			);
 		});
 
@@ -499,7 +509,9 @@ describe('Chat Store - Generation Type Extension', () => {
 				expect.any(Boolean),
 				expect.any(Function),
 				'npc',
-				expect.any(Object) // typeFieldValues
+				expect.any(Object), // typeFieldValues
+				expect.any(Boolean), // sendAllContext
+				expect.any(String) // contextDetailLevel
 			);
 
 			// Change generation type
@@ -514,7 +526,9 @@ describe('Chat Store - Generation Type Extension', () => {
 				expect.any(Boolean),
 				expect.any(Function),
 				'location',
-				expect.any(Object) // typeFieldValues
+				expect.any(Object), // typeFieldValues
+				expect.any(Boolean), // sendAllContext
+				expect.any(String) // contextDetailLevel
 			);
 
 			// Clear history shouldn't affect type
@@ -822,7 +836,9 @@ describe('Chat Store - Generation Type Extension', () => {
 					expect.any(Boolean),
 					expect.any(Function),
 					'npc',
-					{ threatLevel: 'elite', combatRole: 'brute' }
+					{ threatLevel: 'elite', combatRole: 'brute' },
+					expect.any(Boolean), // sendAllContext
+					expect.any(String) // contextDetailLevel
 				);
 			});
 
@@ -838,7 +854,9 @@ describe('Chat Store - Generation Type Extension', () => {
 					expect.any(Boolean),
 					expect.any(Function),
 					'npc',
-					{}
+					{},
+					expect.any(Boolean), // sendAllContext
+					expect.any(String) // contextDetailLevel
 				);
 			});
 
@@ -856,7 +874,9 @@ describe('Chat Store - Generation Type Extension', () => {
 					expect.any(Boolean),
 					expect.any(Function),
 					'npc',
-					{ threatLevel: 'standard' }
+					{ threatLevel: 'standard' },
+					expect.any(Boolean), // sendAllContext
+					expect.any(String) // contextDetailLevel
 				);
 			});
 

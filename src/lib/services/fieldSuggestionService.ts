@@ -527,8 +527,7 @@ export async function generateSuggestionForField(
 				entityId,
 				entityType: existingData.type,
 				fieldKey: suggestion.fieldKey,
-				suggestedValue: suggestion.value,
-				...(suggestion.confidence !== undefined && { confidence: suggestion.confidence })
+				suggestedValue: suggestion.value
 			});
 
 			return {
@@ -735,8 +734,7 @@ export async function generateSuggestionsForEntity(
 					entityId,
 					entityType: existingData.type,
 					fieldKey: suggestion.fieldKey,
-					suggestedValue: suggestion.value,
-					...(suggestion.confidence !== undefined && { confidence: suggestion.confidence })
+					suggestedValue: suggestion.value
 				});
 
 				createdSuggestions.push(created);

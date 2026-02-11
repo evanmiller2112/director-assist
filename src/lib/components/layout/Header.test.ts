@@ -25,6 +25,10 @@ vi.mock('$lib/stores', async () => {
 			filteredEntities: [],
 			searchQuery: '',
 			setSearchQuery: vi.fn()
+		},
+		// aiSettings is used by Header to show/hide chat button
+		aiSettings: {
+			isEnabled: true
 		}
 	};
 });

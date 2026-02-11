@@ -328,9 +328,9 @@ describe('DeleteEntityTypeModal - Warning Messages (Issue #25 Phase 2)', () => {
 			oncancel: mockOnCancel
 		});
 
-		expect(
-			screen.getByText(/This action cannot be undone|permanently deleted|data loss/i)
-		).toBeInTheDocument();
+		// Multiple elements have this text - just check one exists
+		const warnings = screen.getAllByText(/This action cannot be undone|permanently deleted|data loss/i);
+		expect(warnings.length).toBeGreaterThan(0);
 	});
 
 	it('should display warning that all entities will be deleted', () => {
@@ -355,7 +355,9 @@ describe('DeleteEntityTypeModal - Warning Messages (Issue #25 Phase 2)', () => {
 			oncancel: mockOnCancel
 		});
 
-		expect(screen.getByText(/all.*entities.*deleted|lose all data/i)).toBeInTheDocument();
+		// Multiple elements with this warning text
+		const warnings = screen.getAllByText(/all.*entities.*deleted|lose all data/i);
+		expect(warnings.length).toBeGreaterThan(0);
 	});
 
 	it('should use danger/destructive styling for warnings', () => {
@@ -462,7 +464,12 @@ describe('DeleteEntityTypeModal - Type Name Confirmation (Issue #25 Phase 2)', (
 			oncancel: mockOnCancel
 		});
 
-		expect(screen.getByText(/Type.*Vehicle.*to confirm/i)).toBeInTheDocument();
+		// Text is broken up with <span class="font-semibold"> tag
+		const label = screen.getByText((content, element) => {
+			return element?.tagName === 'LABEL' && /Type.*to confirm/i.test(element.textContent ?? '');
+		});
+		expect(label).toBeInTheDocument();
+		expect(label.textContent).toMatch(/Vehicle/);
 	});
 
 	it('should disable Delete button when confirmation is empty', () => {
@@ -755,8 +762,9 @@ describe('DeleteEntityTypeModal - Button Actions (Issue #25 Phase 2)', () => {
 			oncancel: mockOnCancel
 		});
 
-		// Press Escape
-		await fireEvent.keyDown(document, { key: 'Escape' });
+		// Press Escape on the dialog element
+		const dialog = screen.getByRole('dialog');
+		await fireEvent.keyDown(dialog, { key: 'Escape' });
 
 		expect(mockOnCancel).toHaveBeenCalled();
 	});
@@ -784,7 +792,12 @@ describe('DeleteEntityTypeModal - Button Actions (Issue #25 Phase 2)', () => {
 		});
 
 		const dialog = screen.getByRole('dialog');
-		await fireEvent.click(dialog);
+		// Click the dialog itself (backdrop) - need to click outside the content div
+		const rect = dialog.getBoundingClientRect();
+		await fireEvent.click(dialog, {
+			clientX: rect.left - 10,
+			clientY: rect.top - 10
+		});
 
 		expect(mockOnCancel).toHaveBeenCalled();
 	});
@@ -840,7 +853,8 @@ describe('DeleteEntityTypeModal - Loading State (Issue #25 Phase 2)', () => {
 			oncancel: mockOnCancel
 		});
 
-		const deleteButton = screen.getByRole('button', { name: /Delete/i });
+		// When loading, button text changes to "Deleting..."
+		const deleteButton = screen.getByRole('button', { name: /Deleting|Delete/i });
 		const cancelButton = screen.getByRole('button', { name: /Cancel/i });
 
 		expect(deleteButton).toBeDisabled();
@@ -1128,7 +1142,9 @@ describe('DeleteEntityTypeModal - Edge Cases (Issue #25 Phase 2)', () => {
 			oncancel: mockOnCancel
 		});
 
-		expect(screen.getByText(/Very Long Entity Type Name/i)).toBeInTheDocument();
+		// Long name appears in title and label - just check it's displayed somewhere
+		const textElements = screen.getAllByText(/Very Long Entity Type Name/i);
+		expect(textElements.length).toBeGreaterThan(0);
 	});
 
 	it('should handle very large entity count', () => {

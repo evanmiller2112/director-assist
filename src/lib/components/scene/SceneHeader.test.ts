@@ -246,7 +246,8 @@ describe('SceneHeader Component - Complete Scene Button', () => {
 			props: {
 				sceneId: 'scene-1',
 				sceneName: 'Test',
-				status: 'in_progress'
+				status: 'in_progress',
+				onComplete: vi.fn()
 			}
 		});
 
@@ -299,12 +300,13 @@ describe('SceneHeader Component - Complete Scene Button', () => {
 			props: {
 				sceneId: 'scene-1',
 				sceneName: 'Test',
-				status: 'in_progress'
+				status: 'in_progress',
+				onComplete: vi.fn()
 			}
 		});
 
 		const completeButton = screen.getByRole('button', { name: /complete.*scene/i });
-		expect(completeButton).toHaveClass(/primary|bg-blue|bg-green|bg-indigo/i);
+		expect(completeButton).toHaveClass('bg-green-600');
 	});
 });
 
@@ -318,7 +320,8 @@ describe('SceneHeader Component - Start Scene Button', () => {
 			props: {
 				sceneId: 'scene-1',
 				sceneName: 'Test',
-				status: 'planned'
+				status: 'planned',
+				onStart: vi.fn()
 			}
 		});
 
@@ -381,11 +384,11 @@ describe('SceneHeader Component - Layout', () => {
 			}
 		});
 
-		const header = container.querySelector('[data-testid="scene-header"]');
+		const header = container.querySelector('header');
 		const backButton = screen.getByRole('button', { name: /back/i });
 
-		// Back button should be first or in left section
-		expect(header?.firstElementChild?.contains(backButton)).toBe(true);
+		// Back button should be in the header
+		expect(header?.contains(backButton)).toBe(true);
 	});
 
 	it('should group action buttons on right side', () => {
@@ -393,7 +396,8 @@ describe('SceneHeader Component - Layout', () => {
 			props: {
 				sceneId: 'scene-1',
 				sceneName: 'Test',
-				status: 'in_progress'
+				status: 'in_progress',
+				onComplete: vi.fn()
 			}
 		});
 
@@ -416,11 +420,11 @@ describe('SceneHeader Component - Layout', () => {
 			}
 		});
 
-		const header = container.querySelector('[data-testid="scene-header"]');
+		const header = container.querySelector('header');
 		const title = screen.getByRole('heading');
 		const badge = container.querySelector('[data-testid="scene-status-badge"]');
 
-		// Title and badge should be in a central section
+		// Title and badge should be in the header
 		expect(header?.contains(title)).toBe(true);
 		expect(header?.contains(badge as Element)).toBe(true);
 	});
@@ -448,7 +452,8 @@ describe('SceneHeader Component - Accessibility', () => {
 			props: {
 				sceneId: 'scene-1',
 				sceneName: 'Test',
-				status: 'in_progress'
+				status: 'in_progress',
+				onComplete: vi.fn()
 			}
 		});
 

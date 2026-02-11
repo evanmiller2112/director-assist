@@ -51,7 +51,8 @@ describe('EntitiesStore Loading States (Issue #12)', () => {
 		it('should set isLoading to false when load completes successfully', async () => {
 			// Setup mock to immediately resolve
 			const mockSubscribe = vi.fn((observer: any) => {
-				setTimeout(() => observer.next([]), 0);
+				// Call observer.next synchronously so isLoading is updated before load() returns
+				observer.next([]);
 				return { unsubscribe: vi.fn() };
 			});
 
@@ -61,15 +62,14 @@ describe('EntitiesStore Loading States (Issue #12)', () => {
 
 			await entitiesStore.load();
 
-			// Wait for async operation
-			await new Promise(resolve => setTimeout(resolve, 10));
-
+			// The observable callback is synchronous, so isLoading should be false now
 			expect(entitiesStore.isLoading).toBe(false);
 		});
 
 		it('should set isLoading to false when load fails', async () => {
 			const mockSubscribe = vi.fn((observer: any) => {
-				setTimeout(() => observer.error(new Error('Load failed')), 0);
+				// Call observer.error synchronously so isLoading is updated before load() returns
+				observer.error(new Error('Load failed'));
 				return { unsubscribe: vi.fn() };
 			});
 
@@ -79,9 +79,7 @@ describe('EntitiesStore Loading States (Issue #12)', () => {
 
 			await entitiesStore.load();
 
-			// Wait for async operation
-			await new Promise(resolve => setTimeout(resolve, 10));
-
+			// The observable callback is synchronous, so isLoading should be false now
 			expect(entitiesStore.isLoading).toBe(false);
 		});
 
@@ -115,6 +113,7 @@ describe('EntitiesStore Loading States (Issue #12)', () => {
 		it('should handle create operation errors gracefully', async () => {
 			mockRepository.create.mockRejectedValue(new Error('Create failed'));
 
+			// The store doesn't catch errors from create, they propagate to caller
 			await expect(
 				entitiesStore.create({
 					name: 'New Entity',
@@ -139,6 +138,7 @@ describe('EntitiesStore Loading States (Issue #12)', () => {
 		it('should handle update operation errors gracefully', async () => {
 			mockRepository.update.mockRejectedValue(new Error('Update failed'));
 
+			// The store doesn't catch errors from update, they propagate to caller
 			await expect(
 				entitiesStore.update('entity-1', { name: 'Updated' })
 			).rejects.toThrow('Update failed');
@@ -159,6 +159,7 @@ describe('EntitiesStore Loading States (Issue #12)', () => {
 		it('should handle delete operation errors gracefully', async () => {
 			mockRepository.delete.mockRejectedValue(new Error('Delete failed'));
 
+			// The store doesn't catch errors from delete, they propagate to caller
 			await expect(
 				entitiesStore.delete('entity-1')
 			).rejects.toThrow('Delete failed');

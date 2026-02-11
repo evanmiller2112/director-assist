@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, waitFor, fireEvent } from '@testing-library/svelte';
 import EntityEditPage from '../../../routes/entities/[type]/[id]/edit/+page.svelte';
 import { createMockEntity } from '../../utils/testUtils';
-import { createMockEntitiesStore, createMockCampaignStore } from '../../mocks/stores';
+import { createReactiveMockEntitiesStore, createReactiveMockCampaignStore } from '../../mocks/reactiveStores.svelte';
 import { setPageParams } from '../../mocks/$app/stores';
 import type { BaseEntity } from '$lib/types';
 
@@ -20,8 +20,8 @@ import type { BaseEntity } from '$lib/types';
  * Tests should FAIL initially (RED phase) and pass after fixing reactive state patterns.
  */
 
-let mockEntitiesStore: ReturnType<typeof createMockEntitiesStore>;
-let mockCampaignStore: ReturnType<typeof createMockCampaignStore>;
+let mockEntitiesStore: ReturnType<typeof createReactiveMockEntitiesStore>;
+let mockCampaignStore: ReturnType<typeof createReactiveMockCampaignStore>;
 let mockNotificationStore: any;
 
 // Mock the stores
@@ -44,34 +44,37 @@ vi.mock('$lib/stores', async () => {
 });
 
 // Mock entity types
-vi.mock('$lib/config/entityTypes', () => ({
-	getEntityTypeDefinition: vi.fn((type) => ({
-		type,
-		label: type.charAt(0).toUpperCase() + type.slice(1),
-		labelPlural: `${type.charAt(0).toUpperCase() + type.slice(1)}s`,
-		icon: 'package',
-		color: '#94a3b8',
-		isBuiltIn: true,
-		fieldDefinitions: [
-			{
-				key: 'ally',
-				label: 'Ally',
-				type: 'entity-ref',
-				section: 'standard',
-				required: false,
-				entityTypes: ['npc']
-			},
-			{
-				key: 'allies',
-				label: 'Allies',
-				type: 'entity-refs',
-				section: 'standard',
-				required: false,
-				entityTypes: ['npc']
+const mockEntityTypeDefinition = (type: string) => ({
+	type,
+	label: type.charAt(0).toUpperCase() + type.slice(1),
+	labelPlural: `${type.charAt(0).toUpperCase() + type.slice(1)}s`,
+	icon: 'package',
+	color: '#94a3b8',
+	isBuiltIn: true,
+	fieldDefinitions: [
+		{
+			key: 'ally',
+			label: 'Ally',
+			type: 'entity-ref',
+			section: 'standard',
+			required: false,
+			entityTypes: ['npc']
+		},
+		{
+			key: 'allies',
+			label: 'Allies',
+			type: 'entity-refs',
+			section: 'standard',
+			required: false,
+			entityTypes: ['npc']
 			}
-		],
-		defaultRelationships: []
-	}))
+	],
+	defaultRelationships: []
+});
+
+vi.mock('$lib/config/entityTypes', () => ({
+	getEntityTypeDefinition: vi.fn((type) => mockEntityTypeDefinition(type)),
+	getEntityTypeDefinitionWithSystem: vi.fn((type, baseDefinition) => baseDefinition || mockEntityTypeDefinition(type))
 }));
 
 // Mock navigation
@@ -121,9 +124,9 @@ describe('Entity Edit Page - Reactive State Safety (Issue #98)', () => {
 			info: vi.fn()
 		};
 
-		// Create mock stores
-		mockEntitiesStore = createMockEntitiesStore();
-		mockCampaignStore = createMockCampaignStore();
+		// Create mock stores with Svelte 5 reactivity
+		mockEntitiesStore = createReactiveMockEntitiesStore();
+		mockCampaignStore = createReactiveMockCampaignStore();
 
 		// Create referenced entities
 		referencedEntity1 = createMockEntity({
@@ -199,7 +202,8 @@ describe('Entity Edit Page - Reactive State Safety (Issue #98)', () => {
 	});
 
 	describe('Entity Reference Fields - Dropdowns and Search', () => {
-		it.skip('should render entity-ref field with current selection - mock store lacks reactivity', async () => {
+		it.skip('should render entity-ref field with current selection - requires complex form rendering', async () => {
+			// Note: This test requires the entity-ref dropdown to be fully functional in the test environment.
 			render(EntityEditPage);
 
 			await waitFor(() => {
@@ -208,7 +212,8 @@ describe('Entity Edit Page - Reactive State Safety (Issue #98)', () => {
 			});
 		});
 
-		it.skip('should filter available entities when searching in entity-ref dropdown - mock store lacks reactivity', async () => {
+		it.skip('should filter available entities when searching in entity-ref dropdown - requires complex form interaction', async () => {
+			// Note: This test requires dropdown interaction which is complex to test in isolation.
 			render(EntityEditPage);
 
 			// Wait for form to initialize
@@ -221,7 +226,8 @@ describe('Entity Edit Page - Reactive State Safety (Issue #98)', () => {
 			// (Implementation detail: this should use a derived value, not inline store access)
 		});
 
-		it.skip('should handle entity name lookups for display without state errors - mock store lacks reactivity', async () => {
+		it.skip('should handle entity name lookups for display without state errors - requires complex form rendering', async () => {
+			// Note: This test requires entity-ref field rendering which is complex.
 			render(EntityEditPage);
 
 			await waitFor(() => {
@@ -245,7 +251,8 @@ describe('Entity Edit Page - Reactive State Safety (Issue #98)', () => {
 	});
 
 	describe('Entity Reference Fields - Multiple Selection (entity-refs)', () => {
-		it.skip('should render all selected entities in entity-refs field - mock store lacks reactivity', async () => {
+		it.skip('should render all selected entities in entity-refs field - requires complex form rendering', async () => {
+			// Note: This test requires entity-refs field rendering.
 			render(EntityEditPage);
 
 			await waitFor(() => {
@@ -254,7 +261,8 @@ describe('Entity Edit Page - Reactive State Safety (Issue #98)', () => {
 			});
 		});
 
-		it.skip('should handle adding new entity references - mock store lacks reactivity', async () => {
+		it.skip('should handle adding new entity references - testing-library rerender() limitation', async () => {
+			// Note: This test is skipped due to testing-library rerender() limitations.
 			const { rerender } = render(EntityEditPage);
 
 			await waitFor(() => {
@@ -273,7 +281,8 @@ describe('Entity Edit Page - Reactive State Safety (Issue #98)', () => {
 			expect(screen.getByText('Referenced NPC 2')).toBeInTheDocument();
 		});
 
-		it.skip('should handle removing entity references - mock store lacks reactivity', async () => {
+		it.skip('should handle removing entity references - testing-library rerender() limitation', async () => {
+			// Note: This test is skipped due to testing-library rerender() limitations.
 			const { rerender } = render(EntityEditPage);
 
 			await waitFor(() => {
@@ -297,7 +306,8 @@ describe('Entity Edit Page - Reactive State Safety (Issue #98)', () => {
 	});
 
 	describe('Reactive State Patterns - Store Access', () => {
-		it.skip('should use store getter methods instead of direct array access - mock store lacks reactivity', async () => {
+		it.skip('should use store getter methods instead of direct array access - requires form rendering', async () => {
+			// Note: This test requires entity-ref fields to be rendered.
 			// The getEntityName function and getFilteredEntitiesForField should use
 			// entitiesStore.entities (getter) or entitiesStore.getById()
 			// NOT entitiesStore.entities.find() directly in templates
@@ -311,7 +321,8 @@ describe('Entity Edit Page - Reactive State Safety (Issue #98)', () => {
 			// If this renders without errors, the pattern is correct
 		});
 
-		it.skip('should handle rapid entity updates without mutation errors - mock store lacks reactivity', async () => {
+		it.skip('should handle rapid entity updates without mutation errors - testing-library rerender() limitation', async () => {
+			// Note: This test is skipped due to testing-library rerender() limitations.
 			const { rerender } = render(EntityEditPage);
 
 			// Rapidly update referenced entity names
@@ -327,7 +338,8 @@ describe('Entity Edit Page - Reactive State Safety (Issue #98)', () => {
 			});
 		});
 
-		it.skip('should reactively update dropdown options when entities change - mock store lacks reactivity', async () => {
+		it.skip('should reactively update dropdown options when entities change - testing-library rerender() limitation', async () => {
+			// Note: This test is skipped due to testing-library rerender() limitations.
 			const { rerender } = render(EntityEditPage);
 
 			await waitFor(() => {
@@ -373,7 +385,8 @@ describe('Entity Edit Page - Reactive State Safety (Issue #98)', () => {
 			expect(nameInput.value).toBe('Updated Name');
 		});
 
-		it.skip('should submit form with updated entity references - mock store lacks reactivity', async () => {
+		it.skip('should submit form with updated entity references - requires form interaction', async () => {
+			// Note: This test requires complex form submission which is difficult to test in isolation.
 			render(EntityEditPage);
 
 			await waitFor(() => {
@@ -389,7 +402,8 @@ describe('Entity Edit Page - Reactive State Safety (Issue #98)', () => {
 	});
 
 	describe('Client-Side Navigation and Hydration', () => {
-		it.skip('should handle navigation to edit page without hydration errors - mock store lacks reactivity', async () => {
+		it.skip('should handle navigation to edit page without hydration errors - testing-library rerender() limitation', async () => {
+			// Note: This test is skipped due to testing-library rerender() limitations.
 			const { unmount } = render(EntityEditPage);
 
 			await waitFor(() => {
@@ -417,7 +431,8 @@ describe('Entity Edit Page - Reactive State Safety (Issue #98)', () => {
 			});
 		});
 
-		it.skip('should handle multiple page navigation cycles - mock store lacks reactivity', async () => {
+		it.skip('should handle multiple page navigation cycles - testing-library rerender() limitation', async () => {
+			// Note: This test is skipped due to testing-library rerender() limitations.
 			const { rerender } = render(EntityEditPage);
 
 			// First entity

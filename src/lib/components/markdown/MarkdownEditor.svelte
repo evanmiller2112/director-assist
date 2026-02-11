@@ -43,10 +43,12 @@
 	let textareaRef = $state<HTMLTextAreaElement>();
 	// Initialize internal mode based on the mode prop, defaulting to 'edit' for non-split modes
 	let internalMode = $state<'edit' | 'preview'>('edit');
+	// Track whether the user has manually toggled the mode
+	let userHasToggled = $state(false);
 
-	// Sync internalMode with mode prop changes
+	// Sync internalMode with mode prop changes only if user hasn't manually toggled
 	$effect(() => {
-		if (mode !== 'split') {
+		if (mode !== 'split' && !userHasToggled) {
 			internalMode = mode;
 		}
 	});
@@ -64,6 +66,7 @@
 	// Toggle between edit and preview modes
 	function togglePreview() {
 		internalMode = internalMode === 'edit' ? 'preview' : 'edit';
+		userHasToggled = true;
 	}
 
 	// Toolbar formatting functions

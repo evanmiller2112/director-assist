@@ -153,7 +153,10 @@ describe('NetworkNodeDetails Component - Node Information Display', () => {
 
 		expect(screen.getByText(/1.*connection/i)).toBeInTheDocument();
 		// Should not say "connections" (plural)
-		expect(screen.queryByText(/connections/i)?.textContent).not.toMatch(/1.*connections/i);
+		const connectionsText = screen.queryByText(/connection/i);
+		if (connectionsText?.textContent) {
+			expect(connectionsText.textContent).not.toMatch(/1.*connections/i);
+		}
 	});
 
 	it('should display plural connections text for multiple connections', () => {

@@ -17,7 +17,10 @@ import SceneContextPanel from './SceneContextPanel.svelte';
 import type { BaseEntity } from '$lib/types';
 
 // Mock entity repository
-const mockGetById = vi.fn();
+const { mockGetById } = vi.hoisted(() => ({
+	mockGetById: vi.fn()
+}));
+
 vi.mock('$lib/db/entityRepository', () => ({
 	entityRepository: {
 		getById: mockGetById

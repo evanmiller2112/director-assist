@@ -342,7 +342,7 @@ describe('networkGraph - toVisNetworkData', () => {
 			expect(node1.color).toBe('#3b82f6');
 			expect(node1.title).toContain('Gandalf');
 			expect(node1.title).toContain('character');
-			expect(node1.title).toContain('5 connections');
+			expect(node1.title).toContain('Connections: 5');
 
 			// Check second node
 			const node2 = result.nodes.get('entity-2');

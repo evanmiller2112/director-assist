@@ -36,6 +36,18 @@ vi.mock('$lib/stores', async () => {
 			info: vi.fn(),
 			warning: vi.fn(),
 			dismiss: vi.fn()
+		},
+		aiSettings: {
+			isEnabled: false,
+			apiProvider: null,
+			openaiKey: null,
+			anthropicKey: null,
+			enable: vi.fn(),
+			disable: vi.fn(),
+			setApiProvider: vi.fn(),
+			setOpenaiKey: vi.fn(),
+			setAnthropicKey: vi.fn(),
+			load: vi.fn()
 		}
 	};
 });

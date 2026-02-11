@@ -298,7 +298,7 @@ describe('Scene Mood Field - Draw Steel Enhancement (Issue #286)', () => {
 			moodField = getSceneMoodField();
 			expect(moodField?.order).toBeDefined();
 			expect(typeof moodField?.order).toBe('number');
-			expect(moodField?.order).toBe(9); // Current position in field order
+			expect(moodField?.order).toBe(12); // Current position in field order
 		});
 	});
 

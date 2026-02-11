@@ -59,7 +59,31 @@ describe('Chat Store', () => {
 
 		// Mock the dependencies
 		vi.doMock('$lib/db/repositories', () => ({
-			chatRepository: mockChatRepository
+			chatRepository: mockChatRepository,
+			combatRepository: {
+				getAll: vi.fn(() => ({ subscribe: vi.fn() })),
+				create: vi.fn(),
+				update: vi.fn(),
+				delete: vi.fn()
+			},
+			montageRepository: {
+				getAll: vi.fn(() => ({ subscribe: vi.fn() })),
+				create: vi.fn(),
+				update: vi.fn(),
+				delete: vi.fn()
+			},
+			creatureRepository: {
+				getAll: vi.fn(() => ({ subscribe: vi.fn() })),
+				create: vi.fn(),
+				update: vi.fn(),
+				delete: vi.fn()
+			},
+			negotiationRepository: {
+				getAll: vi.fn(() => ({ subscribe: vi.fn() })),
+				create: vi.fn(),
+				update: vi.fn(),
+				delete: vi.fn()
+			}
 		}));
 
 		vi.doMock('$lib/services/chatService', () => ({

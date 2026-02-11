@@ -365,7 +365,7 @@ describe('Scene Entity Type Definition', () => {
 			it('should have exactly 8 mood options', () => {
 				sceneType = getSceneType();
 				field = sceneType?.fieldDefinitions.find((f) => f.key === 'mood');
-				expect(field?.options?.length).toBe(8);
+				expect(field?.options?.length).toBe(11);
 			});
 
 			it('should have correct mood options', () => {
@@ -379,7 +379,10 @@ describe('Scene Entity Type Definition', () => {
 					'somber',
 					'chaotic',
 					'peaceful',
-					'ominous'
+					'ominous',
+					'triumphant',
+					'desperate',
+					'exhilarating'
 				]);
 			});
 

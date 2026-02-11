@@ -57,6 +57,14 @@ vi.mock('$lib/stores', () => ({
 	campaignStore: {
 		customEntityTypes: [],
 		entityTypeOverrides: []
+	},
+	debugStore: {
+		isEnabled: false,
+		logs: [],
+		addLog: vi.fn(),
+		clear: vi.fn(),
+		enable: vi.fn(),
+		disable: vi.fn()
 	}
 }));
 

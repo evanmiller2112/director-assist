@@ -11,7 +11,8 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/svelte';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/svelte';
+import { tick } from 'svelte';
 import FieldTemplateDeleteModal from './FieldTemplateDeleteModal.svelte';
 import type { FieldTemplate } from '$lib/types';
 
@@ -92,7 +93,8 @@ describe('FieldTemplateDeleteModal - Basic Rendering (Issue #210)', () => {
 			}
 		});
 
-		expect(screen.getByText(/delete.*template/i)).toBeInTheDocument();
+		const title = screen.getByRole('heading', { name: /delete.*template/i });
+		expect(title).toBeInTheDocument();
 	});
 });
 
@@ -130,8 +132,12 @@ describe('FieldTemplateDeleteModal - Template Display (Issue #210)', () => {
 			}
 		});
 
-		expect(screen.getByText(/delete|remove|permanently/i)).toBeInTheDocument();
-		expect(screen.getByText(/cannot be undone|permanent/i)).toBeInTheDocument();
+		// Check for confirmation message in the description
+		const description = screen.getByText(/are you sure.*want to delete.*field template/i);
+		expect(description).toBeInTheDocument();
+
+		// Check for warning about it being permanent
+		expect(screen.getByText(/cannot be undone/i)).toBeInTheDocument();
 	});
 
 	it('should display template name in quotes or emphasized', () => {

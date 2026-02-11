@@ -101,14 +101,14 @@ describe('Dice Field Type - Value Format', () => {
 			// Test will fail until implementation
 			// Expected: '1d8+3' is valid dice notation with positive modifier
 			const value = '1d8+3';
-			expect(value).toMatch(/^\d+d\d+[+\-]\d+$/);
+			expect(value).toMatch(/^\d+d\d+[+-]\d+$/);
 		});
 
 		it('should accept dice with negative modifier (3d10-2)', () => {
 			// Test will fail until implementation
 			// Expected: '3d10-2' is valid dice notation with negative modifier
 			const value = '3d10-2';
-			expect(value).toMatch(/^\d+d\d+[+\-]\d+$/);
+			expect(value).toMatch(/^\d+d\d+[+-]\d+$/);
 		});
 
 		it('should accept single die notation (1d20)', () => {
@@ -138,35 +138,35 @@ describe('Dice Field Type - Value Format', () => {
 			// Test will fail until implementation
 			// Expected: 'd6' is invalid (missing count)
 			const value = 'd6';
-			expect(value).not.toMatch(/^\d+d\d+([+\-]\d+)?$/);
+			expect(value).not.toMatch(/^\d+d\d+([+-]\d+)?$/);
 		});
 
 		it('should reject dice notation without die size (2d)', () => {
 			// Test will fail until implementation
 			// Expected: '2d' is invalid (missing size)
 			const value = '2d';
-			expect(value).not.toMatch(/^\d+d\d+([+\-]\d+)?$/);
+			expect(value).not.toMatch(/^\d+d\d+([+-]\d+)?$/);
 		});
 
 		it('should reject dice notation with multiple modifiers (2d6+3-1)', () => {
 			// Test will fail until implementation
 			// Expected: '2d6+3-1' is invalid (multiple modifiers)
 			const value = '2d6+3-1';
-			expect(value).not.toMatch(/^\d+d\d+[+\-]\d+$/);
+			expect(value).not.toMatch(/^\d+d\d+[+-]\d+$/);
 		});
 
 		it('should reject plain numbers as dice (5)', () => {
 			// Test will fail until implementation
 			// Expected: '5' is not dice notation
 			const value = '5';
-			expect(value).not.toMatch(/^\d+d\d+([+\-]\d+)?$/);
+			expect(value).not.toMatch(/^\d+d\d+([+-]\d+)?$/);
 		});
 
 		it('should reject text that is not dice notation (heavy damage)', () => {
 			// Test will fail until implementation
 			// Expected: 'heavy damage' is not dice notation
 			const value = 'heavy damage';
-			expect(value).not.toMatch(/^\d+d\d+([+\-]\d+)?$/);
+			expect(value).not.toMatch(/^\d+d\d+([+-]\d+)?$/);
 		});
 	});
 
@@ -182,7 +182,7 @@ describe('Dice Field Type - Value Format', () => {
 			// Test will fail until implementation
 			// Expected: '2d6+100' is valid with large modifier
 			const value = '2d6+100';
-			expect(value).toMatch(/^\d+d\d+[+\-]\d+$/);
+			expect(value).toMatch(/^\d+d\d+[+-]\d+$/);
 		});
 
 		it('should handle spaces in notation gracefully (2 d 6)', () => {

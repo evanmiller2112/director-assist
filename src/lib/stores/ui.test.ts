@@ -124,8 +124,13 @@ describe('UI Store', () => {
 			expect(uiStore.theme).toBe('system');
 		});
 
+		it('should initialize with mobile sidebar closed', () => {
+			expect(uiStore.mobileSidebarOpen).toBe(false);
+		});
+
 		it('should have all state properties defined', () => {
 			expect(uiStore).toHaveProperty('sidebarCollapsed');
+			expect(uiStore).toHaveProperty('mobileSidebarOpen');
 			expect(uiStore).toHaveProperty('chatPanelOpen');
 			expect(uiStore).toHaveProperty('activeModal');
 			expect(uiStore).toHaveProperty('selectedEntityId');
@@ -168,6 +173,89 @@ describe('UI Store', () => {
 
 			uiStore.toggleSidebar(); // false
 			expect(uiStore.sidebarCollapsed).toBe(false);
+		});
+	});
+
+	describe('Mobile Sidebar State', () => {
+		it('should initialize with mobile sidebar closed', () => {
+			expect(uiStore.mobileSidebarOpen).toBe(false);
+		});
+
+		describe('toggleMobileSidebar()', () => {
+			it('should toggle mobile sidebar from closed to open', () => {
+				expect(uiStore.mobileSidebarOpen).toBe(false);
+
+				uiStore.toggleMobileSidebar();
+
+				expect(uiStore.mobileSidebarOpen).toBe(true);
+			});
+
+			it('should toggle mobile sidebar from open to closed', () => {
+				uiStore.toggleMobileSidebar();
+				expect(uiStore.mobileSidebarOpen).toBe(true);
+
+				uiStore.toggleMobileSidebar();
+
+				expect(uiStore.mobileSidebarOpen).toBe(false);
+			});
+
+			it('should handle multiple toggles', () => {
+				uiStore.toggleMobileSidebar(); // true
+				uiStore.toggleMobileSidebar(); // false
+				uiStore.toggleMobileSidebar(); // true
+
+				expect(uiStore.mobileSidebarOpen).toBe(true);
+			});
+		});
+
+		describe('closeMobileSidebar()', () => {
+			it('should close mobile sidebar when open', () => {
+				uiStore.toggleMobileSidebar();
+				expect(uiStore.mobileSidebarOpen).toBe(true);
+
+				uiStore.closeMobileSidebar();
+
+				expect(uiStore.mobileSidebarOpen).toBe(false);
+			});
+
+			it('should be safe to call when already closed', () => {
+				expect(uiStore.mobileSidebarOpen).toBe(false);
+
+				uiStore.closeMobileSidebar();
+
+				expect(uiStore.mobileSidebarOpen).toBe(false);
+			});
+
+			it('should work after multiple toggles', () => {
+				uiStore.toggleMobileSidebar();
+				uiStore.toggleMobileSidebar();
+				uiStore.toggleMobileSidebar();
+
+				uiStore.closeMobileSidebar();
+
+				expect(uiStore.mobileSidebarOpen).toBe(false);
+			});
+		});
+
+		it('should not affect desktop sidebar state', () => {
+			expect(uiStore.sidebarCollapsed).toBe(false);
+
+			uiStore.toggleMobileSidebar();
+
+			expect(uiStore.sidebarCollapsed).toBe(false);
+			expect(uiStore.mobileSidebarOpen).toBe(true);
+		});
+
+		it('should not affect other state when toggling mobile sidebar', () => {
+			uiStore.openChatPanel();
+			uiStore.openModal('test-modal');
+			uiStore.selectEntity('entity-123');
+
+			uiStore.toggleMobileSidebar();
+
+			expect(uiStore.chatPanelOpen).toBe(true);
+			expect(uiStore.activeModal).toBe('test-modal');
+			expect(uiStore.selectedEntityId).toBe('entity-123');
 		});
 	});
 

@@ -13,6 +13,8 @@
 	import type { EntityTypeDefinition } from '$lib/types';
 	import { onMount } from 'svelte';
 
+	let { mobileOpen = false }: { mobileOpen?: boolean } = $props();
+
 	let quickAddOpen = $state(false);
 	let editMode = $state(false);
 	let orderedTypes = $state<EntityTypeDefinition[]>([]);
@@ -98,7 +100,7 @@
 	}
 </script>
 
-<aside class="dashboard-sidebar flex flex-col bg-surface-secondary dark:bg-surface-dark-secondary">
+<aside class="dashboard-sidebar flex flex-col bg-surface-secondary dark:bg-surface-dark-secondary {mobileOpen ? 'mobile-open' : ''}">
 	<!-- Navigation -->
 	<nav class="flex-1 overflow-y-auto p-4">
 		<!-- Home -->

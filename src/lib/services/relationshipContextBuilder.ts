@@ -62,6 +62,39 @@ export interface RelationshipContextStats {
 	entityTypeBreakdown: Record<string, number>;
 }
 
+/**
+ * Information about a single relationship (for grouped context)
+ */
+export interface RelationshipInfo {
+	relationship: string;
+	direction: 'outgoing' | 'incoming';
+	depth: number;
+	strength?: 'strong' | 'moderate' | 'weak';
+	notes?: string;
+}
+
+/**
+ * A related entity with all its relationships grouped together
+ */
+export interface GroupedRelatedEntityContext {
+	entityId: EntityId;
+	entityType: EntityType;
+	name: string;
+	summary: string;
+	relationships: RelationshipInfo[];
+}
+
+/**
+ * Complete grouped relationship context for an entity
+ */
+export interface GroupedRelationshipContext {
+	sourceEntityId: EntityId;
+	sourceEntityName: string;
+	relatedEntities: GroupedRelatedEntityContext[];
+	totalCharacters: number;
+	truncated: boolean;
+}
+
 const DEFAULT_OPTIONS: Required<RelationshipContextOptions> = {
 	maxRelatedEntities: 20,
 	maxCharacters: 4000,
@@ -106,7 +139,7 @@ export async function buildRelationshipContext(
 		{ entity: sourceEntity, depth: 0 }
 	];
 
-	const relatedEntitiesMap = new Map<EntityId, RelatedEntityContext>();
+	const relatedEntitiesMap = new Map<string, RelatedEntityContext>();
 
 	while (toProcess.length > 0) {
 		const { entity, depth } = toProcess.shift()!;
@@ -137,8 +170,11 @@ export async function buildRelationshipContext(
 						continue;
 					}
 
+					// Create composite key: entityId|relationship|direction
+					const compositeKey = `${link.targetId}|${link.relationship}|outgoing`;
+
 					// Skip if already visited (at this or shallower depth)
-					const existingEntry = relatedEntitiesMap.get(link.targetId);
+					const existingEntry = relatedEntitiesMap.get(compositeKey);
 					if (existingEntry && existingEntry.depth <= depth + 1) {
 						continue;
 					}
@@ -179,7 +215,7 @@ export async function buildRelationshipContext(
 						entry.notes = link.notes;
 					}
 
-					relatedEntitiesMap.set(link.targetId, entry);
+					relatedEntitiesMap.set(compositeKey, entry);
 
 					// Add to processing queue if not visited and the new depth would be less than maxDepth
 					// This allows processing at depth 1 to create depth 2 entries when maxDepth=2
@@ -213,8 +249,11 @@ export async function buildRelationshipContext(
 					continue;
 				}
 
-				// Skip if already in outgoing
-				if (relatedEntitiesMap.has(incomingEntity.id)) {
+				// Create composite key: entityId|relationship|direction
+				const compositeKey = `${incomingEntity.id}|${link.relationship}|incoming`;
+
+				// Skip if already exists with this relationship
+				if (relatedEntitiesMap.has(compositeKey)) {
 					continue;
 				}
 
@@ -240,7 +279,7 @@ export async function buildRelationshipContext(
 					entry.notes = link.notes;
 				}
 
-				relatedEntitiesMap.set(incomingEntity.id, entry);
+				relatedEntitiesMap.set(compositeKey, entry);
 			}
 		}
 	}
@@ -427,4 +466,198 @@ export function buildPrivacySafeSummary(entity: BaseEntity): string {
  */
 function capitalizeFirstLetter(str: string): string {
 	return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+/**
+ * Build grouped relationship context for an entity.
+ * Groups multiple relationships to the same entity together, avoiding duplicate entity data.
+ */
+export async function buildGroupedRelationshipContext(
+	sourceEntityId: EntityId,
+	options: RelationshipContextOptions = {}
+): Promise<GroupedRelationshipContext> {
+	// First, get the full relationship context with high limits and no character limit
+	// We'll apply our own limits based on the grouped format
+	const fullContext = await buildRelationshipContext(sourceEntityId, {
+		...options,
+		maxRelatedEntities: 1000, // High limit to get all relationships
+		maxCharacters: 1000000 // Very high limit, we'll apply our own
+	});
+
+	// Group relationships by entity ID
+	const entityGroups = new Map<EntityId, GroupedRelatedEntityContext>();
+
+	for (const relatedEntity of fullContext.relatedEntities) {
+		let grouped = entityGroups.get(relatedEntity.entityId);
+
+		if (!grouped) {
+			// Create new grouped entry
+			grouped = {
+				entityId: relatedEntity.entityId,
+				entityType: relatedEntity.entityType,
+				name: relatedEntity.name,
+				summary: relatedEntity.summary,
+				relationships: []
+			};
+			entityGroups.set(relatedEntity.entityId, grouped);
+		}
+
+		// Add relationship info
+		const relationshipInfo: RelationshipInfo = {
+			relationship: relatedEntity.relationship,
+			direction: relatedEntity.direction,
+			depth: relatedEntity.depth
+		};
+
+		if (relatedEntity.strength) {
+			relationshipInfo.strength = relatedEntity.strength;
+		}
+
+		if (relatedEntity.notes) {
+			relationshipInfo.notes = relatedEntity.notes;
+		}
+
+		grouped.relationships.push(relationshipInfo);
+	}
+
+	// Convert map to array
+	const allGroupedEntities = Array.from(entityGroups.values());
+
+	// Apply maxRelatedEntities limit (now it's unique entity count)
+	const opts = { ...DEFAULT_OPTIONS, ...options };
+	let entitiesToInclude = allGroupedEntities;
+	let truncated = false;
+
+	if (allGroupedEntities.length > opts.maxRelatedEntities) {
+		entitiesToInclude = allGroupedEntities.slice(0, opts.maxRelatedEntities);
+		truncated = true;
+	}
+
+	// Apply maxCharacters limit based on grouped format
+	const finalEntities: GroupedRelatedEntityContext[] = [];
+
+	// Calculate header and potential footer lengths
+	const header = `=== Relationships for ${fullContext.sourceEntityName} ===\n`;
+	const footer =
+		'\n(Context truncated - additional relationships available but not included due to limits)';
+
+	let runningTotal = header.length;
+
+	// Try to fit entities within the character limit
+	for (const groupedEntity of entitiesToInclude) {
+		const formatted = formatGroupedEntityEntry(groupedEntity);
+		const entryLength = formatted.length + 1; // +1 for newline separator
+
+		// Calculate remaining budget
+		const remainingBudget = opts.maxCharacters - runningTotal - footer.length;
+
+		// Check if adding this entity would exceed the limit
+		if (entryLength > remainingBudget) {
+			// If we haven't added any entities yet, truncate this one to fit
+			if (finalEntities.length === 0) {
+				// Truncate the summary to fit within budget
+				const maxSummaryLength = Math.max(50, remainingBudget - 200); // Reserve space for other parts
+				const truncatedEntity = {
+					...groupedEntity,
+					summary:
+						groupedEntity.summary.length > maxSummaryLength
+							? groupedEntity.summary.substring(0, maxSummaryLength) + '...'
+							: groupedEntity.summary
+				};
+				finalEntities.push(truncatedEntity);
+				const truncatedFormatted = formatGroupedEntityEntry(truncatedEntity);
+				runningTotal += truncatedFormatted.length + 1;
+				truncated = true;
+			} else {
+				// We have other entities, just stop here
+				truncated = true;
+			}
+			break;
+		} else {
+			finalEntities.push(groupedEntity);
+			runningTotal += entryLength;
+		}
+	}
+
+	// Add footer length if truncated
+	const totalCharacters = truncated ? runningTotal + footer.length : runningTotal;
+
+	return {
+		sourceEntityId: fullContext.sourceEntityId,
+		sourceEntityName: fullContext.sourceEntityName,
+		relatedEntities: finalEntities,
+		totalCharacters,
+		truncated
+	};
+}
+
+/**
+ * Format a single grouped entity entry for display.
+ * Format: Name (Type) - Relationships: rel1, rel2, rel3
+ *   Summary: summary...
+ *   [Strength: strong] [Notes: notes] (per relationship if applicable)
+ */
+export function formatGroupedEntityEntry(entry: GroupedRelatedEntityContext): string {
+	const typeDefinition = getEntityTypeDefinition(entry.entityType);
+	const typeName = typeDefinition?.label ?? capitalizeFirstLetter(entry.entityType);
+
+	// Format relationship list
+	const relationshipsList = entry.relationships.map((r) => r.relationship).join(', ');
+
+	// Remove entity name from summary to avoid duplication
+	// buildPrivacySafeSummary includes the name at the start
+	let summary = entry.summary;
+	if (summary.startsWith(entry.name + '. ')) {
+		summary = summary.substring(entry.name.length + 2);
+	} else if (summary.startsWith(entry.name + ', ')) {
+		summary = summary.substring(entry.name.length + 2);
+	} else if (summary === entry.name) {
+		summary = '(No additional details)';
+	}
+
+	let formatted = `${entry.name} (${typeName}) - Relationships: ${relationshipsList}\n`;
+	formatted += `  Summary: ${summary}`;
+
+	// Add strength and notes for each relationship if present
+	for (const rel of entry.relationships) {
+		if (rel.strength || rel.notes) {
+			formatted += '\n  ';
+			const details: string[] = [];
+
+			if (rel.strength) {
+				details.push(`[Strength: ${rel.strength}]`);
+			}
+
+			if (rel.notes) {
+				details.push(`[Notes: ${rel.notes}]`);
+			}
+
+			formatted += `${rel.relationship}: ${details.join(' ')}`;
+		}
+	}
+
+	return formatted;
+}
+
+/**
+ * Format complete grouped relationship context for AI prompt injection.
+ */
+export function formatGroupedRelationshipContextForPrompt(
+	context: GroupedRelationshipContext
+): string {
+	const header = `=== Relationships for ${context.sourceEntityName} ===\n`;
+
+	if (context.relatedEntities.length === 0) {
+		return header + 'No relationships found.\n';
+	}
+
+	const entries = context.relatedEntities
+		.map((entry) => formatGroupedEntityEntry(entry))
+		.join('\n');
+
+	const footer = context.truncated
+		? '\n(Context truncated - additional relationships available but not included due to limits)'
+		: '';
+
+	return header + entries + footer;
 }

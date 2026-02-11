@@ -2689,3 +2689,500 @@ describe('RelateCommand Component - Notes Field', () => {
 		});
 	});
 });
+
+describe('RelateCommand Component - Multiple Relationships to Same Entity', () => {
+	let sourceEntity: BaseEntity;
+	let targetEntities: BaseEntity[];
+
+	beforeEach(() => {
+		vi.clearAllMocks();
+
+		// Create mock stores
+		mockEntitiesStore = createMockEntitiesStore();
+		mockCampaignStore = createMockCampaignStore();
+
+		// Create source entity with existing links to target-1
+		sourceEntity = createMockEntity({
+			id: 'source-1',
+			name: 'Aragorn',
+			type: 'character',
+			links: [
+				{
+					id: 'link-1',
+					targetId: 'target-1',
+					targetType: 'faction',
+					relationship: 'friend_of',
+					bidirectional: false
+				}
+			]
+		});
+
+		// Create target entities
+		targetEntities = [
+			createMockEntity({
+				id: 'target-1',
+				name: 'Fellowship of the Ring',
+				type: 'faction',
+				links: []
+			}),
+			createMockEntity({
+				id: 'target-2',
+				name: 'Rivendell',
+				type: 'location',
+				links: []
+			}),
+			createMockEntity({
+				id: 'target-3',
+				name: 'Gandalf',
+				type: 'character',
+				links: []
+			})
+		];
+
+		// Set up entities in store
+		mockEntitiesStore._setEntities([sourceEntity, ...targetEntities]);
+	});
+
+	describe('Entity List Filtering', () => {
+		it('should show entities that already have a relationship in the selection list', () => {
+			render(RelateCommand, {
+				props: {
+					sourceEntity,
+					open: true
+				}
+			});
+
+			// The entity list should include target-1 even though it has an existing link
+			const searchResults = screen.getAllByRole('button');
+			const targetButton = searchResults.find((btn) =>
+				btn.textContent?.includes('Fellowship of the Ring')
+			);
+
+			expect(targetButton).toBeDefined();
+		});
+
+		it('should still exclude the source entity itself from the list', () => {
+			render(RelateCommand, {
+				props: {
+					sourceEntity,
+					open: true
+				}
+			});
+
+			// The entity list should NOT include the source entity
+			const searchResults = screen.getAllByRole('button');
+			const sourceButton = searchResults.find((btn) => btn.textContent?.includes('Aragorn'));
+
+			expect(sourceButton).toBeUndefined();
+		});
+
+		it('should show all entities when search is empty, regardless of existing links', () => {
+			render(RelateCommand, {
+				props: {
+					sourceEntity,
+					open: true
+				}
+			});
+
+			// Should show all target entities (3) in the list
+			const searchResults = screen.getAllByRole('button');
+			const entityButtons = searchResults.filter(
+				(btn) =>
+					btn.textContent?.includes('Fellowship of the Ring') ||
+					btn.textContent?.includes('Rivendell') ||
+					btn.textContent?.includes('Gandalf')
+			);
+
+			expect(entityButtons).toHaveLength(3);
+		});
+	});
+
+	describe('Link Count Badge Display', () => {
+		it('should display a link count badge for entities with existing relationships', () => {
+			render(RelateCommand, {
+				props: {
+					sourceEntity,
+					open: true
+				}
+			});
+
+			// Should find a badge showing "1" for the linked entity
+			const badge = screen.getByTestId('link-count-badge');
+			expect(badge).toBeInTheDocument();
+			expect(badge.textContent).toBe('1');
+		});
+
+		it('should display correct count for entities with multiple existing relationships', () => {
+			// Update source entity to have 2 different relationships to target-1
+			sourceEntity = createMockEntity({
+				id: 'source-1',
+				name: 'Aragorn',
+				type: 'character',
+				links: [
+					{
+						id: 'link-1',
+						targetId: 'target-1',
+						targetType: 'faction',
+						relationship: 'friend_of',
+						bidirectional: false
+					},
+					{
+						id: 'link-2',
+						targetId: 'target-1',
+						targetType: 'faction',
+						relationship: 'member_of',
+						bidirectional: false
+					}
+				]
+			});
+
+			mockEntitiesStore._setEntities([sourceEntity, ...targetEntities]);
+
+			render(RelateCommand, {
+				props: {
+					sourceEntity,
+					open: true
+				}
+			});
+
+			// Should find a badge showing "2" for the entity with 2 links
+			const badge = screen.getByTestId('link-count-badge');
+			expect(badge).toBeInTheDocument();
+			expect(badge.textContent).toBe('2');
+		});
+
+		it('should NOT display a link count badge for entities with no existing relationships', () => {
+			render(RelateCommand, {
+				props: {
+					sourceEntity,
+					open: true
+				}
+			});
+
+			// Should NOT find badges for entities without links
+			// Query all badges and verify none are for target-2 or target-3
+			const badges = screen.queryAllByTestId('link-count-badge');
+
+			// Since only target-1 has a link, there should be exactly 1 badge
+			expect(badges).toHaveLength(1);
+		});
+	});
+
+	describe('Existing Relationships Display', () => {
+		it('should display existing relationship types when a linked entity is selected', async () => {
+			render(RelateCommand, {
+				props: {
+					sourceEntity,
+					open: true
+				}
+			});
+
+			// Select the entity with existing link
+			const searchResults = screen.getAllByRole('button');
+			const targetButton = searchResults.find((btn) =>
+				btn.textContent?.includes('Fellowship of the Ring')
+			);
+			expect(targetButton).toBeDefined();
+			await fireEvent.click(targetButton!);
+
+			// Should show existing relationship "friend_of"
+			const existingRelationshipText = screen.getByText(/friend_of/i);
+			expect(existingRelationshipText).toBeInTheDocument();
+		});
+
+		it('should NOT display existing relationships section when an unlinked entity is selected', async () => {
+			render(RelateCommand, {
+				props: {
+					sourceEntity,
+					open: true
+				}
+			});
+
+			// Select an entity without existing link
+			const searchResults = screen.getAllByRole('button');
+			const targetButton = searchResults.find((btn) => btn.textContent?.includes('Rivendell'));
+			expect(targetButton).toBeDefined();
+			await fireEvent.click(targetButton!);
+
+			// Should NOT show any existing relationships text
+			const existingRelationshipText = screen.queryByText(/existing relationship/i);
+			expect(existingRelationshipText).not.toBeInTheDocument();
+		});
+
+		it('should display multiple existing relationship types for multiply-linked entities', async () => {
+			// Update source entity to have 2 different relationships to target-1
+			sourceEntity = createMockEntity({
+				id: 'source-1',
+				name: 'Aragorn',
+				type: 'character',
+				links: [
+					{
+						id: 'link-1',
+						targetId: 'target-1',
+						targetType: 'faction',
+						relationship: 'friend_of',
+						bidirectional: false
+					},
+					{
+						id: 'link-2',
+						targetId: 'target-1',
+						targetType: 'faction',
+						relationship: 'member_of',
+						bidirectional: false
+					}
+				]
+			});
+
+			mockEntitiesStore._setEntities([sourceEntity, ...targetEntities]);
+
+			render(RelateCommand, {
+				props: {
+					sourceEntity,
+					open: true
+				}
+			});
+
+			// Select the entity with multiple existing links
+			const searchResults = screen.getAllByRole('button');
+			const targetButton = searchResults.find((btn) =>
+				btn.textContent?.includes('Fellowship of the Ring')
+			);
+			await fireEvent.click(targetButton!);
+
+			// Should show both relationship types
+			const friendOfText = screen.getByText(/friend_of/i);
+			const memberOfText = screen.getByText(/member_of/i);
+
+			expect(friendOfText).toBeInTheDocument();
+			expect(memberOfText).toBeInTheDocument();
+		});
+	});
+
+	describe('Duplicate Relationship Type Validation', () => {
+		it('should show error when submitting a duplicate relationship type', async () => {
+			mockEntitiesStore.addLink = vi.fn().mockResolvedValue(undefined);
+
+			render(RelateCommand, {
+				props: {
+					sourceEntity,
+					open: true
+				}
+			});
+
+			// Select the entity with existing link
+			const searchResults = screen.getAllByRole('button');
+			const targetButton = searchResults.find((btn) =>
+				btn.textContent?.includes('Fellowship of the Ring')
+			);
+			await fireEvent.click(targetButton!);
+
+			// Enter the SAME relationship type that already exists
+			const relationshipInput = screen.getByLabelText(/relationship/i) as HTMLInputElement;
+			await fireEvent.input(relationshipInput, { target: { value: 'friend_of' } });
+
+			// Submit
+			const submitButton = screen.getByRole('button', { name: /create link/i });
+			await fireEvent.click(submitButton);
+
+			// Should show error message about duplicate
+			await waitFor(() => {
+				const errorMessage = screen.getByText(/already exists|duplicate/i);
+				expect(errorMessage).toBeInTheDocument();
+			});
+
+			// addLink should NOT be called
+			expect(mockEntitiesStore.addLink).not.toHaveBeenCalled();
+		});
+
+		it('should allow creating a new relationship type to an already-linked entity', async () => {
+			mockEntitiesStore.addLink = vi.fn().mockResolvedValue(undefined);
+
+			render(RelateCommand, {
+				props: {
+					sourceEntity,
+					open: true
+				}
+			});
+
+			// Select the entity with existing link
+			const searchResults = screen.getAllByRole('button');
+			const targetButton = searchResults.find((btn) =>
+				btn.textContent?.includes('Fellowship of the Ring')
+			);
+			await fireEvent.click(targetButton!);
+
+			// Enter a DIFFERENT relationship type
+			const relationshipInput = screen.getByLabelText(/relationship/i) as HTMLInputElement;
+			await fireEvent.input(relationshipInput, { target: { value: 'member_of' } });
+
+			// Submit
+			const submitButton = screen.getByRole('button', { name: /create link/i });
+			await fireEvent.click(submitButton);
+
+			// addLink SHOULD be called
+			await waitFor(() => {
+				expect(mockEntitiesStore.addLink).toHaveBeenCalledWith(
+					sourceEntity.id,
+					'target-1',
+					'member_of',
+					expect.any(Boolean),
+					expect.any(String),
+					undefined, // strength
+					expect.any(Object), // metadata
+					undefined, // reverseRelationship
+					undefined // playerVisible
+				);
+			});
+		});
+
+		it('should clear duplicate error message when relationship type is changed', async () => {
+			mockEntitiesStore.addLink = vi.fn().mockResolvedValue(undefined);
+
+			render(RelateCommand, {
+				props: {
+					sourceEntity,
+					open: true
+				}
+			});
+
+			// Select the entity with existing link
+			const searchResults = screen.getAllByRole('button');
+			const targetButton = searchResults.find((btn) =>
+				btn.textContent?.includes('Fellowship of the Ring')
+			);
+			await fireEvent.click(targetButton!);
+
+			// Enter duplicate relationship type
+			const relationshipInput = screen.getByLabelText(/relationship/i) as HTMLInputElement;
+			await fireEvent.input(relationshipInput, { target: { value: 'friend_of' } });
+
+			// Submit to trigger error
+			const submitButton = screen.getByRole('button', { name: /create link/i });
+			await fireEvent.click(submitButton);
+
+			// Verify error appears
+			await waitFor(() => {
+				const errorMessage = screen.getByText(/already exists|duplicate/i);
+				expect(errorMessage).toBeInTheDocument();
+			});
+
+			// Change relationship type to something different
+			await fireEvent.input(relationshipInput, { target: { value: 'member_of' } });
+
+			// Error should be cleared
+			await waitFor(() => {
+				const errorMessage = screen.queryByText(/already exists|duplicate/i);
+				expect(errorMessage).not.toBeInTheDocument();
+			});
+		});
+	});
+
+	describe('Edge Cases', () => {
+		it('should reset existing relationships display when entity selection is cleared', async () => {
+			render(RelateCommand, {
+				props: {
+					sourceEntity,
+					open: true
+				}
+			});
+
+			// Select the entity with existing link
+			const searchResults = screen.getAllByRole('button');
+			const targetButton = searchResults.find((btn) =>
+				btn.textContent?.includes('Fellowship of the Ring')
+			);
+			await fireEvent.click(targetButton!);
+
+			// Verify existing relationship is shown
+			const existingRelationshipText = screen.getByText(/friend_of/i);
+			expect(existingRelationshipText).toBeInTheDocument();
+
+			// Clear selection by clicking the X button
+			const clearButton = screen.getByLabelText(/clear selection/i);
+			await fireEvent.click(clearButton);
+
+			// Existing relationships display should be gone
+			const existingRelationshipTextAfter = screen.queryByText(/friend_of/i);
+			expect(existingRelationshipTextAfter).not.toBeInTheDocument();
+		});
+
+		it('should handle entity with many existing relationship types', async () => {
+			// Create source entity with 5 different relationships to target-1
+			sourceEntity = createMockEntity({
+				id: 'source-1',
+				name: 'Aragorn',
+				type: 'character',
+				links: [
+					{
+						id: 'link-1',
+						targetId: 'target-1',
+						targetType: 'faction',
+						relationship: 'friend_of',
+						bidirectional: false
+					},
+					{
+						id: 'link-2',
+						targetId: 'target-1',
+						targetType: 'faction',
+						relationship: 'member_of',
+						bidirectional: false
+					},
+					{
+						id: 'link-3',
+						targetId: 'target-1',
+						targetType: 'faction',
+						relationship: 'allied_with',
+						bidirectional: false
+					},
+					{
+						id: 'link-4',
+						targetId: 'target-1',
+						targetType: 'faction',
+						relationship: 'leads',
+						bidirectional: false
+					},
+					{
+						id: 'link-5',
+						targetId: 'target-1',
+						targetType: 'faction',
+						relationship: 'knows',
+						bidirectional: false
+					}
+				]
+			});
+
+			mockEntitiesStore._setEntities([sourceEntity, ...targetEntities]);
+
+			render(RelateCommand, {
+				props: {
+					sourceEntity,
+					open: true
+				}
+			});
+
+			// Badge should show correct count
+			const badge = screen.getByTestId('link-count-badge');
+			expect(badge.textContent).toBe('5');
+
+			// Select the entity
+			const searchResults = screen.getAllByRole('button');
+			const targetButton = searchResults.find((btn) =>
+				btn.textContent?.includes('Fellowship of the Ring')
+			);
+			await fireEvent.click(targetButton!);
+
+			// All 5 relationship types should be displayed
+			const friendOfText = screen.getByText(/friend_of/i);
+			const memberOfText = screen.getByText(/member_of/i);
+			const alliedWithText = screen.getByText(/allied_with/i);
+			const leadsText = screen.getByText(/leads/i);
+			const knowsText = screen.getByText(/knows/i);
+
+			expect(friendOfText).toBeInTheDocument();
+			expect(memberOfText).toBeInTheDocument();
+			expect(alliedWithText).toBeInTheDocument();
+			expect(leadsText).toBeInTheDocument();
+			expect(knowsText).toBeInTheDocument();
+		});
+	});
+});

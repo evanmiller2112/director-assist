@@ -4,6 +4,7 @@
     import { getEntityTypeDefinition } from '$lib/config/entityTypes';
     import { getIconComponent } from '$lib/utils/icons';
     import { ArrowLeft } from 'lucide-svelte';
+    import PlayerEntityDetail from '$lib/components/player/PlayerEntityDetail.svelte';
 
     const entityId = $derived($page.params.id ?? '');
     const entity = $derived(playerDataStore.getEntityById(entityId));
@@ -40,75 +41,8 @@
             </div>
         </div>
 
-        <!-- Tags -->
-        {#if entity.tags.length > 0}
-            <div class="flex flex-wrap gap-2 mb-6">
-                {#each entity.tags as tag}
-                    <span class="bg-slate-100 dark:bg-slate-700 px-3 py-1 rounded-full text-sm text-slate-700 dark:text-slate-300">
-                        {tag}
-                    </span>
-                {/each}
-            </div>
-        {/if}
-
-        <!-- Description -->
-        {#if entity.description}
-            <div class="mb-8">
-                <h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-2">Description</h2>
-                <div class="prose dark:prose-invert max-w-none text-slate-700 dark:text-slate-300 whitespace-pre-wrap">
-                    {entity.description}
-                </div>
-            </div>
-        {/if}
-
-        <!-- Fields (placeholder for issue #443) -->
-        {#if Object.keys(entity.fields).length > 0}
-            <div class="mb-8">
-                <h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-3">Details</h2>
-                <div class="grid gap-3">
-                    {#each Object.entries(entity.fields) as [key, value]}
-                        {#if value !== null && value !== undefined && value !== ''}
-                            <div class="entity-card" data-type={entity.type}>
-                                <dt class="text-sm font-medium text-slate-500 dark:text-slate-400 capitalize">
-                                    {key.replace(/_/g, ' ')}
-                                </dt>
-                                <dd class="text-slate-900 dark:text-white mt-1">
-                                    {#if typeof value === 'boolean'}
-                                        {value ? 'Yes' : 'No'}
-                                    {:else if Array.isArray(value)}
-                                        {value.join(', ')}
-                                    {:else}
-                                        {value}
-                                    {/if}
-                                </dd>
-                            </div>
-                        {/if}
-                    {/each}
-                </div>
-            </div>
-        {/if}
-
-        <!-- Relationships (placeholder for issue #443) -->
-        {#if entity.links && entity.links.length > 0}
-            <div class="mb-8">
-                <h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-3">Relationships</h2>
-                <div class="grid gap-2">
-                    {#each entity.links as link}
-                        {@const linkTypeDef = getEntityTypeDefinition(link.targetType)}
-                        {@const LinkIcon = getIconComponent(linkTypeDef?.icon ?? 'package')}
-                        <a
-                            href="/player/entity/{link.targetId}"
-                            class="flex items-center gap-3 p-3 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
-                        >
-                            <LinkIcon class="w-5 h-5 flex-shrink-0" style="color: var(--color-{linkTypeDef?.color ?? 'slate'}, currentColor)" />
-                            <div class="flex-1">
-                                <span class="text-xs text-slate-500 dark:text-slate-400">{link.relationship}</span>
-                            </div>
-                        </a>
-                    {/each}
-                </div>
-            </div>
-        {/if}
+        <!-- Entity Detail Component -->
+        <PlayerEntityDetail {entity} />
     </div>
 {:else}
     <div class="text-center py-12">

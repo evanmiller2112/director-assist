@@ -179,7 +179,7 @@
 	<div class="space-y-4">
 		<!-- Name -->
 		<div>
-			<label for="name" class="block text-sm font-medium text-gray-700">
+			<label for="name" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
 				Negotiation Name <span class="text-red-600">*</span>
 			</label>
 			<input
@@ -198,7 +198,7 @@
 
 		<!-- NPC Name -->
 		<div>
-			<label for="npc-name" class="block text-sm font-medium text-gray-700">
+			<label for="npc-name" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
 				NPC Name <span class="text-red-600">*</span>
 			</label>
 			<input
@@ -217,7 +217,7 @@
 
 		<!-- Description -->
 		<div>
-			<label for="description" class="block text-sm font-medium text-gray-700">
+			<label for="description" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
 				Description
 			</label>
 			<textarea
@@ -230,7 +230,7 @@
 
 		<!-- Starting Interest -->
 		<div>
-			<label for="interest" class="block text-sm font-medium text-gray-700">
+			<label for="interest" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
 				Starting Interest
 			</label>
 			<select
@@ -248,7 +248,7 @@
 
 		<!-- Starting Patience -->
 		<div>
-			<label for="patience" class="block text-sm font-medium text-gray-700">
+			<label for="patience" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
 				Starting Patience
 			</label>
 			<select
@@ -268,7 +268,7 @@
 
 	<!-- Motivations Section -->
 	<fieldset class="space-y-3">
-		<legend class="text-lg font-semibold text-gray-900">Motivations</legend>
+		<legend class="text-lg font-semibold text-gray-900 dark:text-gray-100">Motivations</legend>
 
 		{#if motivations.length === 0}
 			<p class="text-sm text-gray-500">No motivations added yet.</p>
@@ -280,7 +280,7 @@
 						class="flex items-center gap-3 rounded-lg border border-gray-200 bg-white p-3"
 					>
 						<div class="flex-1 space-y-2">
-							<label for="motivation-type-{index}" class="block text-sm font-medium text-gray-700">
+							<label for="motivation-type-{index}" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
 								Motivation Type
 							</label>
 							<select
@@ -302,7 +302,7 @@
 								bind:checked={motivation.isKnown}
 								class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
 							/>
-							<label for="motivation-known-{index}" class="text-sm text-gray-700">
+							<label for="motivation-known-{index}" class="text-sm text-gray-700 dark:text-gray-300">
 								Known to heroes
 							</label>
 						</div>
@@ -336,7 +336,7 @@
 
 	<!-- Pitfalls Section -->
 	<fieldset class="space-y-3">
-		<legend class="text-lg font-semibold text-gray-900">Pitfalls</legend>
+		<legend class="text-lg font-semibold text-gray-900 dark:text-gray-100">Pitfalls</legend>
 
 		{#if pitfalls.length === 0}
 			<p class="text-sm text-gray-500">No pitfalls added yet.</p>
@@ -348,7 +348,7 @@
 						class="flex items-center gap-3 rounded-lg border border-red-200 bg-red-50 p-3"
 					>
 						<div class="flex-1 space-y-2">
-							<label for="pitfall-type-{index}" class="block text-sm font-medium text-gray-700">
+							<label for="pitfall-type-{index}" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
 								Pitfall Type
 							</label>
 							<select
@@ -370,7 +370,7 @@
 								bind:checked={pitfall.isKnown}
 								class="h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500"
 							/>
-							<label for="pitfall-known-{index}" class="text-sm text-gray-700">
+							<label for="pitfall-known-{index}" class="text-sm text-gray-700 dark:text-gray-300">
 								Known to heroes
 							</label>
 						</div>
@@ -407,7 +407,7 @@
 			<button
 				type="button"
 				onclick={handleCancel}
-				class="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+				class="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:hover:bg-gray-700"
 			>
 				Cancel
 			</button>

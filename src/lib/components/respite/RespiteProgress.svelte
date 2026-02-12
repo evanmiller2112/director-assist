@@ -6,18 +6,20 @@
 	 */
 
 	import type { RespiteSession } from '$lib/types/respite';
+	import type { BaseEntity } from '$lib/types';
 	import { Users, Activity, Trophy, Repeat } from 'lucide-svelte';
 
 	interface Props {
 		respite: RespiteSession;
+		activityEntities?: BaseEntity[];
 	}
 
-	let { respite }: Props = $props();
+	let { respite, activityEntities = [] }: Props = $props();
 
 	const completedActivities = $derived(
-		respite.activities.filter((a) => a.status === 'completed').length
+		activityEntities.filter((a) => a.fields.activityStatus === 'completed').length
 	);
-	const totalActivities = $derived(respite.activities.length);
+	const totalActivities = $derived(activityEntities.length);
 
 	const vpRemaining = $derived(
 		Math.max(0, respite.victoryPointsAvailable - respite.victoryPointsConverted)

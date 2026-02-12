@@ -2,14 +2,14 @@
 	/**
 	 * RespiteActivityCard Component
 	 *
-	 * Displays a single respite activity with type badge and status indicator.
+	 * Displays a single respite activity entity with type badge and status indicator.
 	 */
 
-	import type { RespiteActivity } from '$lib/types/respite';
+	import type { BaseEntity } from '$lib/types';
 	import { CheckCircle, Clock, Circle } from 'lucide-svelte';
 
 	interface Props {
-		activity: RespiteActivity;
+		activity: BaseEntity;
 		onComplete?: (activityId: string) => void;
 		onStart?: (activityId: string) => void;
 	}
@@ -29,15 +29,18 @@
 		return type.charAt(0).toUpperCase() + type.slice(1);
 	}
 
+	const activityStatus = $derived(activity.fields.activityStatus as string || 'pending');
+	const activityType = $derived(activity.fields.activityType as string || 'other');
+
 	const statusIcon = $derived.by(() => {
-		if (activity.status === 'completed') return CheckCircle;
-		if (activity.status === 'in_progress') return Clock;
+		if (activityStatus === 'completed') return CheckCircle;
+		if (activityStatus === 'in_progress') return Clock;
 		return Circle;
 	});
 
 	const statusColor = $derived.by(() => {
-		if (activity.status === 'completed') return 'text-green-600 dark:text-green-400';
-		if (activity.status === 'in_progress') return 'text-blue-600 dark:text-blue-400';
+		if (activityStatus === 'completed') return 'text-green-600 dark:text-green-400';
+		if (activityStatus === 'in_progress') return 'text-blue-600 dark:text-blue-400';
 		return 'text-slate-400 dark:text-slate-500';
 	});
 </script>
@@ -58,34 +61,34 @@
 		</div>
 
 		<!-- Type Badge -->
-		<span class="text-xs px-2 py-1 rounded-full font-medium {typeBadgeColors[activity.type] || typeBadgeColors.other}">
-			{formatType(activity.type)}
+		<span class="text-xs px-2 py-1 rounded-full font-medium {typeBadgeColors[activityType] || typeBadgeColors.other}">
+			{formatType(activityType)}
 		</span>
 	</div>
 
 	<!-- Hero Assignment -->
-	{#if activity.heroId}
+	{#if activity.fields.heroId}
 		<div class="mt-2 text-xs text-slate-500 dark:text-slate-400">
 			Assigned to hero
 		</div>
 	{/if}
 
 	<!-- Outcome -->
-	{#if activity.outcome}
+	{#if activity.fields.outcome}
 		<div class="mt-2 rounded-md bg-green-50 dark:bg-green-900/20 p-2 text-sm text-green-700 dark:text-green-300">
-			{activity.outcome}
+			{activity.fields.outcome}
 		</div>
 	{/if}
 
-	<!-- Notes -->
-	{#if activity.notes}
-		<p class="mt-2 text-sm text-slate-500 dark:text-slate-400 italic">{activity.notes}</p>
+	<!-- Progress -->
+	{#if activity.fields.progress}
+		<p class="mt-2 text-sm text-slate-500 dark:text-slate-400 italic">{activity.fields.progress}</p>
 	{/if}
 
 	<!-- Actions -->
-	{#if activity.status !== 'completed'}
+	{#if activityStatus !== 'completed'}
 		<div class="mt-3 flex gap-2">
-			{#if activity.status === 'pending' && onStart}
+			{#if activityStatus === 'pending' && onStart}
 				<button
 					type="button"
 					onclick={() => onStart(activity.id)}

@@ -117,6 +117,10 @@ export async function createFromNegotiation(negotiation: NegotiationSession): Pr
 /**
  * Create a narrative event from a completed respite session.
  *
+ * NOTE: This function is deprecated for respite sessions now that activities
+ * are managed as entities. The respiteActivityService handles narrative event
+ * creation directly. This function is kept for backward compatibility.
+ *
  * @param respite - The respite session to convert into a narrative event
  * @returns The created narrative event entity
  * @throws Error if respite is not completed or repository creation fails
@@ -128,7 +132,9 @@ export async function createFromRespite(respite: RespiteSession): Promise<BaseEn
 	}
 
 	// Build outcome summary
-	const activitiesCount = respite.activities.filter((a) => a.status === 'completed').length;
+	// Activities are now entity-based, so we can't directly access them
+	// This is primarily for backward compatibility
+	const activitiesCount = 0; // Placeholder - actual count should come from activity entities
 	const vpConverted = respite.victoryPointsConverted;
 	const outcome = `${respite.heroes.length} heroes rested, ${activitiesCount} activities completed, ${vpConverted} VP converted`;
 

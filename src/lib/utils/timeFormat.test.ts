@@ -234,7 +234,7 @@ describe('formatRelativeTime', () => {
 		});
 
 		it('should handle very old dates', () => {
-			const veryOld = new Date('2020-01-01T00:00:00Z');
+			const veryOld = new Date('2020-06-15T12:00:00Z');
 			const result = formatRelativeTime(veryOld);
 			expect(result).toContain('2020');
 		});

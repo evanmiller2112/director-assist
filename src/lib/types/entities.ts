@@ -12,6 +12,7 @@ export type EntityType =
 	| 'world_rule'
 	| 'player_profile'
 	| 'narrative_event'
+	| 'respite_activity'
 	| string; // Allow custom types
 
 // Unique identifier type (nanoid-generated)

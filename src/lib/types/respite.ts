@@ -72,12 +72,16 @@ export interface RespiteHero {
 }
 
 // ============================================================================
-// Respite Activity
+// Respite Activity (Deprecated - now managed as entities)
 // ============================================================================
 
 /**
+ * @deprecated Use the entity system instead.
  * Individual activity undertaken during a respite.
  * Records the type, assignment, status, and outcome of each activity.
+ *
+ * This interface is deprecated in favor of respite_activity entities.
+ * Activities are now created as entities with type 'respite_activity'.
  */
 export interface RespiteActivity {
 	id: string;
@@ -125,7 +129,7 @@ export interface RespiteSession {
 	heroes: RespiteHero[];
 	victoryPointsAvailable: number;
 	victoryPointsConverted: number;
-	activities: RespiteActivity[];
+	activityIds: string[]; // References to respite_activity entities
 	kitSwaps: KitSwap[];
 	campaignId?: string;
 	characterIds?: string[];
@@ -163,12 +167,25 @@ export interface UpdateRespiteInput {
 }
 
 /**
+ * @deprecated Use CreateRespiteActivityInput instead.
  * Input for recording an activity in the respite.
  */
 export interface RecordActivityInput {
 	name: string;
 	description?: string;
 	type: RespiteActivityType;
+	heroId?: string;
+	notes?: string;
+}
+
+/**
+ * Input for creating a new respite activity entity.
+ * Used when creating respite_activity entities through the entity system.
+ */
+export interface CreateRespiteActivityInput {
+	name: string;
+	description?: string;
+	activityType: RespiteActivityType;
 	heroId?: string;
 	notes?: string;
 }

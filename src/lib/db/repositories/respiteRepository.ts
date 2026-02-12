@@ -18,14 +18,10 @@ import { nanoid } from 'nanoid';
 import type {
 	RespiteSession,
 	RespiteHero,
-	RespiteActivity,
 	KitSwap,
 	CreateRespiteInput,
-	UpdateRespiteInput,
-	RecordActivityInput,
-	RespiteActivityStatus
+	UpdateRespiteInput
 } from '$lib/types/respite';
-import { createFromRespite } from '$lib/services/narrativeEventService';
 
 // ============================================================================
 // Helper Functions (Exported for Testing)
@@ -111,7 +107,7 @@ export const respiteRepository = {
 			heroes,
 			victoryPointsAvailable: input.victoryPointsAvailable ?? 0,
 			victoryPointsConverted: 0,
-			activities: [],
+			activityIds: [],
 			kitSwaps: [],
 			createdAt: now,
 			updatedAt: now
@@ -206,6 +202,9 @@ export const respiteRepository = {
 	/**
 	 * Complete respite (active -> completed).
 	 * Creates narrative event (wrapped in try/catch to prevent blocking completion).
+	 *
+	 * NOTE: The narrative event creation requires activity data. The caller should
+	 * load activity entities and pass them to the narrative service if needed.
 	 */
 	async completeRespite(id: string): Promise<RespiteSession> {
 		await ensureDbReady();
@@ -228,12 +227,8 @@ export const respiteRepository = {
 
 		await db.respiteSessions.put(JSON.parse(JSON.stringify(updated)));
 
-		// Create narrative event (non-blocking)
-		try {
-			await createFromRespite(updated);
-		} catch (error) {
-			console.error('Failed to create narrative event for respite:', error);
-		}
+		// NOTE: Narrative event creation moved to service layer where activity entities can be loaded
+		// See respiteActivityService for the orchestration
 
 		return updated;
 	},
@@ -356,30 +351,25 @@ export const respiteRepository = {
 	// ========================================================================
 
 	/**
-	 * Record an activity in the respite.
+	 * Add an activity entity ID to the respite's activityIds array.
+	 * Used when creating a new activity entity that belongs to this respite.
 	 */
-	async recordActivity(id: string, input: RecordActivityInput): Promise<RespiteSession> {
+	async addActivityId(respiteId: string, activityEntityId: string): Promise<RespiteSession> {
 		await ensureDbReady();
 
-		const respite = await db.respiteSessions.get(id);
+		const respite = await db.respiteSessions.get(respiteId);
 		if (!respite) {
-			throw new Error(`Respite session ${id} not found`);
+			throw new Error(`Respite session ${respiteId} not found`);
 		}
 
-		const activity: RespiteActivity = {
-			id: nanoid(),
-			name: input.name,
-			description: input.description,
-			type: input.type,
-			heroId: input.heroId,
-			status: 'pending',
-			notes: input.notes,
-			createdAt: new Date()
-		};
+		// Prevent duplicate activity IDs
+		if (respite.activityIds.includes(activityEntityId)) {
+			throw new Error(`Activity ${activityEntityId} is already linked to this respite`);
+		}
 
 		const updated: RespiteSession = {
 			...respite,
-			activities: [...respite.activities, activity],
+			activityIds: [...respite.activityIds, activityEntityId],
 			updatedAt: new Date()
 		};
 
@@ -388,53 +378,25 @@ export const respiteRepository = {
 	},
 
 	/**
-	 * Update an activity's status and outcome.
+	 * Remove an activity entity ID from the respite's activityIds array.
+	 * Used when deleting an activity entity that belongs to this respite.
 	 */
-	async updateActivity(
-		id: string,
-		activityId: string,
-		updates: Partial<Pick<RespiteActivity, 'name' | 'description' | 'status' | 'outcome' | 'notes'>>
-	): Promise<RespiteSession> {
+	async removeActivityId(respiteId: string, activityEntityId: string): Promise<RespiteSession> {
 		await ensureDbReady();
 
-		const respite = await db.respiteSessions.get(id);
+		const respite = await db.respiteSessions.get(respiteId);
 		if (!respite) {
-			throw new Error(`Respite session ${id} not found`);
+			throw new Error(`Respite session ${respiteId} not found`);
 		}
-
-		const activityIndex = respite.activities.findIndex((a) => a.id === activityId);
-		if (activityIndex === -1) {
-			throw new Error(`Activity ${activityId} not found in respite`);
-		}
-
-		const activities = [...respite.activities];
-		activities[activityIndex] = {
-			...activities[activityIndex],
-			...updates
-		};
 
 		const updated: RespiteSession = {
 			...respite,
-			activities,
+			activityIds: respite.activityIds.filter((id) => id !== activityEntityId),
 			updatedAt: new Date()
 		};
 
 		await db.respiteSessions.put(JSON.parse(JSON.stringify(updated)));
 		return updated;
-	},
-
-	/**
-	 * Complete an activity with an outcome.
-	 */
-	async completeActivity(
-		id: string,
-		activityId: string,
-		outcome?: string
-	): Promise<RespiteSession> {
-		return this.updateActivity(id, activityId, {
-			status: 'completed' as RespiteActivityStatus,
-			outcome
-		});
 	},
 
 	// ========================================================================

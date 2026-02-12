@@ -77,8 +77,9 @@
 
 	// Get existing links to the selected entity
 	const existingLinksToSelected = $derived.by(() => {
-		if (!selectedEntity) return [];
-		return sourceEntity.links.filter((l) => l.targetId === selectedEntity.id);
+		const entity = selectedEntity;
+		if (!entity) return [];
+		return sourceEntity.links.filter((l) => l.targetId === entity.id);
 	});
 
 	function handleClose() {
@@ -111,10 +112,10 @@
 
 		// Check for duplicate relationship type
 		const isDuplicate = sourceEntity.links.some(
-			(l) => l.targetId === selectedEntity.id && l.relationship === relationship.trim()
+			(l) => l.targetId === selectedEntity!.id && l.relationship === relationship.trim()
 		);
 		if (isDuplicate) {
-			errorMessage = `A "${relationship.trim()}" relationship already exists with ${selectedEntity.name}`;
+			errorMessage = `A "${relationship.trim()}" relationship already exists with ${selectedEntity!.name}`;
 			return;
 		}
 

@@ -5,11 +5,11 @@
 	 * Form for adding/editing respite activities.
 	 */
 
-	import type { RespiteActivityType, RecordActivityInput } from '$lib/types/respite';
+	import type { RespiteActivityType, CreateRespiteActivityInput } from '$lib/types/respite';
 	import { getTemplatesByType, type ActivityTemplate } from '$lib/config/respiteTemplates';
 
 	interface Props {
-		onRecord?: (data: RecordActivityInput) => void;
+		onRecord?: (data: CreateRespiteActivityInput) => void;
 	}
 
 	let { onRecord }: Props = $props();
@@ -54,7 +54,7 @@
 		onRecord?.({
 			name: activityName.trim(),
 			description: activityDescription.trim() || undefined,
-			type: activityType,
+			activityType: activityType,
 			notes: activityNotes.trim() || undefined
 		});
 

@@ -2,7 +2,7 @@
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
-	import { respiteStore } from '$lib/stores';
+	import { respiteStore, campaignStore } from '$lib/stores';
 	import {
 		RespiteProgress,
 		HeroRecoveryPanel,
@@ -14,7 +14,7 @@
 		RespiteSetup
 	} from '$lib/components/respite';
 	import { ArrowLeft, Play, StopCircle } from 'lucide-svelte';
-	import type { RecordActivityInput } from '$lib/types/respite';
+	import type { CreateRespiteActivityInput } from '$lib/types/respite';
 
 	const respiteId = $derived($page.params.id);
 
@@ -25,6 +25,7 @@
 	});
 
 	const respite = $derived(respiteStore.activeRespite);
+	const activityEntities = $derived(respiteStore.activityEntities);
 	const isLoading = $derived(respiteStore.isLoading);
 
 	function handleBack() {
@@ -41,19 +42,20 @@
 		await respiteStore.completeRespite(respite.id);
 	}
 
-	async function handleRecordActivity(data: RecordActivityInput) {
+	async function handleCreateActivity(data: CreateRespiteActivityInput) {
 		if (!respite) return;
-		await respiteStore.recordActivity(respite.id, data);
+		const campaignId = campaignStore.activeCampaignId || 'default';
+		await respiteStore.createActivity(respite.id, data, campaignId);
 	}
 
 	async function handleStartActivity(activityId: string) {
 		if (!respite) return;
-		await respiteStore.updateActivity(respite.id, activityId, { status: 'in_progress' });
+		await respiteStore.updateActivityStatus(activityId, 'in_progress');
 	}
 
 	async function handleCompleteActivity(activityId: string) {
 		if (!respite) return;
-		await respiteStore.completeActivity(respite.id, activityId);
+		await respiteStore.updateActivityStatus(activityId, 'completed');
 	}
 
 	async function handleUpdateRecovery(heroId: string, gained: number) {
@@ -193,7 +195,7 @@
 		{#if respite.status === 'active'}
 			<!-- Progress Overview -->
 			<div class="mb-6">
-				<RespiteProgress {respite} />
+				<RespiteProgress {respite} {activityEntities} />
 			</div>
 
 			<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
@@ -211,9 +213,9 @@
 					<h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">Activities</h2>
 
 					<!-- Activity List -->
-					{#if respite.activities.length > 0}
+					{#if activityEntities.length > 0}
 						<div class="space-y-3 mb-4">
-							{#each respite.activities as activity (activity.id)}
+							{#each activityEntities as activity (activity.id)}
 								<RespiteActivityCard
 									{activity}
 									onComplete={handleCompleteActivity}
@@ -226,7 +228,7 @@
 					<!-- Add Activity Form -->
 					<div class="border-t border-slate-200 dark:border-slate-700 pt-4">
 						<h3 class="text-sm font-medium text-slate-900 dark:text-white mb-3">Add Activity</h3>
-						<ActivityControls onRecord={handleRecordActivity} />
+						<ActivityControls onRecord={handleCreateActivity} />
 					</div>
 				</div>
 
@@ -273,7 +275,7 @@
 				<h2 class="text-xl font-semibold text-green-900 dark:text-green-100 mb-3">Respite Complete</h2>
 				<div class="space-y-2 text-sm text-green-800 dark:text-green-200">
 					<p>{respite.heroes.length} heroes rested</p>
-					<p>{respite.activities.filter((a) => a.status === 'completed').length} activities completed</p>
+					<p>{respite.activityIds.length} activities tracked</p>
 					<p>{respite.victoryPointsConverted} VP converted to XP</p>
 					<p>{respite.kitSwaps.length} kit swaps recorded</p>
 				</div>
@@ -281,7 +283,7 @@
 
 			<!-- Read-only views -->
 			<div class="mb-6">
-				<RespiteProgress {respite} />
+				<RespiteProgress {respite} {activityEntities} />
 			</div>
 
 			{#if respite.heroes.length > 0}
@@ -291,11 +293,11 @@
 				</div>
 			{/if}
 
-			{#if respite.activities.length > 0}
+			{#if activityEntities.length > 0}
 				<div class="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-6 mb-6">
 					<h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">Activities</h2>
 					<div class="space-y-3">
-						{#each respite.activities as activity (activity.id)}
+						{#each activityEntities as activity (activity.id)}
 							<RespiteActivityCard {activity} />
 						{/each}
 					</div>

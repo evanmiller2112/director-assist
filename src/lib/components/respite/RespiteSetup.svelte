@@ -1,16 +1,24 @@
 <script lang="ts">
 	import { Plus, Trash2 } from 'lucide-svelte';
+	import { entitiesStore } from '$lib/stores';
+	import type { BaseEntity } from '$lib/types';
 
 	interface HeroInput {
 		name: string;
 		heroId?: string;
 		recoveries: { current: number; max: number };
+		mode: 'entity' | 'manual'; // UI-only, stripped before submission
+		searchQuery: string; // UI-only, stripped before submission
 	}
 
 	interface CreateRespiteSetupOutput {
 		name: string;
 		description?: string;
-		heroes: HeroInput[];
+		heroes: Array<{
+			name: string;
+			heroId?: string;
+			recoveries: { current: number; max: number };
+		}>;
 		victoryPointsAvailable: number;
 	}
 
@@ -25,18 +33,70 @@
 	// Form state
 	let name = $state(initialData?.name || '');
 	let description = $state(initialData?.description || '');
-	let heroes = $state<HeroInput[]>(initialData?.heroes || []);
+	let heroes = $state<HeroInput[]>(
+		initialData?.heroes?.map(h => ({
+			...h,
+			mode: 'entity' as const,
+			searchQuery: ''
+		})) || []
+	);
 	let victoryPointsAvailable = $state(initialData?.victoryPointsAvailable || 0);
 
 	// Validation
 	let nameError = $state('');
 
+	// Derived state for character entities
+	const characterEntities = $derived(
+		entitiesStore.entities.filter((e) => e.type === 'character')
+	);
+
 	function addHero() {
-		heroes.push({ name: '', recoveries: { current: 0, max: 8 } });
+		heroes.push({
+			name: '',
+			recoveries: { current: 0, max: 8 },
+			mode: 'entity',
+			searchQuery: ''
+		});
 	}
 
 	function removeHero(index: number) {
 		heroes.splice(index, 1);
+	}
+
+	function selectEntity(index: number, entity: BaseEntity) {
+		heroes[index].name = entity.name;
+		heroes[index].heroId = entity.id;
+		heroes[index].searchQuery = '';
+	}
+
+	function clearEntitySelection(index: number) {
+		heroes[index].name = '';
+		heroes[index].heroId = undefined;
+		heroes[index].searchQuery = '';
+	}
+
+	function setHeroMode(index: number, mode: 'entity' | 'manual') {
+		const currentName = heroes[index].name;
+		heroes[index].mode = mode;
+
+		if (mode === 'entity') {
+			// Switching to entity mode: clear everything
+			heroes[index].name = '';
+			heroes[index].heroId = undefined;
+			heroes[index].searchQuery = '';
+		} else {
+			// Switching to manual mode: preserve name but clear heroId
+			// This allows users to manually edit an entity name they selected
+			heroes[index].heroId = undefined;
+			heroes[index].searchQuery = '';
+			// Keep the current name if there is one
+		}
+	}
+
+	function getFilteredEntities(searchQuery: string) {
+		if (!searchQuery.trim()) return characterEntities;
+		const query = searchQuery.toLowerCase();
+		return characterEntities.filter((e) => e.name.toLowerCase().includes(query));
 	}
 
 	function validate(): boolean {
@@ -53,7 +113,20 @@
 	function handleSubmit() {
 		if (!validate()) return;
 
-		const validHeroes = heroes.filter((h) => h.name.trim());
+		// Strip UI-only fields (mode, searchQuery) and filter out empty heroes
+		const validHeroes = heroes
+			.filter((h) => h.name.trim())
+			.map(({ mode, searchQuery, ...hero }) => {
+				// Remove heroId if it's undefined (manually entered heroes)
+				const result: any = {
+					name: hero.name,
+					recoveries: hero.recoveries
+				};
+				if (hero.heroId) {
+					result.heroId = hero.heroId;
+				}
+				return result;
+			});
 
 		if (onCreate) {
 			onCreate({
@@ -133,15 +206,105 @@
 		{:else}
 			<div class="space-y-3">
 				{#each heroes as hero, index}
-					<div class="flex items-start gap-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-3">
-						<div class="flex-1 space-y-2">
-							<input
-								type="text"
-								bind:value={hero.name}
-								placeholder="Hero name"
-								class="block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
-							/>
-							<div class="flex gap-3">
+					<div class="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
+						<div class="space-y-3">
+							<!-- Mode Toggle -->
+							<div class="flex gap-2">
+								<button
+									type="button"
+									onclick={() => setHeroMode(index, 'entity')}
+									class={`flex-1 px-3 py-2 rounded-md border text-sm font-medium transition-colors ${
+										hero.mode === 'entity'
+											? 'bg-blue-100 dark:bg-blue-900 border-blue-500 text-blue-700 dark:text-blue-300 active selected'
+											: 'border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+									}`}
+									aria-pressed={hero.mode === 'entity'}
+								>
+									From Entity
+								</button>
+								<button
+									type="button"
+									onclick={() => setHeroMode(index, 'manual')}
+									class={`flex-1 px-3 py-2 rounded-md border text-sm font-medium transition-colors ${
+										hero.mode === 'manual'
+											? 'bg-blue-100 dark:bg-blue-900 border-blue-500 text-blue-700 dark:text-blue-300 active selected'
+											: 'border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+									}`}
+									aria-pressed={hero.mode === 'manual'}
+								>
+									Manual
+								</button>
+							</div>
+
+							<!-- Entity Mode -->
+							{#if hero.mode === 'entity'}
+								<!-- Entity Search and List -->
+								<div class="space-y-2">
+									{#if hero.heroId && hero.name}
+										<!-- Selected Entity Display -->
+										<div class="px-3 py-2 rounded-md bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+											<div class="flex justify-between items-center">
+												<div class="text-sm font-medium text-blue-900 dark:text-blue-100">
+													<span class="text-xs text-blue-700 dark:text-blue-300">Selected:</span>
+													<span>{hero.name}</span>
+												</div>
+												<button
+													type="button"
+													onclick={() => clearEntitySelection(index)}
+													class="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+													aria-label="Clear selection"
+												>
+													Clear Selection
+												</button>
+											</div>
+										</div>
+									{/if}
+
+									<input
+										type="text"
+										bind:value={hero.searchQuery}
+										placeholder="Search character entities..."
+										aria-label="Search character entities"
+										class="block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+									/>
+
+									{#if characterEntities.length === 0}
+										<p class="text-sm text-gray-500 dark:text-gray-400 py-2">No character entities exist. Create character entities or switch to Manual mode.</p>
+									{:else}
+										{@const filteredEntities = getFilteredEntities(hero.searchQuery)}
+										{#if filteredEntities.length === 0}
+											<p class="text-sm text-gray-500 dark:text-gray-400 py-2">No character entities found matching your search.</p>
+										{:else}
+											<div class="max-h-48 overflow-y-auto space-y-1">
+												{#each filteredEntities as entity (entity.id)}
+													<button
+														type="button"
+														onclick={() => selectEntity(index, entity)}
+														class={`w-full text-left px-3 py-2 rounded-md border transition-colors text-sm ${
+															hero.heroId === entity.id
+																? 'bg-blue-50 dark:bg-blue-900/20 border-blue-500 text-blue-700 dark:text-blue-300 selected active'
+																: 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
+														}`}
+													>
+														{entity.name}
+													</button>
+												{/each}
+											</div>
+										{/if}
+									{/if}
+								</div>
+							{:else}
+								<!-- Manual Mode -->
+								<input
+									type="text"
+									bind:value={hero.name}
+									placeholder="Hero name"
+									class="block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+								/>
+							{/if}
+
+							<!-- Recovery Fields (always visible) -->
+							<div class="flex gap-3 pt-2 border-t border-gray-200 dark:border-gray-700">
 								<div class="flex items-center gap-2">
 									<label for="hero-current-{index}" class="text-xs text-gray-600 dark:text-gray-400">Current</label>
 									<input
@@ -162,16 +325,18 @@
 										class="w-16 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-2 py-1 text-sm"
 									/>
 								</div>
+								<div class="ml-auto">
+									<button
+										type="button"
+										onclick={() => removeHero(index)}
+										class="rounded-md p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+										aria-label="Remove hero"
+									>
+										<Trash2 class="h-5 w-5" />
+									</button>
+								</div>
 							</div>
 						</div>
-						<button
-							type="button"
-							onclick={() => removeHero(index)}
-							class="rounded-md p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
-							aria-label="Remove hero"
-						>
-							<Trash2 class="h-5 w-5" />
-						</button>
 					</div>
 				{/each}
 			</div>

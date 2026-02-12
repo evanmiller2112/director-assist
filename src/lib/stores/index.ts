@@ -10,3 +10,4 @@ export { combatStore } from './combat.svelte';
 export { montageStore } from './montage.svelte';
 export { negotiationStore } from './negotiation.svelte';
 export { respiteStore } from './respite.svelte';
+export { playerDataStore } from './playerData.svelte';

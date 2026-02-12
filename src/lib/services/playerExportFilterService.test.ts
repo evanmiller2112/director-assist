@@ -27,6 +27,8 @@ import {
 } from './playerExportFilterService';
 import type { BaseEntity, EntityLink, FieldDefinition, EntityTypeDefinition } from '$lib/types/entities';
 import type { PlayerEntity, PlayerEntityLink } from '$lib/types/playerExport';
+import type { PlayerExportFieldConfig } from '$lib/types/playerFieldVisibility';
+import { PLAYER_EXPORT_FIELD_OVERRIDES_KEY } from '$lib/types/playerFieldVisibility';
 
 describe('playerExportFilterService', () => {
 	// Test fixtures
@@ -1551,6 +1553,785 @@ describe('playerExportFilterService', () => {
 				expect(result[0].fields).toHaveProperty('summary');
 				expect(result[0].fields).not.toHaveProperty('preparation');
 			});
+		});
+	});
+
+	// =====================================================================
+	// Issue #439: PlayerExportFieldConfig integration tests
+	// =====================================================================
+	describe('filterFieldsForPlayer with PlayerExportFieldConfig', () => {
+		const npcFieldDefs: FieldDefinition[] = [
+			{
+				key: 'alignment',
+				label: 'Alignment',
+				type: 'text',
+				required: false,
+				section: 'public',
+				order: 1
+			},
+			{
+				key: 'occupation',
+				label: 'Occupation',
+				type: 'text',
+				required: false,
+				section: 'public',
+				order: 2
+			},
+			{
+				key: 'secret_motivation',
+				label: 'Secret Motivation',
+				type: 'textarea',
+				required: false,
+				section: 'hidden',
+				order: 3
+			}
+		];
+
+		let npcEntity: BaseEntity;
+
+		beforeEach(() => {
+			npcEntity = {
+				id: 'npc-1',
+				type: 'npc',
+				name: 'Test NPC',
+				description: 'A test NPC',
+				tags: [],
+				fields: {
+					alignment: 'neutral good',
+					occupation: 'shopkeeper',
+					secret_motivation: 'Actually a spy',
+					notes: 'DM only notes field'
+				},
+				links: [],
+				notes: 'DM notes',
+				playerVisible: true,
+				createdAt: new Date('2025-01-01'),
+				updatedAt: new Date('2025-01-10'),
+				metadata: {}
+			};
+		});
+
+		it('should exclude a field when config sets it to false', () => {
+			const config: PlayerExportFieldConfig = {
+				fieldVisibility: {
+					npc: {
+						occupation: false // hide occupation via config
+					}
+				}
+			};
+			const result = filterFieldsForPlayer(
+				npcEntity.fields,
+				['secret_motivation'],
+				false,
+				'npc',
+				npcEntity,
+				npcFieldDefs,
+				config
+			);
+			expect(result).not.toHaveProperty('occupation');
+			expect(result).toHaveProperty('alignment');
+			// notes and secret_motivation still hidden by hardcoded rules
+			expect(result).not.toHaveProperty('notes');
+			expect(result).not.toHaveProperty('secret_motivation');
+		});
+
+		it('should include a normally-hidden field when config sets it to true', () => {
+			const config: PlayerExportFieldConfig = {
+				fieldVisibility: {
+					npc: {
+						secret_motivation: true // force-show a hidden-section field
+					}
+				}
+			};
+			const result = filterFieldsForPlayer(
+				npcEntity.fields,
+				['secret_motivation'],
+				false,
+				'npc',
+				npcEntity,
+				npcFieldDefs,
+				config
+			);
+			// Config overrides the hidden section rule
+			expect(result).toHaveProperty('secret_motivation', 'Actually a spy');
+			expect(result).toHaveProperty('alignment');
+			expect(result).toHaveProperty('occupation');
+		});
+
+		it('should behave identically to old behavior when config is undefined', () => {
+			// Old signature: filterFieldsForPlayer(fields, hiddenKeys, isSession)
+			// New signature: filterFieldsForPlayer(fields, hiddenKeys, isSession, entityType, entity, fieldDefs, config)
+			// With config=undefined, behavior should be the same as old implementation
+			const result = filterFieldsForPlayer(
+				npcEntity.fields,
+				['secret_motivation'],
+				false,
+				'npc',
+				npcEntity,
+				npcFieldDefs,
+				undefined
+			);
+			expect(result).toHaveProperty('alignment');
+			expect(result).toHaveProperty('occupation');
+			expect(result).not.toHaveProperty('secret_motivation');
+			expect(result).not.toHaveProperty('notes');
+		});
+
+		it('should hide notes field even when config explicitly sets it to true', () => {
+			// The isFieldPlayerVisible cascade handles this: config overrides hardcoded.
+			// But actually, with config setting notes=true, it should show notes.
+			// That's the whole point - config CAN override hardcoded rules.
+			const config: PlayerExportFieldConfig = {
+				fieldVisibility: {
+					npc: {
+						notes: true // force-show notes
+					}
+				}
+			};
+			const result = filterFieldsForPlayer(
+				npcEntity.fields,
+				['secret_motivation'],
+				false,
+				'npc',
+				npcEntity,
+				npcFieldDefs,
+				config
+			);
+			// Config overrides hardcoded rule for notes
+			expect(result).toHaveProperty('notes', 'DM only notes field');
+		});
+
+		it('should hide preparation on session when config is undefined', () => {
+			const sessionEntity: BaseEntity = {
+				...npcEntity,
+				type: 'session',
+				fields: {
+					date: '2025-01-15',
+					preparation: 'DM prep notes',
+					summary: 'Session summary'
+				}
+			};
+			const sessionFieldDefs: FieldDefinition[] = [
+				{ key: 'date', label: 'Date', type: 'date', required: false, order: 1 },
+				{ key: 'preparation', label: 'Preparation', type: 'textarea', required: false, order: 2 },
+				{ key: 'summary', label: 'Summary', type: 'textarea', required: false, order: 3 }
+			];
+			const result = filterFieldsForPlayer(
+				sessionEntity.fields,
+				[],
+				true,
+				'session',
+				sessionEntity,
+				sessionFieldDefs,
+				undefined
+			);
+			expect(result).not.toHaveProperty('preparation');
+			expect(result).toHaveProperty('date');
+			expect(result).toHaveProperty('summary');
+		});
+
+		it('should show preparation on session when config explicitly allows it', () => {
+			const sessionEntity: BaseEntity = {
+				...npcEntity,
+				type: 'session',
+				fields: {
+					date: '2025-01-15',
+					preparation: 'DM prep notes',
+					summary: 'Session summary'
+				}
+			};
+			const sessionFieldDefs: FieldDefinition[] = [
+				{ key: 'date', label: 'Date', type: 'date', required: false, order: 1 },
+				{ key: 'preparation', label: 'Preparation', type: 'textarea', required: false, order: 2 },
+				{ key: 'summary', label: 'Summary', type: 'textarea', required: false, order: 3 }
+			];
+			const config: PlayerExportFieldConfig = {
+				fieldVisibility: {
+					session: {
+						preparation: true
+					}
+				}
+			};
+			const result = filterFieldsForPlayer(
+				sessionEntity.fields,
+				[],
+				true,
+				'session',
+				sessionEntity,
+				sessionFieldDefs,
+				config
+			);
+			expect(result).toHaveProperty('preparation', 'DM prep notes');
+		});
+
+		it('should handle config for a different entity type (no effect)', () => {
+			const config: PlayerExportFieldConfig = {
+				fieldVisibility: {
+					location: {
+						occupation: false // config is for 'location', not 'npc'
+					}
+				}
+			};
+			const result = filterFieldsForPlayer(
+				npcEntity.fields,
+				['secret_motivation'],
+				false,
+				'npc',
+				npcEntity,
+				npcFieldDefs,
+				config
+			);
+			// occupation should still be visible since config doesn't apply to npc
+			expect(result).toHaveProperty('occupation');
+		});
+
+		it('should handle empty fieldVisibility config', () => {
+			const config: PlayerExportFieldConfig = {
+				fieldVisibility: {}
+			};
+			const result = filterFieldsForPlayer(
+				npcEntity.fields,
+				['secret_motivation'],
+				false,
+				'npc',
+				npcEntity,
+				npcFieldDefs,
+				config
+			);
+			// Same as no config - fall through to hardcoded rules
+			expect(result).toHaveProperty('alignment');
+			expect(result).toHaveProperty('occupation');
+			expect(result).not.toHaveProperty('secret_motivation');
+			expect(result).not.toHaveProperty('notes');
+		});
+	});
+
+	describe('filterEntityForPlayer with PlayerExportFieldConfig', () => {
+		let npcEntity: BaseEntity;
+		let npcTypeDef: EntityTypeDefinition;
+
+		beforeEach(() => {
+			npcEntity = {
+				id: 'npc-1',
+				type: 'npc',
+				name: 'Test NPC',
+				description: 'A test NPC',
+				tags: ['friendly'],
+				fields: {
+					alignment: 'neutral good',
+					occupation: 'shopkeeper',
+					secret_motivation: 'Actually a spy'
+				},
+				links: [],
+				notes: 'DM notes',
+				playerVisible: true,
+				createdAt: new Date('2025-01-01'),
+				updatedAt: new Date('2025-01-10'),
+				metadata: {}
+			};
+
+			npcTypeDef = {
+				type: 'npc',
+				label: 'NPC',
+				labelPlural: 'NPCs',
+				description: 'Non-player characters',
+				icon: 'users',
+				color: 'blue',
+				isBuiltIn: true,
+				fieldDefinitions: [
+					{
+						key: 'alignment',
+						label: 'Alignment',
+						type: 'text',
+						required: false,
+						section: 'public',
+						order: 1
+					},
+					{
+						key: 'occupation',
+						label: 'Occupation',
+						type: 'text',
+						required: false,
+						section: 'public',
+						order: 2
+					},
+					{
+						key: 'secret_motivation',
+						label: 'Secret Motivation',
+						type: 'textarea',
+						required: false,
+						section: 'hidden',
+						order: 3
+					}
+				],
+				defaultRelationships: []
+			};
+		});
+
+		it('should pass config through and filter fields accordingly', () => {
+			const config: PlayerExportFieldConfig = {
+				fieldVisibility: {
+					npc: {
+						occupation: false
+					}
+				}
+			};
+			const result = filterEntityForPlayer(npcEntity, npcTypeDef, config);
+			expect(result).not.toBeNull();
+			expect(result!.fields).toHaveProperty('alignment');
+			expect(result!.fields).not.toHaveProperty('occupation');
+			expect(result!.fields).not.toHaveProperty('secret_motivation');
+		});
+
+		it('should force-show hidden field when config sets it to true', () => {
+			const config: PlayerExportFieldConfig = {
+				fieldVisibility: {
+					npc: {
+						secret_motivation: true
+					}
+				}
+			};
+			const result = filterEntityForPlayer(npcEntity, npcTypeDef, config);
+			expect(result).not.toBeNull();
+			expect(result!.fields).toHaveProperty('secret_motivation', 'Actually a spy');
+		});
+
+		it('should use backward-compatible behavior when config is undefined', () => {
+			const result = filterEntityForPlayer(npcEntity, npcTypeDef, undefined);
+			expect(result).not.toBeNull();
+			expect(result!.fields).toHaveProperty('alignment');
+			expect(result!.fields).toHaveProperty('occupation');
+			expect(result!.fields).not.toHaveProperty('secret_motivation');
+		});
+
+		it('should use backward-compatible behavior when config is omitted', () => {
+			// Calling without the third argument at all
+			const result = filterEntityForPlayer(npcEntity, npcTypeDef);
+			expect(result).not.toBeNull();
+			expect(result!.fields).toHaveProperty('alignment');
+			expect(result!.fields).toHaveProperty('occupation');
+			expect(result!.fields).not.toHaveProperty('secret_motivation');
+		});
+
+		it('should still return null for invisible entities even with config', () => {
+			const hiddenEntity: BaseEntity = { ...npcEntity, playerVisible: false };
+			const config: PlayerExportFieldConfig = {
+				fieldVisibility: {
+					npc: { alignment: true }
+				}
+			};
+			const result = filterEntityForPlayer(hiddenEntity, npcTypeDef, config);
+			expect(result).toBeNull();
+		});
+	});
+
+	describe('filterEntityForPlayer with per-entity overrides', () => {
+		let npcEntity: BaseEntity;
+		let npcTypeDef: EntityTypeDefinition;
+
+		beforeEach(() => {
+			npcEntity = {
+				id: 'npc-1',
+				type: 'npc',
+				name: 'Test NPC',
+				description: 'A test NPC',
+				tags: [],
+				fields: {
+					alignment: 'neutral good',
+					occupation: 'shopkeeper',
+					secret_motivation: 'Actually a spy'
+				},
+				links: [],
+				notes: 'DM notes',
+				playerVisible: true,
+				createdAt: new Date('2025-01-01'),
+				updatedAt: new Date('2025-01-10'),
+				metadata: {}
+			};
+
+			npcTypeDef = {
+				type: 'npc',
+				label: 'NPC',
+				labelPlural: 'NPCs',
+				icon: 'users',
+				color: 'blue',
+				isBuiltIn: true,
+				fieldDefinitions: [
+					{
+						key: 'alignment',
+						label: 'Alignment',
+						type: 'text',
+						required: false,
+						section: 'public',
+						order: 1
+					},
+					{
+						key: 'occupation',
+						label: 'Occupation',
+						type: 'text',
+						required: false,
+						section: 'public',
+						order: 2
+					},
+					{
+						key: 'secret_motivation',
+						label: 'Secret Motivation',
+						type: 'textarea',
+						required: false,
+						section: 'hidden',
+						order: 3
+					}
+				],
+				defaultRelationships: []
+			};
+		});
+
+		it('should respect per-entity override to hide a public field', () => {
+			const entityWithOverrides: BaseEntity = {
+				...npcEntity,
+				metadata: {
+					[PLAYER_EXPORT_FIELD_OVERRIDES_KEY]: {
+						alignment: false // hide alignment for this specific entity
+					}
+				}
+			};
+			const result = filterEntityForPlayer(entityWithOverrides, npcTypeDef);
+			expect(result).not.toBeNull();
+			expect(result!.fields).not.toHaveProperty('alignment');
+			expect(result!.fields).toHaveProperty('occupation');
+		});
+
+		it('should respect per-entity override to show a hidden field', () => {
+			const entityWithOverrides: BaseEntity = {
+				...npcEntity,
+				metadata: {
+					[PLAYER_EXPORT_FIELD_OVERRIDES_KEY]: {
+						secret_motivation: true // show hidden field for this entity only
+					}
+				}
+			};
+			const result = filterEntityForPlayer(entityWithOverrides, npcTypeDef);
+			expect(result).not.toBeNull();
+			expect(result!.fields).toHaveProperty('secret_motivation', 'Actually a spy');
+		});
+
+		it('should have per-entity override take priority over category config', () => {
+			const entityWithOverrides: BaseEntity = {
+				...npcEntity,
+				metadata: {
+					[PLAYER_EXPORT_FIELD_OVERRIDES_KEY]: {
+						occupation: true // entity says show
+					}
+				}
+			};
+			const config: PlayerExportFieldConfig = {
+				fieldVisibility: {
+					npc: {
+						occupation: false // category config says hide
+					}
+				}
+			};
+			const result = filterEntityForPlayer(entityWithOverrides, npcTypeDef, config);
+			expect(result).not.toBeNull();
+			// Per-entity override wins over category config
+			expect(result!.fields).toHaveProperty('occupation', 'shopkeeper');
+		});
+
+		it('should have per-entity override take priority to hide over category config show', () => {
+			const entityWithOverrides: BaseEntity = {
+				...npcEntity,
+				metadata: {
+					[PLAYER_EXPORT_FIELD_OVERRIDES_KEY]: {
+						secret_motivation: false // entity says hide
+					}
+				}
+			};
+			const config: PlayerExportFieldConfig = {
+				fieldVisibility: {
+					npc: {
+						secret_motivation: true // category config says show
+					}
+				}
+			};
+			const result = filterEntityForPlayer(entityWithOverrides, npcTypeDef, config);
+			expect(result).not.toBeNull();
+			// Per-entity override wins
+			expect(result!.fields).not.toHaveProperty('secret_motivation');
+		});
+	});
+
+	describe('filterEntitiesForPlayer with PlayerExportFieldConfig', () => {
+		let testEntities: BaseEntity[];
+		let typeDefinitions: EntityTypeDefinition[];
+
+		beforeEach(() => {
+			testEntities = [
+				{
+					id: 'npc-1',
+					type: 'npc',
+					name: 'NPC One',
+					description: 'First NPC',
+					tags: [],
+					fields: {
+						alignment: 'good',
+						secret_motivation: 'spy'
+					},
+					links: [],
+					notes: 'DM notes',
+					playerVisible: true,
+					createdAt: new Date('2025-01-01'),
+					updatedAt: new Date('2025-01-10'),
+					metadata: {}
+				},
+				{
+					id: 'npc-2',
+					type: 'npc',
+					name: 'NPC Two',
+					description: 'Second NPC',
+					tags: [],
+					fields: {
+						alignment: 'evil',
+						secret_motivation: 'power'
+					},
+					links: [],
+					notes: 'More DM notes',
+					playerVisible: true,
+					createdAt: new Date('2025-01-01'),
+					updatedAt: new Date('2025-01-10'),
+					metadata: {}
+				}
+			];
+
+			typeDefinitions = [
+				{
+					type: 'npc',
+					label: 'NPC',
+					labelPlural: 'NPCs',
+					icon: 'users',
+					color: 'blue',
+					isBuiltIn: true,
+					fieldDefinitions: [
+						{
+							key: 'alignment',
+							label: 'Alignment',
+							type: 'text',
+							required: false,
+							section: 'public',
+							order: 1
+						},
+						{
+							key: 'secret_motivation',
+							label: 'Secret Motivation',
+							type: 'textarea',
+							required: false,
+							section: 'hidden',
+							order: 2
+						}
+					],
+					defaultRelationships: []
+				}
+			];
+		});
+
+		it('should pass config to all entities during bulk filtering', () => {
+			const config: PlayerExportFieldConfig = {
+				fieldVisibility: {
+					npc: {
+						secret_motivation: true // show hidden field for all NPCs
+					}
+				}
+			};
+			const result = filterEntitiesForPlayer(testEntities, typeDefinitions, config);
+			expect(result).toHaveLength(2);
+			expect(result[0].fields).toHaveProperty('secret_motivation', 'spy');
+			expect(result[1].fields).toHaveProperty('secret_motivation', 'power');
+		});
+
+		it('should behave identically to old behavior when config is undefined', () => {
+			const result = filterEntitiesForPlayer(testEntities, typeDefinitions, undefined);
+			expect(result).toHaveLength(2);
+			expect(result[0].fields).not.toHaveProperty('secret_motivation');
+			expect(result[1].fields).not.toHaveProperty('secret_motivation');
+			expect(result[0].fields).toHaveProperty('alignment');
+			expect(result[1].fields).toHaveProperty('alignment');
+		});
+
+		it('should behave identically to old behavior when config is omitted', () => {
+			const result = filterEntitiesForPlayer(testEntities, typeDefinitions);
+			expect(result).toHaveLength(2);
+			expect(result[0].fields).not.toHaveProperty('secret_motivation');
+			expect(result[1].fields).not.toHaveProperty('secret_motivation');
+		});
+
+		it('should handle per-entity overrides in bulk filtering', () => {
+			// Give npc-1 a per-entity override to show secret_motivation
+			testEntities[0].metadata = {
+				[PLAYER_EXPORT_FIELD_OVERRIDES_KEY]: {
+					secret_motivation: true
+				}
+			};
+			const result = filterEntitiesForPlayer(testEntities, typeDefinitions);
+			expect(result).toHaveLength(2);
+			// npc-1 has per-entity override -> shows secret_motivation
+			expect(result[0].fields).toHaveProperty('secret_motivation', 'spy');
+			// npc-2 has no override -> hidden by default
+			expect(result[1].fields).not.toHaveProperty('secret_motivation');
+		});
+
+		it('should combine config and per-entity overrides correctly', () => {
+			const config: PlayerExportFieldConfig = {
+				fieldVisibility: {
+					npc: {
+						alignment: false // hide alignment for all NPCs via config
+					}
+				}
+			};
+			// npc-2 overrides: show alignment despite category config
+			testEntities[1].metadata = {
+				[PLAYER_EXPORT_FIELD_OVERRIDES_KEY]: {
+					alignment: true
+				}
+			};
+			const result = filterEntitiesForPlayer(testEntities, typeDefinitions, config);
+			expect(result).toHaveLength(2);
+			// npc-1: alignment hidden by config
+			expect(result[0].fields).not.toHaveProperty('alignment');
+			// npc-2: alignment shown by per-entity override (overrides config)
+			expect(result[1].fields).toHaveProperty('alignment', 'evil');
+		});
+	});
+
+	// =====================================================================
+	// Regression tests: ensure existing behavior unchanged with new signatures
+	// =====================================================================
+	describe('regression: backward compatibility with config parameter', () => {
+		let baseEntity: BaseEntity;
+		let entityTypeDefinition: EntityTypeDefinition;
+
+		beforeEach(() => {
+			baseEntity = {
+				id: 'entity-1',
+				type: 'npc',
+				name: 'Test NPC',
+				description: 'A test non-player character',
+				summary: 'Brief summary',
+				tags: ['friendly', 'merchant'],
+				imageUrl: 'https://example.com/npc.png',
+				fields: {
+					alignment: 'neutral good',
+					occupation: 'shopkeeper',
+					secret_motivation: 'Actually a spy',
+					notes: 'field-level notes'
+				},
+				links: [],
+				notes: 'DM notes about this character',
+				playerVisible: true,
+				createdAt: new Date('2025-01-01'),
+				updatedAt: new Date('2025-01-10'),
+				metadata: {}
+			};
+
+			entityTypeDefinition = {
+				type: 'npc',
+				label: 'NPC',
+				labelPlural: 'NPCs',
+				icon: 'users',
+				color: 'blue',
+				isBuiltIn: true,
+				fieldDefinitions: [
+					{
+						key: 'alignment',
+						label: 'Alignment',
+						type: 'text',
+						required: false,
+						section: 'public',
+						order: 1
+					},
+					{
+						key: 'occupation',
+						label: 'Occupation',
+						type: 'text',
+						required: false,
+						section: 'public',
+						order: 2
+					},
+					{
+						key: 'secret_motivation',
+						label: 'Secret Motivation',
+						type: 'textarea',
+						required: false,
+						section: 'hidden',
+						order: 3
+					}
+				],
+				defaultRelationships: []
+			};
+		});
+
+		it('filterFieldsForPlayer with old 3-arg call still works', () => {
+			// The old 3-argument call must still work for backward compatibility
+			const result = filterFieldsForPlayer(
+				baseEntity.fields,
+				['secret_motivation'],
+				false
+			);
+			expect(result).toHaveProperty('alignment');
+			expect(result).toHaveProperty('occupation');
+			expect(result).not.toHaveProperty('secret_motivation');
+			expect(result).not.toHaveProperty('notes');
+		});
+
+		it('filterEntityForPlayer without config still filters correctly', () => {
+			const result = filterEntityForPlayer(baseEntity, entityTypeDefinition);
+			expect(result).not.toBeNull();
+			expect(result!.fields).toHaveProperty('alignment');
+			expect(result!.fields).toHaveProperty('occupation');
+			expect(result!.fields).not.toHaveProperty('secret_motivation');
+		});
+
+		it('filterEntitiesForPlayer without config still filters correctly', () => {
+			const entities = [baseEntity];
+			const typeDefs = [entityTypeDefinition];
+			const result = filterEntitiesForPlayer(entities, typeDefs);
+			expect(result).toHaveLength(1);
+			expect(result[0].fields).toHaveProperty('alignment');
+			expect(result[0].fields).not.toHaveProperty('secret_motivation');
+		});
+
+		it('session preparation still hidden without config', () => {
+			const sessionEntity: BaseEntity = {
+				...baseEntity,
+				type: 'session',
+				fields: {
+					date: '2025-01-15',
+					preparation: 'DM prep',
+					summary: 'Session summary'
+				}
+			};
+			const sessionTypeDef: EntityTypeDefinition = {
+				...entityTypeDefinition,
+				type: 'session',
+				fieldDefinitions: [
+					{ key: 'date', label: 'Date', type: 'date', required: false, order: 1 },
+					{ key: 'preparation', label: 'Prep', type: 'textarea', required: false, order: 2 },
+					{ key: 'summary', label: 'Summary', type: 'textarea', required: false, order: 3 }
+				]
+			};
+			const result = filterEntityForPlayer(sessionEntity, sessionTypeDef);
+			expect(result).not.toBeNull();
+			expect(result!.fields).not.toHaveProperty('preparation');
+			expect(result!.fields).toHaveProperty('date');
+			expect(result!.fields).toHaveProperty('summary');
+		});
+
+		it('notes field in fields object still hidden without config', () => {
+			const result = filterFieldsForPlayer(
+				{ name: 'Test', notes: 'secret' },
+				[],
+				false
+			);
+			expect(result).not.toHaveProperty('notes');
+			expect(result).toHaveProperty('name');
 		});
 	});
 });

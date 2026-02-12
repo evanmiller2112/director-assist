@@ -15,6 +15,8 @@ import type {
 	FieldValue
 } from '$lib/types/entities';
 import type { PlayerEntity, PlayerEntityLink } from '$lib/types/playerExport';
+import type { PlayerExportFieldConfig } from '$lib/types/playerFieldVisibility';
+import { isFieldPlayerVisible } from './playerFieldVisibility';
 
 /**
  * Check if entity should be included in player export
@@ -61,8 +63,12 @@ export function getHiddenFieldKeys(fieldDefinitions: FieldDefinition[]): string[
 /**
  * Filter fields for player view
  *
- * Removes:
- * - 'notes' field (always)
+ * When config is provided (or entity has per-entity overrides), uses the
+ * isFieldPlayerVisible() cascade: per-entity override → per-category default → hardcoded rules.
+ *
+ * When config is undefined and no per-entity overrides exist, falls back to
+ * the original hardcoded behavior for backward compatibility:
+ * - 'notes' field (always removed)
  * - Fields in hiddenKeys array
  * - 'preparation' field (only if isSession is true)
  *
@@ -71,11 +77,35 @@ export function getHiddenFieldKeys(fieldDefinitions: FieldDefinition[]): string[
 export function filterFieldsForPlayer(
 	fields: Record<string, FieldValue>,
 	hiddenKeys: string[],
-	isSession: boolean
+	isSession: boolean,
+	entityType?: string,
+	entity?: BaseEntity,
+	fieldDefinitions?: FieldDefinition[],
+	config?: PlayerExportFieldConfig
 ): Record<string, FieldValue> {
 	const filtered: Record<string, FieldValue> = {};
 
-	// Build set of keys to exclude for efficient lookup
+	// Use isFieldPlayerVisible cascade when config-aware parameters are provided
+	if (entityType !== undefined && entity !== undefined) {
+		// Build a lookup map for field definitions
+		const fieldDefMap = new Map<string, FieldDefinition>();
+		if (fieldDefinitions) {
+			for (const fd of fieldDefinitions) {
+				fieldDefMap.set(fd.key, fd);
+			}
+		}
+
+		for (const [key, value] of Object.entries(fields)) {
+			const fieldDef = fieldDefMap.get(key);
+			if (isFieldPlayerVisible(key, fieldDef, entityType, entity, config)) {
+				filtered[key] = value;
+			}
+		}
+
+		return filtered;
+	}
+
+	// Legacy path: original hardcoded behavior (backward compatibility)
 	const excludeKeys = new Set<string>(['notes', ...hiddenKeys]);
 	if (isSession) {
 		excludeKeys.add('preparation');
@@ -137,11 +167,15 @@ export function filterLinksForPlayer(links: EntityLink[]): PlayerEntityLink[] {
  * Returns null if entity should not be visible to players.
  * Otherwise returns a PlayerEntity with filtered fields and links.
  *
+ * When config is provided, uses the isFieldPlayerVisible() cascade for field filtering.
+ * When config is undefined, falls back to the original hardcoded behavior.
+ *
  * Does not mutate the original entity.
  */
 export function filterEntityForPlayer(
 	entity: BaseEntity,
-	typeDefinition: EntityTypeDefinition | undefined
+	typeDefinition: EntityTypeDefinition | undefined,
+	config?: PlayerExportFieldConfig
 ): PlayerEntity | null {
 	// Check if entity should be visible at all
 	if (!isEntityPlayerVisible(entity)) {
@@ -154,8 +188,19 @@ export function filterEntityForPlayer(
 	// Determine if this is a session entity
 	const isSession = entity.type === 'session';
 
-	// Filter fields and links
-	const filteredFields = filterFieldsForPlayer(entity.fields, hiddenKeys, isSession);
+	// Get field definitions from type definition
+	const fieldDefinitions = typeDefinition ? typeDefinition.fieldDefinitions : [];
+
+	// Filter fields and links - use config-aware path
+	const filteredFields = filterFieldsForPlayer(
+		entity.fields,
+		hiddenKeys,
+		isSession,
+		entity.type,
+		entity,
+		fieldDefinitions,
+		config
+	);
 	const filteredLinks = filterLinksForPlayer(entity.links);
 
 	// Create player entity (excluding notes, metadata, playerVisible)
@@ -188,11 +233,15 @@ export function filterEntityForPlayer(
  * Filters entities based on visibility rules and removes sensitive information.
  * Returns an array of PlayerEntity objects.
  *
+ * When config is provided, uses the isFieldPlayerVisible() cascade for field filtering.
+ * When config is undefined, falls back to the original hardcoded behavior.
+ *
  * Does not mutate the original arrays.
  */
 export function filterEntitiesForPlayer(
 	entities: BaseEntity[],
-	entityTypeDefinitions: EntityTypeDefinition[]
+	entityTypeDefinitions: EntityTypeDefinition[],
+	config?: PlayerExportFieldConfig
 ): PlayerEntity[] {
 	// Create a lookup map for type definitions
 	const typeDefMap = new Map<string, EntityTypeDefinition>();
@@ -204,7 +253,7 @@ export function filterEntitiesForPlayer(
 	const playerEntities: PlayerEntity[] = [];
 	for (const entity of entities) {
 		const typeDef = typeDefMap.get(entity.type);
-		const playerEntity = filterEntityForPlayer(entity, typeDef);
+		const playerEntity = filterEntityForPlayer(entity, typeDef, config);
 		if (playerEntity !== null) {
 			playerEntities.push(playerEntity);
 		}

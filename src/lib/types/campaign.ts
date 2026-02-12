@@ -6,6 +6,7 @@ import type {
 	FieldDefinition
 } from './entities';
 import type { ChatMessage } from './ai';
+import type { PlayerExportFieldConfig } from './playerFieldVisibility';
 import type { CombatSession } from './combat';
 import type { MontageSession } from './montage';
 import type { NegotiationSession } from './negotiation';
@@ -92,6 +93,7 @@ export interface CampaignMetadata {
 	fieldTemplates?: FieldTemplate[]; // User-created field templates (Issue #210)
 	settings: CampaignSettings;
 	tableMap?: TableMap; // Visual seating chart for in-person sessions (Issue #318)
+	playerExportFieldConfig?: PlayerExportFieldConfig; // Per-category field visibility for player exports (Issue #436)
 }
 
 // For backup/restore

@@ -161,3 +161,16 @@ export type {
 	PlayerCharacterContext,
 	PlayerCharacterContextResult
 } from './playerCharacterContextService';
+
+// Player publish service (Issue #445)
+export {
+	getLastPublishedAt,
+	setLastPublishedAt,
+	getDaysSincePublish,
+	getPublishFreshness,
+	publishPlayerData
+} from './playerPublishService';
+export type { PublishFreshness, PublishResult } from './playerPublishService';
+
+// Player mode detection service (Issue #445)
+export { detectPlayerMode, resetDetectionCache } from './playerModeDetectionService';

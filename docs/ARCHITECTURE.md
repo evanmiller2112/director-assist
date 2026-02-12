@@ -117,10 +117,15 @@ src/
 │   │   │   ├── ConfirmDialog.svelte
 │   │   │   ├── FormActionBar.svelte       # Sticky action bar for forms
 │   │   │   └── Pagination.svelte
-│   │   └── layout/          # Layout components
-│   │       ├── Header.svelte
-│   │       ├── HeaderSearch.svelte
-│   │       └── Sidebar.svelte
+│   │   ├── layout/          # Layout components
+│   │   │   ├── Header.svelte
+│   │   │   ├── HeaderSearch.svelte
+│   │   │   └── Sidebar.svelte
+│   │   └── player/          # Player view components
+│   │       ├── PlayerHeader.svelte    # Simplified header for player view
+│   │       ├── PlayerSidebar.svelte   # Entity type navigation sidebar
+│   │       ├── PlayerLayout.svelte    # Grid layout composition (header + sidebar + content)
+│   │       └── index.ts               # Barrel exports
 │   ├── config/              # Configuration and definitions
 │   │   ├── commands.ts           # Command palette definitions
 │   │   ├── entityTypes.ts        # Entity type definitions
@@ -172,6 +177,7 @@ src/
 │   │   ├── combat.svelte.ts      # Combat session state (Svelte 5 runes)
 │   │   ├── montage.svelte.ts     # Montage session state (Svelte 5 runes)
 │   │   ├── negotiation.svelte.ts # Negotiation session state (Svelte 5 runes)
+│   │   ├── playerData.svelte.ts  # Player view data state (Svelte 5 runes)
 │   │   └── ui.svelte.ts
 │   └── types/               # TypeScript definitions
 │       ├── entities.ts      # Entity type system
@@ -185,6 +191,7 @@ src/
 │       ├── matrix.ts        # Matrix view types
 │       ├── network.ts       # Network visualization types
 │       ├── cache.ts         # Cache types (RelationshipSummaryCache)
+│       ├── playerExport.ts  # Player export data types
 │       └── index.ts         # Type exports
 ├── routes/                  # SvelteKit routes (pages)
 │   ├── +layout.svelte       # Root layout
@@ -217,6 +224,14 @@ src/
 │   │   │   └── +page.svelte     # Create negotiation (/negotiation/new)
 │   │   └── [id]/
 │   │       └── +page.svelte     # View/run negotiation (/negotiation/abc123)
+│   ├── player/              # Player view routes (read-only, AI-free)
+│   │   ├── +layout.svelte       # Player layout with PlayerLayout component
+│   │   ├── +page.svelte         # Player home page (/player)
+│   │   ├── [type]/
+│   │   │   └── +page.svelte     # Entity list by type (/player/npc)
+│   │   └── entity/
+│   │       └── [id]/
+│   │           └── +page.svelte # Entity detail view (/player/entity/abc123)
 │   └── settings/
 │       └── +page.svelte     # Settings page
 ├── app.css                  # Global styles & Tailwind
@@ -3379,6 +3394,134 @@ Access parameters in components:
 - Provides global state
 - Handles theme application
 
+## Player View (Issue #441)
+
+### Overview
+
+The player view is a read-only, AI-free interface for displaying published campaign data to players. It provides a simplified view of entities without editing capabilities, AI features, or Director-only content.
+
+**Key Characteristics:**
+- Read-only access to published entities
+- No AI generation or chat features
+- No editing or creation capabilities
+- Simplified navigation focused on browsing
+- Separate from the main Director view
+
+### Architecture
+
+**Isolation Strategy:**
+The player view is isolated from the Director view using a separate route hierarchy and dedicated components:
+
+- **Separate route tree**: `/player/*` routes with their own layout
+- **Dedicated components**: `PlayerLayout`, `PlayerHeader`, `PlayerSidebar` (no AI or edit UI)
+- **Separate data store**: `playerDataStore` manages exported data independently from `entityStore`
+
+### Data Model
+
+**PlayerExport Type:**
+```typescript
+interface PlayerExport {
+  campaignName: string;
+  campaignDescription: string;
+  entities: PlayerEntity[];
+}
+
+interface PlayerEntity {
+  id: string;
+  type: string;
+  name: string;
+  fields: Record<string, unknown>;
+  relationships?: Array<{
+    targetId: string;
+    targetType: string;
+    targetName: string;
+    relationshipType: string;
+  }>;
+}
+```
+
+**Key Differences from Director View:**
+- No metadata field (no AI context, no hidden fields)
+- Simplified relationship structure (no bidirectional metadata)
+- No system profile information
+- No custom entity type definitions
+
+### Player Data Store (`playerData.svelte.ts`)
+
+Manages player export data state using Svelte 5 runes:
+
+**State:**
+- `data`: Current player export data (PlayerExport | null)
+- `isLoading`: Loading state boolean
+- `error`: Error message string
+
+**Derived State:**
+- `isLoaded`: Whether data has been loaded
+- `campaignName`: Campaign name from export
+- `campaignDescription`: Campaign description from export
+- `entities`: Array of all entities
+- `entityTypes`: Unique entity types from entities
+- `entitiesByType`: Entities grouped by type
+
+**Methods:**
+- `loadData()`: Load data from static/player_data.json
+- `setData(data)`: Manually set player export data
+- `reset()`: Clear all data and reset to initial state
+- `getEntityById(id)`: Get specific entity by ID
+- `getEntitiesByType(type)`: Get all entities of a specific type
+- `searchEntities(query, options)`: Search entities by name/description
+
+### Routes
+
+**Player Home (`/player`)**
+Displays campaign overview and entity type cards with counts.
+
+**Entity List by Type (`/player/[type]`)**
+Shows all entities of a specific type with search and basic filtering.
+
+**Entity Detail (`/player/entity/[id]`)**
+Displays full entity information including fields and relationships.
+
+### Components
+
+**PlayerLayout.svelte**
+Grid-based layout composition:
+- Responsive design with header, sidebar, and content areas
+- Mobile-friendly with collapsible sidebar
+- No AI or editing UI elements
+
+**PlayerHeader.svelte**
+Simplified header without:
+- Search functionality
+- Command palette
+- Settings access
+- Entity creation buttons
+
+**PlayerSidebar.svelte**
+Entity type navigation:
+- Lists available entity types with icons
+- Shows entity count per type
+- Active route highlighting
+- No "Create" or "Edit" actions
+
+### Data Loading
+
+Player data is loaded from a static JSON file rather than IndexedDB:
+
+1. **Static File Location**: `static/player_data.json`
+2. **Auto-loading**: Store attempts to fetch on initialization
+3. **Error Handling**: Displays friendly message if file not found
+4. **No Database**: Completely separate from Director's IndexedDB storage
+
+### Future Enhancements
+
+The player view is part of Epic #440 (Player View System) with planned improvements:
+
+- **Issue #442**: Auto-load player_data.json from static directory (completed in store)
+- **Issue #443**: Read-only entity display components
+- **Issue #444**: Entity browser with search and type filtering
+- **Issue #445**: Director-side "Publish to Player View" export action
+
 ## State Management
 
 ### Stores
@@ -3545,6 +3688,51 @@ console.log(`Reached in ${pathToTarget.depth} steps via:`, pathToTarget.path);
 - Tracks visited nodes to prevent infinite loops
 - Efficient for small-to-medium relationship networks
 - Consider limiting maxDepth for large datasets
+
+#### Player Data Store (`playerData.svelte.ts`)
+
+Manages player view export data using Svelte 5 runes. Used exclusively by the `/player` route hierarchy for displaying published campaign data to players.
+
+**State:**
+- `data`: Current player export data (PlayerExport | null)
+- `isLoading`: Boolean loading state
+- `error`: Error message string or null
+
+**Derived State:**
+- `isLoaded`: Whether data has been loaded (computed from data !== null)
+- `campaignName`: Campaign name from export data
+- `campaignDescription`: Campaign description from export data
+- `entities`: Array of all entities from export
+- `entityTypes`: Unique entity types extracted from entities
+- `entitiesByType`: Entities grouped by type as Record<string, PlayerEntity[]>
+
+**Methods:**
+- `loadData()`: Fetch and load data from static/player_data.json
+- `setData(data: PlayerExport)`: Manually set player export data
+- `reset()`: Clear all data and reset to initial state
+- `getEntityById(id: string)`: Get specific entity by ID (returns PlayerEntity | undefined)
+- `getEntitiesByType(type: string)`: Get all entities of a specific type
+- `searchEntities(query: string, options?)`: Search entities by name/description with optional type filtering
+
+**Data Source:**
+Unlike other stores that read from IndexedDB, this store loads from a static JSON file at `static/player_data.json`. This keeps player data completely separate from the Director's database.
+
+**Usage:**
+```typescript
+import { playerDataStore } from '$lib/stores';
+
+// Load data on mount
+onMount(async () => {
+  await playerDataStore.loadData();
+});
+
+// Access reactive data
+const campaignName = playerDataStore.campaignName;
+const entities = playerDataStore.entities;
+
+// Search entities
+const results = playerDataStore.searchEntities('dragon', { types: ['npc'] });
+```
 
 #### UI Store (`ui.svelte.ts`)
 

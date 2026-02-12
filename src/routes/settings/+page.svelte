@@ -19,10 +19,15 @@
 		getDaysSinceExport,
 		refreshAllStores,
 		resetAllStores,
-		type RelationshipContextSettings
+		type RelationshipContextSettings,
+		getLastPublishedAt,
+		getDaysSincePublish,
+		getPublishFreshness,
+		type PublishFreshness
 	} from '$lib/services';
-	import { Download, Upload, Moon, Sun, Monitor, Trash2, Key, RefreshCw, Layers, ChevronRight, Users } from 'lucide-svelte';
+	import { Download, Upload, Moon, Sun, Monitor, Trash2, Key, RefreshCw, Layers, ChevronRight, Users, Globe } from 'lucide-svelte';
 	import PlayerExportModal from '$lib/components/settings/PlayerExportModal.svelte';
+	import PublishPlayerDataModal from '$lib/components/settings/PublishPlayerDataModal.svelte';
 	import ForgeSteelImportModal from '$lib/components/settings/ForgeSteelImportModal.svelte';
 	import LoadingButton from '$lib/components/ui/LoadingButton.svelte';
 	import { SystemSelector, CampaignLinkingSettings } from '$lib/components/settings';
@@ -33,6 +38,7 @@
 	let isExporting = $state(false);
 	let isImporting = $state(false);
 	let showPlayerExportModal = $state(false);
+	let showPublishModal = $state(false);
 	let showForgeSteelImportModal = $state(false);
 
 	// Model selection state
@@ -52,6 +58,11 @@
 	let lastExportedAt = $state<Date | null>(null);
 	let daysSinceExport = $state<number | null>(null);
 
+	// Last publish state
+	let lastPublishedAt = $state<Date | null>(null);
+	let publishFreshness = $state<PublishFreshness>('never');
+	let publishDaysSince = $state<number | null>(null);
+
 	// Handle initialization and action parameters
 	onMount(() => {
 		debugStore.load();
@@ -68,6 +79,11 @@
 		const exportDate = getLastExportedAt();
 		lastExportedAt = exportDate;
 		daysSinceExport = getDaysSinceExport(exportDate);
+
+		// Load last publish state
+		lastPublishedAt = getLastPublishedAt();
+		publishDaysSince = getDaysSincePublish(lastPublishedAt);
+		publishFreshness = getPublishFreshness(publishDaysSince);
 
 		// Handle action parameter (e.g., ?action=export)
 		const actionParam = $page.url.searchParams.get('action');
@@ -349,6 +365,12 @@
 		};
 
 		input.click();
+	}
+
+	function handlePublished(publishedAt: Date) {
+		lastPublishedAt = publishedAt;
+		publishDaysSince = getDaysSincePublish(lastPublishedAt);
+		publishFreshness = getPublishFreshness(publishDaysSince);
 	}
 
 	async function clearAllData() {
@@ -772,19 +794,61 @@
 		</div>
 	</section>
 
-	<!-- Player Export -->
+	<!-- Player View -->
 	<section class="mb-8">
-		<h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">Player Export</h2>
+		<h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">Player View</h2>
 		<p class="text-sm text-slate-500 mb-4">
-			Create a player-safe export that filters out DM-only content like private notes, secrets, and hidden entities.
+			Publish player-safe campaign data for your player-facing instance, or export in various formats.
 		</p>
-		<button
-			class="btn btn-secondary inline-flex items-center gap-2"
-			onclick={() => showPlayerExportModal = true}
-		>
-			<Users class="w-4 h-4" />
-			Export for Players
-		</button>
+
+		<!-- Last Published Indicator -->
+		<div class="mb-4 p-3 rounded-lg bg-slate-50 dark:bg-slate-800">
+			<div class="flex items-center gap-2 text-sm">
+				<span class="text-slate-600 dark:text-slate-400">Last published:</span>
+				{#if publishFreshness === 'never'}
+					<span class="text-slate-400 dark:text-slate-500">Never</span>
+				{:else if publishFreshness === 'fresh'}
+					<span class="inline-flex items-center gap-1.5">
+						<span class="w-2 h-2 rounded-full bg-green-500"></span>
+						<span class="text-green-600 dark:text-green-400 font-medium">
+							{publishDaysSince === 0 ? 'Today' : ''}
+						</span>
+					</span>
+				{:else if publishFreshness === 'stale'}
+					<span class="inline-flex items-center gap-1.5">
+						<span class="w-2 h-2 rounded-full bg-yellow-500"></span>
+						<span class="text-yellow-600 dark:text-yellow-400 font-medium">
+							{publishDaysSince} day{publishDaysSince === 1 ? '' : 's'} ago
+						</span>
+					</span>
+				{:else}
+					<span class="inline-flex items-center gap-1.5">
+						<span class="w-2 h-2 rounded-full bg-red-500"></span>
+						<span class="text-red-600 dark:text-red-400 font-medium">
+							{publishDaysSince} day{publishDaysSince === 1 ? '' : 's'} ago
+						</span>
+					</span>
+				{/if}
+			</div>
+		</div>
+
+		<!-- Buttons -->
+		<div class="flex flex-wrap gap-3">
+			<button
+				class="btn btn-primary inline-flex items-center gap-2"
+				onclick={() => showPublishModal = true}
+			>
+				<Globe class="w-4 h-4" />
+				Publish to Player View
+			</button>
+			<button
+				class="btn btn-secondary inline-flex items-center gap-2"
+				onclick={() => showPlayerExportModal = true}
+			>
+				<Users class="w-4 h-4" />
+				Export for Players
+			</button>
+		</div>
 	</section>
 
 	<!-- Forge Steel Import -->
@@ -847,6 +911,9 @@
 
 <!-- Player Export Modal -->
 <PlayerExportModal bind:open={showPlayerExportModal} onclose={() => showPlayerExportModal = false} />
+
+<!-- Publish Player Data Modal -->
+<PublishPlayerDataModal bind:open={showPublishModal} onpublished={handlePublished} />
 
 <!-- Forge Steel Import Modal -->
 <ForgeSteelImportModal

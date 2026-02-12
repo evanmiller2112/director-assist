@@ -17,6 +17,12 @@ vi.mock('$lib/db', () => ({
 	initializeDatabase: vi.fn(() => Promise.resolve())
 }));
 
+// Mock the player mode detection service (always returns false = director mode)
+vi.mock('$lib/services/playerModeDetectionService', () => ({
+	detectPlayerMode: vi.fn(() => Promise.resolve(false)),
+	resetDetectionCache: vi.fn()
+}));
+
 // Mock the stores
 vi.mock('$lib/stores', async () => {
 	return {
@@ -86,12 +92,15 @@ describe('Layout - Global Keyboard Shortcuts', () => {
 	});
 
 	describe('Cmd+K / Ctrl+K Keyboard Shortcut', () => {
-		it('should set up keyboard event listener on window', () => {
+		it('should set up keyboard event listener on window', async () => {
 			const { container } = render(Layout, {
 				props: {
 					children: mockChildren
 				}
 			});
+
+			// Wait for onMount (detectPlayerMode is async)
+			await new Promise(resolve => setTimeout(resolve, 20));
 
 			// Verify the layout rendered successfully - the keyboard handler is set up via svelte:window
 			expect(container.querySelector('.dashboard-layout')).toBeInTheDocument();
@@ -155,23 +164,29 @@ describe('Layout - Global Keyboard Shortcuts', () => {
 	});
 
 	describe('Layout Structure', () => {
-		it('should render main content area', () => {
+		it('should render main content area', async () => {
 			const { container } = render(Layout, {
 				props: {
 					children: mockChildren
 				}
 			});
+
+			// Wait for onMount (detectPlayerMode is async)
+			await new Promise(resolve => setTimeout(resolve, 20));
 
 			const main = container.querySelector('.dashboard-main');
 			expect(main).toBeInTheDocument();
 		});
 
-		it('should render layout container', () => {
+		it('should render layout container', async () => {
 			const { container } = render(Layout, {
 				props: {
 					children: mockChildren
 				}
 			});
+
+			// Wait for onMount (detectPlayerMode is async)
+			await new Promise(resolve => setTimeout(resolve, 20));
 
 			expect(container.querySelector('.dashboard-layout')).toBeInTheDocument();
 		});

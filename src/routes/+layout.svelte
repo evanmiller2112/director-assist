@@ -18,7 +18,8 @@
 		isAiSetupDismissed,
 		setAiSetupDismissed,
 		hasAnyApiKey,
-		shouldShowAiSetupBanner
+		shouldShowAiSetupBanner,
+		detectPlayerMode
 	} from '$lib/services';
 	import { goto, afterNavigate } from '$app/navigation';
 
@@ -29,6 +30,9 @@
 
 	let { children } = $props();
 	let headerComponent: ReturnType<typeof Header> | undefined = $state();
+
+	// App mode state
+	let appMode = $state<'loading' | 'director' | 'player'>('loading');
 
 	// Reactive signal to force backup reminder state re-computation (Issue #423)
 	// localStorage reads are not reactive, so we use this signal to trigger updates
@@ -85,6 +89,23 @@
 	});
 
 	onMount(async () => {
+		// Check if this is a player-mode deployment
+		// (player_data.json exists at the server root)
+		const isPlayerMode = await detectPlayerMode();
+
+		if (isPlayerMode) {
+			appMode = 'player';
+			// Load theme for player mode
+			uiStore.loadTheme();
+			// If not already on /player route, redirect
+			if (!window.location.pathname.startsWith('/player')) {
+				goto('/player/', { replaceState: true });
+			}
+			return; // Skip director initialization
+		}
+
+		appMode = 'director';
+
 		// Initialize database
 		await initializeDatabase();
 
@@ -138,56 +159,74 @@
 		// Increment signal to trigger aiSetupReminderState re-computation (Issue #490)
 		aiDismissSignal++;
 	}
+
+	// Handle global keydown only in director mode
+	function handleGlobalKeydownWrapper(e: KeyboardEvent) {
+		if (appMode === 'director') {
+			handleGlobalKeydown(e);
+		}
+	}
 </script>
 
-<svelte:window onkeydown={handleGlobalKeydown} />
+<svelte:window onkeydown={handleGlobalKeydownWrapper} />
 
-<div class="dashboard-layout">
-	<Header bind:this={headerComponent} />
-	<Sidebar mobileOpen={uiStore.mobileSidebarOpen} />
+{#if appMode === 'loading'}
+	<!-- Brief loading state while detecting mode -->
+	<div class="h-screen flex items-center justify-center bg-white dark:bg-slate-900">
+		<div class="inline-block w-8 h-8 border-4 border-slate-200 dark:border-slate-700 border-t-blue-600 rounded-full animate-spin"></div>
+	</div>
+{:else if appMode === 'player'}
+	<!-- Player mode: just render children (the /player/ routes handle everything) -->
+	{@render children()}
+{:else}
+	<!-- Director mode: full layout -->
+	<div class="dashboard-layout">
+		<Header bind:this={headerComponent} />
+		<Sidebar mobileOpen={uiStore.mobileSidebarOpen} />
 
-	<!-- Mobile sidebar backdrop -->
-	{#if uiStore.mobileSidebarOpen}
-		<button
-			class="sidebar-backdrop lg:hidden"
-			onclick={() => uiStore.closeMobileSidebar()}
-			aria-label="Close sidebar"
-		></button>
-	{/if}
-
-	<main class="dashboard-main">
-		<div class="flex-1 overflow-y-auto p-6">
-			<!-- AI setup reminder banner -->
-			{#if aiSetupReminderState.show}
-				<div class="mb-6">
-					<AiSetupBanner
-						onGetStarted={handleAiSetupGetStarted}
-						onPlayerDismiss={handleAiSetupPlayerDismiss}
-						onDisableAi={handleAiSetupDisableAi}
-					/>
-				</div>
-			{/if}
-
-			<!-- Backup reminder banner -->
-			{#if backupReminderState.show && backupReminderState.reason}
-				<div class="mb-6">
-					<BackupReminderBanner
-						reason={backupReminderState.reason}
-						entityCount={backupReminderState.entityCount}
-						daysSinceExport={backupReminderState.daysSinceExport}
-						onExportNow={handleBackupExport}
-						onDismiss={handleBackupDismiss}
-					/>
-				</div>
-			{/if}
-
-			{@render children()}
-		</div>
-
-		<!-- Chat panel -->
-		{#if aiSettings.isEnabled && uiStore.chatPanelOpen}
-			<ChatPanel />
+		<!-- Mobile sidebar backdrop -->
+		{#if uiStore.mobileSidebarOpen}
+			<button
+				class="sidebar-backdrop lg:hidden"
+				onclick={() => uiStore.closeMobileSidebar()}
+				aria-label="Close sidebar"
+			></button>
 		{/if}
-	</main>
-	<Toast />
-</div>
+
+		<main class="dashboard-main">
+			<div class="flex-1 overflow-y-auto p-6">
+				<!-- AI setup reminder banner -->
+				{#if aiSetupReminderState.show}
+					<div class="mb-6">
+						<AiSetupBanner
+							onGetStarted={handleAiSetupGetStarted}
+							onPlayerDismiss={handleAiSetupPlayerDismiss}
+							onDisableAi={handleAiSetupDisableAi}
+						/>
+					</div>
+				{/if}
+
+				<!-- Backup reminder banner -->
+				{#if backupReminderState.show && backupReminderState.reason}
+					<div class="mb-6">
+						<BackupReminderBanner
+							reason={backupReminderState.reason}
+							entityCount={backupReminderState.entityCount}
+							daysSinceExport={backupReminderState.daysSinceExport}
+							onExportNow={handleBackupExport}
+							onDismiss={handleBackupDismiss}
+						/>
+					</div>
+				{/if}
+
+				{@render children()}
+			</div>
+
+			<!-- Chat panel -->
+			{#if aiSettings.isEnabled && uiStore.chatPanelOpen}
+				<ChatPanel />
+			{/if}
+		</main>
+		<Toast />
+	</div>
+{/if}

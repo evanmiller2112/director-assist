@@ -218,7 +218,10 @@ vi.mock('$lib/services', () => ({
 	setLastExportedAt: vi.fn(),
 	setLastMilestoneReached: vi.fn(),
 	refreshAllStores: vi.fn(),
-	resetAllStores: vi.fn()
+	resetAllStores: vi.fn(),
+	getLastPublishedAt: vi.fn(() => null),
+	getDaysSincePublish: vi.fn(() => null),
+	getPublishFreshness: vi.fn(() => 'never')
 }));
 
 vi.mock('$lib/services/summaryService', () => ({
@@ -255,6 +258,13 @@ vi.mock('$lib/db/migrations/migrateCampaignToEntity', () => ({
 
 // Mock the settings components that SettingsPage imports
 vi.mock('$lib/components/settings/PlayerExportModal.svelte', async () => {
+	const MockPlayerExportModal = (await import('./mocks/components/MockPlayerExportModal.svelte')).default;
+	return {
+		default: MockPlayerExportModal
+	};
+});
+
+vi.mock('$lib/components/settings/PublishPlayerDataModal.svelte', async () => {
 	const MockPlayerExportModal = (await import('./mocks/components/MockPlayerExportModal.svelte')).default;
 	return {
 		default: MockPlayerExportModal

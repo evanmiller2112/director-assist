@@ -37,7 +37,7 @@ Database (src/lib/db/index.ts)
 
 ```
 Components (src/lib/components/respite/)
-  ├── RespiteSetup.svelte          - Create/edit form
+  ├── RespiteSetup.svelte          - Create/edit form with entity-based hero selection
   ├── HeroRecoveryPanel.svelte     - Recovery tracking per hero
   ├── RespiteActivityCard.svelte   - Activity display card
   ├── ActivityControls.svelte      - Activity creation with templates

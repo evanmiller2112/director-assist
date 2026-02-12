@@ -20,7 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 89 tests covering repository operations, store reactivity, and derived values
 
 **Respite Activity Tracker - UI Components (Issue #409)**
-- RespiteSetup: Create/edit respite form with hero multi-select and recovery tracking
+- RespiteSetup: Create/edit respite form with entity-based hero selection (searchable character list) or manual text input, plus recovery tracking
 - HeroRecoveryPanel: Recovery tracking per hero with red/yellow/green color coding
 - RespiteActivityCard: Activity display with type badge (6 types) and status indicator
 - ActivityControls: Add activity form with template quick-select

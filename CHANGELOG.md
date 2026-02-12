@@ -7,6 +7,79 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.9.0] - 2026-02-12
+
+### Added
+
+**Player View Mode - Complete Read-Only, AI-Free Interface (Epic #432)**
+
+Director Assist now supports a complete Player View Mode, enabling directors to publish campaign data for players to browse without AI capabilities. This feature uses a dual-instance deployment model where the same codebase serves both director and player needs.
+
+*Player Route Infrastructure (Issue #441)*
+- New `/player/` route with dedicated layout separate from main director interface
+- PlayerSidebar component with navigation to browse, themes, and help
+- PlayerHeader component with search bar and theme toggle for player experience
+- Browse page at `/player/browse` for entity browsing and filtering
+- Entity detail view at `/player/[id]` showing read-only entity information
+- Automatic detection and redirect: app runs in player-only mode when `player_data.json` is present
+
+*Player Data Loader Service (Issue #442)*
+- PlayerDataLoader service fetches and validates `player_data.json` from static directory
+- Zod schema validation ensures data integrity
+- Reactive store for managing player data state in player-only mode
+- Automatic data loading on player route access
+- Error handling with user-friendly messages for missing or invalid data
+
+*Read-Only Entity Display Components (Issue #443)*
+- PlayerEntityCard component displays entity summaries in browse grid
+- PlayerEntityDetail component shows full entity information with all visible fields
+- PlayerFieldDisplay component renders individual fields with type-appropriate formatting
+- PlayerRelationships component displays entity relationships in read-only format
+- All components designed for player consumption without edit capabilities
+- Type-specific rendering for text, richtext, select, entity-ref, entity-refs, and other field types
+
+*Player Entity Browser with Search and Type Filtering (Issue #444)*
+- Full-featured browse page with search bar filtering entities by name and description
+- Entity type filter dropdown for viewing specific entity categories
+- Breadcrumb navigation showing applied filters
+- Sort toggle for alphabetical ordering (A-Z / Z-A)
+- Grid layout with responsive entity cards
+- Empty states for no data or no search results
+- URL parameter persistence for search and type filters (enables bookmarking and sharing links)
+- Search query debouncing for performance
+
+*Director-Side 'Publish to Player View' Export (Issue #445)*
+- "Publish to Player View" button in Settings Export section
+- Generate `player_data.json` file with one click, ready for player deployment
+- Freshness indicator shows time since last publish with color coding (green < 1 day, yellow < 7 days, red >= 7 days)
+- Publish confirmation dialog explaining workflow and file location
+- Automatic player mode detection: when `player_data.json` exists, app redirects to player-only interface
+- Integration with existing player export filter service (respects field visibility configuration)
+- JSON export format includes all player-visible entities with relationships
+- 105 comprehensive tests covering publish service, detection service, and UI components
+- Documentation in user guide covering publish workflow and deployment
+
+### Technical Notes
+
+**Zero-Config Player Mode**
+- Presence of `static/player_data.json` automatically enables player-only mode
+- No configuration files or environment variables needed
+- Director instance and player instance use identical codebase
+
+**Dual-Instance Deployment Pattern**
+- Deploy same build to two locations: director instance (full app) and player instance (with `player_data.json`)
+- Director publishes updated data file to player instance as needed
+- Player instance automatically detects data file and enables read-only mode
+
+**Field Visibility Cascade**
+- Player export respects three-level field visibility cascade from Epic #434
+- Per-entity overrides → per-category defaults → hardcoded rules
+- Directors have full control over what players can see per entity type and per entity
+
+**Test Coverage**
+- 105 new tests across player mode services and detection logic
+- Full coverage of publish workflow, data validation, and player-only mode routing
+
 ## [1.8.1] - 2026-02-12
 
 ### Breaking Changes

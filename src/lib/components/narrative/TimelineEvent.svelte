@@ -108,7 +108,7 @@
 	<div class="flex-1 pb-8">
 		<!-- Event header -->
 		<div class="mb-2">
-			<h3 class="text-lg font-semibold text-gray-900">{event.name}</h3>
+			<h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">{event.name}</h3>
 			{#if event.createdAt}
 				<p class="text-sm text-gray-500">{formatDate(event.createdAt)}</p>
 			{/if}
@@ -116,7 +116,7 @@
 
 		<!-- Event description -->
 		{#if event.description && event.description.trim() !== ''}
-			<p class="mb-2 text-sm text-gray-700 line-clamp-3">{event.description}</p>
+			<p class="mb-2 text-sm text-gray-700 dark:text-gray-300 line-clamp-3">{event.description}</p>
 		{/if}
 
 		<!-- Outcome -->
@@ -130,7 +130,7 @@
 				<button
 					type="button"
 					onclick={handleViewSource}
-					class="rounded border border-gray-300 bg-white px-3 py-1 text-sm font-medium text-gray-700 hover:bg-gray-50"
+					class="rounded border border-gray-300 bg-white px-3 py-1 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:hover:bg-gray-700"
 				>
 					View Source
 				</button>
@@ -140,7 +140,7 @@
 				<button
 					type="button"
 					onclick={handleLink}
-					class="rounded border border-gray-300 bg-white px-3 py-1 text-sm font-medium text-gray-700 hover:bg-gray-50"
+					class="rounded border border-gray-300 bg-white px-3 py-1 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:hover:bg-gray-700"
 				>
 					Link
 				</button>

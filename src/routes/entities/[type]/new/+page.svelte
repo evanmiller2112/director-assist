@@ -841,7 +841,7 @@
 							<input
 								id={field.key}
 								type="checkbox"
-								class="w-4 h-4 rounded border-slate-300 text-slate-900 focus:ring-slate-500 dark:border-slate-600 dark:bg-slate-700 dark:checked:bg-slate-600"
+								class="w-4 h-4 rounded border-slate-300 text-slate-900 focus:ring-slate-500 dark:border-slate-600 dark:bg-slate-700 dark:checked:bg-slate-600 dark:text-slate-100"
 								checked={(fields[field.key] as boolean) ?? false}
 								onchange={(e) => updateField(field.key, e.currentTarget.checked)}
 							/>
@@ -855,7 +855,7 @@
 								<label class="flex items-center gap-2 cursor-pointer">
 									<input
 										type="checkbox"
-										class="w-4 h-4 rounded border-slate-300 text-slate-900 focus:ring-slate-500 dark:border-slate-600 dark:bg-slate-700 dark:checked:bg-slate-600"
+										class="w-4 h-4 rounded border-slate-300 text-slate-900 focus:ring-slate-500 dark:border-slate-600 dark:bg-slate-700 dark:checked:bg-slate-600 dark:text-slate-100"
 										checked={Array.isArray(fields[field.key]) &&
 											(fields[field.key] as string[]).includes(option)}
 										onchange={(e) => {
@@ -1195,7 +1195,7 @@
 					<input
 						id="player-visibility-checkbox"
 						type="checkbox"
-						class="w-4 h-4 rounded border-slate-300 text-slate-900 focus:ring-slate-500 dark:border-slate-600 dark:bg-slate-700 dark:checked:bg-slate-600"
+						class="w-4 h-4 rounded border-slate-300 text-slate-900 focus:ring-slate-500 dark:border-slate-600 dark:bg-slate-700 dark:checked:bg-slate-600 dark:text-slate-100"
 						checked={playerVisible === false}
 						onchange={(e) => {
 							playerVisible = e.currentTarget.checked ? false : undefined;

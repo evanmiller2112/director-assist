@@ -85,6 +85,7 @@
 
 	function handleCancel() {
 		if (!isImporting) {
+			open = false;
 			oncancel?.();
 		}
 	}

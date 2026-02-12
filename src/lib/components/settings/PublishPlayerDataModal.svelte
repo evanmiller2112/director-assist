@@ -64,6 +64,7 @@
 
 	function handleClose() {
 		if (!isPublishing) {
+			open = false;
 			onclose?.();
 		}
 	}

@@ -42,7 +42,8 @@ function getCampaignMetadata(entity: BaseEntity | null): CampaignMetadata {
 		entityTypeOverrides: metadata?.entityTypeOverrides ?? [],
 		fieldTemplates: metadata?.fieldTemplates ?? [],
 		settings: metadata?.settings ?? { ...DEFAULT_CAMPAIGN_SETTINGS },
-		tableMap: metadata?.tableMap
+		tableMap: metadata?.tableMap,
+		playerExportFieldConfig: metadata?.playerExportFieldConfig
 	};
 }
 
@@ -856,6 +857,61 @@ function createCampaignStore() {
 			} catch (e) {
 				error = e instanceof Error ? e.message : 'Failed to update table map';
 				console.error('Failed to update table map:', e);
+				throw e;
+			}
+		},
+
+		// Player Export Field Config methods (GitHub Issue #514)
+
+		/**
+		 * Get the player export field config for the current campaign
+		 * Returns undefined if no config exists
+		 */
+		get playerExportFieldConfig() {
+			if (!campaign) return undefined;
+			const metadata = getCampaignMetadata(campaign);
+			// Return deep clone to prevent mutation
+			return metadata.playerExportFieldConfig
+				? deepClone(metadata.playerExportFieldConfig)
+				: undefined;
+		},
+
+		/**
+		 * Update the player export field config for the current campaign
+		 * Pass undefined to remove the config
+		 */
+		async updatePlayerExportFieldConfig(
+			playerExportFieldConfig?: import('$lib/types/playerFieldVisibility').PlayerExportFieldConfig
+		): Promise<void> {
+			if (!campaign) {
+				throw new Error('No campaign loaded');
+			}
+
+			try {
+				const currentMetadata = getCampaignMetadata(campaign);
+				const updatedMetadata: CampaignMetadata = {
+					...currentMetadata,
+					playerExportFieldConfig
+				};
+
+				// Deep clone to remove Svelte 5 Proxy wrappers
+				const clonedMetadata = deepClone(updatedMetadata);
+
+				await db.entities.update(campaign.id, {
+					metadata: clonedMetadata,
+					updatedAt: new Date()
+				});
+
+				// Update local state
+				campaign = {
+					...campaign,
+					metadata: clonedMetadata,
+					updatedAt: new Date()
+				};
+				allCampaigns = allCampaigns.map((c) => (c.id === campaign!.id ? campaign! : c));
+			} catch (e) {
+				error = e instanceof Error ? e.message : 'Failed to update player export field config';
+				console.error('Failed to update player export field config:', e);
 				throw e;
 			}
 		},

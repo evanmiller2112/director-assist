@@ -23,6 +23,10 @@
 	import { PendingRelationshipList, CreateRelateCommand, AddFieldInline } from '$lib/components/entity';
 	import { FormActionBar } from '$lib/components/ui';
 	import { buildPendingRelationshipsContext } from './pendingRelationshipsContext';
+	import FieldVisibilityToggle from '$lib/components/entity/FieldVisibilityToggle.svelte';
+	import { getFieldVisibilitySetting, getHardcodedDefault } from '$lib/services/playerExportFieldConfigService';
+	import { setFieldOverride } from '$lib/services/entityFieldVisibilityService';
+	import type { PlayerExportFieldConfig } from '$lib/types/playerFieldVisibility';
 
 	const entityType = $derived($page.params.type ?? '');
 	const typeDefinition = $derived(
@@ -45,6 +49,7 @@
 	let notes = $state('');
 	let playerVisible = $state<boolean | undefined>(undefined);
 	let fields = $state<Record<string, FieldValue>>({});
+	let metadata = $state<Record<string, unknown>>({});
 	let isSaving = $state(false);
 	let isGenerating = $state(false);
 	let errors = $state<Record<string, string>>({});
@@ -177,7 +182,8 @@
 					.filter(Boolean),
 				notes: notes.trim(),
 				playerVisible,
-				fields: $state.snapshot(fields)
+				fields: $state.snapshot(fields),
+				metadata: $state.snapshot(metadata)
 			});
 
 			let created;
@@ -541,6 +547,22 @@
 		return suggestion !== undefined && suggestion.status === 'pending';
 	}
 
+	// Player export field visibility config
+	const playerExportFieldConfig = $derived.by(() => {
+		return campaignStore.playerExportFieldConfig ?? { fieldVisibility: {} } as PlayerExportFieldConfig;
+	});
+
+	function getCategoryDefault(fieldKey: string, fieldDef: FieldDefinition | undefined): boolean {
+		const entityTypeStr = entityType;
+		const setting = getFieldVisibilitySetting(playerExportFieldConfig, entityTypeStr, fieldKey);
+		if (setting !== undefined) return setting;
+		return getHardcodedDefault(fieldKey, fieldDef, entityTypeStr);
+	}
+
+	function handleFieldVisibilityToggle(fieldKey: string, value: boolean | undefined) {
+		metadata = setFieldOverride(metadata, fieldKey, value);
+	}
+
 	async function handleGenerateSingleFieldSuggestion(params: {
 		fieldKey: string;
 		fieldDefinition: FieldDefinition;
@@ -673,6 +695,12 @@
 								{field.label}
 								{#if field.required}*{/if}
 							</label>
+							<FieldVisibilityToggle
+								fieldKey={field.key}
+								entityMetadata={metadata}
+								categoryDefault={getCategoryDefault(field.key, field)}
+								onToggle={handleFieldVisibilityToggle}
+							/>
 							{#if canGenerate && hasPendingSuggestion(field.key)}
 								<FieldSuggestionBadge
 									fieldName={field.label}
@@ -1095,7 +1123,15 @@
 					{#each secretFields as field}
 						<div class="mb-4">
 							<div class="flex items-center justify-between mb-1">
-								<label for={field.key} class="label mb-0">{field.label}</label>
+								<div class="flex items-center gap-2">
+									<label for={field.key} class="label mb-0">{field.label}</label>
+									<FieldVisibilityToggle
+										fieldKey={field.key}
+										entityMetadata={metadata}
+										categoryDefault={getCategoryDefault(field.key, field)}
+										onToggle={handleFieldVisibilityToggle}
+									/>
+								</div>
 								<div class="flex items-center gap-2">
 									{#if isGeneratableField(field) && canGenerate}
 										<FieldSuggestionButton

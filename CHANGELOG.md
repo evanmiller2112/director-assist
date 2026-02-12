@@ -7,6 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Breaking Changes
+
+**Respite Activities Refactored as Independent Entities (Issue #493)**
+- `RespiteSession.activities` array replaced with `activityIds` (string references to entity system)
+- Activities are now `respite_activity` entities in the entity system with their own lifecycle
+- Old `RespiteActivity` interface deprecated; activities use `BaseEntity` with typed fields
+- Old store methods `recordActivity`, `updateActivity`, `completeActivity` replaced with entity-based `createActivity`, `updateActivityStatus`, `updateActivityProgress`, `deleteActivity`
+- `RecordActivityInput` deprecated in favor of `CreateRespiteActivityInput`
+
+### Added
+
+**Respite Activity Entity Type (Issue #493)**
+- New `respite_activity` built-in entity type with fields: activityType (select), heroId (entity-ref), activityStatus (select), progress (richtext), outcome (richtext)
+- `respiteActivityService.ts` - Service layer orchestrating entity CRUD and respite session linking
+- Activities are individual entities per hero per activity, enabling reusable templates and independent tracking
+- Store exposes `activityEntities`, `pendingActivities`, `inProgressActivities`, `completedActivities` derived values
+
+### Fixed
+
+**AI Setup Banner Dismiss Reactivity (Issue #490)**
+- Banner now dismisses immediately without requiring page refresh
+- Added reactive `$state` signal pattern (same as backup banner fix from Issue #423)
+- 20 new tests verifying dismiss behavior
+
+**Dexie Uncaught Exceptions in Tests (Issue #496)**
+- Added defensive database mocks in `loadingStates.test.ts` and `ChatPanel.test.ts`
+- Eliminated 27 uncaught Dexie `toArray` exceptions in test suite
+
+**Pre-existing Fixes**
+- Fixed `selectedEntity` null check errors in `RelateCommand.svelte` (svelte-check)
+- Fixed timezone-dependent test in `timeFormat.test.ts`
+- Fixed missing `setActive` mock in ChatPanel conversation switching test
+
+### Changed
+
+**Test Suite Health**
+- 258 test files with 12,340 tests passing, 0 failures
+- svelte-check: 0 errors
+- Production build: clean
+
 ## [1.8.0] - 2026-02-12
 
 ### Added
@@ -47,13 +87,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Verified custom entity types work with visibility cascade out of the box
 - Verified additionalFields on built-in types respect visibility configuration
 - 22 integration tests confirming end-to-end custom field compatibility
-
-### Changed
-
-**Test Suite Health**
-- 257 test files with 12,389 tests passing (239 new tests for v1.8.0)
-- 65 skipped tests (unchanged)
-- 2 pre-existing TypeScript errors (unchanged, in RelateCommand.svelte)
 
 ## [1.7.0] - 2026-02-12
 

@@ -21,6 +21,19 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/svelte';
 import ChatPanel from './ChatPanel.svelte';
 
+// Mock the database to prevent liveQuery from accessing undefined tables
+vi.mock('$lib/db', () => ({
+	db: {
+		negotiationSessions: {
+			toArray: vi.fn().mockResolvedValue([])
+		},
+		respiteSessions: {
+			toArray: vi.fn().mockResolvedValue([])
+		}
+	},
+	ensureDbReady: vi.fn().mockResolvedValue(undefined)
+}));
+
 // Mock the stores
 vi.mock('$lib/stores', () => ({
 	conversationStore: {
@@ -28,7 +41,8 @@ vi.mock('$lib/stores', () => ({
 		activeConversationId: null,
 		isLoading: false,
 		load: vi.fn(),
-		create: vi.fn()
+		create: vi.fn(),
+		setActive: vi.fn()
 	},
 	chatStore: {
 		messages: [],

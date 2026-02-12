@@ -104,7 +104,7 @@ describe('RespiteRepository - CRUD Operations', () => {
 			expect(respite.heroes).toEqual([]);
 			expect(respite.victoryPointsAvailable).toBe(0);
 			expect(respite.victoryPointsConverted).toBe(0);
-			expect(respite.activities).toEqual([]);
+			expect(respite.activityIds).toEqual([]);
 			expect(respite.kitSwaps).toEqual([]);
 			expect(respite.createdAt).toBeInstanceOf(Date);
 			expect(respite.updatedAt).toBeInstanceOf(Date);
@@ -457,143 +457,71 @@ describe('RespiteRepository - Activity Management', () => {
 		await db.respiteSessions.clear();
 	});
 
-	describe('recordActivity', () => {
-		it('should record an activity with defaults', async () => {
+	describe('addActivityId', () => {
+		it('should add an activity entity ID to the respite', async () => {
 			const created = await respiteRepository.create({ name: 'Test' });
-			const updated = await respiteRepository.recordActivity(created.id, {
-				name: 'Research ancient texts',
-				type: 'investigation'
-			});
+			const updated = await respiteRepository.addActivityId(created.id, 'activity-123');
 
-			expect(updated.activities).toHaveLength(1);
-			expect(updated.activities[0].name).toBe('Research ancient texts');
-			expect(updated.activities[0].type).toBe('investigation');
-			expect(updated.activities[0].status).toBe('pending');
-			expect(updated.activities[0].id).toBeDefined();
-			expect(updated.activities[0].createdAt).toBeDefined();
+			expect(updated.activityIds).toHaveLength(1);
+			expect(updated.activityIds[0]).toBe('activity-123');
 		});
 
-		it('should record an activity with hero assignment', async () => {
+		it('should add multiple activity IDs', async () => {
 			const created = await respiteRepository.create({ name: 'Test' });
-			const withHero = await respiteRepository.addHero(created.id, {
-				name: 'Valora',
-				recoveries: { current: 3, max: 8 }
-			});
+			await respiteRepository.addActivityId(created.id, 'activity-1');
+			const updated = await respiteRepository.addActivityId(created.id, 'activity-2');
 
-			const updated = await respiteRepository.recordActivity(created.id, {
-				name: 'Train with sword',
-				type: 'training',
-				heroId: withHero.heroes[0].id,
-				description: 'Practicing sword forms',
-				notes: 'Focus on parrying'
-			});
-
-			expect(updated.activities[0].heroId).toBe(withHero.heroes[0].id);
-			expect(updated.activities[0].description).toBe('Practicing sword forms');
-			expect(updated.activities[0].notes).toBe('Focus on parrying');
+			expect(updated.activityIds).toHaveLength(2);
+			expect(updated.activityIds).toContain('activity-1');
+			expect(updated.activityIds).toContain('activity-2');
 		});
 
-		it('should add multiple activities', async () => {
+		it('should prevent duplicate activity IDs', async () => {
 			const created = await respiteRepository.create({ name: 'Test' });
-			await respiteRepository.recordActivity(created.id, {
-				name: 'Research',
-				type: 'investigation'
-			});
-			const updated = await respiteRepository.recordActivity(created.id, {
-				name: 'Crafting',
-				type: 'crafting'
-			});
+			await respiteRepository.addActivityId(created.id, 'activity-123');
 
-			expect(updated.activities).toHaveLength(2);
+			await expect(
+				respiteRepository.addActivityId(created.id, 'activity-123')
+			).rejects.toThrow('Activity activity-123 is already linked to this respite');
 		});
 
 		it('should throw for non-existent respite', async () => {
 			await expect(
-				respiteRepository.recordActivity('non-existent', {
-					name: 'Test',
-					type: 'other'
-				})
+				respiteRepository.addActivityId('non-existent', 'activity-123')
 			).rejects.toThrow('Respite session non-existent not found');
 		});
 	});
 
-	describe('updateActivity', () => {
-		it('should update activity status', async () => {
+	describe('removeActivityId', () => {
+		it('should remove an activity entity ID from the respite', async () => {
 			const created = await respiteRepository.create({ name: 'Test' });
-			const withActivity = await respiteRepository.recordActivity(created.id, {
-				name: 'Research',
-				type: 'investigation'
-			});
+			await respiteRepository.addActivityId(created.id, 'activity-123');
+			const updated = await respiteRepository.removeActivityId(created.id, 'activity-123');
 
-			const updated = await respiteRepository.updateActivity(
-				created.id,
-				withActivity.activities[0].id,
-				{ status: 'in_progress' }
-			);
-
-			expect(updated.activities[0].status).toBe('in_progress');
+			expect(updated.activityIds).toHaveLength(0);
 		});
 
-		it('should update activity name and notes', async () => {
+		it('should only remove the specified activity ID', async () => {
 			const created = await respiteRepository.create({ name: 'Test' });
-			const withActivity = await respiteRepository.recordActivity(created.id, {
-				name: 'Research',
-				type: 'investigation'
-			});
+			await respiteRepository.addActivityId(created.id, 'activity-1');
+			await respiteRepository.addActivityId(created.id, 'activity-2');
+			const updated = await respiteRepository.removeActivityId(created.id, 'activity-1');
 
-			const updated = await respiteRepository.updateActivity(
-				created.id,
-				withActivity.activities[0].id,
-				{ name: 'Deep Research', notes: 'Found something' }
-			);
-
-			expect(updated.activities[0].name).toBe('Deep Research');
-			expect(updated.activities[0].notes).toBe('Found something');
+			expect(updated.activityIds).toHaveLength(1);
+			expect(updated.activityIds[0]).toBe('activity-2');
 		});
 
-		it('should throw for non-existent activity', async () => {
+		it('should not throw if activity ID does not exist', async () => {
 			const created = await respiteRepository.create({ name: 'Test' });
+			const updated = await respiteRepository.removeActivityId(created.id, 'non-existent');
 
+			expect(updated.activityIds).toHaveLength(0);
+		});
+
+		it('should throw for non-existent respite', async () => {
 			await expect(
-				respiteRepository.updateActivity(created.id, 'non-existent', {
-					status: 'completed'
-				})
-			).rejects.toThrow('Activity non-existent not found in respite');
-		});
-	});
-
-	describe('completeActivity', () => {
-		it('should complete an activity with outcome', async () => {
-			const created = await respiteRepository.create({ name: 'Test' });
-			const withActivity = await respiteRepository.recordActivity(created.id, {
-				name: 'Research',
-				type: 'investigation'
-			});
-
-			const updated = await respiteRepository.completeActivity(
-				created.id,
-				withActivity.activities[0].id,
-				'Discovered a hidden map'
-			);
-
-			expect(updated.activities[0].status).toBe('completed');
-			expect(updated.activities[0].outcome).toBe('Discovered a hidden map');
-		});
-
-		it('should complete an activity without outcome', async () => {
-			const created = await respiteRepository.create({ name: 'Test' });
-			const withActivity = await respiteRepository.recordActivity(created.id, {
-				name: 'Socializing',
-				type: 'socializing'
-			});
-
-			const updated = await respiteRepository.completeActivity(
-				created.id,
-				withActivity.activities[0].id
-			);
-
-			expect(updated.activities[0].status).toBe('completed');
-			expect(updated.activities[0].outcome).toBeUndefined();
+				respiteRepository.removeActivityId('non-existent', 'activity-123')
+			).rejects.toThrow('Respite session non-existent not found');
 		});
 	});
 });

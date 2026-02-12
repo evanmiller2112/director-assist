@@ -475,8 +475,8 @@ describe('Scene Entity Type Definition', () => {
 	describe('Scene Integration', () => {
 		it('should be included in total count of built-in types', () => {
 			const builtInTypes = BUILT_IN_ENTITY_TYPES.filter(t => t.isBuiltIn);
-			// Should be 13 now (12 original + scene)
-			expect(builtInTypes.length).toBe(13);
+			// Should be 14 now (13 original + respite_activity)
+			expect(builtInTypes.length).toBe(14);
 		});
 
 		it('should have unique type identifier', () => {

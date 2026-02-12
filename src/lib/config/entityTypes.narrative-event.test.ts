@@ -111,16 +111,16 @@ describe('Narrative Event Entity Type Definition (Issue #398)', () => {
 				expect(field?.type).toBe('select');
 			});
 
-			it('should have exactly 5 options', () => {
+			it('should have exactly 6 options', () => {
 				narrativeEventType = getNarrativeEventType();
 				field = narrativeEventType?.fieldDefinitions.find((f) => f.key === 'eventType');
-				expect(field?.options?.length).toBe(5);
+				expect(field?.options?.length).toBe(6);
 			});
 
 			it('should have correct event type options', () => {
 				narrativeEventType = getNarrativeEventType();
 				field = narrativeEventType?.fieldDefinitions.find((f) => f.key === 'eventType');
-				expect(field?.options).toEqual(['scene', 'combat', 'montage', 'negotiation', 'other']);
+				expect(field?.options).toEqual(['scene', 'combat', 'montage', 'negotiation', 'respite', 'other']);
 			});
 
 			it('should be required', () => {
@@ -323,8 +323,8 @@ describe('Narrative Event Entity Type Definition (Issue #398)', () => {
 	describe('Narrative Event Integration', () => {
 		it('should be included in total count of built-in types', () => {
 			const builtInTypes = BUILT_IN_ENTITY_TYPES.filter((t) => t.isBuiltIn);
-			// Should be 13 built-in types (12 original + narrative_event)
-			expect(builtInTypes.length).toBe(13);
+			// Should be 14 built-in types (13 original + respite_activity)
+			expect(builtInTypes.length).toBe(14);
 		});
 
 		it('should have unique type identifier', () => {
@@ -360,10 +360,10 @@ describe('Narrative Event Entity Type Definition (Issue #398)', () => {
 			expect(occurrences).toBe(1);
 		});
 
-		it('should increase total default order count to 13', () => {
+		it('should increase total default order count to 14', () => {
 			const defaultOrder = getDefaultEntityTypeOrder();
-			// Should have 13 types now: 12 original + narrative_event
-			expect(defaultOrder.length).toBe(13);
+			// Should have 14 types now: 13 original + respite_activity
+			expect(defaultOrder.length).toBe(14);
 		});
 	});
 

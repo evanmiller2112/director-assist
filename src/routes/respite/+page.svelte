@@ -133,7 +133,7 @@
 					<!-- Stats -->
 					<div class="flex items-center gap-4 text-sm text-slate-600 dark:text-slate-400 mb-3">
 						<span>{respite.heroes.length} {respite.heroes.length === 1 ? 'hero' : 'heroes'}</span>
-						<span>{respite.activities.length} {respite.activities.length === 1 ? 'activity' : 'activities'}</span>
+						<span>{respite.activityIds.length} {respite.activityIds.length === 1 ? 'activity' : 'activities'}</span>
 					</div>
 
 					<!-- VP Status -->

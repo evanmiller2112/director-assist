@@ -440,6 +440,19 @@ describe('ChatStore Loading States (Issue #12)', () => {
 
 		mockSendChatMessage = vi.fn();
 
+		// Mock the database to prevent liveQuery from accessing undefined tables
+		vi.doMock('$lib/db', () => ({
+			db: {
+				negotiationSessions: {
+					toArray: vi.fn().mockResolvedValue([])
+				},
+				respiteSessions: {
+					toArray: vi.fn().mockResolvedValue([])
+				}
+			},
+			ensureDbReady: vi.fn().mockResolvedValue(undefined)
+		}));
+
 		vi.doMock('$lib/db/repositories', () => ({
 			chatRepository: mockChatRepository,
 			combatRepository: {
@@ -461,6 +474,12 @@ describe('ChatStore Loading States (Issue #12)', () => {
 				delete: vi.fn()
 			},
 			negotiationRepository: {
+				getAll: vi.fn(() => ({ subscribe: vi.fn() })),
+				create: vi.fn(),
+				update: vi.fn(),
+				delete: vi.fn()
+			},
+			respiteRepository: {
 				getAll: vi.fn(() => ({ subscribe: vi.fn() })),
 				create: vi.fn(),
 				update: vi.fn(),

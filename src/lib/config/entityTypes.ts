@@ -836,7 +836,7 @@ export const BUILT_IN_ENTITY_TYPES: EntityTypeDefinition[] = [
 				key: 'eventType',
 				label: 'Event Type',
 				type: 'select',
-				options: ['scene', 'combat', 'montage', 'negotiation', 'other'],
+				options: ['scene', 'combat', 'montage', 'negotiation', 'respite', 'other'],
 				required: true,
 				order: 1
 			},
@@ -865,6 +865,59 @@ export const BUILT_IN_ENTITY_TYPES: EntityTypeDefinition[] = [
 			}
 		],
 		defaultRelationships: ['leads_to', 'follows', 'part_of']
+	},
+	{
+		type: 'respite_activity',
+		label: 'Respite Activity',
+		labelPlural: 'Respite Activities',
+		icon: 'coffee',
+		color: 'amber',
+		isBuiltIn: true,
+		fieldDefinitions: [
+			{
+				key: 'activityType',
+				label: 'Activity Type',
+				type: 'select',
+				options: ['project', 'crafting', 'socializing', 'training', 'investigation', 'other'],
+				required: false,
+				order: 1
+			},
+			{
+				key: 'heroId',
+				label: 'Hero',
+				type: 'entity-ref',
+				entityTypes: ['character'],
+				required: false,
+				order: 2,
+				helpText: 'What hero is performing this activity?'
+			},
+			{
+				key: 'activityStatus',
+				label: 'Status',
+				type: 'select',
+				options: ['pending', 'in_progress', 'completed'],
+				required: true,
+				defaultValue: 'pending',
+				order: 3
+			},
+			{
+				key: 'progress',
+				label: 'Progress',
+				type: 'richtext',
+				required: false,
+				order: 4,
+				helpText: 'Record ongoing progress and developments'
+			},
+			{
+				key: 'outcome',
+				label: 'Outcome',
+				type: 'richtext',
+				required: false,
+				order: 5,
+				helpText: 'Describe the result when the activity is completed'
+			}
+		],
+		defaultRelationships: ['assigned_to', 'part_of']
 	}
 ];
 
@@ -1078,7 +1131,8 @@ export function getDefaultEntityTypeOrder(): string[] {
 		'timeline_event',
 		'world_rule',
 		'player_profile',
-		'narrative_event'
+		'narrative_event',
+		'respite_activity'
 	];
 }
 

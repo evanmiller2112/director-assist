@@ -34,6 +34,10 @@
 	// localStorage reads are not reactive, so we use this signal to trigger updates
 	let backupDismissSignal = $state(0);
 
+	// Reactive signal to force AI setup reminder state re-computation (Issue #490)
+	// localStorage reads are not reactive, so we use this signal to trigger updates
+	let aiDismissSignal = $state(0);
+
 	// Backup reminder state
 	const backupReminderState = $derived.by(() => {
 		// Reference the reactive signal to force re-computation when dismissed
@@ -69,6 +73,10 @@
 
 	// AI setup reminder state
 	const aiSetupReminderState = $derived.by(() => {
+		// Reference the reactive signal to force re-computation when dismissed (Issue #490)
+		// eslint-disable-next-line @typescript-eslint/no-unused-expressions
+		aiDismissSignal;
+
 		const isDismissed = isAiSetupDismissed();
 		const hasApiKey = hasAnyApiKey();
 		const show = shouldShowAiSetupBanner(aiSettings.isEnabled, isDismissed, hasApiKey);
@@ -119,12 +127,16 @@
 	function handleAiSetupPlayerDismiss() {
 		// Player dismisses banner - don't disable AI, just hide banner
 		setAiSetupDismissed();
+		// Increment signal to trigger aiSetupReminderState re-computation (Issue #490)
+		aiDismissSignal++;
 	}
 
 	function handleAiSetupDisableAi() {
 		// Director not using AI - dismiss banner AND disable AI
 		setAiSetupDismissed();
 		aiSettings.setEnabled(false);
+		// Increment signal to trigger aiSetupReminderState re-computation (Issue #490)
+		aiDismissSignal++;
 	}
 </script>
 

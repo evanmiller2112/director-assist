@@ -40,6 +40,7 @@ The release workflow consists of 6 stages:
 4. Version Bump           → Update version and changelog
 5. Tag Creation           → Create Git tag
 6. GitHub Release         → Publish release with notes
+7. Close Milestone        → Close the version milestone on GitHub
 ```
 
 ## The Agents
@@ -145,13 +146,27 @@ This allows users to download pre-built files without needing Node.js or npm.
 
 ---
 
+### 6. github-project-manager (Milestone Closure)
+
+**Role:** Close the version milestone after release
+
+**Responsibilities:**
+- Verify all issues in the milestone are closed
+- Close the GitHub milestone for the released version
+
+**When to Use:**
+- After the GitHub release is published
+- As the final step of every release
+
+---
+
 ## Release Workflow Steps
 
 ### Standard Release
 
 Use this workflow when releasing a new version after completing features or fixes.
 
-**Steps:** 1 → 2 → 3 → 4 → 5 → 6
+**Steps:** 1 → 2 → 3 → 4 → 5 → 6 → 7
 
 ```
 1. Pre-Release Validation (qa-expert)
@@ -185,13 +200,17 @@ Use this workflow when releasing a new version after completing features or fixe
    - Add release notes
    - Publish release
    - GitHub Actions automatically attaches build artifact
+   ↓
+7. Close Milestone (github-project-manager)
+   - Close the GitHub milestone for this version
+   - Verify all milestone issues are closed
 ```
 
 ### Hotfix Release
 
 Use this workflow for urgent bug fixes that need immediate release.
 
-**Steps:** 1 → 2 → 3 → 4 → 5 → 6
+**Steps:** 1 → 2 → 3 → 4 → 5 → 6 → 7
 
 ```
 1. Pre-Release Validation (qa-expert)
@@ -217,6 +236,10 @@ Use this workflow for urgent bug fixes that need immediate release.
    - Create release marked as patch/hotfix
    - Add brief fix description
    - GitHub Actions automatically attaches build artifact
+   ↓
+7. Close Milestone (github-project-manager)
+   - Close the GitHub milestone for this version
+   - Verify all milestone issues are closed
 ```
 
 ---
@@ -360,6 +383,10 @@ npx vitest run   # Re-run tests after merge
 # GitHub Release
 "Create GitHub release for v[X.Y.Z]"
 "Publish release with notes"
+
+# Close Milestone
+"Close milestone v[X.Y.Z]"
+"Close the version milestone"
 ```
 
 ### Agent Assignment Summary
@@ -372,6 +399,7 @@ npx vitest run   # Re-run tests after merge
 | Version Bump | docs-specialist | Update changelog and package.json |
 | Tag Creation | git-manager | Create and push tag |
 | GitHub Release | github-project-manager | Publish release |
+| Close Milestone | github-project-manager | Close version milestone |
 
 ---
 

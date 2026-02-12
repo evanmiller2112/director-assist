@@ -55,6 +55,7 @@ For creating new releases, see `docs/RELEASE_WORKFLOW.md`. The release pipeline:
 4. **docs-specialist** - Update changelog, version bump
 5. **git-manager** - Create version tag
 6. **github-project-manager** - Publish GitHub release
+7. **github-project-manager** - Close the version milestone
 
 **IMPORTANT:** Always validate before AND after merge. Conflict resolution can introduce TypeScript errors.
 
@@ -65,6 +66,7 @@ For creating new releases, see `docs/RELEASE_WORKFLOW.md`. The release pipeline:
 "Update changelog" → docs-specialist
 "Create tag vX.Y.Z" → git-manager
 "Publish GitHub release" → github-project-manager
+"Close milestone vX.Y.Z" → github-project-manager
 ```
 
 ## Tech Stack

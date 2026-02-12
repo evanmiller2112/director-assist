@@ -14,3 +14,4 @@ export { default as FieldTemplateDeleteModal } from './FieldTemplateDeleteModal.
 export { default as FieldTemplatePicker } from './FieldTemplatePicker.svelte';
 export { default as EntityTypeExportModal } from './EntityTypeExportModal.svelte';
 export { default as EntityTypeImportModal } from './EntityTypeImportModal.svelte';
+export { default as PlayerExportFieldSettings } from './PlayerExportFieldSettings.svelte';

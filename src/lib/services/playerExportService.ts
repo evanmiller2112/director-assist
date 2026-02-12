@@ -23,6 +23,7 @@ import type {
 	PlayerExportPreview,
 	PLAYER_EXPORT_VERSION
 } from '$lib/types/playerExport';
+import type { PlayerExportFieldConfig } from '$lib/types/playerFieldVisibility';
 
 // Re-export the version constant
 export { PLAYER_EXPORT_VERSION } from '$lib/types/playerExport';
@@ -64,11 +65,20 @@ export async function buildPlayerExport(): Promise<PlayerExport> {
 	// Get entity type definitions
 	const typeDefinitions = getEntityTypeDefinitions(campaign);
 
+	// Get player export field config from campaign metadata
+	const metadata = getCampaignMetadata(campaign);
+	const playerExportFieldConfig: PlayerExportFieldConfig | undefined =
+		metadata?.playerExportFieldConfig;
+
 	// Filter out campaign entities from the list to filter
 	const nonCampaignEntities = entities.filter((e) => e.type !== 'campaign');
 
 	// Filter entities for player visibility
-	const filteredEntities = filterEntitiesForPlayer(nonCampaignEntities, typeDefinitions);
+	const filteredEntities = filterEntitiesForPlayer(
+		nonCampaignEntities,
+		typeDefinitions,
+		playerExportFieldConfig
+	);
 
 	return {
 		version: '1.0.0',
@@ -93,11 +103,20 @@ export async function getPlayerExportPreview(): Promise<PlayerExportPreview> {
 	// Get entity type definitions
 	const typeDefinitions = getEntityTypeDefinitions(campaign);
 
+	// Get player export field config from campaign metadata
+	const previewMetadata = getCampaignMetadata(campaign);
+	const previewFieldConfig: PlayerExportFieldConfig | undefined =
+		previewMetadata?.playerExportFieldConfig;
+
 	// Filter out campaign entities
 	const nonCampaignEntities = entities.filter((e) => e.type !== 'campaign');
 
 	// Filter entities for player visibility
-	const filteredEntities = filterEntitiesForPlayer(nonCampaignEntities, typeDefinitions);
+	const filteredEntities = filterEntitiesForPlayer(
+		nonCampaignEntities,
+		typeDefinitions,
+		previewFieldConfig
+	);
 
 	// Calculate counts by type
 	const byType: Record<string, { included: number; excluded: number }> = {};

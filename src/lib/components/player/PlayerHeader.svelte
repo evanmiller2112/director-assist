@@ -1,6 +1,8 @@
 <script lang="ts">
     import { Search, Sun, Moon, Monitor, Menu, RefreshCw } from 'lucide-svelte';
     import { uiStore, playerDataStore } from '$lib/stores';
+    import { page } from '$app/stores';
+    import { goto } from '$app/navigation';
 
     let {
         campaignName = '',
@@ -14,8 +16,10 @@
         onRefresh?: () => Promise<void>;
     } = $props();
 
-    let searchQuery = $state('');
     let searchInput: HTMLInputElement | undefined = $state();
+
+    // Read search query from URL
+    const searchQuery = $derived($page.url.searchParams.get('q') ?? '');
 
     export function focusSearch() {
         searchInput?.focus();
@@ -23,8 +27,26 @@
 
     function handleSearchInput(e: Event) {
         const target = e.target as HTMLInputElement;
-        searchQuery = target.value;
-        onSearch(searchQuery);
+        const query = target.value;
+
+        // Update URL with search query
+        const url = new URL($page.url);
+        if (query.trim()) {
+            url.searchParams.set('q', query);
+        } else {
+            url.searchParams.delete('q');
+        }
+
+        // Navigate to home page with search query if not already there
+        const targetPath = $page.url.pathname === '/player' ? '/player' : '/player';
+        goto(`${targetPath}?${url.searchParams.toString()}`, {
+            replaceState: true,
+            keepFocus: true,
+            noScroll: true
+        });
+
+        // Call the legacy callback for backward compatibility
+        onSearch(query);
     }
 
     function cycleTheme() {

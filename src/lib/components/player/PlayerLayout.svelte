@@ -9,8 +9,8 @@
     let headerComponent: ReturnType<typeof PlayerHeader> | undefined = $state();
 
     function handleSearch(query: string) {
-        // Search state will be consumed via context in future issues (#444)
-        // For now, basic search functionality is available
+        // Search is now handled via URL parameters (Issue #444)
+        // The PlayerHeader component updates the URL directly
     }
 
     function handleGlobalKeydown(e: KeyboardEvent) {

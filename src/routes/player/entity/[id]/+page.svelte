@@ -5,11 +5,22 @@
     import { getIconComponent } from '$lib/utils/icons';
     import { ArrowLeft } from 'lucide-svelte';
     import PlayerEntityDetail from '$lib/components/player/PlayerEntityDetail.svelte';
+    import { PlayerBreadcrumbs } from '$lib/components/player';
 
     const entityId = $derived($page.params.id ?? '');
     const entity = $derived(playerDataStore.getEntityById(entityId));
     const typeDef = $derived(entity ? getEntityTypeDefinition(entity.type) : undefined);
     const Icon = $derived(getIconComponent(typeDef?.icon ?? 'package'));
+
+    // Breadcrumb items
+    const breadcrumbs = $derived.by(() => {
+        if (!entity) return [{ label: 'Home', href: '/player' }];
+        return [
+            { label: 'Home', href: '/player' },
+            { label: typeDef?.labelPlural ?? 'Entities', href: `/player/${entity.type}` },
+            { label: entity.name }
+        ];
+    });
 </script>
 
 <svelte:head>
@@ -18,6 +29,9 @@
 
 {#if entity}
     <div class="max-w-4xl mx-auto">
+        <!-- Breadcrumbs -->
+        <PlayerBreadcrumbs items={breadcrumbs} />
+
         <a
             href="/player/{entity.type}"
             class="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 mb-4 transition-colors"

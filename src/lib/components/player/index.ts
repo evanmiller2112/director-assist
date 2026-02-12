@@ -5,3 +5,4 @@ export { default as PlayerEntityCard } from './PlayerEntityCard.svelte';
 export { default as PlayerEntityDetail } from './PlayerEntityDetail.svelte';
 export { default as PlayerFieldDisplay } from './PlayerFieldDisplay.svelte';
 export { default as PlayerRelationships } from './PlayerRelationships.svelte';
+export { default as PlayerBreadcrumbs } from './PlayerBreadcrumbs.svelte';

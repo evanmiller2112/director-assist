@@ -13,6 +13,7 @@ import type { PlayerExport, PlayerEntity } from '$lib/types/playerExport';
 let data = $state<PlayerExport | null>(null);
 let isLoading = $state(false);
 let error = $state<string | null>(null);
+let loadedAt = $state<Date | null>(null);
 
 // Derived state: isLoaded
 const isLoaded = $derived(data !== null);
@@ -62,6 +63,9 @@ export const playerDataStore = {
 	get error() {
 		return error;
 	},
+	get loadedAt() {
+		return loadedAt;
+	},
 
 	// Getters for derived state
 	get campaignName() {
@@ -83,6 +87,7 @@ export const playerDataStore = {
 	// Methods
 	load(exportData: PlayerExport) {
 		data = exportData;
+		loadedAt = new Date();
 		isLoading = false;
 		error = null;
 	},
@@ -98,6 +103,7 @@ export const playerDataStore = {
 
 	clear() {
 		data = null;
+		loadedAt = null;
 		isLoading = false;
 		error = null;
 	},

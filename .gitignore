@@ -11,3 +11,6 @@ vite.config.ts.timestamp-*
 
 # Build artifacts
 *.tar
+
+# Player data exports (generated at runtime)
+static/player_data.json

@@ -4,7 +4,7 @@
     import PlayerHeader from './PlayerHeader.svelte';
     import PlayerSidebar from './PlayerSidebar.svelte';
 
-    let { children }: { children: Snippet } = $props();
+    let { children, onRefresh }: { children: Snippet; onRefresh?: () => Promise<void> } = $props();
 
     let headerComponent: ReturnType<typeof PlayerHeader> | undefined = $state();
 
@@ -27,7 +27,9 @@
     <PlayerHeader
         bind:this={headerComponent}
         campaignName={playerDataStore.campaignName}
+        exportedAt={playerDataStore.data?.exportedAt}
         onSearch={handleSearch}
+        onRefresh={onRefresh}
     />
     <PlayerSidebar
         mobileOpen={uiStore.mobileSidebarOpen}

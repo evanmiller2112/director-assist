@@ -9,6 +9,7 @@ import { entityRepository } from '$lib/db/repositories/entityRepository';
 import type { CombatSession } from '$lib/types/combat';
 import type { MontageSession } from '$lib/types/montage';
 import type { NegotiationSession } from '$lib/types/negotiation';
+import type { RespiteSession } from '$lib/types/respite';
 import type { BaseEntity, NewEntity } from '$lib/types';
 
 /**
@@ -103,6 +104,44 @@ export async function createFromNegotiation(negotiation: NegotiationSession): Pr
 			eventType: 'negotiation',
 			sourceId: negotiation.id,
 			outcome: negotiation.outcome
+		},
+		links: [],
+		notes: '',
+		metadata: {}
+	};
+
+	// Persist and return
+	return await entityRepository.create(newEntity);
+}
+
+/**
+ * Create a narrative event from a completed respite session.
+ *
+ * @param respite - The respite session to convert into a narrative event
+ * @returns The created narrative event entity
+ * @throws Error if respite is not completed or repository creation fails
+ */
+export async function createFromRespite(respite: RespiteSession): Promise<BaseEntity> {
+	// Validate respite status
+	if (respite.status !== 'completed') {
+		throw new Error('Cannot create narrative event from respite that is not completed');
+	}
+
+	// Build outcome summary
+	const activitiesCount = respite.activities.filter((a) => a.status === 'completed').length;
+	const vpConverted = respite.victoryPointsConverted;
+	const outcome = `${respite.heroes.length} heroes rested, ${activitiesCount} activities completed, ${vpConverted} VP converted`;
+
+	// Create NewEntity for narrative event
+	const newEntity: NewEntity = {
+		type: 'narrative_event',
+		name: respite.name,
+		description: respite.description || '',
+		tags: [],
+		fields: {
+			eventType: 'respite',
+			sourceId: respite.id,
+			outcome
 		},
 		links: [],
 		notes: '',

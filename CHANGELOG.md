@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.9.1] - 2026-02-12
+
+### Fixed
+
+- **Dark mode text visibility** — Added `dark:text-*` variants to 23 elements across NegotiationSetup, NarrativeTimeline, TimelineEvent, and entity form pages that were unreadable in dark mode (#517)
+- **Modal dismissal bug** — Fixed settings modals not dismissing correctly (#515)
+
+### Added
+
+- **Player export field visibility UI** — Wired up field visibility controls for player export configuration (#516)
+- **Dark mode compliance test** — Static analysis regression test scans all `.svelte` files for dark text classes missing `dark:` counterparts
+
 ## [1.9.0] - 2026-02-12
 
 ### Added

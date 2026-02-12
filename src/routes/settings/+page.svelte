@@ -31,6 +31,9 @@
 	import ForgeSteelImportModal from '$lib/components/settings/ForgeSteelImportModal.svelte';
 	import LoadingButton from '$lib/components/ui/LoadingButton.svelte';
 	import { SystemSelector, CampaignLinkingSettings } from '$lib/components/settings';
+	import PlayerExportFieldSettings from '$lib/components/settings/PlayerExportFieldSettings.svelte';
+	import { getAllEntityTypes } from '$lib/config/entityTypes';
+	import type { PlayerExportFieldConfig } from '$lib/types/playerFieldVisibility';
 	import { page } from '$app/stores';
 
 	// Form state
@@ -63,6 +66,9 @@
 	let publishFreshness = $state<PublishFreshness>('never');
 	let publishDaysSince = $state<number | null>(null);
 
+	// Player export field config state
+	let fieldConfig = $state<PlayerExportFieldConfig>({ fieldVisibility: {} });
+
 	// Handle initialization and action parameters
 	onMount(() => {
 		debugStore.load();
@@ -84,6 +90,12 @@
 		lastPublishedAt = getLastPublishedAt();
 		publishDaysSince = getDaysSincePublish(lastPublishedAt);
 		publishFreshness = getPublishFreshness(publishDaysSince);
+
+		// Load player export field config
+		const config = campaignStore.playerExportFieldConfig;
+		if (config) {
+			fieldConfig = config;
+		}
 
 		// Handle action parameter (e.g., ?action=export)
 		const actionParam = $page.url.searchParams.get('action');
@@ -371,6 +383,19 @@
 		lastPublishedAt = publishedAt;
 		publishDaysSince = getDaysSincePublish(lastPublishedAt);
 		publishFreshness = getPublishFreshness(publishDaysSince);
+	}
+
+	// Get entity types for player export settings (exclude campaign)
+	const entityTypesForExport = $derived(
+		getAllEntityTypes(
+			campaignStore.customEntityTypes,
+			campaignStore.entityTypeOverrides
+		).filter(typeDef => typeDef.type !== 'campaign')
+	);
+
+	async function handleFieldConfigChange(newConfig: PlayerExportFieldConfig) {
+		fieldConfig = newConfig;
+		await campaignStore.updatePlayerExportFieldConfig(newConfig);
 	}
 
 	async function clearAllData() {
@@ -830,6 +855,21 @@
 					</span>
 				{/if}
 			</div>
+		</div>
+
+		<!-- Field Visibility Settings -->
+		<div class="mb-6">
+			<h3 class="text-base font-medium text-slate-900 dark:text-white mb-2">
+				Field Visibility Configuration
+			</h3>
+			<p class="text-sm text-slate-500 dark:text-slate-400 mb-4">
+				Control which fields are visible in player exports and published data. Customize visibility for each entity type.
+			</p>
+			<PlayerExportFieldSettings
+				entityTypes={entityTypesForExport}
+				config={fieldConfig}
+				onConfigChange={handleFieldConfigChange}
+			/>
 		</div>
 
 		<!-- Buttons -->

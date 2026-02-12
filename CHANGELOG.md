@@ -7,6 +7,54 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.8.0] - 2026-02-12
+
+### Added
+
+**Configurable Player Export Field Visibility (Epic #434)**
+
+*Data Model (#436)*
+- `PlayerExportFieldConfig` type with per-category field visibility mappings
+- `PlayerExportFieldOverrides` type for per-entity override storage in entity metadata
+- `PLAYER_EXPORT_FIELD_OVERRIDES_KEY` constant for metadata key consistency
+- Added `playerExportFieldConfig` to `CampaignMetadata` interface
+
+*Core Cascade Logic (#436)*
+- `isFieldPlayerVisible()` three-level cascade resolution: per-entity override → per-category default → hardcoded rules
+- `applyHardcodedRules()` preserving backward compatibility (notes=hidden, hidden section=hidden, preparation on sessions=hidden)
+- 49 tests covering cascade priority, edge cases, and backward compatibility
+
+*Settings UI (#437)*
+- `PlayerExportFieldSettings` component with collapsible accordion per entity type
+- Per-field checkbox toggles for category-level visibility defaults
+- Reset-to-defaults button per entity type
+- `playerExportFieldConfigService` with CRUD operations: get/set/remove field visibility, reset entity type config
+- 36 tests for config service operations
+
+*Per-Entity Field Toggles (#438)*
+- `FieldVisibilityToggle` Svelte 5 component with Eye/EyeOff icons
+- Three-state cycling: inherit → include → exclude → inherit
+- `entityFieldVisibilityService` helpers: getFieldOverrideState, cycleFieldOverrideState, setFieldOverride, getResolvedFieldVisibility
+- 30 tests for override state management
+
+*Export Service Integration (#439)*
+- Updated `filterFieldsForPlayer()` with config-aware path using `isFieldPlayerVisible()` cascade
+- Updated `filterEntityForPlayer()` and `filterEntitiesForPlayer()` to accept and pass config
+- Updated `buildPlayerExport()` and `getPlayerExportPreview()` to extract config from campaign metadata
+- 27 new tests added to existing playerExportFilterService test suite (124 total)
+
+*Custom Fields Integration (#440)*
+- Verified custom entity types work with visibility cascade out of the box
+- Verified additionalFields on built-in types respect visibility configuration
+- 22 integration tests confirming end-to-end custom field compatibility
+
+### Changed
+
+**Test Suite Health**
+- 257 test files with 12,389 tests passing (239 new tests for v1.8.0)
+- 65 skipped tests (unchanged)
+- 2 pre-existing TypeScript errors (unchanged, in RelateCommand.svelte)
+
 ## [1.7.0] - 2026-02-12
 
 ### Added

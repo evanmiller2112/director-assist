@@ -7,6 +7,54 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.7.0] - 2026-02-12
+
+### Added
+
+**Respite Activity Tracker - Core Implementation (Issue #408)**
+- RespiteSession, RespiteHero, RespiteActivity, KitSwap type definitions following Draw Steel respite mechanics
+- respiteRepository with full CRUD, lifecycle management (preparing -> active -> completed), hero management, activity tracking, VP conversion, and kit swap recording
+- respiteStore with Svelte 5 runes, live query subscription, and comprehensive derived values
+- Database Version 11 with respiteSessions table
+- Svelte 5 proxy handling (JSON.parse/JSON.stringify before IndexedDB operations)
+- 89 tests covering repository operations, store reactivity, and derived values
+
+**Respite Activity Tracker - UI Components (Issue #409)**
+- RespiteSetup: Create/edit respite form with hero multi-select and recovery tracking
+- HeroRecoveryPanel: Recovery tracking per hero with red/yellow/green color coding
+- RespiteActivityCard: Activity display with type badge (6 types) and status indicator
+- ActivityControls: Add activity form with template quick-select
+- KitSwapTracker: Kit swap recording form and history display
+- VictoryPointsConverter: VP to XP conversion UI with progress bar
+- RespiteRulesReference: Collapsible Draw Steel respite rules panel
+- RespiteProgress: Overview dashboard with hero, activity, VP, and kit swap stats
+- Routes: /respite (list with grid), /respite/new (create), /respite/[id] (3-column active layout)
+- Sidebar navigation with Coffee icon and active respite count badge
+
+**Respite Activity Tracker - Integration (Issue #410)**
+- Campaign and character linking (campaignId, characterIds, linkedSessionIds fields)
+- getByCampaignId() and getByCharacterId() repository queries
+- Narrative event creation from completed respite sessions (createFromRespite)
+- RespiteAnalytics component with VP totals, activity distribution, and completion stats
+- Store analytics: totalVPConverted, totalActivitiesCompleted, activityTypeDistribution
+
+**Respite Activity Tracker - Quality of Life (Issue #412)**
+- 15 predefined activity templates across 5 types (project, crafting, socializing, training, investigation)
+- Template quick-select buttons in ActivityControls for rapid activity creation
+- getTemplatesByType() and getTemplateTypes() helper functions
+- 7 tests covering template configuration and filtering
+
+**Respite Activity Tracker - Documentation (Issue #411)**
+- Updated DRAW_STEEL_GAP_ANALYSIS.md marking respite system as implemented
+- Comprehensive CHANGELOG entries covering all 5 implementation issues
+
+### Changed
+
+**Test Suite Health**
+- 253 test files with 12,225 tests passing
+- 65 skipped tests (unchanged)
+- 2 pre-existing errors (unchanged, in RelateCommand.svelte)
+
 ## [1.6.0] - 2026-02-11
 
 ### Added

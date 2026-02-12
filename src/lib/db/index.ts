@@ -10,6 +10,7 @@ import type {
 	MontageSession,
 	NegotiationSession
 } from '$lib/types';
+import type { RespiteSession } from '$lib/types/respite';
 import type { CreatureTemplate } from '$lib/types/creature';
 import type { FieldSuggestion } from '$lib/types/ai';
 import { migrateCampaignToEntity } from './migrations/migrateCampaignToEntity';
@@ -32,6 +33,7 @@ class DMAssistantDB extends Dexie {
 	combatSessions!: Table<CombatSession>;
 	montageSessions!: Table<MontageSession>;
 	negotiationSessions!: Table<NegotiationSession>;
+	respiteSessions!: Table<RespiteSession>;
 	creatureTemplates!: Table<CreatureTemplate>;
 	fieldSuggestions!: Table<FieldSuggestion>;
 
@@ -156,6 +158,23 @@ class DMAssistantDB extends Dexie {
 			combatSessions: 'id, status, createdAt, updatedAt',
 			montageSessions: 'id, status, createdAt, updatedAt',
 			negotiationSessions: 'id, status, createdAt, updatedAt',
+			creatureTemplates: 'id, name, threat, *tags, createdAt, updatedAt',
+			fieldSuggestions: 'id, entityId, entityType, status, createdAt'
+		});
+
+		// Version 11: Add respiteSessions table for Draw Steel respite tracking
+		this.version(11).stores({
+			entities: 'id, type, name, *tags, createdAt, updatedAt',
+			campaign: 'id',
+			conversations: 'id, name, updatedAt',
+			chatMessages: 'id, conversationId, timestamp',
+			suggestions: 'id, type, status, createdAt, expiresAt, *affectedEntityIds',
+			appConfig: 'key',
+			relationshipSummaryCache: 'id, sourceId, targetId, relationship, generatedAt',
+			combatSessions: 'id, status, createdAt, updatedAt',
+			montageSessions: 'id, status, createdAt, updatedAt',
+			negotiationSessions: 'id, status, createdAt, updatedAt',
+			respiteSessions: 'id, status, createdAt, updatedAt',
 			creatureTemplates: 'id, name, threat, *tags, createdAt, updatedAt',
 			fieldSuggestions: 'id, entityId, entityType, status, createdAt'
 		});

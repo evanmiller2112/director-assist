@@ -44,6 +44,9 @@ vi.mock('$lib/stores', () => ({
 	},
 	negotiationStore: {
 		activeNegotiations: []
+	},
+	respiteStore: {
+		activeRespites: []
 	}
 }));
 

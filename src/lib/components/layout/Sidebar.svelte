@@ -1,8 +1,8 @@
 <script lang="ts">
-	import { Plus, Home, ChevronUp, ChevronDown, Pencil, Swords, Theater, MessageCircle, Users, Clapperboard } from 'lucide-svelte';
+	import { Plus, Home, ChevronUp, ChevronDown, Pencil, Swords, Theater, MessageCircle, Users, Clapperboard, Coffee } from 'lucide-svelte';
 	import { page } from '$app/stores';
 	import { getOrderedEntityTypes } from '$lib/config/entityTypes';
-	import { entitiesStore, campaignStore, combatStore, montageStore, negotiationStore } from '$lib/stores';
+	import { entitiesStore, campaignStore, combatStore, montageStore, negotiationStore, respiteStore } from '$lib/stores';
 	import { getIconComponent } from '$lib/utils/icons';
 	import QuickAddModal from './QuickAddModal.svelte';
 	import {
@@ -32,6 +32,11 @@
 	// Get active negotiations count
 	const activeNegotiationsCount = $derived(
 		negotiationStore.activeNegotiations.length
+	);
+
+	// Get active respites count
+	const activeRespitesCount = $derived(
+		respiteStore.activeRespites.length
 	);
 
 	// Initialize ordered types on mount
@@ -180,6 +185,29 @@
 					aria-live="polite"
 				>
 					{activeNegotiationsCount}
+				</span>
+			{/if}
+		</a>
+
+		<!-- Respite -->
+		<a
+			href="/respite"
+			class="flex items-center gap-3 px-3 py-2 rounded-lg mb-2 transition-colors
+				{isActive('/respite')
+				? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
+				: 'hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300'}"
+			aria-current={isActive('/respite') ? 'page' : undefined}
+		>
+			<Coffee class="w-5 h-5" data-icon="coffee" />
+			<span class="flex-1 font-medium">Respite</span>
+			{#if activeRespitesCount > 0}
+				<span
+					class="text-xs bg-amber-500 dark:bg-amber-600 text-white px-2 py-0.5 rounded-full"
+					data-testid="active-respite-badge"
+					aria-label="{activeRespitesCount} active respite{activeRespitesCount === 1 ? '' : 's'}"
+					aria-live="polite"
+				>
+					{activeRespitesCount}
 				</span>
 			{/if}
 		</a>

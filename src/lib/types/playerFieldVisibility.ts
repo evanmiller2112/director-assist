@@ -15,10 +15,14 @@
  * fieldVisibility is a nested record:
  *   entityType -> fieldKey -> visible (true/false)
  *
+ * categoryVisibility controls entire entity categories (GitHub Issue #520):
+ *   entityType -> visible (true/false)
+ *
  * Fields not listed fall through to hardcoded rules.
  */
 export interface PlayerExportFieldConfig {
 	fieldVisibility: Record<string, Record<string, boolean>>;
+	categoryVisibility?: Record<string, boolean>;
 }
 
 /**

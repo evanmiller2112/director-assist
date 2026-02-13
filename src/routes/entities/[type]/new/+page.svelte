@@ -657,6 +657,22 @@
 		{/if}
 	{/if}
 
+	{#if playerVisible === false}
+		<div class="mb-6 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
+			<div class="flex items-start gap-3">
+				<EyeOff class="w-5 h-5 text-amber-600 dark:text-amber-500 flex-shrink-0 mt-0.5" />
+				<div>
+					<h3 class="text-sm font-semibold text-amber-900 dark:text-amber-200 mb-1">
+						This entity is hidden from players
+					</h3>
+					<p class="text-sm text-amber-700 dark:text-amber-300">
+						Field visibility settings have no effect while the entity is hidden. To make individual fields visible to players, first uncheck "Hide from players" below.
+					</p>
+				</div>
+			</div>
+		</div>
+	{/if}
+
 	<form onsubmit={handleSubmit} class="space-y-6">
 		<!-- Name -->
 		<div>
@@ -700,6 +716,7 @@
 								entityMetadata={metadata}
 								categoryDefault={getCategoryDefault(field.key, field)}
 								onToggle={handleFieldVisibilityToggle}
+								disabled={playerVisible === false}
 							/>
 							{#if canGenerate && hasPendingSuggestion(field.key)}
 								<FieldSuggestionBadge
@@ -1130,6 +1147,7 @@
 										entityMetadata={metadata}
 										categoryDefault={getCategoryDefault(field.key, field)}
 										onToggle={handleFieldVisibilityToggle}
+										disabled={playerVisible === false}
 									/>
 								</div>
 								<div class="flex items-center gap-2">

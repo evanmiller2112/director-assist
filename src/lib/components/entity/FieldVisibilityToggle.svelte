@@ -37,14 +37,18 @@
 		entityMetadata: Record<string, unknown>;
 		categoryDefault: boolean;
 		onToggle: (fieldKey: string, value: boolean | undefined) => void;
+		disabled?: boolean;
 	}
 
-	let { fieldKey, entityMetadata, categoryDefault, onToggle }: Props = $props();
+	let { fieldKey, entityMetadata, categoryDefault, onToggle, disabled = false }: Props = $props();
 
 	const overrideState = $derived(getFieldOverrideState(entityMetadata, fieldKey));
 	const resolved = $derived(getResolvedFieldVisibility(entityMetadata, fieldKey, categoryDefault));
 
 	const tooltipText = $derived.by(() => {
+		if (disabled) {
+			return 'Entity is hidden from players';
+		}
 		if (overrideState === true) {
 			return 'Visible to players (overridden)';
 		}
@@ -59,10 +63,16 @@
 	});
 
 	const ariaLabel = $derived.by(() => {
+		if (disabled) {
+			return `${tooltipText} - Field visibility controls disabled because entity is hidden from players`;
+		}
 		return `${tooltipText} - Click to cycle visibility for ${fieldKey}`;
 	});
 
 	function handleClick() {
+		if (disabled) {
+			return;
+		}
 		const nextState = cycleFieldOverrideState(overrideState);
 		onToggle(fieldKey, nextState);
 	}
@@ -73,8 +83,11 @@
 	onclick={handleClick}
 	title={tooltipText}
 	aria-label={ariaLabel}
+	disabled={disabled}
 	class="inline-flex items-center justify-center rounded p-0.5 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1
-		{overrideState === true
+		{disabled
+		? 'opacity-40 cursor-not-allowed text-gray-400 dark:text-gray-500'
+		: overrideState === true
 		? 'text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/30'
 		: overrideState === false
 			? 'text-red-500 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30'

@@ -151,3 +151,80 @@ export function getHardcodedDefault(
 	// Everything else is visible by default
 	return true;
 }
+
+/**
+ * Get the visibility setting for an entire entity category.
+ * GitHub Issue #520: Add option to exclude entire entity categories from player mode export.
+ *
+ * @returns true (visible), false (hidden), or undefined (no config, use default rules)
+ */
+export function getCategoryVisibilitySetting(
+	config: PlayerExportFieldConfig,
+	entityType: string
+): boolean | undefined {
+	if (!config.categoryVisibility || !(entityType in config.categoryVisibility)) {
+		return undefined;
+	}
+	return config.categoryVisibility[entityType];
+}
+
+/**
+ * Set the visibility for an entire entity category.
+ * Returns a new config object (does not mutate the original).
+ */
+export function setCategoryVisibilitySetting(
+	config: PlayerExportFieldConfig,
+	entityType: string,
+	visible: boolean
+): PlayerExportFieldConfig {
+	const existingCategoryVisibility = config.categoryVisibility ?? {};
+	return {
+		...config,
+		categoryVisibility: {
+			...existingCategoryVisibility,
+			[entityType]: visible
+		}
+	};
+}
+
+/**
+ * Remove a category visibility setting (returns new config, does not mutate).
+ * Cleans up empty categoryVisibility object.
+ */
+export function removeCategoryVisibilitySetting(
+	config: PlayerExportFieldConfig,
+	entityType: string
+): PlayerExportFieldConfig {
+	const categoryVisibility = config.categoryVisibility;
+	if (!categoryVisibility) {
+		// No categoryVisibility, nothing to remove
+		return {
+			...config
+		};
+	}
+
+	// Create a shallow copy of categoryVisibility without the target entity type
+	const { [entityType]: _removed, ...remainingCategories } = categoryVisibility;
+
+	// If no categories remain, remove categoryVisibility entirely
+	if (Object.keys(remainingCategories).length === 0) {
+		const { categoryVisibility: _removedProp, ...remainingConfig } = config;
+		return remainingConfig;
+	}
+
+	return {
+		...config,
+		categoryVisibility: remainingCategories
+	};
+}
+
+/**
+ * Reset all category visibility settings.
+ * Returns a new config (does not mutate the original).
+ */
+export function resetAllCategoryVisibility(
+	config: PlayerExportFieldConfig
+): PlayerExportFieldConfig {
+	const { categoryVisibility: _removed, ...remainingConfig } = config;
+	return remainingConfig;
+}

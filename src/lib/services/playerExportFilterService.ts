@@ -22,28 +22,46 @@ import { isFieldPlayerVisible } from './playerFieldVisibility';
  * Check if entity should be included in player export
  *
  * Entities are excluded if:
- * - playerVisible === false
- * - type is 'player_profile'
- * - type is 'timeline_event' AND fields.knownBy is 'secret' or 'lost'
+ * - playerVisible === false (entity-level override takes highest precedence)
+ * - type is 'player_profile' (hardcoded rule - cannot be overridden)
+ * - type is 'timeline_event' AND fields.knownBy is 'secret' or 'lost' (hardcoded rule - cannot be overridden)
+ * - config.categoryVisibility[entity.type] === false (category-level hiding, can be overridden by playerVisible: true)
+ *
+ * Precedence order:
+ * 1. entity.playerVisible === false → force hide (highest precedence)
+ * 2. Hardcoded rules (player_profile always hidden, timeline_event knownBy secret/lost always hidden)
+ * 3. entity.playerVisible === true → force show (overrides categoryVisibility)
+ * 4. config?.categoryVisibility[entity.type] === false → hide category
+ * 5. Default visible
  */
-export function isEntityPlayerVisible(entity: BaseEntity): boolean {
-	// Check playerVisible flag (false = hidden, undefined/true = visible)
+export function isEntityPlayerVisible(entity: BaseEntity, config?: PlayerExportFieldConfig): boolean {
+	// Check entity-level playerVisible flag for explicit hiding (highest precedence)
 	if (entity.playerVisible === false) {
 		return false;
 	}
 
-	// Always hide player_profile entities
+	// Always hide player_profile entities (hardcoded rule - cannot be overridden)
 	if (entity.type === 'player_profile') {
 		return false;
 	}
 
-	// Filter timeline_event by knownBy field
+	// Filter timeline_event by knownBy field (hardcoded rule - cannot be overridden)
 	if (entity.type === 'timeline_event') {
 		const knownBy = entity.fields.knownBy;
 		// Only hide if knownBy is exactly 'secret' or 'lost' (case-sensitive strings)
 		if (knownBy === 'secret' || knownBy === 'lost') {
 			return false;
 		}
+	}
+
+	// If playerVisible is explicitly true, show (overrides categoryVisibility)
+	if (entity.playerVisible === true) {
+		return true;
+	}
+
+	// Check category visibility setting (GitHub Issue #520)
+	if (config?.categoryVisibility?.[entity.type] === false) {
+		return false;
 	}
 
 	return true;
@@ -177,8 +195,8 @@ export function filterEntityForPlayer(
 	typeDefinition: EntityTypeDefinition | undefined,
 	config?: PlayerExportFieldConfig
 ): PlayerEntity | null {
-	// Check if entity should be visible at all
-	if (!isEntityPlayerVisible(entity)) {
+	// Check if entity should be visible at all (pass config for categoryVisibility check)
+	if (!isEntityPlayerVisible(entity, config)) {
 		return null;
 	}
 

@@ -2202,6 +2202,393 @@ describe('playerExportFilterService', () => {
 	});
 
 	// =====================================================================
+	// Issue #520: Category-level entity visibility via categoryVisibility
+	// =====================================================================
+	describe('isEntityPlayerVisible with categoryVisibility', () => {
+		it('should return false when categoryVisibility sets entity type to false', () => {
+			const config: PlayerExportFieldConfig = {
+				fieldVisibility: {},
+				categoryVisibility: {
+					npc: false
+				}
+			};
+			const entity: BaseEntity = {
+				...baseEntity,
+				type: 'npc',
+				playerVisible: undefined
+			};
+			const result = isEntityPlayerVisible(entity, config);
+			expect(result).toBe(false);
+		});
+
+		it('should return true when categoryVisibility sets entity type to true', () => {
+			const config: PlayerExportFieldConfig = {
+				fieldVisibility: {},
+				categoryVisibility: {
+					npc: true
+				}
+			};
+			const entity: BaseEntity = {
+				...baseEntity,
+				type: 'npc',
+				playerVisible: undefined
+			};
+			const result = isEntityPlayerVisible(entity, config);
+			expect(result).toBe(true);
+		});
+
+		it('should return true when categoryVisibility is undefined (default visible)', () => {
+			const config: PlayerExportFieldConfig = {
+				fieldVisibility: {}
+				// categoryVisibility not defined
+			};
+			const entity: BaseEntity = {
+				...baseEntity,
+				type: 'npc',
+				playerVisible: undefined
+			};
+			const result = isEntityPlayerVisible(entity, config);
+			expect(result).toBe(true);
+		});
+
+		it('should return true when entity type not in categoryVisibility', () => {
+			const config: PlayerExportFieldConfig = {
+				fieldVisibility: {},
+				categoryVisibility: {
+					location: false // different type
+				}
+			};
+			const entity: BaseEntity = {
+				...baseEntity,
+				type: 'npc',
+				playerVisible: undefined
+			};
+			const result = isEntityPlayerVisible(entity, config);
+			expect(result).toBe(true);
+		});
+
+		it('should respect entity-level playerVisible: false even if category is visible', () => {
+			const config: PlayerExportFieldConfig = {
+				fieldVisibility: {},
+				categoryVisibility: {
+					npc: true // category says visible
+				}
+			};
+			const entity: BaseEntity = {
+				...baseEntity,
+				type: 'npc',
+				playerVisible: false // entity-level override
+			};
+			const result = isEntityPlayerVisible(entity, config);
+			expect(result).toBe(false);
+		});
+
+		it('should respect entity-level playerVisible: true even if category is hidden', () => {
+			const config: PlayerExportFieldConfig = {
+				fieldVisibility: {},
+				categoryVisibility: {
+					npc: false // category says hidden
+				}
+			};
+			const entity: BaseEntity = {
+				...baseEntity,
+				type: 'npc',
+				playerVisible: true // entity-level override
+			};
+			const result = isEntityPlayerVisible(entity, config);
+			expect(result).toBe(true);
+		});
+
+		it('should hide player_profile even if categoryVisibility sets it to true', () => {
+			const config: PlayerExportFieldConfig = {
+				fieldVisibility: {},
+				categoryVisibility: {
+					player_profile: true // try to show
+				}
+			};
+			const entity: BaseEntity = {
+				...baseEntity,
+				type: 'player_profile',
+				playerVisible: undefined
+			};
+			const result = isEntityPlayerVisible(entity, config);
+			expect(result).toBe(false); // hardcoded rule wins
+		});
+
+		it('should hide secret timeline_event even if categoryVisibility sets timeline_event to true', () => {
+			const config: PlayerExportFieldConfig = {
+				fieldVisibility: {},
+				categoryVisibility: {
+					timeline_event: true // try to show all timeline events
+				}
+			};
+			const entity: BaseEntity = {
+				...baseEntity,
+				type: 'timeline_event',
+				fields: { knownBy: 'secret' },
+				playerVisible: undefined
+			};
+			const result = isEntityPlayerVisible(entity, config);
+			expect(result).toBe(false); // hardcoded knownBy rule wins
+		});
+
+		it('should show common_knowledge timeline_event when categoryVisibility not set', () => {
+			const config: PlayerExportFieldConfig = {
+				fieldVisibility: {}
+				// categoryVisibility not set
+			};
+			const entity: BaseEntity = {
+				...baseEntity,
+				type: 'timeline_event',
+				fields: { knownBy: 'common_knowledge' },
+				playerVisible: undefined
+			};
+			const result = isEntityPlayerVisible(entity, config);
+			expect(result).toBe(true);
+		});
+
+		it('should hide timeline_event with knownBy: lost even with categoryVisibility: true', () => {
+			const config: PlayerExportFieldConfig = {
+				fieldVisibility: {},
+				categoryVisibility: {
+					timeline_event: true
+				}
+			};
+			const entity: BaseEntity = {
+				...baseEntity,
+				type: 'timeline_event',
+				fields: { knownBy: 'lost' },
+				playerVisible: undefined
+			};
+			const result = isEntityPlayerVisible(entity, config);
+			expect(result).toBe(false);
+		});
+
+		it('should work without config parameter (backward compatibility)', () => {
+			const entity: BaseEntity = {
+				...baseEntity,
+				type: 'npc',
+				playerVisible: undefined
+			};
+			const result = isEntityPlayerVisible(entity);
+			expect(result).toBe(true);
+		});
+
+		it('should work with undefined config (backward compatibility)', () => {
+			const entity: BaseEntity = {
+				...baseEntity,
+				type: 'npc',
+				playerVisible: undefined
+			};
+			const result = isEntityPlayerVisible(entity, undefined);
+			expect(result).toBe(true);
+		});
+
+		it('should hide all entities of a hidden category', () => {
+			const config: PlayerExportFieldConfig = {
+				fieldVisibility: {},
+				categoryVisibility: {
+					npc: false
+				}
+			};
+			const entities: BaseEntity[] = [
+				{ ...baseEntity, id: 'npc-1', type: 'npc', playerVisible: undefined },
+				{ ...baseEntity, id: 'npc-2', type: 'npc', playerVisible: undefined },
+				{ ...baseEntity, id: 'loc-1', type: 'location', playerVisible: undefined }
+			];
+			const result = entities.map((e) => isEntityPlayerVisible(e, config));
+			expect(result).toEqual([false, false, true]);
+		});
+	});
+
+	describe('filterEntitiesForPlayer with categoryVisibility', () => {
+		let testEntities: BaseEntity[];
+		let typeDefinitions: EntityTypeDefinition[];
+
+		beforeEach(() => {
+			testEntities = [
+				{
+					id: 'npc-1',
+					type: 'npc',
+					name: 'NPC One',
+					description: 'First NPC',
+					tags: [],
+					fields: { alignment: 'good' },
+					links: [],
+					notes: 'DM notes',
+					playerVisible: undefined,
+					createdAt: new Date('2025-01-01'),
+					updatedAt: new Date('2025-01-10'),
+					metadata: {}
+				},
+				{
+					id: 'npc-2',
+					type: 'npc',
+					name: 'NPC Two',
+					description: 'Second NPC',
+					tags: [],
+					fields: { alignment: 'evil' },
+					links: [],
+					notes: 'More notes',
+					playerVisible: undefined,
+					createdAt: new Date('2025-01-01'),
+					updatedAt: new Date('2025-01-10'),
+					metadata: {}
+				},
+				{
+					id: 'loc-1',
+					type: 'location',
+					name: 'Location One',
+					description: 'A location',
+					tags: [],
+					fields: { population: 1000 },
+					links: [],
+					notes: 'Location notes',
+					playerVisible: undefined,
+					createdAt: new Date('2025-01-01'),
+					updatedAt: new Date('2025-01-10'),
+					metadata: {}
+				}
+			];
+
+			typeDefinitions = [
+				{
+					type: 'npc',
+					label: 'NPC',
+					labelPlural: 'NPCs',
+					icon: 'users',
+					color: 'blue',
+					isBuiltIn: true,
+					fieldDefinitions: [
+						{
+							key: 'alignment',
+							label: 'Alignment',
+							type: 'text',
+							required: false,
+							section: 'public',
+							order: 1
+						}
+					],
+					defaultRelationships: []
+				},
+				{
+					type: 'location',
+					label: 'Location',
+					labelPlural: 'Locations',
+					icon: 'map-pin',
+					color: 'green',
+					isBuiltIn: true,
+					fieldDefinitions: [
+						{
+							key: 'population',
+							label: 'Population',
+							type: 'number',
+							required: false,
+							section: 'public',
+							order: 1
+						}
+					],
+					defaultRelationships: []
+				}
+			];
+		});
+
+		it('should exclude all entities of a hidden category', () => {
+			const config: PlayerExportFieldConfig = {
+				fieldVisibility: {},
+				categoryVisibility: {
+					npc: false // hide all NPCs
+				}
+			};
+			const result = filterEntitiesForPlayer(testEntities, typeDefinitions, config);
+			expect(result).toHaveLength(1);
+			expect(result[0].id).toBe('loc-1');
+		});
+
+		it('should include all entities of a visible category', () => {
+			const config: PlayerExportFieldConfig = {
+				fieldVisibility: {},
+				categoryVisibility: {
+					npc: true,
+					location: true
+				}
+			};
+			const result = filterEntitiesForPlayer(testEntities, typeDefinitions, config);
+			expect(result).toHaveLength(3);
+		});
+
+		it('should combine category hiding with entity-level hiding', () => {
+			const config: PlayerExportFieldConfig = {
+				fieldVisibility: {},
+				categoryVisibility: {
+					npc: true // category says visible
+				}
+			};
+			// But npc-1 has entity-level playerVisible: false
+			testEntities[0].playerVisible = false;
+
+			const result = filterEntitiesForPlayer(testEntities, typeDefinitions, config);
+			expect(result).toHaveLength(2); // npc-2 and loc-1
+			expect(result.map((e) => e.id)).toContain('npc-2');
+			expect(result.map((e) => e.id)).toContain('loc-1');
+			expect(result.map((e) => e.id)).not.toContain('npc-1');
+		});
+
+		it('should allow entity-level playerVisible: true to override hidden category', () => {
+			const config: PlayerExportFieldConfig = {
+				fieldVisibility: {},
+				categoryVisibility: {
+					npc: false // hide all NPCs by category
+				}
+			};
+			// But npc-1 has entity-level override
+			testEntities[0].playerVisible = true;
+
+			const result = filterEntitiesForPlayer(testEntities, typeDefinitions, config);
+			expect(result).toHaveLength(2); // npc-1 (override) and loc-1
+			expect(result.map((e) => e.id)).toContain('npc-1');
+			expect(result.map((e) => e.id)).toContain('loc-1');
+			expect(result.map((e) => e.id)).not.toContain('npc-2');
+		});
+
+		it('should hide multiple categories', () => {
+			const config: PlayerExportFieldConfig = {
+				fieldVisibility: {},
+				categoryVisibility: {
+					npc: false,
+					location: false
+				}
+			};
+			const result = filterEntitiesForPlayer(testEntities, typeDefinitions, config);
+			expect(result).toEqual([]);
+		});
+
+		it('should work with mixed category settings', () => {
+			const config: PlayerExportFieldConfig = {
+				fieldVisibility: {},
+				categoryVisibility: {
+					npc: false,
+					location: true
+				}
+			};
+			const result = filterEntitiesForPlayer(testEntities, typeDefinitions, config);
+			expect(result).toHaveLength(1);
+			expect(result[0].id).toBe('loc-1');
+		});
+
+		it('should default to visible when category not in categoryVisibility', () => {
+			const config: PlayerExportFieldConfig = {
+				fieldVisibility: {},
+				categoryVisibility: {
+					faction: false // different type
+				}
+			};
+			const result = filterEntitiesForPlayer(testEntities, typeDefinitions, config);
+			expect(result).toHaveLength(3); // all visible by default
+		});
+	});
+
+	// =====================================================================
 	// Regression tests: ensure existing behavior unchanged with new signatures
 	// =====================================================================
 	describe('regression: backward compatibility with config parameter', () => {

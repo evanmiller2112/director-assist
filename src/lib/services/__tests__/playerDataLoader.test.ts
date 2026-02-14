@@ -784,7 +784,7 @@ describe('playerDataLoader', () => {
 
 				expect(result).not.toBeNull();
 				expect(result!.createdAt).toBeInstanceOf(Date);
-				expect(result!.createdAt.toISOString()).toBe('2025-01-01T00:00:00.000Z');
+				expect(result!.createdAt!.toISOString()).toBe('2025-01-01T00:00:00.000Z');
 			});
 
 			it('should convert updatedAt from ISO string to Date', () => {
@@ -804,7 +804,7 @@ describe('playerDataLoader', () => {
 
 				expect(result).not.toBeNull();
 				expect(result!.updatedAt).toBeInstanceOf(Date);
-				expect(result!.updatedAt.toISOString()).toBe('2025-01-02T00:00:00.000Z');
+				expect(result!.updatedAt!.toISOString()).toBe('2025-01-02T00:00:00.000Z');
 			});
 
 			it('should default createdAt to Date if missing', () => {
@@ -860,7 +860,7 @@ describe('playerDataLoader', () => {
 
 				expect(result).not.toBeNull();
 				expect(result!.createdAt).toBeInstanceOf(Date);
-				expect(isNaN(result!.createdAt.getTime())).toBe(false);
+				expect(isNaN(result!.createdAt!.getTime())).toBe(false);
 			});
 
 			it('should default updatedAt to Date if invalid', () => {
@@ -880,7 +880,7 @@ describe('playerDataLoader', () => {
 
 				expect(result).not.toBeNull();
 				expect(result!.updatedAt).toBeInstanceOf(Date);
-				expect(isNaN(result!.updatedAt.getTime())).toBe(false);
+				expect(isNaN(result!.updatedAt!.getTime())).toBe(false);
 			});
 		});
 

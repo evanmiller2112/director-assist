@@ -132,9 +132,11 @@ function renderEntity(entity: PlayerEntity, options: PlayerExportOptions): strin
 		parts.push('');
 	}
 
-	// Description
-	parts.push(escapeMd(entity.description));
-	parts.push('');
+	// Description (only render if non-empty)
+	if (entity.description) {
+		parts.push(escapeMd(entity.description));
+		parts.push('');
+	}
 
 	// Summary
 	if (entity.summary) {
@@ -168,8 +170,8 @@ function renderEntity(entity: PlayerEntity, options: PlayerExportOptions): strin
 		parts.push('');
 	}
 
-	// Timestamps
-	if (options.includeTimestamps !== false) {
+	// Timestamps (guard against undefined)
+	if (options.includeTimestamps !== false && entity.createdAt && entity.updatedAt) {
 		parts.push(`*Created: ${formatDate(entity.createdAt)} | Updated: ${formatDate(entity.updatedAt)}*`);
 		parts.push('');
 	}

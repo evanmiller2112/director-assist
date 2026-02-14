@@ -567,5 +567,138 @@ describe('jsonFormatter', () => {
 				expect(JSON.parse(resultGrouped)).toEqual(JSON.parse(resultUngrouped));
 			});
 		});
+
+		// -----------------------------------------------------------------------
+		// GitHub Issue #522: Core field visibility - empty field handling
+		// -----------------------------------------------------------------------
+		describe('Core field visibility (Issue #522)', () => {
+			it('should include description as empty string when description is empty', () => {
+				const playerExport = createBasePlayerExport();
+				playerExport.entities = [
+					{
+						...createCharacterEntity(),
+						description: ''
+					}
+				];
+				const options = createDefaultOptions();
+
+				const result = formatAsJson(playerExport, options);
+				const parsed = JSON.parse(result);
+
+				expect(parsed.entities[0].description).toBe('');
+			});
+
+			it('should include tags as empty array when tags array is empty', () => {
+				const playerExport = createBasePlayerExport();
+				playerExport.entities = [
+					{
+						...createCharacterEntity(),
+						tags: []
+					}
+				];
+				const options = createDefaultOptions();
+
+				const result = formatAsJson(playerExport, options);
+				const parsed = JSON.parse(result);
+
+				expect(parsed.entities[0].tags).toEqual([]);
+			});
+
+			it('should include links as empty array when links array is empty', () => {
+				const playerExport = createBasePlayerExport();
+				playerExport.entities = [
+					{
+						...createCharacterEntity(),
+						links: []
+					}
+				];
+				const options = createDefaultOptions();
+
+				const result = formatAsJson(playerExport, options);
+				const parsed = JSON.parse(result);
+
+				expect(parsed.entities[0].links).toEqual([]);
+			});
+
+			it('should not include createdAt when undefined', () => {
+				const playerExport = createBasePlayerExport();
+				const entity = createCharacterEntity();
+				(entity as any).createdAt = undefined;
+				playerExport.entities = [entity];
+				const options = createDefaultOptions();
+
+				const result = formatAsJson(playerExport, options);
+				const parsed = JSON.parse(result);
+
+				expect(parsed.entities[0]).not.toHaveProperty('createdAt');
+			});
+
+			it('should not include updatedAt when undefined', () => {
+				const playerExport = createBasePlayerExport();
+				const entity = createCharacterEntity();
+				(entity as any).updatedAt = undefined;
+				playerExport.entities = [entity];
+				const options = createDefaultOptions();
+
+				const result = formatAsJson(playerExport, options);
+				const parsed = JSON.parse(result);
+
+				expect(parsed.entities[0]).not.toHaveProperty('updatedAt');
+			});
+
+			it('should handle entity with all core fields empty/hidden gracefully', () => {
+				const playerExport = createBasePlayerExport();
+				const entity = createCharacterEntity();
+				entity.description = '';
+				entity.tags = [];
+				entity.links = [];
+				delete entity.summary;
+				delete entity.imageUrl;
+				(entity as any).createdAt = undefined;
+				(entity as any).updatedAt = undefined;
+				playerExport.entities = [entity];
+				const options = createDefaultOptions();
+
+				const result = formatAsJson(playerExport, options);
+				const parsed = JSON.parse(result);
+
+				// Should still have core structure
+				expect(parsed.entities[0].id).toBe('char-001');
+				expect(parsed.entities[0].name).toContain('Sir Aldric');
+				expect(parsed.entities[0].description).toBe('');
+				expect(parsed.entities[0].tags).toEqual([]);
+				expect(parsed.entities[0].links).toEqual([]);
+				expect(parsed.entities[0]).not.toHaveProperty('summary');
+				expect(parsed.entities[0]).not.toHaveProperty('imageUrl');
+				expect(parsed.entities[0]).not.toHaveProperty('createdAt');
+				expect(parsed.entities[0]).not.toHaveProperty('updatedAt');
+			});
+
+			it('should not include summary when undefined', () => {
+				const playerExport = createBasePlayerExport();
+				const entity = createCharacterEntity();
+				delete entity.summary;
+				playerExport.entities = [entity];
+				const options = createDefaultOptions();
+
+				const result = formatAsJson(playerExport, options);
+				const parsed = JSON.parse(result);
+
+				expect(parsed.entities[0]).not.toHaveProperty('summary');
+			});
+
+			it('should not include imageUrl when undefined', () => {
+				const playerExport = createBasePlayerExport();
+				const entity = createCharacterEntity();
+				delete entity.imageUrl;
+				playerExport.entities = [entity];
+				const options = createDefaultOptions();
+
+				const result = formatAsJson(playerExport, options);
+				const parsed = JSON.parse(result);
+
+				expect(parsed.entities[0]).not.toHaveProperty('imageUrl');
+			});
+		});
 	});
 });

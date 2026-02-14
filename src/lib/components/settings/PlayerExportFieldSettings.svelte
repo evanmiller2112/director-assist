@@ -2,6 +2,7 @@
 	import { ChevronDown, ChevronRight, Lock, Info, RotateCcw } from 'lucide-svelte';
 	import type { EntityTypeDefinition } from '$lib/types/entities';
 	import type { PlayerExportFieldConfig } from '$lib/types/playerFieldVisibility';
+	import { CORE_FIELD_KEYS, CORE_FIELD_LABELS, type CoreFieldKey } from '$lib/types/playerFieldVisibility';
 	import {
 		getFieldVisibilitySetting,
 		setFieldVisibilitySetting,
@@ -38,7 +39,7 @@
 		onConfigChange(newConfig);
 	}
 
-	function getEffectiveVisibility(entityType: string, fieldKey: string, fieldDef: import('$lib/types/entities').FieldDefinition): boolean {
+	function getEffectiveVisibility(entityType: string, fieldKey: string, fieldDef: import('$lib/types/entities').FieldDefinition | undefined): boolean {
 		const setting = getFieldVisibilitySetting(config, entityType, fieldKey);
 		if (setting !== undefined) {
 			return setting;
@@ -151,8 +152,46 @@
 						</div>
 					{/if}
 
-					<!-- Field List -->
+					<!-- Core Fields Section -->
+					<div class="px-4 pt-3 pb-2 border-b border-slate-200 dark:border-slate-700">
+						<h4 class="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide mb-2">
+							Core Fields
+						</h4>
+						<div class="space-y-1">
+							{#each Object.values(CORE_FIELD_KEYS) as coreKey}
+								{@const isVisible = getEffectiveVisibility(entityTypeDef.type, coreKey, undefined)}
+								<label
+									class="flex items-center gap-3 p-2 rounded-md hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer transition-colors"
+								>
+									<!-- Checkbox -->
+									<input
+										type="checkbox"
+										checked={isVisible}
+										onchange={(e) => handleFieldToggle(entityTypeDef.type, coreKey, e.currentTarget.checked)}
+										class="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-blue-600 focus:ring-blue-500 flex-shrink-0"
+									/>
+
+									<!-- Field Label -->
+									<span class="flex-1 text-sm text-slate-700 dark:text-slate-300 {!isVisible ? 'line-through opacity-60' : ''}">
+										{CORE_FIELD_LABELS[coreKey]}
+									</span>
+
+									<!-- Core Field Badge -->
+									<span class="flex-shrink-0 text-xs px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">
+										core
+									</span>
+								</label>
+							{/each}
+						</div>
+					</div>
+
+					<!-- Custom Fields Section -->
 					<div class="px-4 pb-4 {hasConfig ? 'pt-1' : 'pt-3'} space-y-1">
+						{#if entityTypeDef.fieldDefinitions.length > 0}
+							<h4 class="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide mb-2">
+								Custom Fields
+							</h4>
+						{/if}
 						{#each entityTypeDef.fieldDefinitions as fieldDef}
 							{@const isVisible = getEffectiveVisibility(entityTypeDef.type, fieldDef.key, fieldDef)}
 							{@const isSecretField = fieldDef.section === 'hidden'}

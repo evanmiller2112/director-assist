@@ -33,8 +33,8 @@ export interface PlayerEntity {
 	imageUrl?: string;
 	fields: Record<string, FieldValue>; // Filtered: no hidden section fields
 	links: PlayerEntityLink[]; // Filtered: only playerVisible links
-	createdAt: Date;
-	updatedAt: Date;
+	createdAt?: Date; // Optional: controlled by __core_createdAt visibility
+	updatedAt?: Date; // Optional: controlled by __core_updatedAt visibility
 	// EXCLUDED: notes, metadata, playerVisible
 }
 

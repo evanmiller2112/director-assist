@@ -692,7 +692,16 @@
 
 		<!-- Description -->
 		<div>
-			<label for="description" class="label">Description</label>
+			<div class="flex items-center gap-2 mb-1">
+				<label for="description" class="label mb-0">Description</label>
+				<FieldVisibilityToggle
+					fieldKey="__core_description"
+					entityMetadata={metadata}
+					categoryDefault={getCategoryDefault('__core_description', undefined)}
+					onToggle={handleFieldVisibilityToggle}
+					disabled={playerVisible === false}
+				/>
+			</div>
 			<textarea
 				id="description"
 				class="input min-h-[100px]"
@@ -1195,7 +1204,16 @@
 
 		<!-- Tags -->
 		<div>
-			<label for="tags" class="label">Tags</label>
+			<div class="flex items-center gap-2 mb-1">
+				<label for="tags" class="label mb-0">Tags</label>
+				<FieldVisibilityToggle
+					fieldKey="__core_tags"
+					entityMetadata={metadata}
+					categoryDefault={getCategoryDefault('__core_tags', undefined)}
+					onToggle={handleFieldVisibilityToggle}
+					disabled={playerVisible === false}
+				/>
+			</div>
 			<input
 				id="tags"
 				type="text"

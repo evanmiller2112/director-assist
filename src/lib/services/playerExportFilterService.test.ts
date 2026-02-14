@@ -2721,4 +2721,288 @@ describe('playerExportFilterService', () => {
 			expect(result).toHaveProperty('name');
 		});
 	});
+
+	// -----------------------------------------------------------------------
+	// GitHub Issue #522: Core field visibility in filterEntityForPlayer
+	// -----------------------------------------------------------------------
+	describe('Core field visibility in filterEntityForPlayer', () => {
+		it('description is empty string when __core_description is hidden via per-category config', () => {
+			const entity: BaseEntity = {
+				...baseEntity,
+				description: 'Full character backstory'
+			};
+			const config: PlayerExportFieldConfig = {
+				fieldVisibility: {
+					npc: { __core_description: false }
+				}
+			};
+			const result = filterEntityForPlayer(entity, entityTypeDefinition, config);
+			expect(result).not.toBeNull();
+			expect(result!.description).toBe('');
+		});
+
+		it('tags is empty array when __core_tags is hidden', () => {
+			const entity: BaseEntity = {
+				...baseEntity,
+				tags: ['friendly', 'merchant', 'quest-giver']
+			};
+			const config: PlayerExportFieldConfig = {
+				fieldVisibility: {
+					npc: { __core_tags: false }
+				}
+			};
+			const result = filterEntityForPlayer(entity, entityTypeDefinition, config);
+			expect(result).not.toBeNull();
+			expect(result!.tags).toEqual([]);
+		});
+
+		it('summary is omitted when __core_summary is hidden', () => {
+			const entity: BaseEntity = {
+				...baseEntity,
+				summary: 'A brief character summary'
+			};
+			const config: PlayerExportFieldConfig = {
+				fieldVisibility: {
+					npc: { __core_summary: false }
+				}
+			};
+			const result = filterEntityForPlayer(entity, entityTypeDefinition, config);
+			expect(result).not.toBeNull();
+			expect(result!.summary).toBeUndefined();
+		});
+
+		it('imageUrl is omitted when __core_imageUrl is hidden', () => {
+			const entity: BaseEntity = {
+				...baseEntity,
+				imageUrl: 'https://example.com/image.png'
+			};
+			const config: PlayerExportFieldConfig = {
+				fieldVisibility: {
+					npc: { __core_imageUrl: false }
+				}
+			};
+			const result = filterEntityForPlayer(entity, entityTypeDefinition, config);
+			expect(result).not.toBeNull();
+			expect(result!.imageUrl).toBeUndefined();
+		});
+
+		it('links is empty array when __core_relationships is hidden', () => {
+			const entity: BaseEntity = {
+				...baseEntity,
+				links: [
+					{
+						id: 'link-1',
+						targetId: 'target-1',
+						targetType: 'faction',
+						relationship: 'member_of',
+						bidirectional: false,
+						playerVisible: true
+					}
+				]
+			};
+			const config: PlayerExportFieldConfig = {
+				fieldVisibility: {
+					npc: { __core_relationships: false }
+				}
+			};
+			const result = filterEntityForPlayer(entity, entityTypeDefinition, config);
+			expect(result).not.toBeNull();
+			expect(result!.links).toEqual([]);
+		});
+
+		it('createdAt is undefined when __core_createdAt is hidden', () => {
+			const entity: BaseEntity = {
+				...baseEntity,
+				createdAt: new Date('2025-01-01T00:00:00Z')
+			};
+			const config: PlayerExportFieldConfig = {
+				fieldVisibility: {
+					npc: { __core_createdAt: false }
+				}
+			};
+			const result = filterEntityForPlayer(entity, entityTypeDefinition, config);
+			expect(result).not.toBeNull();
+			expect(result!.createdAt).toBeUndefined();
+		});
+
+		it('updatedAt is undefined when __core_updatedAt is hidden', () => {
+			const entity: BaseEntity = {
+				...baseEntity,
+				updatedAt: new Date('2025-01-10T12:30:00Z')
+			};
+			const config: PlayerExportFieldConfig = {
+				fieldVisibility: {
+					npc: { __core_updatedAt: false }
+				}
+			};
+			const result = filterEntityForPlayer(entity, entityTypeDefinition, config);
+			expect(result).not.toBeNull();
+			expect(result!.updatedAt).toBeUndefined();
+		});
+
+		it('all core fields visible by default (no config, backward compat)', () => {
+			const entity: BaseEntity = {
+				...baseEntity,
+				description: 'Description text',
+				summary: 'Summary text',
+				tags: ['tag1', 'tag2'],
+				imageUrl: 'https://example.com/image.png',
+				links: [
+					{
+						id: 'link-1',
+						targetId: 'target-1',
+						targetType: 'faction',
+						relationship: 'member_of',
+						bidirectional: false,
+						playerVisible: true
+					}
+				],
+				createdAt: new Date('2025-01-01'),
+				updatedAt: new Date('2025-01-10')
+			};
+			const result = filterEntityForPlayer(entity, entityTypeDefinition, undefined);
+			expect(result).not.toBeNull();
+			expect(result!.description).toBe('Description text');
+			expect(result!.summary).toBe('Summary text');
+			expect(result!.tags).toEqual(['tag1', 'tag2']);
+			expect(result!.imageUrl).toBe('https://example.com/image.png');
+			expect(result!.links).toHaveLength(1);
+			expect(result!.createdAt).toEqual(new Date('2025-01-01'));
+			expect(result!.updatedAt).toEqual(new Date('2025-01-10'));
+		});
+
+		it('per-entity override hides description (via entity.metadata.playerExportFieldOverrides)', () => {
+			const entity: BaseEntity = {
+				...baseEntity,
+				description: 'Secret description',
+				metadata: {
+					[PLAYER_EXPORT_FIELD_OVERRIDES_KEY]: {
+						__core_description: false
+					}
+				}
+			};
+			const result = filterEntityForPlayer(entity, entityTypeDefinition, undefined);
+			expect(result).not.toBeNull();
+			expect(result!.description).toBe('');
+		});
+
+		it('multiple core fields hidden simultaneously', () => {
+			const entity: BaseEntity = {
+				...baseEntity,
+				description: 'Description',
+				summary: 'Summary',
+				tags: ['tag1'],
+				imageUrl: 'https://example.com/image.png',
+				links: [
+					{
+						id: 'link-1',
+						targetId: 'target-1',
+						targetType: 'faction',
+						relationship: 'member_of',
+						bidirectional: false
+					}
+				],
+				createdAt: new Date('2025-01-01'),
+				updatedAt: new Date('2025-01-10')
+			};
+			const config: PlayerExportFieldConfig = {
+				fieldVisibility: {
+					npc: {
+						__core_description: false,
+						__core_tags: false,
+						__core_relationships: false,
+						__core_createdAt: false
+					}
+				}
+			};
+			const result = filterEntityForPlayer(entity, entityTypeDefinition, config);
+			expect(result).not.toBeNull();
+			expect(result!.description).toBe('');
+			expect(result!.tags).toEqual([]);
+			expect(result!.links).toEqual([]);
+			expect(result!.createdAt).toBeUndefined();
+			// These should still be visible
+			expect(result!.summary).toBe('Summary');
+			expect(result!.imageUrl).toBe('https://example.com/image.png');
+			expect(result!.updatedAt).toEqual(new Date('2025-01-10'));
+		});
+
+		it('relationship section hidden does NOT affect custom field filtering', () => {
+			const entity: BaseEntity = {
+				...baseEntity,
+				fields: {
+					alignment: 'neutral good',
+					occupation: 'shopkeeper',
+					secret_motivation: 'Actually a spy'
+				},
+				links: [
+					{
+						id: 'link-1',
+						targetId: 'target-1',
+						targetType: 'faction',
+						relationship: 'member_of',
+						bidirectional: false
+					}
+				]
+			};
+			const config: PlayerExportFieldConfig = {
+				fieldVisibility: {
+					npc: {
+						__core_relationships: false
+					}
+				}
+			};
+			const result = filterEntityForPlayer(entity, entityTypeDefinition, config);
+			expect(result).not.toBeNull();
+			expect(result!.links).toEqual([]);
+			// Custom fields should still be filtered normally
+			expect(result!.fields).toHaveProperty('alignment');
+			expect(result!.fields).toHaveProperty('occupation');
+			expect(result!.fields).not.toHaveProperty('secret_motivation');
+		});
+
+		it('per-entity override can show description even when category hides it', () => {
+			const entity: BaseEntity = {
+				...baseEntity,
+				description: 'Important description',
+				metadata: {
+					[PLAYER_EXPORT_FIELD_OVERRIDES_KEY]: {
+						__core_description: true
+					}
+				}
+			};
+			const config: PlayerExportFieldConfig = {
+				fieldVisibility: {
+					npc: {
+						__core_description: false
+					}
+				}
+			};
+			const result = filterEntityForPlayer(entity, entityTypeDefinition, config);
+			expect(result).not.toBeNull();
+			expect(result!.description).toBe('Important description');
+		});
+
+		it('entity without optional summary/imageUrl fields works correctly when hidden', () => {
+			const entity: BaseEntity = {
+				...baseEntity
+			};
+			delete entity.summary;
+			delete entity.imageUrl;
+
+			const config: PlayerExportFieldConfig = {
+				fieldVisibility: {
+					npc: {
+						__core_summary: false,
+						__core_imageUrl: false
+					}
+				}
+			};
+			const result = filterEntityForPlayer(entity, entityTypeDefinition, config);
+			expect(result).not.toBeNull();
+			expect(result!.summary).toBeUndefined();
+			expect(result!.imageUrl).toBeUndefined();
+			expect(result!.description).toBe(baseEntity.description);
+		});
+	});
 });

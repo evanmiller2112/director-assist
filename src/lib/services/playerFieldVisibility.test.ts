@@ -744,4 +744,152 @@ describe('isFieldPlayerVisible', () => {
 			expect(result).toBe(false);
 		});
 	});
+
+	// -----------------------------------------------------------------------
+	// 6. Core field visibility (GitHub Issue #522)
+	// -----------------------------------------------------------------------
+	describe('Core field visibility', () => {
+		it('isFieldPlayerVisible returns true for __core_description with no overrides', () => {
+			const entity = makeEntity();
+			const result = isFieldPlayerVisible('__core_description', undefined, 'npc', entity, undefined);
+			expect(result).toBe(true);
+		});
+
+		it('isFieldPlayerVisible returns true for __core_summary with no overrides', () => {
+			const entity = makeEntity();
+			const result = isFieldPlayerVisible('__core_summary', undefined, 'npc', entity, undefined);
+			expect(result).toBe(true);
+		});
+
+		it('isFieldPlayerVisible returns true for __core_tags with no overrides', () => {
+			const entity = makeEntity();
+			const result = isFieldPlayerVisible('__core_tags', undefined, 'npc', entity, undefined);
+			expect(result).toBe(true);
+		});
+
+		it('isFieldPlayerVisible returns true for __core_imageUrl with no overrides', () => {
+			const entity = makeEntity();
+			const result = isFieldPlayerVisible('__core_imageUrl', undefined, 'npc', entity, undefined);
+			expect(result).toBe(true);
+		});
+
+		it('isFieldPlayerVisible returns true for __core_createdAt with no overrides', () => {
+			const entity = makeEntity();
+			const result = isFieldPlayerVisible('__core_createdAt', undefined, 'npc', entity, undefined);
+			expect(result).toBe(true);
+		});
+
+		it('isFieldPlayerVisible returns true for __core_updatedAt with no overrides', () => {
+			const entity = makeEntity();
+			const result = isFieldPlayerVisible('__core_updatedAt', undefined, 'npc', entity, undefined);
+			expect(result).toBe(true);
+		});
+
+		it('isFieldPlayerVisible returns true for __core_relationships with no overrides', () => {
+			const entity = makeEntity();
+			const result = isFieldPlayerVisible('__core_relationships', undefined, 'npc', entity, undefined);
+			expect(result).toBe(true);
+		});
+
+		it('per-entity override to false hides __core_description', () => {
+			const entity = makeEntity({
+				metadata: { playerExportFieldOverrides: { __core_description: false } }
+			});
+			const result = isFieldPlayerVisible('__core_description', undefined, 'npc', entity, undefined);
+			expect(result).toBe(false);
+		});
+
+		it('per-entity override to false hides __core_tags', () => {
+			const entity = makeEntity({
+				metadata: { playerExportFieldOverrides: { __core_tags: false } }
+			});
+			const result = isFieldPlayerVisible('__core_tags', undefined, 'npc', entity, undefined);
+			expect(result).toBe(false);
+		});
+
+		it('per-category default to false hides __core_summary', () => {
+			const entity = makeEntity();
+			const config: PlayerExportFieldConfig = {
+				fieldVisibility: { npc: { __core_summary: false } }
+			};
+			const result = isFieldPlayerVisible('__core_summary', undefined, 'npc', entity, config);
+			expect(result).toBe(false);
+		});
+
+		it('per-category default to false hides __core_imageUrl', () => {
+			const entity = makeEntity();
+			const config: PlayerExportFieldConfig = {
+				fieldVisibility: { npc: { __core_imageUrl: false } }
+			};
+			const result = isFieldPlayerVisible('__core_imageUrl', undefined, 'npc', entity, config);
+			expect(result).toBe(false);
+		});
+
+		it('per-entity override true overrides category false for __core_description', () => {
+			const entity = makeEntity({
+				metadata: { playerExportFieldOverrides: { __core_description: true } }
+			});
+			const config: PlayerExportFieldConfig = {
+				fieldVisibility: { npc: { __core_description: false } }
+			};
+			const result = isFieldPlayerVisible('__core_description', undefined, 'npc', entity, config);
+			expect(result).toBe(true);
+		});
+
+		it('per-entity override false overrides category true for __core_relationships', () => {
+			const entity = makeEntity({
+				metadata: { playerExportFieldOverrides: { __core_relationships: false } }
+			});
+			const config: PlayerExportFieldConfig = {
+				fieldVisibility: { npc: { __core_relationships: true } }
+			};
+			const result = isFieldPlayerVisible('__core_relationships', undefined, 'npc', entity, config);
+			expect(result).toBe(false);
+		});
+
+		it('core field with undefined fieldDef works correctly', () => {
+			const entity = makeEntity();
+			const config: PlayerExportFieldConfig = {
+				fieldVisibility: { npc: { __core_createdAt: false } }
+			};
+			const result = isFieldPlayerVisible('__core_createdAt', undefined, 'npc', entity, config);
+			expect(result).toBe(false);
+		});
+
+		it('all core fields default to visible when no config exists', () => {
+			const entity = makeEntity();
+			const coreFields = [
+				'__core_description',
+				'__core_summary',
+				'__core_tags',
+				'__core_imageUrl',
+				'__core_createdAt',
+				'__core_updatedAt',
+				'__core_relationships'
+			];
+
+			for (const fieldKey of coreFields) {
+				const result = isFieldPlayerVisible(fieldKey, undefined, 'npc', entity, undefined);
+				expect(result).toBe(true);
+			}
+		});
+
+		it('multiple core fields can be hidden simultaneously via category config', () => {
+			const entity = makeEntity();
+			const config: PlayerExportFieldConfig = {
+				fieldVisibility: {
+					npc: {
+						__core_description: false,
+						__core_tags: false,
+						__core_relationships: false
+					}
+				}
+			};
+
+			expect(isFieldPlayerVisible('__core_description', undefined, 'npc', entity, config)).toBe(false);
+			expect(isFieldPlayerVisible('__core_tags', undefined, 'npc', entity, config)).toBe(false);
+			expect(isFieldPlayerVisible('__core_relationships', undefined, 'npc', entity, config)).toBe(false);
+			expect(isFieldPlayerVisible('__core_summary', undefined, 'npc', entity, config)).toBe(true);
+		});
+	});
 });

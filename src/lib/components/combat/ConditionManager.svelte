@@ -242,7 +242,7 @@
 					<div class="flex flex-wrap gap-2">
 						{#each commonConditions as preset}
 							<button
-								class="text-xs px-2 py-1 rounded bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors"
+								class="text-xs px-2 py-1 rounded text-slate-700 dark:text-slate-300 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors"
 								onclick={() => usePreset(preset)}
 							>
 								{preset.name}

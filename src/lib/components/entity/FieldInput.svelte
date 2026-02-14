@@ -709,6 +709,7 @@
 			{/if}
 			{#if resourceIsValid && resourceValue.max > 0}
 				<div class="relative pt-1">
+					<!-- dark-mode-exempt -->
 					<div class="overflow-hidden h-2 text-xs flex rounded bg-slate-200 dark:bg-slate-700">
 						<div
 							style="width: {Math.min(100, (resourceValue.current / resourceValue.max) * 100)}%"

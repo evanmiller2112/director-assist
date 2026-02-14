@@ -59,7 +59,7 @@
 		<!-- Empty state -->
 		<div class="flex flex-col items-center justify-center py-12 text-center">
 			<Calendar class="mb-4 h-12 w-12 text-gray-400" aria-hidden="true" />
-			<p class="text-lg font-medium text-gray-900">No events yet</p>
+			<p class="text-lg font-medium text-gray-900 dark:text-gray-100">No events yet</p>
 			<p class="mt-1 text-sm text-gray-500">Timeline events will appear here as they are created</p>
 		</div>
 	{:else if sortedEvents.length > 0}

@@ -136,7 +136,7 @@
 	</div>
 
 	<!-- Difficulty Info -->
-	<div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md p-3 text-sm">
+	<div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md p-3 text-sm text-blue-700 dark:text-blue-300">
 		<h4 class="font-semibold mb-1">Draw Steel Montage Rules</h4>
 		<ul class="text-xs space-y-1 opacity-90">
 			{#if difficulty === 'easy'}

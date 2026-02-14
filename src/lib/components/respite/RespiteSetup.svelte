@@ -265,7 +265,7 @@
 										bind:value={hero.searchQuery}
 										placeholder="Search character entities..."
 										aria-label="Search character entities"
-										class="block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+										class="block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100"
 									/>
 
 									{#if characterEntities.length === 0}
@@ -299,7 +299,7 @@
 									type="text"
 									bind:value={hero.name}
 									placeholder="Hero name"
-									class="block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+									class="block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100"
 								/>
 							{/if}
 
@@ -312,7 +312,7 @@
 										type="number"
 										min="0"
 										bind:value={hero.recoveries.current}
-										class="w-16 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-2 py-1 text-sm"
+										class="w-16 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-2 py-1 text-sm text-gray-900 dark:text-gray-100"
 									/>
 								</div>
 								<div class="flex items-center gap-2">
@@ -322,7 +322,7 @@
 										type="number"
 										min="1"
 										bind:value={hero.recoveries.max}
-										class="w-16 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-2 py-1 text-sm"
+										class="w-16 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-2 py-1 text-sm text-gray-900 dark:text-gray-100"
 									/>
 								</div>
 								<div class="ml-auto">

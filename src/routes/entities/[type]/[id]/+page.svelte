@@ -212,7 +212,7 @@
 		{#if entity.tags.length > 0}
 			<div class="flex flex-wrap gap-2 mb-6">
 				{#each entity.tags as tag}
-					<span class="bg-slate-100 dark:bg-slate-700 px-3 py-1 rounded-full text-sm">
+					<span class="bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 px-3 py-1 rounded-full text-sm">
 						{tag}
 					</span>
 				{/each}

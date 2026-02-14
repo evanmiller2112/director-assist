@@ -118,7 +118,7 @@
 					bind:value={editValue}
 					onkeydown={handleEditKeyDown}
 					onblur={saveEdit}
-					class="w-full px-2 py-1 text-sm font-medium bg-white dark:bg-slate-800 border border-blue-500 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+					class="w-full px-2 py-1 text-sm font-medium text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-800 border border-blue-500 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
 					autofocus
 				/>
 			{:else}

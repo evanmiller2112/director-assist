@@ -133,7 +133,7 @@
 	<!-- Motivation Type (if applicable) -->
 	{#if argument.motivationType && (argument.type === 'motivation' || argument.type === 'pitfall')}
 		<div class="mt-2">
-			<span class="inline-block rounded-md bg-blue-50 px-2 py-1 text-sm dark:bg-blue-900/20">
+			<span class="inline-block rounded-md bg-blue-50 px-2 py-1 text-sm text-blue-700 dark:bg-blue-900/20 dark:text-blue-300">
 				{formatMotivationType(argument.motivationType)}
 			</span>
 		</div>

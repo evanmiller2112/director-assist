@@ -345,6 +345,7 @@
 					</div>
 					{#if !compact}
 						<div class="relative pt-1">
+\t					<!-- dark-mode-exempt -->
 							<div class="overflow-hidden h-3 text-xs flex rounded bg-slate-200 dark:bg-slate-700">
 								<div
 									style="width: {Math.min(100, (resourceValue.current / resourceValue.max) * 100)}%"

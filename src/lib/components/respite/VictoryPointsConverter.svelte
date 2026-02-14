@@ -77,7 +77,7 @@
 					min="1"
 					max={remaining}
 					bind:value={convertAmount}
-					class="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+					class="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100"
 				/>
 			</div>
 			<button

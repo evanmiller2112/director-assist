@@ -111,7 +111,7 @@
 									value={combatant.turnOrder}
 									onchange={(e) => handleTurnOrderChange(combatant.id, e)}
 									onkeydown={(e) => handleTurnOrderKeydown(combatant, e)}
-									class="position-input w-10 h-6 text-center text-xs font-medium bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+									class="position-input w-10 h-6 text-center text-xs font-medium text-slate-900 dark:text-slate-100 bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
 									aria-label="Turn order position (supports decimals like 2.1, 2.2)"
 								/>
 								<button

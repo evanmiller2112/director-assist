@@ -134,7 +134,7 @@
 				<!-- Info box -->
 				<div class="p-4 bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800 rounded-lg">
 					<p class="text-sm text-blue-900 dark:text-blue-200">
-						This will generate a <code class="px-1 py-0.5 bg-blue-100 dark:bg-blue-900/30 rounded text-xs font-mono">player_data.json</code> file. Place it in the root directory of your player-facing Director Assist instance.
+						This will generate a <code class="px-1 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded text-xs font-mono">player_data.json</code> file. Place it in the root directory of your player-facing Director Assist instance.
 					</p>
 				</div>
 

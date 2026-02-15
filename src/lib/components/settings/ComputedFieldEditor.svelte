@@ -376,7 +376,7 @@
 	<!-- Preview -->
 	<div>
 		<span class="label">Preview</span>
-		<div class="p-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-sm">
+		<div class="p-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-sm text-slate-700 dark:text-slate-300">
 			{previewResult || 'Enter a formula to see preview'}
 		</div>
 	</div>

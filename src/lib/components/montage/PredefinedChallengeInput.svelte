@@ -127,7 +127,7 @@
 					bind:value={newName}
 					placeholder="Challenge name"
 					required
-					class="w-full px-2 py-1.5 text-sm border rounded bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+					class="w-full px-2 py-1.5 text-sm border rounded text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
 				/>
 			</div>
 
@@ -140,7 +140,7 @@
 					bind:value={newDescription}
 					placeholder="Optional description..."
 					rows="2"
-					class="w-full px-2 py-1.5 text-sm border rounded bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+					class="w-full px-2 py-1.5 text-sm border rounded text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
 				></textarea>
 			</div>
 
@@ -153,7 +153,7 @@
 					type="text"
 					bind:value={newSkills}
 					placeholder="Suggested skills (comma-separated)"
-					class="w-full px-2 py-1.5 text-sm border rounded bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+					class="w-full px-2 py-1.5 text-sm border rounded text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
 				/>
 			</div>
 

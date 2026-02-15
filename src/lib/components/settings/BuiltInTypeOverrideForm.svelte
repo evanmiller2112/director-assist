@@ -224,7 +224,7 @@
 		<p class="text-sm text-slate-600 dark:text-slate-400">
 			Control which fields appear in forms for this entity type
 			{#if hiddenFields.length > 0}
-				<span class="ml-2 text-xs bg-slate-200 dark:bg-slate-700 px-2 py-0.5 rounded">
+				<span class="ml-2 text-xs bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 px-2 py-0.5 rounded">
 					{hiddenFields.length} field{hiddenFields.length === 1 ? '' : 's'} hidden
 				</span>
 			{/if}

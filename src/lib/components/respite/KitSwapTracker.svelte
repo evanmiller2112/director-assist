@@ -54,7 +54,7 @@
 				<select
 					id="swap-hero"
 					bind:value={selectedHeroId}
-					class="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+					class="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100"
 				>
 					<option value="">Select hero...</option>
 					{#each heroes as hero}
@@ -72,7 +72,7 @@
 						type="text"
 						bind:value={fromKit}
 						placeholder="Current kit"
-						class="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+						class="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100"
 					/>
 				</div>
 				<ArrowRight class="w-5 h-5 text-slate-400 mb-2" />
@@ -83,7 +83,7 @@
 						type="text"
 						bind:value={toKit}
 						placeholder="New kit"
-						class="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+						class="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100"
 					/>
 				</div>
 			</div>
@@ -96,7 +96,7 @@
 					type="text"
 					bind:value={reason}
 					placeholder="Why are they swapping?"
-					class="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+					class="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100"
 				/>
 			</div>
 
@@ -116,7 +116,7 @@
 		<div class="space-y-2">
 			<h4 class="text-sm font-medium text-slate-900 dark:text-white">Swap History</h4>
 			{#each kitSwaps as swap (swap.id)}
-				<div class="flex items-center gap-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 p-3 text-sm">
+				<div class="flex items-center gap-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 p-3 text-sm text-slate-700 dark:text-slate-300">
 					<span class="font-medium text-slate-900 dark:text-white">{getHeroName(swap.heroId)}</span>
 					<span class="text-slate-500 dark:text-slate-400">{swap.from}</span>
 					<ArrowRight class="w-4 h-4 text-slate-400" />

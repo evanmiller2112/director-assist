@@ -60,7 +60,7 @@
                 <Icon class="w-5 h-5" style="color: var(--color-{typeDef?.color ?? 'slate'}, currentColor)" />
                 <span class="flex-1">{typeDef?.labelPlural ?? type}</span>
                 {#if count > 0}
-                    <span class="text-xs bg-slate-200 dark:bg-slate-700 px-2 py-0.5 rounded-full">
+                    <span class="text-xs text-slate-700 dark:text-slate-300 bg-slate-200 dark:bg-slate-700 px-2 py-0.5 rounded-full">
                         {count}
                     </span>
                 {/if}

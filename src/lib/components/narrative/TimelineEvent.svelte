@@ -121,7 +121,7 @@
 
 		<!-- Outcome -->
 		{#if outcome}
-			<p class="mb-3 text-sm text-gray-600">{outcome}</p>
+			<p class="mb-3 text-sm text-gray-600 dark:text-gray-300">{outcome}</p>
 		{/if}
 
 		<!-- Action buttons -->

@@ -7,6 +7,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.9.2] - 2026-02-15
+
+### Added
+
+**Player Export Control - Entity-Level Exclusion (#519)**
+- Individual entity toggle to exclude specific entities from player export
+- Warning banner on entity edit page when entity is hidden from player export
+- Disabled field visibility toggles when entire entity is excluded
+- Per-entity override stored in entity metadata
+- Works across all entity types (built-in and custom)
+- Export service respects entity-level exclusion before field-level filtering
+
+**Player Export Control - Category-Level Exclusion (#520)**
+- Settings page option to hide entire entity types from player export
+- "Hide from Player Export" checkbox per entity type
+- Allows directors to exclude all NPCs, all Sessions, or any entity category
+- Category-level exclusion overrides entity-level and field-level settings
+- Supports both built-in and custom entity types
+- Export preview reflects category exclusions in real-time
+
+**Core Field Visibility Controls (#522)**
+- Full director control over core entity fields in player exports
+- Configurable core fields: description, summary, tags, image, created timestamp, updated timestamp, relationships
+- Applies to all entity types (built-in and custom)
+- Integration with existing field visibility cascade system
+- Category-level defaults with per-entity overrides
+- Settings UI includes core fields alongside custom fields
+
+### Fixed
+
+**Dark Mode Text Visibility (#523)**
+- Installed @tailwindcss/typography plugin for improved markdown rendering
+- Added dark mode text color variants across components
+- Fixed text contrast issues in dark mode
+- Resolved merge conflicts with main branch
+
 ## [1.9.1] - 2026-02-12
 
 ### Fixed

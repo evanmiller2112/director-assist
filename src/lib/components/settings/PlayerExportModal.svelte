@@ -76,6 +76,7 @@
 
 	function handleClose() {
 		if (!isExporting) {
+			open = false;
 			onclose?.();
 		}
 	}

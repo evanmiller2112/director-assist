@@ -268,7 +268,7 @@
 
 	<!-- Motivations Section -->
 	<fieldset class="space-y-3">
-		<legend class="text-lg font-semibold text-gray-900 dark:text-white">Motivations</legend>
+		<legend class="text-lg font-semibold text-gray-900 dark:text-gray-100">Motivations</legend>
 
 		{#if motivations.length === 0}
 			<p class="text-sm text-gray-500">No motivations added yet.</p>
@@ -336,7 +336,7 @@
 
 	<!-- Pitfalls Section -->
 	<fieldset class="space-y-3">
-		<legend class="text-lg font-semibold text-gray-900 dark:text-white">Pitfalls</legend>
+		<legend class="text-lg font-semibold text-gray-900 dark:text-gray-100">Pitfalls</legend>
 
 		{#if pitfalls.length === 0}
 			<p class="text-sm text-gray-500">No pitfalls added yet.</p>
@@ -407,7 +407,7 @@
 			<button
 				type="button"
 				onclick={handleCancel}
-				class="rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-slate-800 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
+				class="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:hover:bg-gray-700"
 			>
 				Cancel
 			</button>

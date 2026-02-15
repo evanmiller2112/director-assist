@@ -23,6 +23,10 @@
 	import { PendingRelationshipList, CreateRelateCommand, AddFieldInline } from '$lib/components/entity';
 	import { FormActionBar } from '$lib/components/ui';
 	import { buildPendingRelationshipsContext } from './pendingRelationshipsContext';
+	import FieldVisibilityToggle from '$lib/components/entity/FieldVisibilityToggle.svelte';
+	import { getFieldVisibilitySetting, getHardcodedDefault } from '$lib/services/playerExportFieldConfigService';
+	import { setFieldOverride } from '$lib/services/entityFieldVisibilityService';
+	import type { PlayerExportFieldConfig } from '$lib/types/playerFieldVisibility';
 
 	const entityType = $derived($page.params.type ?? '');
 	const typeDefinition = $derived(
@@ -45,6 +49,7 @@
 	let notes = $state('');
 	let playerVisible = $state<boolean | undefined>(undefined);
 	let fields = $state<Record<string, FieldValue>>({});
+	let metadata = $state<Record<string, unknown>>({});
 	let isSaving = $state(false);
 	let isGenerating = $state(false);
 	let errors = $state<Record<string, string>>({});
@@ -177,7 +182,8 @@
 					.filter(Boolean),
 				notes: notes.trim(),
 				playerVisible,
-				fields: $state.snapshot(fields)
+				fields: $state.snapshot(fields),
+				metadata: $state.snapshot(metadata)
 			});
 
 			let created;
@@ -541,6 +547,22 @@
 		return suggestion !== undefined && suggestion.status === 'pending';
 	}
 
+	// Player export field visibility config
+	const playerExportFieldConfig = $derived.by(() => {
+		return campaignStore.playerExportFieldConfig ?? { fieldVisibility: {} } as PlayerExportFieldConfig;
+	});
+
+	function getCategoryDefault(fieldKey: string, fieldDef: FieldDefinition | undefined): boolean {
+		const entityTypeStr = entityType;
+		const setting = getFieldVisibilitySetting(playerExportFieldConfig, entityTypeStr, fieldKey);
+		if (setting !== undefined) return setting;
+		return getHardcodedDefault(fieldKey, fieldDef, entityTypeStr);
+	}
+
+	function handleFieldVisibilityToggle(fieldKey: string, value: boolean | undefined) {
+		metadata = setFieldOverride(metadata, fieldKey, value);
+	}
+
 	async function handleGenerateSingleFieldSuggestion(params: {
 		fieldKey: string;
 		fieldDefinition: FieldDefinition;
@@ -635,6 +657,22 @@
 		{/if}
 	{/if}
 
+	{#if playerVisible === false}
+		<div class="mb-6 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
+			<div class="flex items-start gap-3">
+				<EyeOff class="w-5 h-5 text-amber-600 dark:text-amber-500 flex-shrink-0 mt-0.5" />
+				<div>
+					<h3 class="text-sm font-semibold text-amber-900 dark:text-amber-200 mb-1">
+						This entity is hidden from players
+					</h3>
+					<p class="text-sm text-amber-700 dark:text-amber-300">
+						Field visibility settings have no effect while the entity is hidden. To make individual fields visible to players, first uncheck "Hide from players" below.
+					</p>
+				</div>
+			</div>
+		</div>
+	{/if}
+
 	<form onsubmit={handleSubmit} class="space-y-6">
 		<!-- Name -->
 		<div>
@@ -673,6 +711,13 @@
 								{field.label}
 								{#if field.required}*{/if}
 							</label>
+							<FieldVisibilityToggle
+								fieldKey={field.key}
+								entityMetadata={metadata}
+								categoryDefault={getCategoryDefault(field.key, field)}
+								onToggle={handleFieldVisibilityToggle}
+								disabled={playerVisible === false}
+							/>
 							{#if canGenerate && hasPendingSuggestion(field.key)}
 								<FieldSuggestionBadge
 									fieldName={field.label}
@@ -813,7 +858,7 @@
 							<input
 								id={field.key}
 								type="checkbox"
-								class="w-4 h-4 rounded border-slate-300 text-slate-900 dark:text-slate-100 focus:ring-slate-500 dark:border-slate-600 dark:bg-slate-700 dark:checked:bg-slate-600"
+								class="w-4 h-4 rounded border-slate-300 text-slate-900 focus:ring-slate-500 dark:border-slate-600 dark:bg-slate-700 dark:checked:bg-slate-600 dark:text-slate-100"
 								checked={(fields[field.key] as boolean) ?? false}
 								onchange={(e) => updateField(field.key, e.currentTarget.checked)}
 							/>
@@ -827,7 +872,7 @@
 								<label class="flex items-center gap-2 cursor-pointer">
 									<input
 										type="checkbox"
-										class="w-4 h-4 rounded border-slate-300 text-slate-900 dark:text-slate-100 focus:ring-slate-500 dark:border-slate-600 dark:bg-slate-700 dark:checked:bg-slate-600"
+										class="w-4 h-4 rounded border-slate-300 text-slate-900 focus:ring-slate-500 dark:border-slate-600 dark:bg-slate-700 dark:checked:bg-slate-600 dark:text-slate-100"
 										checked={Array.isArray(fields[field.key]) &&
 											(fields[field.key] as string[]).includes(option)}
 										onchange={(e) => {
@@ -1095,7 +1140,16 @@
 					{#each secretFields as field}
 						<div class="mb-4">
 							<div class="flex items-center justify-between mb-1">
-								<label for={field.key} class="label mb-0">{field.label}</label>
+								<div class="flex items-center gap-2">
+									<label for={field.key} class="label mb-0">{field.label}</label>
+									<FieldVisibilityToggle
+										fieldKey={field.key}
+										entityMetadata={metadata}
+										categoryDefault={getCategoryDefault(field.key, field)}
+										onToggle={handleFieldVisibilityToggle}
+										disabled={playerVisible === false}
+									/>
+								</div>
 								<div class="flex items-center gap-2">
 									{#if isGeneratableField(field) && canGenerate}
 										<FieldSuggestionButton
@@ -1159,7 +1213,7 @@
 					<input
 						id="player-visibility-checkbox"
 						type="checkbox"
-						class="w-4 h-4 rounded border-slate-300 text-slate-900 dark:text-slate-100 focus:ring-slate-500 dark:border-slate-600 dark:bg-slate-700 dark:checked:bg-slate-600"
+						class="w-4 h-4 rounded border-slate-300 text-slate-900 focus:ring-slate-500 dark:border-slate-600 dark:bg-slate-700 dark:checked:bg-slate-600 dark:text-slate-100"
 						checked={playerVisible === false}
 						onchange={(e) => {
 							playerVisible = e.currentTarget.checked ? false : undefined;

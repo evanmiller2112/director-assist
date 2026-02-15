@@ -191,7 +191,7 @@ describe('Dark Mode Text Compliance', () => {
 					.join('\n');
 				expect.fail(
 					`Found ${violations.length} dark mode violation(s) in ${relativePath}:\n${message}\n\n` +
-						'Rule 1: Dark text classes (text-gray-700…900, text-black, text-slate-700…900) need a dark:text-* variant on the same line.\n' +
+						'Rule 1: Dark text classes (text-gray-700...900, text-black, text-slate-700...900) need a dark:text-* variant on the same line.\n' +
 						'Rule 2: Elements with dark:bg-* and no text color class at all need an explicit text-* + dark:text-* pair.\n' +
 						'Exempt a line by adding <!-- dark-mode-exempt --> on it or the line above.'
 				);

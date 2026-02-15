@@ -14,7 +14,11 @@ import {
 	setFieldVisibilitySetting,
 	removeFieldVisibilitySetting,
 	resetEntityTypeConfig,
-	getHardcodedDefault
+	getHardcodedDefault,
+	getCategoryVisibilitySetting,
+	setCategoryVisibilitySetting,
+	removeCategoryVisibilitySetting,
+	resetAllCategoryVisibility
 } from './playerExportFieldConfigService';
 import type { CampaignMetadata } from '$lib/types/campaign';
 import type { PlayerExportFieldConfig } from '$lib/types/playerFieldVisibility';
@@ -396,5 +400,315 @@ describe('getHardcodedDefault', () => {
 			const result = getHardcodedDefault('notes', fieldDef, entityType);
 			expect(result).toBe(false);
 		}
+	});
+});
+
+// ---------------------------------------------------------------------------
+// Issue #520: Category-level entity visibility via categoryVisibility
+// ---------------------------------------------------------------------------
+
+describe('getCategoryVisibilitySetting', () => {
+	it('returns true when category is set to visible', () => {
+		const config: PlayerExportFieldConfig = {
+			fieldVisibility: {},
+			categoryVisibility: {
+				npc: true
+			}
+		};
+
+		const result = getCategoryVisibilitySetting(config, 'npc');
+		expect(result).toBe(true);
+	});
+
+	it('returns false when category is set to hidden', () => {
+		const config: PlayerExportFieldConfig = {
+			fieldVisibility: {},
+			categoryVisibility: {
+				npc: false
+			}
+		};
+
+		const result = getCategoryVisibilitySetting(config, 'npc');
+		expect(result).toBe(false);
+	});
+
+	it('returns undefined when category not configured', () => {
+		const config: PlayerExportFieldConfig = {
+			fieldVisibility: {},
+			categoryVisibility: {
+				npc: true
+			}
+		};
+
+		const result = getCategoryVisibilitySetting(config, 'location');
+		expect(result).toBeUndefined();
+	});
+
+	it('returns undefined when categoryVisibility is undefined', () => {
+		const config: PlayerExportFieldConfig = {
+			fieldVisibility: {}
+			// categoryVisibility not defined
+		};
+
+		const result = getCategoryVisibilitySetting(config, 'npc');
+		expect(result).toBeUndefined();
+	});
+
+	it('returns undefined when categoryVisibility is empty', () => {
+		const config: PlayerExportFieldConfig = {
+			fieldVisibility: {},
+			categoryVisibility: {}
+		};
+
+		const result = getCategoryVisibilitySetting(config, 'npc');
+		expect(result).toBeUndefined();
+	});
+});
+
+describe('setCategoryVisibilitySetting', () => {
+	it('sets visibility for new category', () => {
+		const config: PlayerExportFieldConfig = {
+			fieldVisibility: {},
+			categoryVisibility: {}
+		};
+
+		const result = setCategoryVisibilitySetting(config, 'npc', false);
+		expect(result.categoryVisibility?.npc).toBe(false);
+	});
+
+	it('creates categoryVisibility object if it does not exist', () => {
+		const config: PlayerExportFieldConfig = {
+			fieldVisibility: {}
+			// categoryVisibility not defined
+		};
+
+		const result = setCategoryVisibilitySetting(config, 'npc', true);
+		expect(result.categoryVisibility).toBeDefined();
+		expect(result.categoryVisibility?.npc).toBe(true);
+	});
+
+	it('updates existing visibility setting', () => {
+		const config: PlayerExportFieldConfig = {
+			fieldVisibility: {},
+			categoryVisibility: {
+				npc: true
+			}
+		};
+
+		const result = setCategoryVisibilitySetting(config, 'npc', false);
+		expect(result.categoryVisibility?.npc).toBe(false);
+	});
+
+	it('preserves other category configs', () => {
+		const config: PlayerExportFieldConfig = {
+			fieldVisibility: {},
+			categoryVisibility: {
+				npc: true,
+				location: false
+			}
+		};
+
+		const result = setCategoryVisibilitySetting(config, 'npc', false);
+		expect(result.categoryVisibility?.location).toBe(false);
+		expect(result.categoryVisibility?.npc).toBe(false);
+	});
+
+	it('preserves fieldVisibility config', () => {
+		const config: PlayerExportFieldConfig = {
+			fieldVisibility: {
+				npc: { occupation: true }
+			},
+			categoryVisibility: {}
+		};
+
+		const result = setCategoryVisibilitySetting(config, 'npc', false);
+		expect(result.fieldVisibility.npc.occupation).toBe(true);
+	});
+
+	it('does not mutate original config', () => {
+		const config: PlayerExportFieldConfig = {
+			fieldVisibility: {},
+			categoryVisibility: {
+				npc: true
+			}
+		};
+		const originalJson = JSON.stringify(config);
+
+		setCategoryVisibilitySetting(config, 'npc', false);
+		expect(JSON.stringify(config)).toBe(originalJson);
+	});
+
+	it('does not mutate original config when creating categoryVisibility', () => {
+		const config: PlayerExportFieldConfig = {
+			fieldVisibility: {}
+		};
+		const originalJson = JSON.stringify(config);
+
+		setCategoryVisibilitySetting(config, 'npc', true);
+		expect(JSON.stringify(config)).toBe(originalJson);
+	});
+});
+
+describe('removeCategoryVisibilitySetting', () => {
+	it('removes specific category from config', () => {
+		const config: PlayerExportFieldConfig = {
+			fieldVisibility: {},
+			categoryVisibility: {
+				npc: false,
+				location: true
+			}
+		};
+
+		const result = removeCategoryVisibilitySetting(config, 'npc');
+		expect(result.categoryVisibility?.npc).toBeUndefined();
+		expect('npc' in (result.categoryVisibility ?? {})).toBe(false);
+	});
+
+	it('preserves other category configs', () => {
+		const config: PlayerExportFieldConfig = {
+			fieldVisibility: {},
+			categoryVisibility: {
+				npc: false,
+				location: true
+			}
+		};
+
+		const result = removeCategoryVisibilitySetting(config, 'npc');
+		expect(result.categoryVisibility?.location).toBe(true);
+	});
+
+	it('does not mutate original config', () => {
+		const config: PlayerExportFieldConfig = {
+			fieldVisibility: {},
+			categoryVisibility: {
+				npc: false,
+				location: true
+			}
+		};
+		const originalJson = JSON.stringify(config);
+
+		removeCategoryVisibilitySetting(config, 'npc');
+		expect(JSON.stringify(config)).toBe(originalJson);
+	});
+
+	it('removes categoryVisibility entirely when last category is removed', () => {
+		const config: PlayerExportFieldConfig = {
+			fieldVisibility: {},
+			categoryVisibility: {
+				npc: false
+			}
+		};
+
+		const result = removeCategoryVisibilitySetting(config, 'npc');
+		expect(result.categoryVisibility).toBeUndefined();
+		expect('categoryVisibility' in result).toBe(false);
+	});
+
+	it('preserves fieldVisibility when cleaning up categoryVisibility', () => {
+		const config: PlayerExportFieldConfig = {
+			fieldVisibility: {
+				npc: { occupation: true }
+			},
+			categoryVisibility: {
+				npc: false
+			}
+		};
+
+		const result = removeCategoryVisibilitySetting(config, 'npc');
+		expect(result.fieldVisibility.npc.occupation).toBe(true);
+	});
+
+	it('handles removing category from non-existent categoryVisibility gracefully', () => {
+		const config: PlayerExportFieldConfig = {
+			fieldVisibility: {}
+			// categoryVisibility not defined
+		};
+
+		const result = removeCategoryVisibilitySetting(config, 'npc');
+		expect(result.fieldVisibility).toEqual(config.fieldVisibility);
+	});
+
+	it('handles removing non-existent category gracefully', () => {
+		const config: PlayerExportFieldConfig = {
+			fieldVisibility: {},
+			categoryVisibility: {
+				npc: false
+			}
+		};
+
+		const result = removeCategoryVisibilitySetting(config, 'location');
+		expect(result.categoryVisibility?.npc).toBe(false);
+	});
+});
+
+describe('resetAllCategoryVisibility', () => {
+	it('removes entire categoryVisibility object', () => {
+		const config: PlayerExportFieldConfig = {
+			fieldVisibility: {},
+			categoryVisibility: {
+				npc: false,
+				location: true,
+				character: false
+			}
+		};
+
+		const result = resetAllCategoryVisibility(config);
+		expect(result.categoryVisibility).toBeUndefined();
+		expect('categoryVisibility' in result).toBe(false);
+	});
+
+	it('preserves fieldVisibility config', () => {
+		const config: PlayerExportFieldConfig = {
+			fieldVisibility: {
+				npc: { occupation: true },
+				location: { population: false }
+			},
+			categoryVisibility: {
+				npc: false,
+				location: true
+			}
+		};
+
+		const result = resetAllCategoryVisibility(config);
+		expect(result.fieldVisibility.npc.occupation).toBe(true);
+		expect(result.fieldVisibility.location.population).toBe(false);
+	});
+
+	it('does not mutate original config', () => {
+		const config: PlayerExportFieldConfig = {
+			fieldVisibility: {},
+			categoryVisibility: {
+				npc: false,
+				location: true
+			}
+		};
+		const originalJson = JSON.stringify(config);
+
+		resetAllCategoryVisibility(config);
+		expect(JSON.stringify(config)).toBe(originalJson);
+	});
+
+	it('handles config without categoryVisibility gracefully', () => {
+		const config: PlayerExportFieldConfig = {
+			fieldVisibility: {}
+		};
+
+		const result = resetAllCategoryVisibility(config);
+		expect(result.fieldVisibility).toEqual(config.fieldVisibility);
+		expect('categoryVisibility' in result).toBe(false);
+	});
+
+	it('returns config with only fieldVisibility when categoryVisibility is removed', () => {
+		const config: PlayerExportFieldConfig = {
+			fieldVisibility: {
+				npc: { occupation: true }
+			},
+			categoryVisibility: {
+				npc: false
+			}
+		};
+
+		const result = resetAllCategoryVisibility(config);
+		expect(Object.keys(result)).toEqual(['fieldVisibility']);
 	});
 });

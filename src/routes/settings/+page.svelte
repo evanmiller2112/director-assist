@@ -32,6 +32,7 @@
 	import LoadingButton from '$lib/components/ui/LoadingButton.svelte';
 	import { SystemSelector, CampaignLinkingSettings } from '$lib/components/settings';
 	import PlayerExportFieldSettings from '$lib/components/settings/PlayerExportFieldSettings.svelte';
+	import PlayerExportCategorySettings from '$lib/components/settings/PlayerExportCategorySettings.svelte';
 	import { getAllEntityTypes } from '$lib/config/entityTypes';
 	import type { PlayerExportFieldConfig } from '$lib/types/playerFieldVisibility';
 	import { page } from '$app/stores';
@@ -855,6 +856,21 @@
 					</span>
 				{/if}
 			</div>
+		</div>
+
+		<!-- Category Visibility Settings -->
+		<div class="mb-6">
+			<h3 class="text-base font-medium text-slate-900 dark:text-white mb-2">
+				Category Visibility
+			</h3>
+			<p class="text-sm text-slate-500 dark:text-slate-400 mb-4">
+				Choose which entity categories to include in player exports. Categories that are unchecked will be completely excluded.
+			</p>
+			<PlayerExportCategorySettings
+				entityTypes={entityTypesForExport}
+				config={fieldConfig}
+				onConfigChange={handleFieldConfigChange}
+			/>
 		</div>
 
 		<!-- Field Visibility Settings -->

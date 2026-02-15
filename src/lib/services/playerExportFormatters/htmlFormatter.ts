@@ -104,8 +104,10 @@ function renderEntity(entity: PlayerEntity, options: PlayerExportOptions): strin
 		parts.push(`<img src="${escapeHtml(entity.imageUrl)}" alt="${escapeHtml(entity.name)}" class="entity-image">`);
 	}
 
-	// Description
-	parts.push(`<p class="entity-description">${escapeHtml(entity.description)}</p>`);
+	// Description (only render if non-empty)
+	if (entity.description) {
+		parts.push(`<p class="entity-description">${escapeHtml(entity.description)}</p>`);
+	}
 
 	// Summary
 	if (entity.summary) {
@@ -147,8 +149,8 @@ function renderEntity(entity: PlayerEntity, options: PlayerExportOptions): strin
 		parts.push('</div>');
 	}
 
-	// Timestamps
-	if (options.includeTimestamps !== false) {
+	// Timestamps (guard against undefined)
+	if (options.includeTimestamps !== false && entity.createdAt && entity.updatedAt) {
 		parts.push('<div class="entity-timestamps">');
 		parts.push(`<p><small>Created: ${formatDate(entity.createdAt)} | Updated: ${formatDate(entity.updatedAt)}</small></p>`);
 		parts.push('</div>');

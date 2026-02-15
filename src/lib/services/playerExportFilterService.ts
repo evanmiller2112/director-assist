@@ -221,25 +221,35 @@ export function filterEntityForPlayer(
 	);
 	const filteredLinks = filterLinksForPlayer(entity.links);
 
+	// Helper to check core field visibility (GitHub Issue #522)
+	const isCoreVisible = (coreKey: string): boolean => {
+		return isFieldPlayerVisible(coreKey, undefined, entity.type, entity, config);
+	};
+
 	// Create player entity (excluding notes, metadata, playerVisible)
+	// Core fields are conditionally included based on visibility settings
 	const playerEntity: PlayerEntity = {
 		id: entity.id,
 		type: entity.type,
 		name: entity.name,
-		description: entity.description,
-		tags: entity.tags,
+		description: isCoreVisible('__core_description') ? entity.description : '',
+		tags: isCoreVisible('__core_tags') ? entity.tags : [],
 		fields: filteredFields,
-		links: filteredLinks,
-		createdAt: entity.createdAt,
-		updatedAt: entity.updatedAt
+		links: isCoreVisible('__core_relationships') ? filteredLinks : [],
 	};
 
-	// Include optional properties if they exist
-	if (entity.summary !== undefined) {
+	// Include optional properties if they exist and are visible
+	if (entity.summary !== undefined && isCoreVisible('__core_summary')) {
 		playerEntity.summary = entity.summary;
 	}
-	if (entity.imageUrl !== undefined) {
+	if (entity.imageUrl !== undefined && isCoreVisible('__core_imageUrl')) {
 		playerEntity.imageUrl = entity.imageUrl;
+	}
+	if (isCoreVisible('__core_createdAt')) {
+		playerEntity.createdAt = entity.createdAt;
+	}
+	if (isCoreVisible('__core_updatedAt')) {
+		playerEntity.updatedAt = entity.updatedAt;
 	}
 
 	return playerEntity;

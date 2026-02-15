@@ -978,7 +978,16 @@
 			<!-- Description -->
 			<div>
 				<div class="flex items-center justify-between mb-1">
-					<label for="description" class="label mb-0">Description</label>
+					<div class="flex items-center gap-2">
+						<label for="description" class="label mb-0">Description</label>
+						<FieldVisibilityToggle
+							fieldKey="__core_description"
+							entityMetadata={metadata}
+							categoryDefault={getCategoryDefault('__core_description', undefined)}
+							onToggle={handleFieldVisibilityToggle}
+							disabled={playerVisible === false}
+						/>
+					</div>
 					{#if canGenerate}
 						<FieldGenerateButton
 							disabled={isSaving}
@@ -998,7 +1007,16 @@
 			<!-- Summary -->
 			<div>
 				<div class="flex items-center justify-between mb-1">
-					<label for="summary" class="label mb-0">Summary</label>
+					<div class="flex items-center gap-2">
+						<label for="summary" class="label mb-0">Summary</label>
+						<FieldVisibilityToggle
+							fieldKey="__core_summary"
+							entityMetadata={metadata}
+							categoryDefault={getCategoryDefault('__core_summary', undefined)}
+							onToggle={handleFieldVisibilityToggle}
+							disabled={playerVisible === false}
+						/>
+					</div>
 					{#if canGenerate}
 						<FieldGenerateButton
 							disabled={isSaving}
@@ -1545,7 +1563,16 @@
 
 			<!-- Tags -->
 			<div>
-				<label for="tags" class="label">Tags</label>
+				<div class="flex items-center gap-2 mb-1">
+					<label for="tags" class="label mb-0">Tags</label>
+					<FieldVisibilityToggle
+						fieldKey="__core_tags"
+						entityMetadata={metadata}
+						categoryDefault={getCategoryDefault('__core_tags', undefined)}
+						onToggle={handleFieldVisibilityToggle}
+						disabled={playerVisible === false}
+					/>
+				</div>
 				<input
 					id="tags"
 					type="text"

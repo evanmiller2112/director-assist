@@ -401,6 +401,82 @@ describe('getHardcodedDefault', () => {
 			expect(result).toBe(false);
 		}
 	});
+
+	// ---------------------------------------------------------------------------
+	// Issue #522: Core field visibility defaults
+	// ---------------------------------------------------------------------------
+	describe('Core field visibility defaults (Issue #522)', () => {
+		it('returns true for __core_description', () => {
+			const result = getHardcodedDefault('__core_description', undefined, 'npc');
+			expect(result).toBe(true);
+		});
+
+		it('returns true for __core_summary', () => {
+			const result = getHardcodedDefault('__core_summary', undefined, 'npc');
+			expect(result).toBe(true);
+		});
+
+		it('returns true for __core_tags', () => {
+			const result = getHardcodedDefault('__core_tags', undefined, 'npc');
+			expect(result).toBe(true);
+		});
+
+		it('returns true for __core_imageUrl', () => {
+			const result = getHardcodedDefault('__core_imageUrl', undefined, 'npc');
+			expect(result).toBe(true);
+		});
+
+		it('returns true for __core_createdAt', () => {
+			const result = getHardcodedDefault('__core_createdAt', undefined, 'npc');
+			expect(result).toBe(true);
+		});
+
+		it('returns true for __core_updatedAt', () => {
+			const result = getHardcodedDefault('__core_updatedAt', undefined, 'npc');
+			expect(result).toBe(true);
+		});
+
+		it('returns true for __core_relationships', () => {
+			const result = getHardcodedDefault('__core_relationships', undefined, 'npc');
+			expect(result).toBe(true);
+		});
+
+		it('returns true for all core fields regardless of entity type', () => {
+			const coreFields = [
+				'__core_description',
+				'__core_summary',
+				'__core_tags',
+				'__core_imageUrl',
+				'__core_createdAt',
+				'__core_updatedAt',
+				'__core_relationships'
+			];
+			const types = ['npc', 'character', 'location', 'faction', 'session'];
+
+			for (const fieldKey of coreFields) {
+				for (const entityType of types) {
+					const result = getHardcodedDefault(fieldKey, undefined, entityType);
+					expect(result).toBe(true);
+				}
+			}
+		});
+
+		it('still returns false for notes field (regression check)', () => {
+			const result = getHardcodedDefault('notes', undefined, 'npc');
+			expect(result).toBe(false);
+		});
+
+		it('still returns false for hidden section fields (regression check)', () => {
+			const fieldDef = makeFieldDef({ key: 'secret_plan', section: 'hidden' });
+			const result = getHardcodedDefault('secret_plan', fieldDef, 'npc');
+			expect(result).toBe(false);
+		});
+
+		it('still returns false for preparation on session (regression check)', () => {
+			const result = getHardcodedDefault('preparation', undefined, 'session');
+			expect(result).toBe(false);
+		});
+	});
 });
 
 // ---------------------------------------------------------------------------

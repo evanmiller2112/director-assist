@@ -44,7 +44,7 @@ function filterEntity(entity: PlayerEntity, options: PlayerExportOptions): any {
 		filtered.summary = entity.summary;
 	}
 
-	// Always include tags, fields, and links
+	// Always include tags and links (even if empty arrays)
 	filtered.tags = entity.tags;
 	filtered.fields = entity.fields;
 	filtered.links = entity.links;
@@ -54,10 +54,14 @@ function filterEntity(entity: PlayerEntity, options: PlayerExportOptions): any {
 		filtered.imageUrl = entity.imageUrl;
 	}
 
-	// Include timestamps if option is set
+	// Include timestamps if option is set and they exist
 	if (options.includeTimestamps !== false) {
-		filtered.createdAt = entity.createdAt.toISOString();
-		filtered.updatedAt = entity.updatedAt.toISOString();
+		if (entity.createdAt !== undefined) {
+			filtered.createdAt = entity.createdAt.toISOString();
+		}
+		if (entity.updatedAt !== undefined) {
+			filtered.updatedAt = entity.updatedAt.toISOString();
+		}
 	}
 
 	return filtered;

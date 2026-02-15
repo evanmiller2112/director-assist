@@ -735,5 +735,131 @@ describe('markdownFormatter', () => {
 				expect(result).toContain('📚');
 			});
 		});
+
+		// -----------------------------------------------------------------------
+		// GitHub Issue #522: Core field visibility - empty field handling
+		// -----------------------------------------------------------------------
+		describe('Core field visibility (Issue #522)', () => {
+			it('should not render description section when description is empty', () => {
+				const playerExport = createBasePlayerExport();
+				playerExport.entities = [
+					{
+						...createCharacterEntity(),
+						description: ''
+					}
+				];
+				const options = createDefaultOptions();
+
+				const result = formatAsMarkdown(playerExport, options);
+
+				// Entity should be present but description should not have its own section
+				expect(result).toContain('Sir Aldric');
+				// Should not have description text or a description label/section
+				const entitySection = result.split('Sir Aldric')[1].split('###')[0];
+				expect(entitySection).not.toMatch(/description|^[A-Z][a-z]+ [a-z]/i);
+			});
+
+			it('should not render tags section when tags array is empty', () => {
+				const playerExport = createBasePlayerExport();
+				playerExport.entities = [
+					{
+						...createCharacterEntity(),
+						tags: []
+					}
+				];
+				const options = createDefaultOptions();
+
+				const result = formatAsMarkdown(playerExport, options);
+
+				expect(result).toContain('Sir Aldric');
+				// Should not render "Tags:" section or similar
+				const entitySection = result.split('Sir Aldric')[1].split('###')[0];
+				expect(entitySection).not.toMatch(/\*\*tags?\*\*:|tags?:/i);
+			});
+
+			it('should not render relationships section when links array is empty', () => {
+				const playerExport = createBasePlayerExport();
+				playerExport.entities = [
+					{
+						...createCharacterEntity(),
+						links: []
+					}
+				];
+				const options = createDefaultOptions();
+
+				const result = formatAsMarkdown(playerExport, options);
+
+				expect(result).toContain('Sir Aldric');
+				// Should not render relationships/links section
+				const entitySection = result.split('Sir Aldric')[1].split('###')[0];
+				expect(entitySection).not.toMatch(/\*\*(relationships?|links?|connections?)\*\*:/i);
+			});
+
+			it('should not render timestamp line when createdAt and updatedAt are undefined', () => {
+				const playerExport = createBasePlayerExport();
+				const entity = createCharacterEntity();
+				// Remove timestamps
+				(entity as any).createdAt = undefined;
+				(entity as any).updatedAt = undefined;
+				playerExport.entities = [entity];
+				const options = createDefaultOptions();
+
+				const result = formatAsMarkdown(playerExport, options);
+
+				expect(result).toContain('Sir Aldric');
+				// Should not render created/updated timestamp lines
+				const entitySection = result.split('Sir Aldric')[1].split('###')[0];
+				expect(entitySection).not.toMatch(/created|updated/i);
+			});
+
+			it('should handle entity with all core fields empty/hidden gracefully', () => {
+				const playerExport = createBasePlayerExport();
+				const entity = createCharacterEntity();
+				entity.description = '';
+				entity.tags = [];
+				entity.links = [];
+				delete entity.summary;
+				delete entity.imageUrl;
+				(entity as any).createdAt = undefined;
+				(entity as any).updatedAt = undefined;
+				playerExport.entities = [entity];
+				const options = createDefaultOptions();
+
+				const result = formatAsMarkdown(playerExport, options);
+
+				// Should still render the entity with name and fields
+				expect(result).toContain('Sir Aldric');
+				expect(result).toContain('Paladin');
+				expect(result).toContain('12');
+			});
+
+			it('should not render summary when undefined', () => {
+				const playerExport = createBasePlayerExport();
+				const entity = createCharacterEntity();
+				delete entity.summary;
+				playerExport.entities = [entity];
+				const options = createDefaultOptions();
+
+				const result = formatAsMarkdown(playerExport, options);
+
+				expect(result).toContain('Sir Aldric');
+				// Summary should not appear
+				expect(result).not.toContain('Noble knight seeking redemption');
+			});
+
+			it('should not render image when imageUrl is undefined', () => {
+				const playerExport = createBasePlayerExport();
+				const entity = createCharacterEntity();
+				delete entity.imageUrl;
+				playerExport.entities = [entity];
+				const options = createDefaultOptions();
+
+				const result = formatAsMarkdown(playerExport, options);
+
+				expect(result).toContain('Sir Aldric');
+				// Should not have markdown image syntax
+				expect(result).not.toMatch(/!\[.*\]\(.*\)/);
+			});
+		});
 	});
 });

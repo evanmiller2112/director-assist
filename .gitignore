@@ -14,3 +14,9 @@ vite.config.ts.timestamp-*
 
 # Player data exports (generated at runtime)
 static/player_data.json
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/

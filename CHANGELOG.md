@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.9.3] - 2026-02-16
+
+### Security
+
+- Resolved low-severity cookie dependency vulnerability by adding npm override for `cookie@^0.7.2` and upgrading SvelteKit packages (#505)
+
+### Added
+
+**Runtime Schema Validation (#504)**
+- Added runtime schema validation at the IndexedDB boundary using Valibot
+- Validates entity, campaign, chat, combat, montage, negotiation, and respite data
+- Three validation modes: strict write validation, non-blocking read validation, and comprehensive import validation
+- Added Valibot as a dependency for lightweight, tree-shakeable runtime validation
+- Exported DMAssistantDB class from database module
+- 177 new tests across schemas, validation utilities, integrity checks, scheduler, and recovery services
+
+**Background Database Integrity Check Service (#511)**
+- Added background database integrity check service that runs non-blocking checks after startup
+- Checks for table existence, entity shape validation, active campaign verification, and referential integrity
+- Automatic repair and recovery options for common database issues
+- Service runs asynchronously without blocking the UI
+- Comprehensive logging for troubleshooting database problems
+
+### Technical
+
+- Added 177 new tests across schemas, validation utilities, integrity checks, scheduler, and recovery services
+
 ## [1.9.2] - 2026-02-15
 
 ### Added

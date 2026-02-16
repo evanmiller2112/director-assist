@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.9.4] - 2026-02-16
+
+### Added
+
+**Testing & Quality Infrastructure**
+- Added vitest unit test execution to CI pipeline between lint and build steps (#502)
+- Added end-to-end tests with Playwright covering campaign creation, entity CRUD, and combat lifecycle (#503)
+- Added separate E2E CI workflow with Chromium, artifact uploads for test reports
+- Added test coverage thresholds: statements 75%, branches 70%, functions 75%, lines 75% (#506)
+- Added `@playwright/test` dependency and `test:e2e`, `test:e2e:headed`, `test:e2e:ui` npm scripts
+- Added `@vitest/coverage-v8` dependency for coverage reporting (text, JSON, HTML)
+
+### Fixed
+
+- Fixed flaky performance test in InitiativeTracker by increasing threshold from 300ms to 2000ms for CI environments (#502)
+
 ## [1.9.3] - 2026-02-16
 
 ### Security

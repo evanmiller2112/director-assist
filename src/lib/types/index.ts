@@ -11,3 +11,4 @@ export * from './respite';
 export * from './playerExport';
 export * from './entityTypeExport';
 export * from './creature';
+export * from './dbIntegrity';

@@ -30,6 +30,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Service runs asynchronously without blocking the UI
 - Comprehensive logging for troubleshooting database problems
 
+### Fixed
+
+- Made token indicator on combatant cards plainly visible — now displays as a prominent bold circle badge before the name instead of a tiny inline text badge (#526)
+
 ### Technical
 
 - Added 177 new tests across schemas, validation utilities, integrity checks, scheduler, and recovery services

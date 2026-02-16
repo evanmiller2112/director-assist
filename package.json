@@ -16,8 +16,8 @@
     "test:coverage": "vitest run --coverage"
   },
   "devDependencies": {
-    "@sveltejs/adapter-static": "^3.0.8",
-    "@sveltejs/kit": "^2.15.0",
+    "@sveltejs/adapter-static": "^3.0.10",
+    "@sveltejs/kit": "^2.52.0",
     "@sveltejs/vite-plugin-svelte": "^5.0.0",
     "@tailwindcss/typography": "^0.5.19",
     "@testing-library/jest-dom": "^6.9.1",
@@ -57,7 +57,11 @@
     "nanoid": "^5.0.9",
     "ollama-ai-provider": "^1.2.0",
     "svelte-dnd-action": "^0.9.69",
+    "valibot": "^1.2.0",
     "vis-data": "^8.0.3",
     "vis-network": "^10.0.2"
+  },
+  "overrides": {
+    "cookie": "^0.7.2"
   }
 }

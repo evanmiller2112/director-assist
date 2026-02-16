@@ -174,3 +174,20 @@ export type { PublishFreshness, PublishResult } from './playerPublishService';
 
 // Player mode detection service (Issue #445)
 export { detectPlayerMode, resetDetectionCache } from './playerModeDetectionService';
+
+// Database integrity check service (Issue #511)
+export {
+	runIntegrityCheck,
+	isFreshDatabase,
+	checkTableExistence,
+	checkSampleValidation,
+	checkActiveCampaign,
+	checkReferentialIntegrity
+} from './dbIntegrityCheckService';
+export type { IntegrityCheckConfig } from './dbIntegrityCheckService';
+
+// Database integrity scheduler (Issue #511)
+export { scheduleIntegrityCheck } from './dbIntegrityScheduler';
+
+// Database recovery service (Issue #511)
+export { repairDatabase, resetDatabase } from './dbRecoveryService';

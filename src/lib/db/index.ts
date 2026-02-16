@@ -22,7 +22,7 @@ export interface AppConfig {
 	value: unknown;
 }
 
-class DMAssistantDB extends Dexie {
+export class DMAssistantDB extends Dexie {
 	entities!: Table<BaseEntity>;
 	campaign!: Table<Campaign>;
 	conversations!: Table<Conversation>;

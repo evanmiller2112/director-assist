@@ -88,21 +88,21 @@
 	<div class="flex items-start justify-between gap-2 mb-3">
 		<div class="flex-1 min-w-0">
 			<div class="flex items-center gap-2">
-				<h3
-					class="font-semibold text-slate-900 dark:text-white truncate ellipsis"
-					data-testid="combatant-name"
-				>
-					{combatant.name}
-				</h3>
 				{#if combatant.tokenIndicator}
 					<span
-						class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200"
+						class="flex-shrink-0 inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold bg-purple-600 dark:bg-purple-500 text-white"
 						data-testid="token-indicator-badge"
 						aria-label={`Token ${combatant.tokenIndicator}`}
 					>
 						{combatant.tokenIndicator}
 					</span>
 				{/if}
+				<h3
+					class="font-semibold text-slate-900 dark:text-white truncate ellipsis"
+					data-testid="combatant-name"
+				>
+					{combatant.name}
+				</h3>
 				{#if isCurrent}
 					<span
 						class="text-blue-600 dark:text-blue-400"

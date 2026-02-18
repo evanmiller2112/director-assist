@@ -31,6 +31,7 @@ For any feature or bug fix, use the appropriate agents in order:
 - **Agents do the work:** Use specialized agents, don't implement code directly
 - **Atomic commits:** Code + tests + docs committed together via git-manager
 - **QA is automatic:** Always run qa-expert after implementation, don't wait to be asked
+- **Issues closed via PRs only:** Never close issues directly — reference them in PR descriptions (e.g., `Closes #123`) so they auto-close on merge
 
 ### Quick Reference
 

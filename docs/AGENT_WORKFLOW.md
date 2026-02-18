@@ -30,8 +30,8 @@ The workflow consists of 10 distinct stages following TDD principles:
 6. Code Review        → Review code and domain accuracy (optional)
 7. Documentation      → Update docs
 8. Git Operations     → Commit and push changes
-9. User Verification  → Manual testing
-10. Issue Closure     → Mark issue complete
+9. PR & Issue Closure → Create PR referencing issues (issues close on merge)
+10. User Verification → Manual testing
 ```
 
 ## Test-Driven Development (TDD) Approach
@@ -77,17 +77,19 @@ Once tests are passing, the code can be improved and cleaned up while maintainin
 - Select the next issue to work on
 - Assign complexity rating (simple/moderate/complex)
 - Hand off context to the next agent
-- Close completed issues with resolution summary
+- Create milestones and manage labels
+
+**IMPORTANT:** Never close issues directly. Issues are closed automatically when a PR referencing them (e.g., `Closes #42`) is merged.
 
 **When to Use:**
 - At the start of a new work session (pick issue)
-- After user verification is complete (close issue)
+- To create milestones, labels, or manage project organization
 
 **Example Commands:**
 ```
 "Select the next issue to work on"
 "Show me open issues and help pick one"
-"Close issue #42 as completed"
+"Create milestone for v2.0"
 ```
 
 **Output:**
@@ -371,15 +373,18 @@ In the TDD workflow, QA validation occurs after implementation is complete and t
 
 ### 8. git-manager
 
-**Role:** Version control operations
+**Role:** Version control and PR operations
 
 **Responsibilities:**
 - Create atomic commits (code + docs together)
 - Write clear commit messages
 - Push changes to remote
+- Create PRs that reference issues (e.g., `Closes #42`) so issues close on merge
 - Create tags for releases
 - Manage versioning
 - Hand off to user for verification
+
+**IMPORTANT:** Issues must be closed via PR merge, not directly. Always include `Closes #XX` in PR descriptions.
 
 **When to Use:**
 - After docs-specialist completes (every workflow)
@@ -387,14 +392,15 @@ In the TDD workflow, QA validation occurs after implementation is complete and t
 **Example Commands:**
 ```
 "Commit all changes with an appropriate message"
+"Create a PR for issue #42"
 "Create a commit and push to the feature branch"
-"Commit and push these changes to main"
 ```
 
 **Output:**
 - Commit hash
 - Commit message
 - Push confirmation
+- PR URL (when applicable)
 - Branch information
 
 ---
@@ -435,11 +441,11 @@ Choose the appropriate workflow based on the issue complexity and domain involve
    ↓
 7. docs-specialist updates relevant docs
    ↓
-8. git-manager commits and pushes
+8. git-manager commits, pushes, and creates PR (with "Closes #XX")
    ↓
-9. User tests the fix
+9. PR merged → issue auto-closes
    ↓
-10. github-project-manager closes issue
+10. User verifies the fix in production/main
 ```
 
 ---
@@ -478,11 +484,11 @@ Choose the appropriate workflow based on the issue complexity and domain involve
    ↓
 7. docs-specialist documents the feature
    ↓
-8. git-manager commits and pushes
+8. git-manager commits, pushes, and creates PR (with "Closes #XX")
    ↓
-9. User tests the feature
+9. PR merged → issue auto-closes
    ↓
-10. github-project-manager closes issue
+10. User verifies the feature in production/main
 ```
 
 ---
@@ -521,11 +527,11 @@ Choose the appropriate workflow based on the issue complexity and domain involve
    ↓
 7. docs-specialist documents the feature
    ↓
-8. git-manager commits and pushes
+8. git-manager commits, pushes, and creates PR (with "Closes #XX")
    ↓
-9. User tests the feature
+9. PR merged → issue auto-closes
    ↓
-10. github-project-manager closes issue
+10. User verifies the feature in production/main
 ```
 
 ---
@@ -658,8 +664,8 @@ The user verification step (step 7) is critical. Never skip it:
 - Check for any regressions
 - Confirm the issue is resolved
 
-**Before Closing:**
-User should explicitly confirm: "The fix works correctly, proceed to close the issue."
+**Before Merging PR:**
+User should explicitly confirm: "The fix works correctly, merge the PR." The referenced issues will close automatically on merge.
 
 ## Practical Examples
 
@@ -730,16 +736,13 @@ User should explicitly confirm: "The fix works correctly, proceed to close the i
 #  - All tests passing
 #  Pushed to main: abc1234
 #
-#  Ready for user verification."
+#  PR created with 'Closes #XX'. Ready for user verification."
 
 # Step 9: User Verification
-# User tests: "Works correctly, close the issue"
+# User tests: "Works correctly, merge the PR"
 
-# Step 10: Issue Closure
-"Close issue #45 as resolved"
-
-# github-project-manager response:
-# "Issue #45 closed with resolution summary."
+# Step 9-10: PR merged, issue auto-closed
+# Issue #45 was closed automatically when the PR merged.
 ```
 
 ---
@@ -885,13 +888,8 @@ User should explicitly confirm: "The fix works correctly, proceed to close the i
 # Step 9: User Verification
 # User tests: "Tested with multiple resource types, works great. Close the issue."
 
-# Step 10: Issue Closure
-"Close issue #78 with summary"
-
-# github-project-manager response:
-# "Issue #78 closed. Added support for Draw Steel Heroic Resources
-#  including Victories, Hope, and custom resource tracking.
-#  Full TDD approach with 15 passing tests."
+# Step 9-10: PR merged, issue auto-closed
+# Issue #78 was closed automatically when the PR merged.
 ```
 
 ---
@@ -989,14 +987,14 @@ Use the decision tree:
 - Regression introduced
 
 **Solution:**
-ALWAYS complete step 9 before step 10:
+ALWAYS have the user verify before merging the PR:
 
-1. git-manager pushes changes
+1. git-manager pushes changes and creates PR (with `Closes #XX`)
 2. User must test locally
-3. User explicitly confirms "ready to close"
-4. Only then does github-project-manager close the issue
+3. User explicitly confirms "ready to merge"
+4. PR is merged → issues close automatically
 
-Never combine steps 8, 9, and 10 into a single command.
+Never merge a PR without user verification.
 
 ---
 
@@ -1107,9 +1105,9 @@ Code and documentation should be committed together. This keeps history clean an
 
 | Variant | Steps | TDD Flow | Use For | Skip |
 |---------|-------|----------|---------|------|
-| Simple Bug Fix | 1→3→4→5→7→8→9→10 | Test bug (RED) → Fix (GREEN) → Validate | Bug fixes, small logic changes | Plan, Domain Review |
-| Standard Feature | 1→2→3→4→5→7→8→9→10 | Plan → Tests (RED) → Code (GREEN) → Validate | Infrastructure, generic features | Domain Review |
-| Draw Steel Feature | 1→2→3→4→5→6→7→8→9→10 | Plan → Tests (RED) → Code (GREEN) → Validate → Review | Game mechanics, domain-specific | None (full pipeline) |
+| Simple Bug Fix | 1→3→4→5→7→8→9→10 | Test bug (RED) → Fix (GREEN) → Validate → PR closes issue | Bug fixes, small logic changes | Plan, Domain Review |
+| Standard Feature | 1→2→3→4→5→7→8→9→10 | Plan → Tests (RED) → Code (GREEN) → Validate → PR closes issue | Infrastructure, generic features | Domain Review |
+| Draw Steel Feature | 1→2→3→4→5→6→7→8→9→10 | Plan → Tests (RED) → Code (GREEN) → Validate → Review → PR closes issue | Game mechanics, domain-specific | None (full pipeline) |
 
 ### Agent Commands Quick Reference (TDD Order)
 
@@ -1150,9 +1148,9 @@ Code and documentation should be committed together. This keeps history clean an
 "Commit and push all changes (code + tests + docs)"
 "Create atomic commit with tests, implementation, and docs"
 
-# Issue Closure
-"Close issue #XX as resolved"
-"Mark issue #XX complete with summary"
+# PR & Issue Closure (issues close via PR merge, never directly)
+"Create a PR for issue #XX"
+"Create PR referencing Closes #XX, #YY"
 ```
 
 ### TDD Quick Tips

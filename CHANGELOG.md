@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.9.5] - 2026-02-18
+
+### Added
+
+**Location-Based NPC Suggestions for Scenes (Issues #546, #547, #548)**
+- Location-based NPC suggestion service suggests relevant NPCs when selecting a location in scene forms
+- Confidence-based ranking system (high/medium/low) evaluates NPC relevance to location
+- Entity suggestion chips UI component with interactive amber-themed chips for accepting or dismissing suggestions
+- Smart scene form integration automatically suggests NPCs when a location is selected in create/edit forms
+- Suggestions appear as dismissible chips that can be accepted with one click
+- High-confidence suggestions (direct location relationships) rank first, followed by medium (secondary connections) and low (indirect connections)
+- Integration with existing scene workflow maintains compatibility with manual NPC selection
+
+### Fixed
+
+**Negotiation Setup Form Issues (Issue #553, #554, #555)**
+- Fixed pitfall fields appearing empty when reopening a saved negotiation — corrected case conversion between camelCase form format and snake_case database format
+- Fixed starting interest always defaulting to 2 regardless of user selection in setup form
+- Fixed starting patience always defaulting to 5 regardless of user selection in setup form
+- Negotiation setup form now correctly preserves all user-selected values
+
+### Documentation
+
+- Updated workflow documentation to enforce issues-closed-via-PRs-only policy
+
 ## [1.9.4] - 2026-02-16
 
 ### Added

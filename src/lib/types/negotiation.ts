@@ -199,6 +199,8 @@ export interface UpdateNegotiationInput {
 	name?: string;
 	description?: string;
 	npcName?: string;
+	interest?: number;
+	patience?: number;
 	motivations?: NegotiationMotivation[];
 	pitfalls?: NegotiationPitfall[];
 }

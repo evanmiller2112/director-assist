@@ -141,9 +141,13 @@
 			name: data.name,
 			npcName: data.npcName,
 			description: data.description,
-			motivations: negotiation.motivations.map((m, i) => ({
-				...m,
-				isKnown: data.motivations[i]?.isKnown ?? m.isKnown
+			interest: data.interest,
+			patience: data.patience,
+			motivations: data.motivations.map((m) => ({
+				type: m.type,
+				description: `Motivated by ${m.type}`,
+				isKnown: m.isKnown,
+				timesUsed: 0
 			})),
 			pitfalls: data.pitfalls.map((p) => ({
 				description: formatMotivationType(p.type),
@@ -246,6 +250,7 @@
 					initialData={setupInitialData}
 					onCreate={handleUpdateSetup}
 					onCancel={handleBack}
+					submitLabel="Save"
 				/>
 			</div>
 

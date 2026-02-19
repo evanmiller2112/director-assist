@@ -890,3 +890,85 @@ describe('NegotiationSetup Component - Edge Cases', () => {
 		);
 	});
 });
+
+// ============================================================================
+// Issue #559: NegotiationSetup must accept an optional submitLabel prop
+// ============================================================================
+//
+// TDD RED PHASE - These tests will fail until:
+//   1. The `Props` interface in NegotiationSetup.svelte gains
+//      `submitLabel?: string` (defaulting to "Create Negotiation").
+//   2. The submit button renders `{submitLabel}` instead of the hardcoded
+//      string "Create Negotiation" at line 420.
+//
+// Rendering failures and "button not found" assertion failures below are
+// the expected RED signals for this phase.
+// ============================================================================
+
+describe('NegotiationSetup Component - submitLabel prop (Issue #559)', () => {
+	it('should render "Create Negotiation" button label by default when no submitLabel is provided', () => {
+		// Arrange / Act: render with no props (existing behaviour must be preserved)
+		render(NegotiationSetup);
+
+		// Assert: the default label must still appear so callers that do not
+		// pass submitLabel continue to work unchanged
+		expect(
+			screen.getByRole('button', { name: /create negotiation/i })
+		).toBeInTheDocument();
+	});
+
+	it('should render the provided submitLabel on the submit button instead of the default', () => {
+		// Arrange: pass the submitLabel prop that the edit flow will use.
+		// EXPECTED FAILURE: Props does not yet include `submitLabel`, so
+		// TypeScript will reject this prop and the button will still say
+		// "Create Negotiation" rather than "Save".
+		render(NegotiationSetup, { props: { submitLabel: 'Save' } });
+
+		// Assert: the button text must match the supplied label
+		expect(screen.getByRole('button', { name: /^Save$/i })).toBeInTheDocument();
+	});
+
+	it('should NOT render the default "Create Negotiation" text when submitLabel is "Save"', () => {
+		// Arrange / Act
+		render(NegotiationSetup, { props: { submitLabel: 'Save' } });
+
+		// Assert: the old hardcoded label must not appear when overridden
+		expect(
+			screen.queryByRole('button', { name: /create negotiation/i })
+		).not.toBeInTheDocument();
+	});
+
+	it('should render an arbitrary custom submitLabel on the submit button', () => {
+		// Ensures the implementation uses the prop value generically, not a
+		// special-cased "Save" string.
+		render(NegotiationSetup, { props: { submitLabel: 'Update Negotiation' } });
+
+		expect(
+			screen.getByRole('button', { name: /^Update Negotiation$/i })
+		).toBeInTheDocument();
+	});
+
+	it('should still call onCreate when submit button is clicked with a custom submitLabel', async () => {
+		// Arrange: verify the label change does not break the submit callback
+		const onCreate = vi.fn();
+		render(NegotiationSetup, { props: { onCreate, submitLabel: 'Save' } });
+
+		const nameInput = screen.getByLabelText(/^name|negotiation.*name/i);
+		await fireEvent.input(nameInput, { target: { value: 'Peace Treaty' } });
+
+		const npcNameInput = screen.getByLabelText(/npc.*name/i);
+		await fireEvent.input(npcNameInput, { target: { value: 'Lord Varric' } });
+
+		// Act: click the re-labelled submit button
+		const saveButton = screen.getByRole('button', { name: /^Save$/i });
+		await fireEvent.click(saveButton);
+
+		// Assert: the callback still fires with the correct data
+		expect(onCreate).toHaveBeenCalledWith(
+			expect.objectContaining({
+				name: 'Peace Treaty',
+				npcName: 'Lord Varric'
+			})
+		);
+	});
+});

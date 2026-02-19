@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.9.6] - 2026-02-19
+
+### Added
+
+**Security & Data Integrity (#504, #505, #511)**
+- Integrated runtime schema validation (`validateForWrite`) into all repository `create()` methods (entity, chat, combat, montage, negotiation, respite)
+- Added async read validation (`validateForRead`) for entity repository reads with non-blocking warnings
+- Added `minLength(1)` constraint to name fields in combat, montage, negotiation, and respite schemas
+- Added database integrity check store with reactive UI state management
+- Added IntegrityWarningBanner and IntegrityRecoveryDialog UI components
+- Wired background integrity checks into app startup via `scheduleIntegrityCheck()`
+
+**Testing & Quality Infrastructure (#502, #503, #506)**
+- Enforced coverage thresholds in CI by adding `--coverage` flag to vitest run
+- Added per-directory coverage thresholds for critical code (db: 88%, services: 77%, stores: 67% statements)
+- Documented coverage baseline measurements in vitest config
+- Added `coverage/` to `.gitignore`
+
+### Fixed
+
+- Fixed all 7 Playwright E2E tests for stability — proper async IndexedDB cleanup, scoped `main h1` selectors, correct button text/IDs, URL predicate functions (#503)
+- Fixed global branches coverage threshold (70→63%) to match actual codebase baseline (#506)
+- Fixed pre-existing `durationMs` test assertions that failed in fast test environments
+- Fixed negotiation save bug — negotiations in "preparing" state can now be edited (#559)
+- Regenerated package-lock.json to match package.json dependencies
+- Updated SSR dependencies via `npm audit fix`
+
 ## [1.9.5] - 2026-02-18
 
 ### Added

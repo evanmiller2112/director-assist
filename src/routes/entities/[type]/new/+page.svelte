@@ -27,6 +27,9 @@
 	import { getFieldVisibilitySetting, getHardcodedDefault } from '$lib/services/playerExportFieldConfigService';
 	import { setFieldOverride } from '$lib/services/entityFieldVisibilityService';
 	import type { PlayerExportFieldConfig } from '$lib/types/playerFieldVisibility';
+	import EntitySuggestionChips from '$lib/components/entity/EntitySuggestionChips.svelte';
+	import { getSceneSuggestions, type EntitySuggestion } from '$lib/services/sceneSuggestionService';
+	import { handleLocationChange, addSuggestedNpc, addAllSuggestedNpcs } from '$lib/services/sceneSuggestionWiringUtils';
 
 	const entityType = $derived($page.params.type ?? '');
 	const typeDefinition = $derived(
@@ -66,6 +69,20 @@
 	// Suggestion state (Phase 5: Form Integration)
 	let suggestions = $state<Map<string, FieldSuggestion>>(new Map());
 	let activePopoverFieldKey = $state<string | null>(null);
+
+	// Location-to-NPC suggestion state (Issue #548)
+	let locationNpcSuggestions = $state<EntitySuggestion[]>([]);
+
+	// Re-fetch NPC suggestions whenever the location field or npcsPresent changes
+	$effect(() => {
+		const locationId = entityType === 'scene' ? (fields['location'] as string | undefined) ?? '' : '';
+		const selectedNpcIds = entityType === 'scene'
+			? (Array.isArray(fields['npcsPresent']) ? (fields['npcsPresent'] as string[]) : [])
+			: [];
+		handleLocationChange(locationId, selectedNpcIds).then((result) => {
+			locationNpcSuggestions = result;
+		});
+	});
 
 	// Auto-linking for Issue #48
 	const shouldAutoLink = $derived(
@@ -1114,6 +1131,26 @@
 									</div>
 								{/if}
 							</div>
+
+							<!-- Location-to-NPC suggestions (Issue #548) -->
+							{#if field.key === 'npcsPresent' && entityType === 'scene' && locationNpcSuggestions.length > 0}
+								<EntitySuggestionChips
+									suggestions={locationNpcSuggestions}
+									onAdd={(entityId) => {
+										const current = Array.isArray(fields[field.key]) ? (fields[field.key] as string[]) : [];
+										updateField(field.key, addSuggestedNpc(current, entityId));
+										locationNpcSuggestions = locationNpcSuggestions.filter(s => s.entity.id !== entityId);
+									}}
+									onAddAll={() => {
+										const current = Array.isArray(fields[field.key]) ? (fields[field.key] as string[]) : [];
+										updateField(field.key, addAllSuggestedNpcs(current, locationNpcSuggestions));
+										locationNpcSuggestions = [];
+									}}
+									onDismiss={(entityId) => {
+										locationNpcSuggestions = locationNpcSuggestions.filter(s => s.entity.id !== entityId);
+									}}
+								/>
+							{/if}
 						</div>
 					{:else}
 						<input

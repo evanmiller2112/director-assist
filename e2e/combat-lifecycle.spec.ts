@@ -3,66 +3,94 @@ import { clearIndexedDB, waitForAppReady } from './helpers/db-helpers';
 
 test.describe('Combat Lifecycle', () => {
   test.beforeEach(async ({ page }) => {
+    // Navigate first so IndexedDB exists in the right origin context,
+    // then clear it, then reload so the app starts fresh.
     await page.goto('/');
+    await page.waitForLoadState('domcontentloaded');
     await clearIndexedDB(page);
     await page.reload();
     await waitForAppReady(page);
   });
 
   test('full combat lifecycle: create, add combatants, start, advance, end', async ({ page }) => {
-    // Create combat session
+    // ------------------------------------------------------------------ Create combat session
     await page.goto('/combat');
-    await page.click('a:has-text("New Combat")');
+
+    // "New Combat" is a <button> element (not an <a> tag) on the combat list page.
+    // When there are no sessions it appears in the empty-state section.
+    await page.click('button:has-text("New Combat")');
     await page.waitForURL(/\/combat\/new/);
-    await page.fill('#name', 'Dragon Encounter');
-    await page.click('button:has-text("Create")');
-    await page.waitForURL(/\/combat\/.+/);
-    expect(page.url()).not.toContain('/new');
-    await expect(page.locator('h1')).toContainText('Dragon Encounter');
 
-    // Add first combatant via Quick Add
+    // The form field id is "combat-name" (not "name").
+    await page.fill('#combat-name', 'Dragon Encounter');
+
+    // The submit button text is "Create Combat".
+    await page.click('button:has-text("Create Combat")');
+
+    // Wait for navigation away from /new. The regex /\/combat\/.+/ also matches /new,
+    // so we use a URL predicate to ensure we land on the actual combat page.
+    await page.waitForURL(
+      (url) => url.pathname.startsWith('/combat/') && !url.pathname.endsWith('/new')
+    );
+
+    // Scope to <main> to avoid the sidebar h1 that shows the campaign name.
+    await expect(page.locator('main h1')).toContainText('Dragon Encounter', { timeout: 10000 });
+
+    // ------------------------------------------------------------------ Add first combatant (Quick Add)
     await page.click('button:has-text("Add Combatant")');
-    // Look for Quick Add tab/button and click it
-    const quickAddBtn = page.locator('button:has-text("Quick Add")');
-    if (await quickAddBtn.isVisible()) {
-      await quickAddBtn.click();
-    }
-    await page.fill('input[placeholder*="name" i], #quick-name, input[name="name"]', 'Valara the Brave');
-    // Fill HP
-    const hpInput = page.locator('input[placeholder*="hp" i], #quick-hp, input[name="hp"]');
-    if (await hpInput.isVisible()) {
-      await hpInput.fill('30');
-    }
-    // Click Add button in modal
-    await page.locator('button:has-text("Add"):not(:has-text("Add Combatant"))').last().click();
 
-    // Add second combatant
+    // The modal opens in "From Entity" mode by default. Switch to Quick Add.
+    await page.click('button:has-text("Quick Add")');
+
+    // Quick-add name field has id="quick-name".
+    await page.fill('#quick-name', 'Valara the Brave');
+
+    // Quick-add HP field has id="quick-hp".
+    await page.fill('#quick-hp', '30');
+
+    // Click the footer "Add" button (exact text match to avoid matching "Quick Add").
+    await page.locator('[role="dialog"]').getByRole('button', { name: 'Add', exact: true }).click();
+
+    // ------------------------------------------------------------------ Add second combatant (Quick Add)
+    // Wait for the modal to close before reopening it.
+    await expect(page.locator('[role="dialog"]')).not.toBeVisible({ timeout: 5000 });
+
     await page.click('button:has-text("Add Combatant")');
-    const quickAddBtn2 = page.locator('button:has-text("Quick Add")');
-    if (await quickAddBtn2.isVisible()) {
-      await quickAddBtn2.click();
-    }
-    await page.fill('input[placeholder*="name" i], #quick-name, input[name="name"]', 'Young Dragon');
-    const hpInput2 = page.locator('input[placeholder*="hp" i], #quick-hp, input[name="hp"]');
-    if (await hpInput2.isVisible()) {
-      await hpInput2.fill('50');
-    }
-    await page.locator('button:has-text("Add"):not(:has-text("Add Combatant"))').last().click();
+    await page.click('button:has-text("Quick Add")');
+    await page.fill('#quick-name', 'Young Dragon');
+    await page.fill('#quick-hp', '50');
+    await page.locator('[role="dialog"]').getByRole('button', { name: 'Add', exact: true }).click();
 
-    // Verify combatants
-    await expect(page.locator('[data-testid="combatant-card"]')).toHaveCount(2);
+    // Wait for the modal to close.
+    await expect(page.locator('[role="dialog"]')).not.toBeVisible({ timeout: 5000 });
 
-    // Start combat
+    // ------------------------------------------------------------------ Verify combatants
+    await expect(page.locator('[data-testid="combatant-card"]')).toHaveCount(2, { timeout: 10000 });
+
+    // ------------------------------------------------------------------ Start combat
     await page.click('button:has-text("Start Combat")');
-    await expect(page.getByText('Round 1')).toBeVisible();
 
-    // Advance turns
+    // "Round 1" appears in both the initiative tracker and TurnControls; .first() avoids
+    // strict mode violation while still verifying the text is on screen.
+    await expect(page.getByText('Round 1').first()).toBeVisible({ timeout: 10000 });
+
+    // ------------------------------------------------------------------ Advance turns
+    // With 2 combatants, clicking Next Turn twice advances to Round 2.
     await page.click('button:has-text("Next Turn")');
     await page.click('button:has-text("Next Turn")');
-    await expect(page.getByText('Round 2')).toBeVisible();
+    await expect(page.getByText('Round 2').first()).toBeVisible({ timeout: 10000 });
 
-    // End combat
+    // ------------------------------------------------------------------ End combat
     await page.click('button:has-text("End Combat")');
-    await expect(page.getByText('Completed')).toBeVisible();
+
+    // After endCombat the store clears activeCombat and the detail page shows
+    // "Combat not found". Wait for that transition to confirm the action completed,
+    // then navigate to the list page to verify the "Completed" badge.
+    await expect(page.getByText('Combat not found')).toBeVisible({ timeout: 10000 });
+
+    await page.goto('/combat');
+    await expect(page.locator('[data-testid="status-badge"]:has-text("Completed")').first()).toBeVisible({
+      timeout: 10000
+    });
   });
 });

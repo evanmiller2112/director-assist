@@ -18,6 +18,8 @@
 
 import { db, ensureDbReady } from '../index';
 import { liveQuery, type Observable } from 'dexie';
+import { validateForWrite } from '../validation';
+import { CombatSessionSchema } from '../schemas';
 import type {
 	CombatSession,
 	CreateCombatInput,
@@ -187,6 +189,7 @@ export const combatRepository = {
 			updatedAt: now
 		};
 
+		validateForWrite(CombatSessionSchema, combat, 'Creating combat session');
 		await db.combatSessions.add(combat);
 		return combat;
 	},

@@ -14,6 +14,8 @@
 import { db, ensureDbReady } from '../index';
 import { liveQuery, type Observable } from 'dexie';
 import { nanoid } from 'nanoid';
+import { validateForWrite } from '../validation';
+import { NegotiationSessionSchema } from '../schemas';
 import type {
 	NegotiationSession,
 	NegotiationArgument,
@@ -173,6 +175,7 @@ export const negotiationRepository = {
 			updatedAt: now
 		};
 
+		validateForWrite(NegotiationSessionSchema, negotiation, 'Creating negotiation session');
 		await db.negotiationSessions.add(negotiation);
 		return negotiation;
 	},

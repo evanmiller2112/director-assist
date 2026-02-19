@@ -15,6 +15,8 @@
 
 import { db, ensureDbReady } from '../index';
 import { liveQuery, type Observable } from 'dexie';
+import { validateForWrite } from '../validation';
+import { MontageSessionSchema } from '../schemas';
 import type {
 	MontageSession,
 	CreateMontageInput,
@@ -189,6 +191,7 @@ export const montageRepository = {
 			updatedAt: now
 		};
 
+		validateForWrite(MontageSessionSchema, montage, 'Creating montage session');
 		await db.montageSessions.add(montage);
 		return montage;
 	},

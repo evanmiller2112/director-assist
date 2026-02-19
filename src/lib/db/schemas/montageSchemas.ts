@@ -29,7 +29,7 @@ const MontageChallengeSchema = v.looseObject({
 // MontageSession schema
 export const MontageSessionSchema = v.looseObject({
 	id: v.string(),
-	name: v.string(),
+	name: v.pipe(v.string(), v.minLength(1)),
 	description: v.optional(v.string()),
 	status: v.union([v.literal('preparing'), v.literal('active'), v.literal('completed')]),
 	difficulty: v.union([v.literal('easy'), v.literal('moderate'), v.literal('hard')]),

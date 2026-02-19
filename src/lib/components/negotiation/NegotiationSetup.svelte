@@ -26,9 +26,10 @@
 		initialData?: Partial<CreateNegotiationInput>;
 		onCreate?: (data: CreateNegotiationInput) => void;
 		onCancel?: () => void;
+		submitLabel?: string;
 	}
 
-	let { initialData, onCreate, onCancel }: Props = $props();
+	let { initialData, onCreate, onCancel, submitLabel = 'Create Negotiation' }: Props = $props();
 
 	// Form state
 	let name = $state(initialData?.name || '');
@@ -417,7 +418,7 @@
 			onclick={handleSubmit}
 			class="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
 		>
-			Create Negotiation
+			{submitLabel}
 		</button>
 	</div>
 </div>

@@ -1565,3 +1565,146 @@ describe('Negotiation Store - Edge Cases and Error Handling', () => {
 		});
 	});
 });
+
+// ============================================================================
+// Issue #559: UpdateNegotiationInput must support interest and patience
+// ============================================================================
+//
+// TDD RED PHASE - These tests will fail until:
+//   1. UpdateNegotiationInput in src/lib/types/negotiation.ts gains
+//      optional `interest?: number` and `patience?: number` fields.
+//   2. handleUpdateSetup in src/routes/negotiation/[id]/+page.svelte
+//      passes those fields through to negotiationStore.updateNegotiation().
+//
+// The TypeScript compilation errors on the `UpdateNegotiationInput` literals
+// below are intentional and are the primary RED signal for this phase.
+// ============================================================================
+
+describe('Negotiation Store - Update with interest and patience', () => {
+	let negotiationStore: any;
+
+	beforeEach(async () => {
+		vi.clearAllMocks();
+
+		mockGetAll.mockReturnValue({
+			subscribe: vi.fn((observer: any) => {
+				observer.next([]);
+				return { unsubscribe: vi.fn() };
+			})
+		});
+
+		vi.resetModules();
+
+		const module = await import('./negotiation.svelte');
+		negotiationStore = module.negotiationStore;
+	});
+
+	it('should pass interest in update input to repository', async () => {
+		// Arrange: build an update input that carries an interest value.
+		// EXPECTED FAILURE: UpdateNegotiationInput does not yet include
+		// `interest`, so TypeScript will reject this literal.
+		const id = 'test-id';
+		const input: UpdateNegotiationInput = {
+			interest: 4
+		};
+
+		const updated = createMockNegotiation({ id, interest: 4 });
+		mockUpdate.mockResolvedValue(updated);
+
+		// Act
+		await negotiationStore.updateNegotiation(id, input);
+
+		// Assert: the repository must receive the interest value verbatim
+		expect(mockUpdate).toHaveBeenCalledWith(id, expect.objectContaining({ interest: 4 }));
+	});
+
+	it('should pass patience in update input to repository', async () => {
+		// Arrange: build an update input that carries a patience value.
+		// EXPECTED FAILURE: UpdateNegotiationInput does not yet include
+		// `patience`, so TypeScript will reject this literal.
+		const id = 'test-id';
+		const input: UpdateNegotiationInput = {
+			patience: 3
+		};
+
+		const updated = createMockNegotiation({ id, patience: 3 });
+		mockUpdate.mockResolvedValue(updated);
+
+		// Act
+		await negotiationStore.updateNegotiation(id, input);
+
+		// Assert: the repository must receive the patience value verbatim
+		expect(mockUpdate).toHaveBeenCalledWith(id, expect.objectContaining({ patience: 3 }));
+	});
+
+	it('should pass complete update with all fields including interest and patience', async () => {
+		// Arrange: a fully-populated update that includes every editable field.
+		// This is the realistic payload handleUpdateSetup will send once fixed.
+		// EXPECTED FAILURE: UpdateNegotiationInput does not yet include
+		// `interest` or `patience`.
+		const id = 'test-id';
+		const input: UpdateNegotiationInput = {
+			name: 'Updated Name',
+			npcName: 'Updated NPC',
+			description: 'Updated description',
+			interest: 3,
+			patience: 4,
+			motivations: [
+				{ type: 'greed', description: 'Motivated by greed', isKnown: true, timesUsed: 0 },
+				{ type: 'justice', description: 'Motivated by justice', isKnown: false, timesUsed: 0 }
+			],
+			pitfalls: [
+				{ description: 'Mentions of charity', isKnown: false }
+			]
+		};
+
+		const updated = createMockNegotiation({ id, ...input });
+		mockUpdate.mockResolvedValue(updated);
+
+		// Act
+		await negotiationStore.updateNegotiation(id, input);
+
+		// Assert: the exact input object is forwarded to the repository unchanged
+		expect(mockUpdate).toHaveBeenCalledWith(id, input);
+	});
+
+	it('should update activeNegotiation interest when negotiation is active and interest changes', async () => {
+		// Arrange: select a negotiation first, then update its interest
+		const id = 'test-id';
+		const initial = createMockNegotiation({ id, interest: 2 });
+		// This input will also fail TypeScript until the type is fixed
+		const input: UpdateNegotiationInput = { interest: 5 };
+		const updated = createMockNegotiation({ id, interest: 5 });
+
+		mockGetById.mockResolvedValue(initial);
+		await negotiationStore.selectNegotiation(id);
+
+		mockUpdate.mockResolvedValue(updated);
+
+		// Act
+		await negotiationStore.updateNegotiation(id, input);
+
+		// Assert: the reactive activeNegotiation reflects the new interest
+		expect(negotiationStore.activeNegotiation.interest).toBe(5);
+	});
+
+	it('should update activeNegotiation patience when negotiation is active and patience changes', async () => {
+		// Arrange: select a negotiation first, then update its patience
+		const id = 'test-id';
+		const initial = createMockNegotiation({ id, patience: 5 });
+		// This input will also fail TypeScript until the type is fixed
+		const input: UpdateNegotiationInput = { patience: 1 };
+		const updated = createMockNegotiation({ id, patience: 1 });
+
+		mockGetById.mockResolvedValue(initial);
+		await negotiationStore.selectNegotiation(id);
+
+		mockUpdate.mockResolvedValue(updated);
+
+		// Act
+		await negotiationStore.updateNegotiation(id, input);
+
+		// Assert: the reactive activeNegotiation reflects the new patience
+		expect(negotiationStore.activeNegotiation.patience).toBe(1);
+	});
+});

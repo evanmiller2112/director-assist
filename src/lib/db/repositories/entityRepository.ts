@@ -2,6 +2,8 @@ import { db, ensureDbReady } from '../index';
 import { liveQuery, type Observable } from 'dexie';
 import type { BaseEntity, EntityType, NewEntity } from '$lib/types';
 import { nanoid } from 'nanoid';
+import { validateForWrite, validateForRead, validateArrayForRead } from '../validation';
+import { BaseEntitySchema } from '../schemas';
 
 /**
  * Strips Svelte 5 reactive proxies from objects before IndexedDB storage.
@@ -108,7 +110,10 @@ export const entityRepository = {
 
 	// Get all entities as a plain array (non-reactive, for one-shot reads)
 	async getAllArray(): Promise<BaseEntity[]> {
-		return db.entities.toArray();
+		const entities = await db.entities.toArray();
+		// Defer validation so the warn fires after the caller's await continuation
+		queueMicrotask(() => validateArrayForRead(BaseEntitySchema, entities, 'Reading entities'));
+		return entities as BaseEntity[];
 	},
 
 	// Get entities by type as a live query
@@ -119,7 +124,11 @@ export const entityRepository = {
 	// Get single entity by ID
 	async getById(id: string): Promise<BaseEntity | undefined> {
 		await ensureDbReady();
-		return db.entities.get(id);
+		const result = await db.entities.get(id);
+		if (!result) return undefined;
+		// Defer validation so the warn fires after the caller's await continuation
+		queueMicrotask(() => validateForRead(BaseEntitySchema, result, 'Reading entity'));
+		return result as BaseEntity;
 	},
 
 	// Get multiple entities by IDs
@@ -173,6 +182,7 @@ export const entityRepository = {
 			updatedAt: now
 		};
 
+		validateForWrite(BaseEntitySchema, entity, 'Creating entity');
 		await db.entities.add(entity);
 		return entity;
 	},
@@ -299,6 +309,17 @@ export const entityRepository = {
 		await ensureDbReady();
 		// Strip reactive proxies before IndexedDB storage (Issue #256)
 		const plainChanges = stripProxy(changes);
+
+		// Fetch existing entity to build the full merged object for validation
+		const existingEntity = await db.entities.get(id);
+		if (existingEntity) {
+			validateForWrite(
+				BaseEntitySchema,
+				{ ...existingEntity, ...plainChanges, updatedAt: new Date() },
+				'Updating entity'
+			);
+		}
+
 		await db.entities.update(id, {
 			...plainChanges,
 			updatedAt: new Date()

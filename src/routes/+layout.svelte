@@ -6,8 +6,10 @@
 	import Toast from '$lib/components/ui/Toast.svelte';
 	import BackupReminderBanner from '$lib/components/ui/BackupReminderBanner.svelte';
 	import AiSetupBanner from '$lib/components/ui/AiSetupBanner.svelte';
-	import { aiSettings, campaignStore, entitiesStore, uiStore } from '$lib/stores';
-	import { initializeDatabase } from '$lib/db';
+	import IntegrityWarningBanner from '$lib/components/ui/IntegrityWarningBanner.svelte';
+	import IntegrityRecoveryDialog from '$lib/components/ui/IntegrityRecoveryDialog.svelte';
+	import { aiSettings, campaignStore, entitiesStore, uiStore, integrityCheckStore } from '$lib/stores';
+	import { initializeDatabase, db } from '$lib/db';
 	import {
 		shouldShowBackupReminder,
 		getLastExportedAt,
@@ -19,7 +21,9 @@
 		setAiSetupDismissed,
 		hasAnyApiKey,
 		shouldShowAiSetupBanner,
-		detectPlayerMode
+		detectPlayerMode,
+		scheduleIntegrityCheck,
+		runIntegrityCheck
 	} from '$lib/services';
 	import { goto, afterNavigate } from '$app/navigation';
 
@@ -118,6 +122,22 @@
 
 		// Load theme preference
 		uiStore.loadTheme();
+
+		// Schedule background integrity check (non-blocking, runs after idle)
+		scheduleIntegrityCheck(
+			() => runIntegrityCheck(db),
+			(result) => {
+				integrityCheckStore.result = result;
+				if (result.hasMajorIssues) {
+					integrityCheckStore.showRecoveryDialog = true;
+				} else if (result.hasMinorIssues) {
+					integrityCheckStore.showWarning = true;
+				}
+			},
+			(error) => {
+				console.error('Integrity check failed:', error);
+			}
+		);
 	});
 
 	function handleGlobalKeydown(e: KeyboardEvent) {
@@ -158,6 +178,32 @@
 		aiSettings.setEnabled(false);
 		// Increment signal to trigger aiSetupReminderState re-computation (Issue #490)
 		aiDismissSignal++;
+	}
+
+	// Integrity check handlers (Issue #511)
+	function handleIntegrityExport() {
+		goto('/settings?action=export');
+	}
+
+	function handleIntegrityViewDetails() {
+		integrityCheckStore.dismissWarning();
+		integrityCheckStore.openRecoveryDialog();
+	}
+
+	function handleIntegrityDismissWarning() {
+		integrityCheckStore.dismissWarning();
+	}
+
+	async function handleIntegrityRepair() {
+		await integrityCheckStore.repair();
+	}
+
+	async function handleIntegrityReset() {
+		await integrityCheckStore.reset();
+	}
+
+	function handleIntegrityCloseDialog() {
+		integrityCheckStore.closeRecoveryDialog();
 	}
 
 	// Handle global keydown only in director mode
@@ -219,6 +265,18 @@
 					</div>
 				{/if}
 
+				<!-- Integrity warning banner (minor issues) -->
+				{#if integrityCheckStore.showWarning}
+					<div class="mb-6">
+						<IntegrityWarningBanner
+							issues={integrityCheckStore.result?.issues ?? []}
+							onExport={handleIntegrityExport}
+							onViewDetails={handleIntegrityViewDetails}
+							onDismiss={handleIntegrityDismissWarning}
+						/>
+					</div>
+				{/if}
+
 				{@render children()}
 			</div>
 
@@ -227,6 +285,17 @@
 				<ChatPanel />
 			{/if}
 		</main>
+		<!-- Integrity recovery dialog (major issues) -->
+		<IntegrityRecoveryDialog
+			open={integrityCheckStore.showRecoveryDialog}
+			issues={integrityCheckStore.result?.issues ?? []}
+			loading={integrityCheckStore.isChecking}
+			onRepair={handleIntegrityRepair}
+			onExport={handleIntegrityExport}
+			onReset={handleIntegrityReset}
+			onClose={handleIntegrityCloseDialog}
+		/>
+
 		<Toast />
 	</div>
 {/if}

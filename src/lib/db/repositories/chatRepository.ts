@@ -2,6 +2,8 @@ import { db } from '../index';
 import { liveQuery, type Observable } from 'dexie';
 import type { ChatMessage, EntityId } from '$lib/types';
 import { nanoid } from 'nanoid';
+import { validateForWrite } from '../validation';
+import { ChatMessageSchema } from '../schemas';
 
 export const chatRepository = {
 	// Get all messages as a live query
@@ -54,6 +56,7 @@ export const chatRepository = {
 			contextEntities
 		};
 
+		validateForWrite(ChatMessageSchema, message, 'Creating chat message');
 		await db.chatMessages.add(message);
 		return message;
 	},

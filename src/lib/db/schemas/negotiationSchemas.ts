@@ -55,7 +55,7 @@ const NegotiationArgumentSchema = v.looseObject({
 // NegotiationSession schema
 export const NegotiationSessionSchema = v.looseObject({
 	id: v.string(),
-	name: v.string(),
+	name: v.pipe(v.string(), v.minLength(1)),
 	description: v.optional(v.string()),
 	npcName: v.string(),
 	status: v.union([v.literal('preparing'), v.literal('active'), v.literal('completed')]),

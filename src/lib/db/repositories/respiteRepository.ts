@@ -15,6 +15,8 @@
 import { db, ensureDbReady } from '../index';
 import { liveQuery, type Observable } from 'dexie';
 import { nanoid } from 'nanoid';
+import { validateForWrite } from '../validation';
+import { RespiteSessionSchema } from '../schemas';
 import type {
 	RespiteSession,
 	RespiteHero,
@@ -113,6 +115,7 @@ export const respiteRepository = {
 			updatedAt: now
 		};
 
+		validateForWrite(RespiteSessionSchema, respite, 'Creating respite session');
 		await db.respiteSessions.add(JSON.parse(JSON.stringify(respite)));
 		return respite;
 	},

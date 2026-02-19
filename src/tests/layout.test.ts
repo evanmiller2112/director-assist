@@ -14,7 +14,8 @@ let mockUiStore: ReturnType<typeof createMockUiStore>;
 
 // Mock the database initialization
 vi.mock('$lib/db', () => ({
-	initializeDatabase: vi.fn(() => Promise.resolve())
+	initializeDatabase: vi.fn(() => Promise.resolve()),
+	db: {}
 }));
 
 // Mock the player mode detection service (always returns false = director mode)
@@ -54,6 +55,18 @@ vi.mock('$lib/stores', async () => {
 			setOpenaiKey: vi.fn(),
 			setAnthropicKey: vi.fn(),
 			load: vi.fn()
+		},
+		integrityCheckStore: {
+			result: null,
+			isChecking: false,
+			showWarning: false,
+			showRecoveryDialog: false,
+			runCheck: vi.fn(),
+			dismissWarning: vi.fn(),
+			openRecoveryDialog: vi.fn(),
+			closeRecoveryDialog: vi.fn(),
+			repair: vi.fn(),
+			reset: vi.fn()
 		}
 	};
 });
@@ -81,6 +94,24 @@ vi.mock('$lib/components/ui/Toast.svelte', async () => {
 		default: MockToast
 	};
 });
+
+vi.mock('$lib/components/ui/IntegrityWarningBanner.svelte', async () => {
+	const MockToast = (await import('./mocks/components/MockToast.svelte')).default;
+	return { default: MockToast };
+});
+
+vi.mock('$lib/components/ui/IntegrityRecoveryDialog.svelte', async () => {
+	const MockToast = (await import('./mocks/components/MockToast.svelte')).default;
+	return { default: MockToast };
+});
+
+vi.mock('$lib/services/dbIntegrityCheckService', () => ({
+	runIntegrityCheck: vi.fn(() => Promise.resolve({ completed: true, issues: [], skipped: true, hasMinorIssues: false, hasMajorIssues: false }))
+}));
+
+vi.mock('$lib/services/dbIntegrityScheduler', () => ({
+	scheduleIntegrityCheck: vi.fn(() => () => {})
+}));
 
 describe('Layout - Global Keyboard Shortcuts', () => {
 	beforeEach(() => {

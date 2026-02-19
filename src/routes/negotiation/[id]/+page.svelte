@@ -41,7 +41,7 @@
 	const npcPitfalls = $derived.by(() => {
 		if (!negotiation) return [];
 		return negotiation.pitfalls.map((p) => ({
-			type: p.description as MotivationType, // Using description as type for now
+			type: p.description.toLowerCase() as MotivationType,
 			isKnown: p.isKnown
 		}));
 	});
@@ -129,6 +129,14 @@
 	async function handleUpdateSetup(data: NegotiationSetupOutput) {
 		if (!negotiation) return;
 
+		// Helper function to format motivation type for DB storage
+		function formatMotivationType(type: MotivationType): string {
+			return type
+				.split('_')
+				.map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+				.join(' ');
+		}
+
 		await negotiationStore.updateNegotiation(negotiation.id, {
 			name: data.name,
 			npcName: data.npcName,
@@ -137,9 +145,9 @@
 				...m,
 				isKnown: data.motivations[i]?.isKnown ?? m.isKnown
 			})),
-			pitfalls: negotiation.pitfalls.map((p, i) => ({
-				...p,
-				isKnown: data.pitfalls[i]?.isKnown ?? p.isKnown
+			pitfalls: data.pitfalls.map((p) => ({
+				description: formatMotivationType(p.type),
+				isKnown: p.isKnown
 			}))
 		});
 	}
@@ -158,7 +166,7 @@
 				isKnown: m.isKnown
 			})),
 			pitfalls: negotiation.pitfalls.map((p) => ({
-				type: p.description as MotivationType,
+				type: p.description.toLowerCase() as MotivationType,
 				isKnown: p.isKnown
 			}))
 		};

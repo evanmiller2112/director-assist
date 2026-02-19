@@ -21,6 +21,8 @@
 			name: data.name,
 			npcName: data.npcName,
 			description: data.description,
+			interest: data.interest,
+			patience: data.patience,
 			motivations: data.motivations.map((m) => ({
 				type: m.type,
 				description: formatMotivationType(m.type)

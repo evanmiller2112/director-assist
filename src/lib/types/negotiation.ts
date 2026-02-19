@@ -186,6 +186,8 @@ export interface CreateNegotiationInput {
 	name: string;
 	description?: string;
 	npcName: string;
+	interest?: number;
+	patience?: number;
 	motivations: Array<{ type: MotivationType; description: string }>;
 	pitfalls: Array<{ description: string }>;
 }

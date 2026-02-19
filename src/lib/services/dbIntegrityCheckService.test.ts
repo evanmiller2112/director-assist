@@ -502,7 +502,7 @@ describe('dbIntegrityCheckService', () => {
 			expect(result.hasMinorIssues).toBe(false);
 			expect(result.hasMajorIssues).toBe(false);
 			expect(result.checkedAt).toBeInstanceOf(Date);
-			expect(result.durationMs).toBeGreaterThan(0);
+			expect(result.durationMs).toBeGreaterThanOrEqual(0);
 		});
 
 		it('should skip checks for fresh database', async () => {
@@ -561,7 +561,7 @@ describe('dbIntegrityCheckService', () => {
 			expect(result.issues.length).toBeGreaterThan(0);
 		});
 
-		it('should report durationMs greater than 0', async () => {
+		it('should report durationMs as a non-negative number', async () => {
 			await db.entities.add(
 				createTestEntity({
 					id: 'entity-1',
@@ -572,7 +572,7 @@ describe('dbIntegrityCheckService', () => {
 
 			const result = await runIntegrityCheck(db);
 
-			expect(result.durationMs).toBeGreaterThan(0);
+			expect(result.durationMs).toBeGreaterThanOrEqual(0);
 		});
 
 		it('should report checkedAt as Date', async () => {

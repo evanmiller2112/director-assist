@@ -15,6 +15,9 @@ vite.config.ts.timestamp-*
 # Player data exports (generated at runtime)
 static/player_data.json
 
+# Coverage reports
+/coverage/
+
 # Playwright
 /test-results/
 /playwright-report/

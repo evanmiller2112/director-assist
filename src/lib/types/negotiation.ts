@@ -45,6 +45,26 @@ export type MotivationType =
 	| 'revenge'
 	| 'wealth';
 
+/**
+ * Array of canonical Draw Steel motivation types.
+ * Use this for UI suggestions while allowing custom strings.
+ */
+export const CANONICAL_MOTIVATION_TYPES: MotivationType[] = [
+	'charity',
+	'discovery',
+	'faith',
+	'freedom',
+	'greed',
+	'harmony',
+	'justice',
+	'knowledge',
+	'legacy',
+	'power',
+	'protection',
+	'revenge',
+	'wealth'
+];
+
 // ============================================================================
 // Argument Type
 // ============================================================================
@@ -80,7 +100,7 @@ export interface NegotiationArgument {
 	type: ArgumentType;
 	tier: NegotiationTier;
 	description: string;
-	motivationType?: MotivationType;
+	motivationType?: string;
 	interestChange: number;
 	patienceChange: number;
 	playerName?: string;
@@ -98,7 +118,7 @@ export interface NegotiationArgument {
  * and how many times they've been used in arguments.
  */
 export interface NegotiationMotivation {
-	type: MotivationType;
+	type: string;
 	description: string;
 	isKnown: boolean;
 	timesUsed: number;
@@ -122,7 +142,7 @@ export interface NegotiationPitfall {
  * Used in components to show motivation type, known state, and usage.
  */
 export interface NPCMotivation {
-	type: MotivationType;
+	type: string;
 	isKnown: boolean;
 	used: boolean;
 }
@@ -132,7 +152,7 @@ export interface NPCMotivation {
  * Used in components to show pitfall type and known state.
  */
 export interface NPCPitfall {
-	type: MotivationType;
+	type: string;
 	isKnown: boolean;
 }
 
@@ -163,9 +183,11 @@ export interface NegotiationSession {
 	name: string;
 	description?: string;
 	npcName: string;
+	npcEntityId?: string;
 	status: NegotiationStatus;
 	interest: number;
 	patience: number;
+	impression: number;
 	motivations: NegotiationMotivation[];
 	pitfalls: NegotiationPitfall[];
 	arguments: NegotiationArgument[];
@@ -186,9 +208,11 @@ export interface CreateNegotiationInput {
 	name: string;
 	description?: string;
 	npcName: string;
+	npcEntityId?: string;
 	interest?: number;
 	patience?: number;
-	motivations: Array<{ type: MotivationType; description: string }>;
+	impression?: number;
+	motivations: Array<{ type: string; description: string }>;
 	pitfalls: Array<{ description: string }>;
 }
 
@@ -199,8 +223,10 @@ export interface UpdateNegotiationInput {
 	name?: string;
 	description?: string;
 	npcName?: string;
+	npcEntityId?: string;
 	interest?: number;
 	patience?: number;
+	impression?: number;
 	motivations?: NegotiationMotivation[];
 	pitfalls?: NegotiationPitfall[];
 }
@@ -212,7 +238,7 @@ export interface RecordArgumentInput {
 	type: ArgumentType;
 	tier: NegotiationTier;
 	description: string;
-	motivationType?: MotivationType;
+	motivationType?: string;
 	playerName?: string;
 	notes?: string;
 }

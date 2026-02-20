@@ -56,6 +56,56 @@ function roll2d10(): [number, number] {
 }
 
 /**
+ * Get eligible combatants for director-selected turn mode (Issue #501).
+ * Eligible combatants are those who:
+ * - Have not acted this round (not in actedCombatantIds)
+ * - Are not dead creatures (creatures at 0 HP are excluded)
+ * - Heroes at 0 HP are included (can be stabilized/healed)
+ *
+ * @param combat - Combat session
+ * @returns Array of eligible combatants
+ */
+export function getEligibleCombatants(combat: CombatSession): Combatant[] {
+	return combat.combatants.filter((combatant) => {
+		// Exclude if already acted this round
+		if (combat.actedCombatantIds.includes(combatant.id)) {
+			return false;
+		}
+
+		// Exclude dead creatures (0 HP)
+		if (combatant.type === 'creature' && combatant.hp === 0) {
+			return false;
+		}
+
+		// Include everything else (including heroes at 0 HP)
+		return true;
+	});
+}
+
+/**
+ * Get suggested side for next turn based on alternating logic (Issue #501).
+ * Returns 'hero' if last acted was creature, 'creature' if last acted was hero.
+ * Returns null if no one has acted yet.
+ *
+ * @param combat - Combat session
+ * @returns 'hero' | 'creature' | null
+ */
+export function getSuggestedSide(combat: CombatSession): 'hero' | 'creature' | null {
+	if (combat.actedCombatantIds.length === 0) {
+		return null;
+	}
+
+	const lastActedId = combat.actedCombatantIds[combat.actedCombatantIds.length - 1];
+	const lastActed = combat.combatants.find((c) => c.id === lastActedId);
+
+	if (!lastActed) {
+		return null;
+	}
+
+	return lastActed.type === 'hero' ? 'creature' : 'hero';
+}
+
+/**
  * Create a log entry with current combat state.
  */
 function createLogEntry(
@@ -186,7 +236,11 @@ export const combatRepository = {
 			heroPoints: 0,
 			log: [],
 			createdAt: now,
-			updatedAt: now
+			updatedAt: now,
+			// Director-selected turn mode (Issue #501)
+			turnMode: input.turnMode ?? 'director-selected',
+			actedCombatantIds: [],
+			activeCombatantId: undefined
 		};
 
 		validateForWrite(CombatSessionSchema, combat, 'Creating combat session');
@@ -254,7 +308,10 @@ export const combatRepository = {
 				...combat.log,
 				createLogEntry(combat, 'Combat started', 'system')
 			],
-			updatedAt: new Date()
+			updatedAt: new Date(),
+			// Initialize director-selected turn mode fields (Issue #501)
+			actedCombatantIds: [],
+			activeCombatantId: undefined
 		};
 
 		await db.combatSessions.put(updated);
@@ -939,6 +996,8 @@ export const combatRepository = {
 
 	/**
 	 * Advance to next turn.
+	 * In director-selected mode, delegates to endCombatantTurn.
+	 * In sequential mode, uses traditional turn advancement.
 	 */
 	async nextTurn(combatId: string): Promise<CombatSession> {
 		await ensureDbReady();
@@ -952,6 +1011,12 @@ export const combatRepository = {
 			throw new Error('Combat is not active');
 		}
 
+		// Director-selected mode: delegate to endCombatantTurn
+		if (combat.turnMode === 'director-selected') {
+			return this.endCombatantTurn(combatId);
+		}
+
+		// Sequential mode: traditional behavior
 		let nextTurn = combat.currentTurn + 1;
 		let nextRound = combat.currentRound;
 		let updatedCombatants = combat.combatants;
@@ -1007,6 +1072,43 @@ export const combatRepository = {
 			throw new Error(`Combat session ${combatId} not found`);
 		}
 
+		// Director-selected mode: undo last turn
+		if (combat.turnMode === 'director-selected') {
+			if (combat.actedCombatantIds.length === 0 && combat.currentRound === 1) {
+				// Can't go back from start of round 1
+				return combat;
+			}
+
+			let updatedActedIds = [...combat.actedCombatantIds];
+			let updatedRound = combat.currentRound;
+
+			// If no one has acted this round, go back to previous round
+			if (combat.actedCombatantIds.length === 0) {
+				updatedRound = combat.currentRound - 1;
+				// In previous round, acted list was empty (we just finished it)
+				updatedActedIds = [];
+			} else {
+				// Remove last acted combatant
+				updatedActedIds.pop();
+			}
+
+			const updated: CombatSession = {
+				...combat,
+				currentRound: updatedRound,
+				actedCombatantIds: updatedActedIds,
+				activeCombatantId: undefined,
+				log: [
+					...combat.log,
+					createLogEntry(combat, 'Undid last turn', 'system')
+				],
+				updatedAt: new Date()
+			};
+
+			await db.combatSessions.put(updated);
+			return updated;
+		}
+
+		// Sequential mode: traditional behavior
 		let prevTurn = combat.currentTurn - 1;
 		let prevRound = combat.currentRound;
 
@@ -1040,6 +1142,117 @@ export const combatRepository = {
 
 		await db.combatSessions.put(updated);
 		return updated;
+	},
+
+	/**
+	 * Select a combatant to act (director-selected mode only) (Issue #501).
+	 * Sets the active combatant and logs the turn start.
+	 *
+	 * @param combatId - Combat session ID
+	 * @param combatantId - ID of combatant to act
+	 * @throws Error if combat not active, combatant not found, not eligible, or in sequential mode
+	 */
+	async selectCombatantTurn(combatId: string, combatantId: string): Promise<CombatSession> {
+		await ensureDbReady();
+
+		const combat = await db.combatSessions.get(combatId);
+		if (!combat) {
+			throw new Error(`Combat session ${combatId} not found`);
+		}
+
+		if (combat.status !== 'active') {
+			throw new Error('Combat is not active');
+		}
+
+		if (combat.turnMode === 'sequential') {
+			throw new Error('Cannot use selectCombatantTurn in sequential mode');
+		}
+
+		const combatant = combat.combatants.find((c) => c.id === combatantId);
+		if (!combatant) {
+			throw new Error(`Combatant ${combatantId} not found`);
+		}
+
+		// Check if combatant is eligible
+		const eligible = getEligibleCombatants(combat);
+		if (!eligible.find((c) => c.id === combatantId)) {
+			throw new Error(`Combatant ${combatant.name} is not eligible to act`);
+		}
+
+		const updated: CombatSession = {
+			...combat,
+			activeCombatantId: combatantId,
+			log: [
+				...combat.log,
+				createLogEntry(combat, `${combatant.name}'s turn`, 'system', combatantId)
+			],
+			updatedAt: new Date()
+		};
+
+		await db.combatSessions.put(updated);
+		return updated;
+	},
+
+	/**
+	 * End the current combatant's turn (director-selected mode only) (Issue #501).
+	 * Adds the active combatant to actedCombatantIds and clears activeCombatantId.
+	 * Auto-advances round if all eligible combatants have acted.
+	 *
+	 * @param combatId - Combat session ID
+	 * @throws Error if no active combatant, combat not active, or in sequential mode
+	 */
+	async endCombatantTurn(combatId: string): Promise<CombatSession> {
+		await ensureDbReady();
+
+		const combat = await db.combatSessions.get(combatId);
+		if (!combat) {
+			throw new Error(`Combat session ${combatId} not found`);
+		}
+
+		if (combat.status !== 'active') {
+			throw new Error('Combat is not active');
+		}
+
+		if (combat.turnMode === 'sequential') {
+			throw new Error('Cannot use endCombatantTurn in sequential mode');
+		}
+
+		if (!combat.activeCombatantId) {
+			throw new Error('No active combatant to end turn for');
+		}
+
+		// Add active combatant to acted list
+		const updatedActedIds = [...combat.actedCombatantIds, combat.activeCombatantId];
+
+		// First, update with the new acted list
+		let intermediate: CombatSession = {
+			...combat,
+			actedCombatantIds: updatedActedIds,
+			activeCombatantId: undefined,
+			updatedAt: new Date()
+		};
+
+		// Then check if we should advance round
+		const eligible = getEligibleCombatants(intermediate);
+
+		if (eligible.length === 0) {
+			// All eligible have acted, advance round
+			const updatedCombatants = combat.combatants.map(decrementConditionDurations);
+
+			intermediate = {
+				...intermediate,
+				currentRound: intermediate.currentRound + 1,
+				actedCombatantIds: [],
+				combatants: updatedCombatants,
+				log: [
+					...intermediate.log,
+					createLogEntry(intermediate, `Round ${intermediate.currentRound + 1} begins`, 'system')
+				]
+			};
+		}
+
+		await db.combatSessions.put(intermediate);
+		return intermediate;
 	},
 
 	// ========================================================================

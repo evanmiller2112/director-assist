@@ -1,5 +1,6 @@
 <script lang="ts">
-	import type { NPCMotivation, NPCPitfall, MotivationType } from '$lib/types/negotiation';
+	import type { NPCMotivation, NPCPitfall } from '$lib/types/negotiation';
+	import type { MotivationType } from '$lib/types/negotiation';
 	import {
 		Heart,
 		Search,
@@ -22,8 +23,8 @@
 		motivations: NPCMotivation[];
 		pitfalls: NPCPitfall[];
 		readonly?: boolean;
-		onRevealMotivation?: (type: MotivationType) => void;
-		onRevealPitfall?: (type: MotivationType) => void;
+		onRevealMotivation?: (type: string) => void;
+		onRevealPitfall?: (type: string) => void;
 	}
 
 	let {
@@ -50,34 +51,43 @@
 		wealth: DollarSign
 	};
 
-	function formatMotivationType(type: MotivationType): string {
+	function getIconForType(type: string): any {
+		// Check if it's a canonical type
+		if (type in motivationIcons) {
+			return motivationIcons[type as MotivationType];
+		}
+		// Fallback for custom types
+		return HelpCircle;
+	}
+
+	function formatMotivationType(type: string): string {
 		return type
 			.split('_')
 			.map((word) => word.charAt(0).toUpperCase() + word.slice(1))
 			.join(' ');
 	}
 
-	function handleRevealMotivation(type: MotivationType) {
+	function handleRevealMotivation(type: string) {
 		if (onRevealMotivation) {
 			onRevealMotivation(type);
 		}
 	}
 
-	function handleRevealPitfall(type: MotivationType) {
+	function handleRevealPitfall(type: string) {
 		if (onRevealPitfall) {
 			onRevealPitfall(type);
 		}
 	}
 
-	let revealingMotivations = $state<MotivationType[]>([]);
-	let revealingPitfalls = $state<MotivationType[]>([]);
+	let revealingMotivations = $state<string[]>([]);
+	let revealingPitfalls = $state<string[]>([]);
 
-	function revealMotivation(type: MotivationType) {
+	function revealMotivation(type: string) {
 		revealingMotivations = [...revealingMotivations, type];
 		handleRevealMotivation(type);
 	}
 
-	function revealPitfall(type: MotivationType) {
+	function revealPitfall(type: string) {
 		revealingPitfalls = [...revealingPitfalls, type];
 		handleRevealPitfall(type);
 	}
@@ -93,7 +103,7 @@
 			<ul role="list" class="space-y-2">
 				{#each motivations as motivation}
 					{@const IconComponent = motivation.isKnown
-						? motivationIcons[motivation.type]
+						? getIconForType(motivation.type)
 						: HelpCircle}
 					<li
 						data-testid="motivation-{motivation.type}"

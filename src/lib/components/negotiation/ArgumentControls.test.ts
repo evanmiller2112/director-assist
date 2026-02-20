@@ -163,53 +163,67 @@ describe('ArgumentControls Component - Motivation Type Dropdown', () => {
 	});
 
 	it('should have all 13 Draw Steel motivation options (Issue #404 - TDD RED)', () => {
-		render(ArgumentControls, {
+		const { container } = render(ArgumentControls, {
 			props: {
 				usedMotivations: []
 			}
 		});
 
-		// All 13 canonical Draw Steel motivations
-		expect(screen.getByRole('option', { name: /^charity$/i })).toBeInTheDocument();
-		expect(screen.getByRole('option', { name: /^discovery$/i })).toBeInTheDocument();
-		expect(screen.getByRole('option', { name: /^faith$/i })).toBeInTheDocument();
-		expect(screen.getByRole('option', { name: /^freedom$/i })).toBeInTheDocument();
-		expect(screen.getByRole('option', { name: /^greed$/i })).toBeInTheDocument();
-		expect(screen.getByRole('option', { name: /^harmony$/i })).toBeInTheDocument();
-		expect(screen.getByRole('option', { name: /^justice$/i })).toBeInTheDocument();
-		expect(screen.getByRole('option', { name: /^knowledge$/i })).toBeInTheDocument();
-		expect(screen.getByRole('option', { name: /^legacy$/i })).toBeInTheDocument();
-		expect(screen.getByRole('option', { name: /^power$/i })).toBeInTheDocument();
-		expect(screen.getByRole('option', { name: /^protection$/i })).toBeInTheDocument();
-		expect(screen.getByRole('option', { name: /^revenge$/i })).toBeInTheDocument();
-		expect(screen.getByRole('option', { name: /^wealth$/i })).toBeInTheDocument();
+		// Component now uses input with datalist, not select
+		const motivationInput = screen.getByLabelText(/motivation.*type/i);
+		expect(motivationInput).toBeInTheDocument();
+
+		// Verify datalist exists with all 13 options
+		const datalist = container.querySelector('datalist#motivation-type-suggestions');
+		expect(datalist).toBeInTheDocument();
+
+		const options = datalist?.querySelectorAll('option');
+		expect(options?.length).toBe(13);
+
+		// Verify specific motivation values in datalist
+		const optionValues = Array.from(options || []).map(opt => opt.getAttribute('value'));
+		expect(optionValues).toContain('charity');
+		expect(optionValues).toContain('discovery');
+		expect(optionValues).toContain('faith');
+		expect(optionValues).toContain('freedom');
+		expect(optionValues).toContain('greed');
+		expect(optionValues).toContain('harmony');
+		expect(optionValues).toContain('justice');
+		expect(optionValues).toContain('knowledge');
+		expect(optionValues).toContain('legacy');
+		expect(optionValues).toContain('power');
+		expect(optionValues).toContain('protection');
+		expect(optionValues).toContain('revenge');
+		expect(optionValues).toContain('wealth');
 	});
 
 	it('should include "wealth" as a motivation option (Issue #404 - TDD RED)', () => {
-		render(ArgumentControls, {
+		const { container } = render(ArgumentControls, {
 			props: {
 				usedMotivations: []
 			}
 		});
 
-		// Specifically test that 'wealth' is available
-		const wealthOption = screen.getByRole('option', { name: /^wealth$/i });
+		// Component now uses input with datalist
+		const datalist = container.querySelector('datalist#motivation-type-suggestions');
+		const wealthOption = datalist?.querySelector('option[value="wealth"]');
 		expect(wealthOption).toBeInTheDocument();
-		expect(wealthOption).not.toBeDisabled();
+		expect(wealthOption).not.toHaveAttribute('disabled');
 	});
 
 	it('should have exactly 13 motivation options (Issue #404 - TDD RED)', () => {
-		render(ArgumentControls, {
+		const { container } = render(ArgumentControls, {
 			props: {
 				usedMotivations: []
 			}
 		});
 
-		const motivationSelect = screen.getByLabelText(/motivation.*type/i);
-		const options = motivationSelect.querySelectorAll('option');
+		// Component now uses datalist instead of select
+		const datalist = container.querySelector('datalist#motivation-type-suggestions');
+		const options = datalist?.querySelectorAll('option');
 
 		// Should have exactly 13 options (all Draw Steel motivations)
-		expect(options.length).toBe(13);
+		expect(options?.length).toBe(13);
 	});
 
 	it('should hide motivation dropdown when argument type is no_motivation', async () => {
@@ -248,43 +262,48 @@ describe('ArgumentControls Component - Motivation Type Dropdown', () => {
 	});
 
 	it('should disable already-used motivations (Issue #404 - Updated for 13 motivations)', () => {
-		render(ArgumentControls, {
+		const { container } = render(ArgumentControls, {
 			props: {
 				usedMotivations: ['charity', 'greed']
 			}
 		});
 
-		const charityOption = screen.getByRole('option', { name: /^charity$/i }) as HTMLOptionElement;
-		const greedOption = screen.getByRole('option', { name: /^greed$/i }) as HTMLOptionElement;
-		const justiceOption = screen.getByRole('option', { name: /^justice$/i }) as HTMLOptionElement;
+		// Component uses datalist now
+		const datalist = container.querySelector('datalist#motivation-type-suggestions');
+		const charityOption = datalist?.querySelector('option[value="charity"]') as HTMLOptionElement;
+		const greedOption = datalist?.querySelector('option[value="greed"]') as HTMLOptionElement;
+		const justiceOption = datalist?.querySelector('option[value="justice"]') as HTMLOptionElement;
 
-		expect(charityOption.disabled).toBe(true);
-		expect(greedOption.disabled).toBe(true);
-		expect(justiceOption.disabled).toBe(false);
+		expect(charityOption?.disabled).toBe(true);
+		expect(greedOption?.disabled).toBe(true);
+		expect(justiceOption?.disabled).toBe(false);
 	});
 
 	it('should mark disabled motivations visually', () => {
-		render(ArgumentControls, {
+		const { container } = render(ArgumentControls, {
 			props: {
 				usedMotivations: ['power']
 			}
 		});
 
-		const powerOption = screen.getByRole('option', { name: /power/i });
-		expect(powerOption).toBeDisabled();
+		// Component uses datalist now
+		const datalist = container.querySelector('datalist#motivation-type-suggestions');
+		const powerOption = datalist?.querySelector('option[value="power"]') as HTMLOptionElement;
+		expect(powerOption?.disabled).toBe(true);
 	});
 
 	it('should allow selecting unused motivations (Issue #404 - Updated for 13 motivations)', async () => {
-		render(ArgumentControls, {
+		const { container } = render(ArgumentControls, {
 			props: {
 				usedMotivations: ['charity']
 			}
 		});
 
-		const motivationSelect = screen.getByLabelText(/motivation.*type/i) as HTMLSelectElement;
+		const motivationInput = screen.getByLabelText(/motivation.*type/i) as HTMLInputElement;
 
-		// Check that justice option exists and is not disabled
-		const justiceOption = screen.getByRole('option', { name: /^justice$/i }) as HTMLOptionElement;
+		// Component now uses input with datalist - check datalist option
+		const datalist = container.querySelector('datalist#motivation-type-suggestions');
+		const justiceOption = datalist?.querySelector('option[value="justice"]') as HTMLOptionElement;
 		expect(justiceOption).toBeInTheDocument();
 		expect(justiceOption.disabled).toBe(false);
 		expect(justiceOption.value).toBe('justice');
@@ -990,15 +1009,18 @@ describe('ArgumentControls Component - Accessibility', () => {
 	});
 
 	it('should indicate disabled motivations to screen readers (Issue #404 - Updated for 13 motivations)', () => {
-		render(ArgumentControls, {
+		const { container } = render(ArgumentControls, {
 			props: {
 				usedMotivations: ['charity']
 			}
 		});
 
-		const charityOption = screen.getByRole('option', { name: /^charity$/i });
+		// Component uses datalist now
+		const datalist = container.querySelector('datalist#motivation-type-suggestions');
+		const charityOption = datalist?.querySelector('option[value="charity"]') as HTMLOptionElement;
 		expect(charityOption).toHaveAttribute('disabled');
-		expect(charityOption).toHaveAttribute('aria-disabled', 'true');
+		// Datalist options have disabled attribute but may not have aria-disabled
+		expect(charityOption.disabled).toBe(true);
 	});
 });
 

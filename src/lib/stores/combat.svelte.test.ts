@@ -51,7 +51,9 @@ vi.mock('$lib/db/repositories', () => ({
 			heroPoints: 0,
 			log: [],
 			createdAt: new Date(),
-			updatedAt: new Date()
+			updatedAt: new Date(),
+			turnMode: 'director-selected',
+			actedCombatantIds: []
 		})),
 		getById: vi.fn(),
 		getActiveCombats: vi.fn(async () => []),
@@ -165,7 +167,9 @@ describe('CombatStore - Derived Values', () => {
 					heroPoints: 0,
 					log: [],
 					createdAt: new Date(),
-					updatedAt: new Date()
+					updatedAt: new Date(),
+			turnMode: 'director-selected',
+			actedCombatantIds: []
 				},
 				{
 					id: 'c-2',
@@ -179,7 +183,9 @@ describe('CombatStore - Derived Values', () => {
 					heroPoints: 0,
 					log: [],
 					createdAt: new Date(),
-					updatedAt: new Date()
+					updatedAt: new Date(),
+			turnMode: 'director-selected',
+			actedCombatantIds: []
 				},
 				{
 					id: 'c-3',
@@ -193,7 +199,9 @@ describe('CombatStore - Derived Values', () => {
 					heroPoints: 0,
 					log: [],
 					createdAt: new Date(),
-					updatedAt: new Date()
+					updatedAt: new Date(),
+			turnMode: 'director-selected',
+			actedCombatantIds: []
 				}
 			];
 
@@ -250,7 +258,9 @@ describe('CombatStore - Derived Values', () => {
 				heroPoints: 2,
 				log: [],
 				createdAt: new Date(),
-				updatedAt: new Date()
+				updatedAt: new Date(),
+			turnMode: 'director-selected',
+			actedCombatantIds: []
 			};
 
 			// Current combatant should be at index currentTurn
@@ -348,7 +358,9 @@ describe('CombatStore - CRUD Actions', () => {
 				heroPoints: 0,
 				log: [],
 				createdAt: new Date(),
-				updatedAt: new Date()
+				updatedAt: new Date(),
+			turnMode: 'director-selected',
+			actedCombatantIds: []
 			};
 
 			const { combatRepository } = await import('$lib/db/repositories');
@@ -408,7 +420,9 @@ describe('CombatStore - Combat Lifecycle Actions', () => {
 				heroPoints: 0,
 				log: [],
 				createdAt: new Date(),
-				updatedAt: new Date()
+				updatedAt: new Date(),
+			turnMode: 'director-selected',
+			actedCombatantIds: []
 			};
 
 			const { combatRepository } = await import('$lib/db/repositories');
@@ -813,7 +827,9 @@ describe('CombatStore - Helper Methods', () => {
 				heroPoints: 0,
 				log: [],
 				createdAt: new Date(),
-				updatedAt: new Date()
+				updatedAt: new Date(),
+			turnMode: 'director-selected',
+			actedCombatantIds: []
 			};
 
 			const combatant = mockActiveCombat.combatants.find(c => c.id === 'hero-1');
@@ -857,7 +873,9 @@ describe('CombatStore - Helper Methods', () => {
 				heroPoints: 0,
 				log: [],
 				createdAt: new Date(),
-				updatedAt: new Date()
+				updatedAt: new Date(),
+			turnMode: 'director-selected',
+			actedCombatantIds: []
 			};
 
 			const currentCombatant = mockCombat.combatants[mockCombat.currentTurn];
@@ -892,7 +910,9 @@ describe('CombatStore - Helper Methods', () => {
 				heroPoints: 0,
 				log: [],
 				createdAt: new Date(),
-				updatedAt: new Date()
+				updatedAt: new Date(),
+			turnMode: 'director-selected',
+			actedCombatantIds: []
 			};
 
 			const currentCombatant = mockCombat.combatants[mockCombat.currentTurn];
@@ -947,3 +967,4 @@ describe('CombatStore - Svelte 5 Rune Patterns', () => {
 		expect(true).toBe(true);
 	});
 });
+

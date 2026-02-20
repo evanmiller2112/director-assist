@@ -26,7 +26,7 @@ const MotivationTypeSchema = v.union([
 
 // NegotiationMotivation schema
 const NegotiationMotivationSchema = v.looseObject({
-	type: MotivationTypeSchema,
+	type: v.string(),
 	description: v.string(),
 	isKnown: v.boolean(),
 	timesUsed: v.number()
@@ -44,7 +44,7 @@ const NegotiationArgumentSchema = v.looseObject({
 	type: v.union([v.literal('motivation'), v.literal('no_motivation'), v.literal('pitfall')]),
 	tier: v.union([v.literal(1), v.literal(2), v.literal(3)]),
 	description: v.string(),
-	motivationType: v.optional(MotivationTypeSchema),
+	motivationType: v.optional(v.string()),
 	interestChange: v.number(),
 	patienceChange: v.number(),
 	playerName: v.optional(v.string()),
@@ -58,9 +58,11 @@ export const NegotiationSessionSchema = v.looseObject({
 	name: v.pipe(v.string(), v.minLength(1)),
 	description: v.optional(v.string()),
 	npcName: v.string(),
+	npcEntityId: v.optional(v.string()),
 	status: v.union([v.literal('preparing'), v.literal('active'), v.literal('completed')]),
 	interest: v.number(),
 	patience: v.number(),
+	impression: v.optional(v.number(), 0),
 	motivations: v.array(NegotiationMotivationSchema),
 	pitfalls: v.array(NegotiationPitfallSchema),
 	arguments: v.array(NegotiationArgumentSchema),

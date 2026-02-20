@@ -92,6 +92,7 @@ export function createMockNegotiationSession(
 		status: 'preparing',
 		interest: 2,
 		patience: 5,
+		impression: 0,
 		motivations: [],
 		pitfalls: [],
 		arguments: [],

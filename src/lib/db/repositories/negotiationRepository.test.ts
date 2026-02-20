@@ -216,6 +216,7 @@ describe('NegotiationRepository - CRUD Operations', () => {
 			expect(negotiation.status).toBe('preparing');
 			expect(negotiation.interest).toBe(2);
 			expect(negotiation.patience).toBe(5);
+			expect(negotiation.impression).toBe(0);
 			expect(negotiation.arguments).toEqual([]);
 			expect(negotiation.motivations).toHaveLength(2);
 			expect(negotiation.motivations[0].isKnown).toBe(false);
@@ -314,6 +315,53 @@ describe('NegotiationRepository - CRUD Operations', () => {
 
 			expect(negotiation.pitfalls[0].isKnown).toBe(false);
 			expect(negotiation.pitfalls[1].isKnown).toBe(false);
+		});
+
+		it('should allow setting impression during creation', async () => {
+			const negotiation = await negotiationRepository.create({
+				name: 'Test Negotiation',
+				npcName: 'Test NPC',
+				impression: 3,
+				motivations: [],
+				pitfalls: []
+			});
+
+			expect(negotiation.impression).toBe(3);
+		});
+
+		it('should default impression to 0 when not specified', async () => {
+			const negotiation = await negotiationRepository.create({
+				name: 'Test Negotiation',
+				npcName: 'Test NPC',
+				motivations: [],
+				pitfalls: []
+			});
+
+			expect(negotiation.impression).toBe(0);
+		});
+
+		it('should allow creating negotiation with impression 0', async () => {
+			const negotiation = await negotiationRepository.create({
+				name: 'Test Negotiation',
+				npcName: 'Test NPC',
+				impression: 0,
+				motivations: [],
+				pitfalls: []
+			});
+
+			expect(negotiation.impression).toBe(0);
+		});
+
+		it('should allow creating negotiation with impression 5', async () => {
+			const negotiation = await negotiationRepository.create({
+				name: 'Test Negotiation',
+				npcName: 'Test NPC',
+				impression: 5,
+				motivations: [],
+				pitfalls: []
+			});
+
+			expect(negotiation.impression).toBe(5);
 		});
 	});
 
@@ -475,6 +523,44 @@ describe('NegotiationRepository - CRUD Operations', () => {
 			expect(updated.pitfalls).toHaveLength(2);
 			expect(updated.pitfalls[0].description).toBe('New pitfall 1');
 			expect(updated.pitfalls[1].description).toBe('New pitfall 2');
+		});
+
+		it('should allow updating impression', async () => {
+			const negotiation = await negotiationRepository.create({
+				name: 'Test',
+				npcName: 'NPC',
+				impression: 0,
+				motivations: [],
+				pitfalls: []
+			});
+
+			const updated = await negotiationRepository.update(negotiation.id, {
+				impression: 4
+			});
+
+			expect(updated.impression).toBe(4);
+		});
+
+		it('should preserve other fields when updating only impression', async () => {
+			const negotiation = await negotiationRepository.create({
+				name: 'Original Name',
+				npcName: 'Original NPC',
+				interest: 3,
+				patience: 4,
+				impression: 1,
+				motivations: [],
+				pitfalls: []
+			});
+
+			const updated = await negotiationRepository.update(negotiation.id, {
+				impression: 5
+			});
+
+			expect(updated.impression).toBe(5);
+			expect(updated.name).toBe('Original Name');
+			expect(updated.npcName).toBe('Original NPC');
+			expect(updated.interest).toBe(3);
+			expect(updated.patience).toBe(4);
 		});
 	});
 

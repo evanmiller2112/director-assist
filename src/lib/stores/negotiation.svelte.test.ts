@@ -44,6 +44,7 @@ function createMockNegotiation(overrides?: Partial<NegotiationSession>): Negotia
 		status: 'preparing',
 		interest: 2,
 		patience: 3,
+		impression: 0,
 		motivations: [
 			{ type: 'greed', description: 'Motivated by greed', isKnown: true, timesUsed: 0 },
 			{ type: 'power', description: 'Motivated by power', isKnown: false, timesUsed: 0 }
@@ -223,12 +224,13 @@ describe('Negotiation Store - Derived Values', () => {
 
 	describe('Interest and Patience Percentages', () => {
 		beforeEach(async () => {
-			// Create a mock active negotiation with specific interest/patience
+			// Create a mock active negotiation with specific interest/patience/impression
 			const activeNeg = createMockNegotiation({
 				id: 'active-neg',
 				status: 'active',
 				interest: 4,
-				patience: 2
+				patience: 2,
+				impression: 3
 			});
 
 			mockGetById.mockResolvedValue(activeNeg);
@@ -254,12 +256,22 @@ describe('Negotiation Store - Derived Values', () => {
 			expect(negotiationStore.patiencePercent).toBe(40);
 		});
 
+		it('should have impressionPercent derived value', () => {
+			expect(negotiationStore).toHaveProperty('impressionPercent');
+		});
+
+		it('should calculate impression percentage correctly', () => {
+			// Impression 3 out of 5 = 60%
+			expect(negotiationStore.impressionPercent).toBe(60);
+		});
+
 		it('should return 0 for percentages when no active negotiation', async () => {
 			mockGetById.mockResolvedValue(null);
 			await negotiationStore.selectNegotiation('non-existent');
 
 			expect(negotiationStore.interestPercent).toBe(0);
 			expect(negotiationStore.patiencePercent).toBe(0);
+			expect(negotiationStore.impressionPercent).toBe(0);
 		});
 
 		it('should handle interest of 0 (0%)', async () => {
@@ -284,6 +296,32 @@ describe('Negotiation Store - Derived Values', () => {
 			await negotiationStore.selectNegotiation('max-int');
 
 			expect(negotiationStore.interestPercent).toBe(100);
+		});
+
+		it('should handle impression of 0 (0%)', async () => {
+			const zeroImpression = createMockNegotiation({
+				id: 'zero-imp',
+				interest: 2,
+				patience: 3,
+				impression: 0
+			});
+			mockGetById.mockResolvedValue(zeroImpression);
+			await negotiationStore.selectNegotiation('zero-imp');
+
+			expect(negotiationStore.impressionPercent).toBe(0);
+		});
+
+		it('should handle impression of 5 (100%)', async () => {
+			const maxImpression = createMockNegotiation({
+				id: 'max-imp',
+				interest: 2,
+				patience: 3,
+				impression: 5
+			});
+			mockGetById.mockResolvedValue(maxImpression);
+			await negotiationStore.selectNegotiation('max-imp');
+
+			expect(negotiationStore.impressionPercent).toBe(100);
 		});
 	});
 
@@ -1477,6 +1515,22 @@ describe('Negotiation Store - Edge Cases and Error Handling', () => {
 
 			expect(negotiationStore.argumentHistory).toEqual([]);
 		});
+
+		it('should handle impression at minimum (0)', async () => {
+			const minImpression = createMockNegotiation({ id: 'min', impression: 0 });
+			mockGetById.mockResolvedValue(minImpression);
+			await negotiationStore.selectNegotiation('min');
+
+			expect(negotiationStore.impressionPercent).toBe(0);
+		});
+
+		it('should handle impression at maximum (5)', async () => {
+			const maxImpression = createMockNegotiation({ id: 'max', impression: 5 });
+			mockGetById.mockResolvedValue(maxImpression);
+			await negotiationStore.selectNegotiation('max');
+
+			expect(negotiationStore.impressionPercent).toBe(100);
+		});
 	});
 
 	describe('Concurrent Operations', () => {
@@ -1706,5 +1760,74 @@ describe('Negotiation Store - Update with interest and patience', () => {
 
 		// Assert: the reactive activeNegotiation reflects the new patience
 		expect(negotiationStore.activeNegotiation.patience).toBe(1);
+	});
+
+	it('should pass impression in update input to repository', async () => {
+		// Arrange: build an update input that carries an impression value.
+		// EXPECTED FAILURE: UpdateNegotiationInput does not yet include
+		// `impression`, so TypeScript will reject this literal.
+		const id = 'test-id';
+		const input: UpdateNegotiationInput = {
+			impression: 3
+		};
+
+		const updated = createMockNegotiation({ id, impression: 3 });
+		mockUpdate.mockResolvedValue(updated);
+
+		// Act
+		await negotiationStore.updateNegotiation(id, input);
+
+		// Assert: the repository must receive the impression value verbatim
+		expect(mockUpdate).toHaveBeenCalledWith(id, expect.objectContaining({ impression: 3 }));
+	});
+
+	it('should update activeNegotiation impression when negotiation is active and impression changes', async () => {
+		// Arrange: select a negotiation first, then update its impression
+		const id = 'test-id';
+		const initial = createMockNegotiation({ id, impression: 0 });
+		// This input will also fail TypeScript until the type is fixed
+		const input: UpdateNegotiationInput = { impression: 4 };
+		const updated = createMockNegotiation({ id, impression: 4 });
+
+		mockGetById.mockResolvedValue(initial);
+		await negotiationStore.selectNegotiation(id);
+
+		mockUpdate.mockResolvedValue(updated);
+
+		// Act
+		await negotiationStore.updateNegotiation(id, input);
+
+		// Assert: the reactive activeNegotiation reflects the new impression
+		expect(negotiationStore.activeNegotiation.impression).toBe(4);
+	});
+
+	it('should pass complete update with all fields including impression', async () => {
+		// Arrange: a fully-populated update that includes every editable field.
+		// EXPECTED FAILURE: UpdateNegotiationInput does not yet include `impression`.
+		const id = 'test-id';
+		const input: UpdateNegotiationInput = {
+			name: 'Updated Name',
+			npcName: 'Updated NPC',
+			description: 'Updated description',
+			interest: 3,
+			patience: 4,
+			impression: 2,
+			motivations: [
+				{ type: 'greed', description: 'Motivated by greed', isKnown: true, timesUsed: 0 },
+				{ type: 'justice', description: 'Motivated by justice', isKnown: false, timesUsed: 0 }
+			],
+			pitfalls: [
+				{ description: 'Mentions of charity', isKnown: false }
+			]
+		};
+
+		const updated = createMockNegotiation({ id, ...input });
+		mockUpdate.mockResolvedValue(updated);
+
+		// Act
+		await negotiationStore.updateNegotiation(id, input);
+
+		// Assert: the exact input object is forwarded to the repository unchanged
+		expect(mockUpdate).toHaveBeenCalledWith(id, input);
 	});
 });

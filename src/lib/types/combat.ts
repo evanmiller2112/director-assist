@@ -18,6 +18,17 @@
 export type CombatStatus = 'preparing' | 'active' | 'paused' | 'completed';
 
 // ============================================================================
+// Turn Mode (Issue #501)
+// ============================================================================
+
+/**
+ * Turn mode for combat session.
+ * - 'sequential': Traditional fixed-order turn system (legacy)
+ * - 'director-selected': Director chooses who acts next (Draw Steel alternating turns)
+ */
+export type TurnMode = 'sequential' | 'director-selected';
+
+// ============================================================================
 // Combatant Types
 // ============================================================================
 
@@ -216,6 +227,10 @@ export interface CombatSession {
 	log: CombatLogEntry[];
 	createdAt: Date;
 	updatedAt: Date;
+	// Director-selected turn mode fields (Issue #501)
+	turnMode: TurnMode;
+	actedCombatantIds: string[]; // IDs of combatants who have acted this round
+	activeCombatantId?: string; // ID of currently acting combatant (director-selected mode only)
 }
 
 // ============================================================================
@@ -228,6 +243,7 @@ export interface CombatSession {
 export interface CreateCombatInput {
 	name: string;
 	description?: string;
+	turnMode?: TurnMode; // Optional, defaults to 'director-selected'
 }
 
 /**

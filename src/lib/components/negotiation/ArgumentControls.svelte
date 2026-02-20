@@ -14,7 +14,7 @@
 	 * - Validation and record button
 	 */
 
-	import type { MotivationType } from '$lib/types/negotiation';
+	import { CANONICAL_MOTIVATION_TYPES } from '$lib/types/negotiation';
 
 	interface Props {
 		usedMotivations: string[];
@@ -36,29 +36,12 @@
 	let playerName = $state('');
 	let notes = $state('');
 
-	// All 13 Draw Steel motivation types
-	const allMotivations: MotivationType[] = [
-		'charity',
-		'discovery',
-		'faith',
-		'freedom',
-		'greed',
-		'harmony',
-		'justice',
-		'knowledge',
-		'legacy',
-		'power',
-		'protection',
-		'revenge',
-		'wealth'
-	];
-
 	// Check if a motivation is disabled
 	const isMotivationDisabled = (motivation: string) => usedMotivations.includes(motivation);
 
 	// Check if all motivations are used
 	const allMotivationsUsed = $derived(
-		allMotivations.every((m) => usedMotivations.includes(m))
+		CANONICAL_MOTIVATION_TYPES.every((m) => usedMotivations.includes(m))
 	);
 
 	// Calculate outcome preview based on argument type and tier
@@ -201,48 +184,52 @@
 			<label for="motivation-type" class="block text-sm font-medium mb-1">
 				Motivation Type
 			</label>
-			<select
+			<input
 				id="motivation-type"
+				type="text"
+				list="motivation-type-suggestions"
 				bind:value={selectedMotivation}
 				required
 				class="w-full rounded-md border border-gray-300 bg-white px-3 py-2 dark:border-gray-600 dark:bg-gray-800"
-			>
-				{#each allMotivations as motivation}
+			/>
+			<datalist id="motivation-type-suggestions">
+				{#each CANONICAL_MOTIVATION_TYPES as motivation}
 					<option
 						value={motivation}
 						disabled={isMotivationDisabled(motivation)}
-						aria-disabled={isMotivationDisabled(motivation)}
 						aria-label={formatMotivationType(motivation)}
 					>
 						{formatMotivationType(motivation)}
 						{#if isMotivationDisabled(motivation)}(Used){/if}
 					</option>
 				{/each}
-			</select>
+			</datalist>
 		</div>
 	{:else if argumentType === 'pitfall'}
 		<div>
 			<label for="motivation-type" class="block text-sm font-medium mb-1">
 				Pitfall Type
 			</label>
-			<select
+			<input
 				id="motivation-type"
+				type="text"
+				list="pitfall-type-suggestions"
 				bind:value={selectedMotivation}
 				required
 				class="w-full rounded-md border border-gray-300 bg-white px-3 py-2 dark:border-gray-600 dark:bg-gray-800"
-			>
-				{#each allMotivations as motivation}
+			/>
+			<datalist id="pitfall-type-suggestions">
+				{#each CANONICAL_MOTIVATION_TYPES as motivation}
 					<option
 						value={motivation}
 						disabled={isMotivationDisabled(motivation)}
-						aria-disabled={isMotivationDisabled(motivation)}
 						aria-label={formatMotivationType(motivation)}
 					>
 						{formatMotivationType(motivation)}
 						{#if isMotivationDisabled(motivation)}(Used){/if}
 					</option>
 				{/each}
-			</select>
+			</datalist>
 		</div>
 	{/if}
 

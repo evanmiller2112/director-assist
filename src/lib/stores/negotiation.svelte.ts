@@ -98,6 +98,16 @@ function createNegotiationStore() {
 	});
 
 	/**
+	 * Impression as a percentage (0-100).
+	 */
+	const impressionPercent = $derived.by((): number => {
+		if (!activeNegotiation) {
+			return 0;
+		}
+		return (activeNegotiation.impression / 5) * 100;
+	});
+
+	/**
 	 * Known motivations (isKnown === true).
 	 */
 	const knownMotivations = $derived.by(() => {
@@ -358,6 +368,9 @@ function createNegotiationStore() {
 		},
 		get patiencePercent() {
 			return patiencePercent;
+		},
+		get impressionPercent() {
+			return impressionPercent;
 		},
 		get knownMotivations() {
 			return knownMotivations;

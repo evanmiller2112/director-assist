@@ -29,6 +29,9 @@ export interface ActionHistoryEntry {
 		linkId?: string;
 		originalEntityState?: Record<string, unknown>;
 		createdEntityId?: string;
+		sourceId?: string;
+		targetId?: string;
+		relationship?: string;
 	};
 }
 

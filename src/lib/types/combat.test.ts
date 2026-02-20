@@ -76,7 +76,9 @@ describe('Combat Types - Type Safety', () => {
 				heroPoints: 0,
 				log: [],
 				createdAt: now,
-				updatedAt: now
+				updatedAt: now,
+				turnMode: 'director-selected',
+				actedCombatantIds: []
 			};
 
 			expect(session.id).toBe('combat-1');
@@ -105,7 +107,9 @@ describe('Combat Types - Type Safety', () => {
 				heroPoints: 0,
 				log: [],
 				createdAt: now,
-				updatedAt: now
+				updatedAt: now,
+				turnMode: 'director-selected',
+				actedCombatantIds: []
 			};
 
 			expect(session.description).toBe('The party is ambushed on the road');
@@ -852,7 +856,9 @@ describe('Combat Types - Group Support (Issue #263)', () => {
 				heroPoints: 0,
 				log: [],
 				createdAt: new Date(),
-				updatedAt: new Date()
+				updatedAt: new Date(),
+			turnMode: 'director-selected',
+			actedCombatantIds: []
 			};
 
 			expect(session.groups).toBeDefined();
@@ -873,7 +879,9 @@ describe('Combat Types - Group Support (Issue #263)', () => {
 				heroPoints: 0,
 				log: [],
 				createdAt: new Date(),
-				updatedAt: new Date()
+				updatedAt: new Date(),
+			turnMode: 'director-selected',
+			actedCombatantIds: []
 			};
 
 			expect(session.groups).toEqual([]);
@@ -909,7 +917,9 @@ describe('Combat Types - Group Support (Issue #263)', () => {
 				heroPoints: 0,
 				log: [],
 				createdAt: new Date(),
-				updatedAt: new Date()
+				updatedAt: new Date(),
+			turnMode: 'director-selected',
+			actedCombatantIds: []
 			};
 
 			expect(session.groups).toHaveLength(2);
@@ -1152,7 +1162,9 @@ describe('Combat Types - Group Support (Issue #263)', () => {
 				heroPoints: 0,
 				log: [],
 				createdAt: new Date(),
-				updatedAt: new Date()
+				updatedAt: new Date(),
+			turnMode: 'director-selected',
+			actedCombatantIds: []
 			};
 
 			expect(session.combatants).toHaveLength(3);
@@ -1163,3 +1175,4 @@ describe('Combat Types - Group Support (Issue #263)', () => {
 		});
 	});
 });
+

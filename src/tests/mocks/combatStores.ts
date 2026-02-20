@@ -55,7 +55,9 @@ export function createMockCombatStore(initialSessions: CombatSession[] = []) {
 				heroPoints: 3,
 				log: [],
 				createdAt: new Date(),
-				updatedAt: new Date()
+				updatedAt: new Date(),
+				turnMode: 'director-selected',
+				actedCombatantIds: []
 			};
 			_sessions.push(newCombat);
 			return newCombat;

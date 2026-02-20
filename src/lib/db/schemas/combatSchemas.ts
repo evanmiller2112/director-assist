@@ -110,5 +110,9 @@ export const CombatSessionSchema = v.looseObject({
 	heroPoints: v.number(),
 	log: v.array(CombatLogEntrySchema),
 	createdAt: v.union([v.date(), v.pipe(v.string(), v.isoTimestamp(), v.transform((s) => new Date(s)))]),
-	updatedAt: v.union([v.date(), v.pipe(v.string(), v.isoTimestamp(), v.transform((s) => new Date(s)))])
+	updatedAt: v.union([v.date(), v.pipe(v.string(), v.isoTimestamp(), v.transform((s) => new Date(s)))]),
+	// Director-selected turn mode fields (Issue #501)
+	turnMode: v.optional(v.union([v.literal('sequential'), v.literal('director-selected')]), 'director-selected'),
+	actedCombatantIds: v.optional(v.array(v.string()), []),
+	activeCombatantId: v.optional(v.string())
 });

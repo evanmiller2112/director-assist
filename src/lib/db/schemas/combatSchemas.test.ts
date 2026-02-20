@@ -44,7 +44,9 @@ describe('CombatSessionSchema', () => {
 				heroPoints: 5,
 				log: [],
 				createdAt: new Date('2024-01-15T10:00:00Z'),
-				updatedAt: new Date('2024-01-15T10:00:00Z')
+				updatedAt: new Date('2024-01-15T10:00:00Z'),
+			turnMode: 'director-selected',
+			actedCombatantIds: []
 			};
 
 			const result = safeParse(CombatSessionSchema, validSession);
@@ -68,7 +70,9 @@ describe('CombatSessionSchema', () => {
 				heroPoints: 3,
 				log: [],
 				createdAt: new Date(),
-				updatedAt: new Date()
+				updatedAt: new Date(),
+			turnMode: 'director-selected',
+			actedCombatantIds: []
 			};
 
 			const result = safeParse(CombatSessionSchema, validSession);
@@ -108,7 +112,9 @@ describe('CombatSessionSchema', () => {
 				heroPoints: 5,
 				log: [],
 				createdAt: new Date(),
-				updatedAt: new Date()
+				updatedAt: new Date(),
+			turnMode: 'director-selected',
+			actedCombatantIds: []
 			};
 
 			const result = safeParse(CombatSessionSchema, validSession);
@@ -144,7 +150,9 @@ describe('CombatSessionSchema', () => {
 				heroPoints: 5,
 				log: [],
 				createdAt: new Date(),
-				updatedAt: new Date()
+				updatedAt: new Date(),
+			turnMode: 'director-selected',
+			actedCombatantIds: []
 			};
 
 			const result = safeParse(CombatSessionSchema, validSession);
@@ -189,7 +197,9 @@ describe('CombatSessionSchema', () => {
 				heroPoints: 5,
 				log: [],
 				createdAt: new Date(),
-				updatedAt: new Date()
+				updatedAt: new Date(),
+			turnMode: 'director-selected',
+			actedCombatantIds: []
 			};
 
 			const result = safeParse(CombatSessionSchema, validSession);
@@ -209,7 +219,9 @@ describe('CombatSessionSchema', () => {
 				heroPoints: 5,
 				log: [],
 				createdAt: new Date('2024-01-15T10:00:00Z'),
-				updatedAt: new Date('2024-01-15T10:00:00Z')
+				updatedAt: new Date('2024-01-15T10:00:00Z'),
+			turnMode: 'director-selected',
+			actedCombatantIds: []
 			};
 
 			const result = safeParse(CombatSessionSchema, session);
@@ -258,7 +270,9 @@ describe('CombatSessionSchema', () => {
 				heroPoints: 5,
 				log: [],
 				createdAt: new Date(),
-				updatedAt: new Date()
+				updatedAt: new Date(),
+			turnMode: 'director-selected',
+			actedCombatantIds: []
 			};
 
 			const result = safeParse(CombatSessionSchema, invalidSession);
@@ -278,7 +292,9 @@ describe('CombatSessionSchema', () => {
 				heroPoints: 5,
 				log: [],
 				createdAt: new Date(),
-				updatedAt: new Date()
+				updatedAt: new Date(),
+			turnMode: 'director-selected',
+			actedCombatantIds: []
 			};
 
 			const result = safeParse(CombatSessionSchema, invalidSession);
@@ -300,7 +316,9 @@ describe('CombatSessionSchema', () => {
 				heroPoints: 5,
 				log: [],
 				createdAt: new Date(),
-				updatedAt: new Date()
+				updatedAt: new Date(),
+			turnMode: 'director-selected',
+			actedCombatantIds: []
 			};
 
 			const result = safeParse(CombatSessionSchema, invalidSession);
@@ -320,7 +338,9 @@ describe('CombatSessionSchema', () => {
 				heroPoints: 5,
 				log: [],
 				createdAt: new Date(),
-				updatedAt: new Date()
+				updatedAt: new Date(),
+			turnMode: 'director-selected',
+			actedCombatantIds: []
 			};
 
 			const result = safeParse(CombatSessionSchema, invalidSession);
@@ -340,7 +360,9 @@ describe('CombatSessionSchema', () => {
 				heroPoints: 5,
 				log: [],
 				createdAt: new Date(),
-				updatedAt: new Date()
+				updatedAt: new Date(),
+			turnMode: 'director-selected',
+			actedCombatantIds: []
 			};
 
 			const result = safeParse(CombatSessionSchema, invalidSession);
@@ -374,7 +396,9 @@ describe('CombatSessionSchema', () => {
 				heroPoints: 5,
 				log: [],
 				createdAt: new Date(),
-				updatedAt: new Date()
+				updatedAt: new Date(),
+			turnMode: 'director-selected',
+			actedCombatantIds: []
 			};
 
 			const result = safeParse(CombatSessionSchema, invalidSession);
@@ -407,7 +431,9 @@ describe('CombatSessionSchema', () => {
 				heroPoints: 5,
 				log: [],
 				createdAt: new Date(),
-				updatedAt: new Date()
+				updatedAt: new Date(),
+			turnMode: 'director-selected',
+			actedCombatantIds: []
 			};
 
 			const result = safeParse(CombatSessionSchema, invalidSession);
@@ -439,7 +465,9 @@ describe('CombatSessionSchema', () => {
 				heroPoints: 5,
 				log: [],
 				createdAt: new Date(),
-				updatedAt: new Date()
+				updatedAt: new Date(),
+			turnMode: 'director-selected',
+			actedCombatantIds: []
 			};
 
 			const result = safeParse(CombatSessionSchema, invalidSession);
@@ -471,7 +499,9 @@ describe('CombatSessionSchema', () => {
 				heroPoints: 5,
 				log: [],
 				createdAt: new Date(),
-				updatedAt: new Date()
+				updatedAt: new Date(),
+			turnMode: 'director-selected',
+			actedCombatantIds: []
 			};
 
 			const result = safeParse(CombatSessionSchema, invalidSession);
@@ -493,7 +523,9 @@ describe('CombatSessionSchema', () => {
 				heroPoints: 5,
 				log: [],
 				createdAt: new Date(),
-				updatedAt: new Date()
+				updatedAt: new Date(),
+			turnMode: 'director-selected',
+			actedCombatantIds: []
 			};
 
 			const result = safeParse(CombatSessionSchema, invalidSession);
@@ -513,7 +545,9 @@ describe('CombatSessionSchema', () => {
 				heroPoints: 5,
 				log: [],
 				createdAt: new Date(),
-				updatedAt: new Date()
+				updatedAt: new Date(),
+			turnMode: 'director-selected',
+			actedCombatantIds: []
 			};
 
 			const result = safeParse(CombatSessionSchema, invalidSession);
@@ -533,7 +567,9 @@ describe('CombatSessionSchema', () => {
 				heroPoints: '5', // should be number
 				log: [],
 				createdAt: new Date(),
-				updatedAt: new Date()
+				updatedAt: new Date(),
+			turnMode: 'director-selected',
+			actedCombatantIds: []
 			};
 
 			const result = safeParse(CombatSessionSchema, invalidSession);
@@ -541,3 +577,4 @@ describe('CombatSessionSchema', () => {
 		});
 	});
 });
+

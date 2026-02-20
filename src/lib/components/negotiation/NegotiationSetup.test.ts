@@ -34,9 +34,10 @@ describe('NegotiationSetup Component - Basic Rendering (Issue #386)', () => {
 		expect(screen.getByLabelText(/^name|negotiation.*name/i)).toBeInTheDocument();
 	});
 
-	it('should render NPC name input', () => {
+	it('should render NPC name section', () => {
 		render(NegotiationSetup);
-		expect(screen.getByLabelText(/npc.*name/i)).toBeInTheDocument();
+		// Component now has mode toggle buttons and either entity selector or manual input
+		expect(screen.getByText(/npc.*name/i)).toBeInTheDocument();
 	});
 
 	it('should render description input', () => {
@@ -103,20 +104,48 @@ describe('NegotiationSetup Component - Name Input', () => {
 });
 
 describe('NegotiationSetup Component - NPC Name Input', () => {
-	it('should accept NPC name input', async () => {
+	it('should show entity/manual mode toggle buttons', () => {
 		render(NegotiationSetup);
 
-		const npcNameInput = screen.getByLabelText(/npc.*name/i) as HTMLInputElement;
+		expect(screen.getByRole('button', { name: /from.*entity/i })).toBeInTheDocument();
+		expect(screen.getByRole('button', { name: /manual/i })).toBeInTheDocument();
+	});
+
+	it('should default to entity mode', () => {
+		render(NegotiationSetup);
+
+		const entityButton = screen.getByRole('button', { name: /from.*entity/i });
+		expect(entityButton).toHaveClass(/active|selected/);
+	});
+
+	it('should switch to manual mode when manual button clicked', async () => {
+		render(NegotiationSetup);
+
+		const manualButton = screen.getByRole('button', { name: /manual/i });
+		await fireEvent.click(manualButton);
+
+		expect(manualButton).toHaveClass(/active|selected/);
+	});
+
+	it('should show search input in entity mode', () => {
+		render(NegotiationSetup);
+
+		// In entity mode by default
+		const searchInput = screen.getByPlaceholderText(/search.*npc/i);
+		expect(searchInput).toBeInTheDocument();
+	});
+
+	it('should accept NPC name input in manual mode', async () => {
+		render(NegotiationSetup);
+
+		// Switch to manual mode
+		const manualButton = screen.getByRole('button', { name: /manual/i });
+		await fireEvent.click(manualButton);
+
+		const npcNameInput = screen.getByPlaceholderText(/npc.*name/i) as HTMLInputElement;
 		await fireEvent.input(npcNameInput, { target: { value: 'Lord Varric' } });
 
 		expect(npcNameInput.value).toBe('Lord Varric');
-	});
-
-	it('should mark NPC name as required', () => {
-		render(NegotiationSetup);
-
-		const npcNameInput = screen.getByLabelText(/npc.*name/i);
-		expect(npcNameInput).toBeRequired();
 	});
 
 	it('should show validation error when NPC name is empty', async () => {
@@ -131,10 +160,14 @@ describe('NegotiationSetup Component - NPC Name Input', () => {
 		expect(screen.getByText(/npc.*name.*required/i)).toBeInTheDocument();
 	});
 
-	it('should accept special characters in NPC name', async () => {
+	it('should accept special characters in NPC name in manual mode', async () => {
 		render(NegotiationSetup);
 
-		const npcNameInput = screen.getByLabelText(/npc.*name/i) as HTMLInputElement;
+		// Switch to manual mode
+		const manualButton = screen.getByRole('button', { name: /manual/i });
+		await fireEvent.click(manualButton);
+
+		const npcNameInput = screen.getByPlaceholderText(/npc.*name/i) as HTMLInputElement;
 		await fireEvent.input(npcNameInput, { target: { value: "K'thara the Wise" } });
 
 		expect(npcNameInput.value).toBe("K'thara the Wise");
@@ -331,24 +364,33 @@ describe('NegotiationSetup Component - Motivation Configuration', () => {
 	});
 
 	it('should have all 12 motivation types in selector', async () => {
-		render(NegotiationSetup);
+		const { container } = render(NegotiationSetup);
 
 		const addButton = screen.getByRole('button', { name: /add.*motivation/i });
 		await fireEvent.click(addButton);
 
-		expect(screen.getByRole('option', { name: /charity/i })).toBeInTheDocument();
-		expect(screen.getByRole('option', { name: /discovery/i })).toBeInTheDocument();
-		expect(screen.getByRole('option', { name: /faith/i })).toBeInTheDocument();
-		expect(screen.getByRole('option', { name: /freedom/i })).toBeInTheDocument();
-		expect(screen.getByRole('option', { name: /greed/i })).toBeInTheDocument();
-		expect(screen.getByRole('option', { name: /harmony/i })).toBeInTheDocument();
-		expect(screen.getByRole('option', { name: /justice/i })).toBeInTheDocument();
-		expect(screen.getByRole('option', { name: /knowledge/i })).toBeInTheDocument();
-		expect(screen.getByRole('option', { name: /legacy/i })).toBeInTheDocument();
-		expect(screen.getByRole('option', { name: /power/i })).toBeInTheDocument();
-		expect(screen.getByRole('option', { name: /protection/i })).toBeInTheDocument();
-		expect(screen.getByRole('option', { name: /revenge/i })).toBeInTheDocument();
-		expect(screen.getByRole('option', { name: /wealth/i })).toBeInTheDocument();
+		// Component now uses input with datalist - verify the input exists
+		const motivationInput = screen.getByLabelText(/motivation.*type/i);
+		expect(motivationInput).toBeInTheDocument();
+
+		// Verify datalist has all 13 motivation options
+		const datalist = container.querySelector('datalist#motivation-suggestions');
+		expect(datalist).toBeInTheDocument();
+
+		const optionValues = Array.from(datalist?.querySelectorAll('option') || []).map(opt => opt.getAttribute('value'));
+		expect(optionValues).toContain('charity');
+		expect(optionValues).toContain('discovery');
+		expect(optionValues).toContain('faith');
+		expect(optionValues).toContain('freedom');
+		expect(optionValues).toContain('greed');
+		expect(optionValues).toContain('harmony');
+		expect(optionValues).toContain('justice');
+		expect(optionValues).toContain('knowledge');
+		expect(optionValues).toContain('legacy');
+		expect(optionValues).toContain('power');
+		expect(optionValues).toContain('protection');
+		expect(optionValues).toContain('revenge');
+		expect(optionValues).toContain('wealth');
 	});
 
 	it('should show known toggle for motivation', async () => {
@@ -422,9 +464,10 @@ describe('NegotiationSetup Component - Motivation Configuration', () => {
 		await fireEvent.click(addButton);
 		await fireEvent.click(addButton);
 
-		const typeSelects = screen.getAllByLabelText(/motivation.*type/i);
-		await fireEvent.change(typeSelects[0], { target: { value: 'justice' } });
-		await fireEvent.change(typeSelects[1], { target: { value: 'justice' } });
+		// Component now uses input fields instead of selects
+		const typeInputs = screen.getAllByLabelText(/motivation.*type/i);
+		await fireEvent.input(typeInputs[0], { target: { value: 'justice' } });
+		await fireEvent.input(typeInputs[1], { target: { value: 'justice' } });
 
 		// Should show validation error
 		expect(screen.getByText(/duplicate.*motivation|already.*added/i)).toBeInTheDocument();
@@ -464,15 +507,23 @@ describe('NegotiationSetup Component - Pitfall Configuration', () => {
 	});
 
 	it('should have all 13 motivation types in pitfall selector', async () => {
-		render(NegotiationSetup);
+		const { container } = render(NegotiationSetup);
 
 		const addButton = screen.getByRole('button', { name: /add.*pitfall/i });
 		await fireEvent.click(addButton);
 
-		// Pitfalls use the same motivation types
-		expect(screen.getByRole('option', { name: /charity/i })).toBeInTheDocument();
-		expect(screen.getByRole('option', { name: /justice/i })).toBeInTheDocument();
-		expect(screen.getByRole('option', { name: /power/i })).toBeInTheDocument();
+		// Component now uses input with datalist
+		const pitfallInput = screen.getByLabelText(/pitfall.*type/i);
+		expect(pitfallInput).toBeInTheDocument();
+
+		// Pitfalls use the same motivation types - verify datalist has them
+		const datalist = container.querySelector('datalist#pitfall-suggestions');
+		expect(datalist).toBeInTheDocument();
+
+		const optionValues = Array.from(datalist?.querySelectorAll('option') || []).map(opt => opt.getAttribute('value'));
+		expect(optionValues).toContain('charity');
+		expect(optionValues).toContain('justice');
+		expect(optionValues).toContain('power');
 	});
 
 	it('should show known toggle for pitfall', async () => {
@@ -524,9 +575,10 @@ describe('NegotiationSetup Component - Pitfall Configuration', () => {
 		await fireEvent.click(addButton);
 		await fireEvent.click(addButton);
 
-		const typeSelects = screen.getAllByLabelText(/pitfall.*type/i);
-		await fireEvent.change(typeSelects[0], { target: { value: 'greed' } });
-		await fireEvent.change(typeSelects[1], { target: { value: 'greed' } });
+		// Component now uses input fields instead of selects
+		const typeInputs = screen.getAllByLabelText(/pitfall.*type/i);
+		await fireEvent.input(typeInputs[0], { target: { value: 'greed' } });
+		await fireEvent.input(typeInputs[1], { target: { value: 'greed' } });
 
 		expect(screen.getByText(/duplicate.*pitfall|already.*added/i)).toBeInTheDocument();
 	});
@@ -565,7 +617,11 @@ describe('NegotiationSetup Component - Form Validation', () => {
 		const nameInput = screen.getByLabelText(/^name|negotiation.*name/i);
 		await fireEvent.input(nameInput, { target: { value: 'Peace Treaty' } });
 
-		const npcNameInput = screen.getByLabelText(/npc.*name/i);
+		// Switch to manual mode to enter NPC name
+		const manualButton = screen.getByRole('button', { name: /manual/i });
+		await fireEvent.click(manualButton);
+
+		const npcNameInput = screen.getByPlaceholderText(/npc.*name/i);
 		await fireEvent.input(npcNameInput, { target: { value: 'Lord Varric' } });
 
 		const createButton = screen.getByRole('button', { name: /create.*negotiation|start.*negotiation/i });
@@ -587,7 +643,11 @@ describe('NegotiationSetup Component - Form Validation', () => {
 		const nameInput = screen.getByLabelText(/^name|negotiation.*name/i);
 		await fireEvent.input(nameInput, { target: { value: 'Test' } });
 
-		const npcNameInput = screen.getByLabelText(/npc.*name/i);
+		// Switch to manual mode to enter NPC name
+		const manualButton = screen.getByRole('button', { name: /manual/i });
+		await fireEvent.click(manualButton);
+
+		const npcNameInput = screen.getByPlaceholderText(/npc.*name/i);
 		await fireEvent.input(npcNameInput, { target: { value: 'NPC' } });
 
 		// Submit again
@@ -605,7 +665,11 @@ describe('NegotiationSetup Component - Create Event', () => {
 		const nameInput = screen.getByLabelText(/^name|negotiation.*name/i);
 		await fireEvent.input(nameInput, { target: { value: 'Peace Treaty' } });
 
-		const npcNameInput = screen.getByLabelText(/npc.*name/i);
+		// Switch to manual mode to enter NPC name
+		const manualButton = screen.getByRole('button', { name: /manual/i });
+		await fireEvent.click(manualButton);
+
+		const npcNameInput = screen.getByPlaceholderText(/npc.*name/i);
 		await fireEvent.input(npcNameInput, { target: { value: 'Lord Varric' } });
 
 		const createButton = screen.getByRole('button', { name: /create.*negotiation|start.*negotiation/i });
@@ -625,7 +689,11 @@ describe('NegotiationSetup Component - Create Event', () => {
 		const nameInput = screen.getByLabelText(/^name|negotiation.*name/i);
 		await fireEvent.input(nameInput, { target: { value: 'Test' } });
 
-		const npcNameInput = screen.getByLabelText(/npc.*name/i);
+		// Switch to manual mode to enter NPC name
+		const manualButton = screen.getByRole('button', { name: /manual/i });
+		await fireEvent.click(manualButton);
+
+		const npcNameInput = screen.getByPlaceholderText(/npc.*name/i);
 		await fireEvent.input(npcNameInput, { target: { value: 'Lord Varric' } });
 
 		const createButton = screen.getByRole('button', { name: /create.*negotiation|start.*negotiation/i });
@@ -645,7 +713,11 @@ describe('NegotiationSetup Component - Create Event', () => {
 		const nameInput = screen.getByLabelText(/^name|negotiation.*name/i);
 		await fireEvent.input(nameInput, { target: { value: 'Test' } });
 
-		const npcNameInput = screen.getByLabelText(/npc.*name/i);
+		// Switch to manual mode to enter NPC name
+		const manualButton = screen.getByRole('button', { name: /manual/i });
+		await fireEvent.click(manualButton);
+
+		const npcNameInput = screen.getByPlaceholderText(/npc.*name/i);
 		await fireEvent.input(npcNameInput, { target: { value: 'NPC' } });
 
 		const descInput = screen.getByLabelText(/description/i);
@@ -668,7 +740,11 @@ describe('NegotiationSetup Component - Create Event', () => {
 		const nameInput = screen.getByLabelText(/^name|negotiation.*name/i);
 		await fireEvent.input(nameInput, { target: { value: 'Test' } });
 
-		const npcNameInput = screen.getByLabelText(/npc.*name/i);
+		// Switch to manual mode to enter NPC name
+		const manualButton = screen.getByRole('button', { name: /manual/i });
+		await fireEvent.click(manualButton);
+
+		const npcNameInput = screen.getByPlaceholderText(/npc.*name/i);
 		await fireEvent.input(npcNameInput, { target: { value: 'NPC' } });
 
 		const createButton = screen.getByRole('button', { name: /create.*negotiation|start.*negotiation/i });
@@ -689,7 +765,11 @@ describe('NegotiationSetup Component - Create Event', () => {
 		const nameInput = screen.getByLabelText(/^name|negotiation.*name/i);
 		await fireEvent.input(nameInput, { target: { value: 'Test' } });
 
-		const npcNameInput = screen.getByLabelText(/npc.*name/i);
+		// Switch to manual mode to enter NPC name
+		const manualButton = screen.getByRole('button', { name: /manual/i });
+		await fireEvent.click(manualButton);
+
+		const npcNameInput = screen.getByPlaceholderText(/npc.*name/i);
 		await fireEvent.input(npcNameInput, { target: { value: 'NPC' } });
 
 		const createButton = screen.getByRole('button', { name: /create.*negotiation|start.*negotiation/i });
@@ -710,7 +790,11 @@ describe('NegotiationSetup Component - Create Event', () => {
 		const nameInput = screen.getByLabelText(/^name|negotiation.*name/i);
 		await fireEvent.input(nameInput, { target: { value: 'Test' } });
 
-		const npcNameInput = screen.getByLabelText(/npc.*name/i);
+		// Switch to manual mode to enter NPC name
+		const manualButton = screen.getByRole('button', { name: /manual/i });
+		await fireEvent.click(manualButton);
+
+		const npcNameInput = screen.getByPlaceholderText(/npc.*name/i);
 		await fireEvent.input(npcNameInput, { target: { value: 'NPC' } });
 
 		const addMotivationButton = screen.getByRole('button', { name: /add.*motivation/i });
@@ -719,7 +803,7 @@ describe('NegotiationSetup Component - Create Event', () => {
 		const createButton = screen.getByRole('button', { name: /create.*negotiation|start.*negotiation/i });
 		await fireEvent.click(createButton);
 
-		// Verify it includes motivations array with default type 'benevolence'
+		// Verify it includes motivations array with default type 'charity'
 		expect(onCreate).toHaveBeenCalledWith(
 			expect.objectContaining({
 				motivations: expect.arrayContaining([
@@ -739,7 +823,11 @@ describe('NegotiationSetup Component - Create Event', () => {
 		const nameInput = screen.getByLabelText(/^name|negotiation.*name/i);
 		await fireEvent.input(nameInput, { target: { value: 'Test' } });
 
-		const npcNameInput = screen.getByLabelText(/npc.*name/i);
+		// Switch to manual mode to enter NPC name
+		const manualButton = screen.getByRole('button', { name: /manual/i });
+		await fireEvent.click(manualButton);
+
+		const npcNameInput = screen.getByPlaceholderText(/npc.*name/i);
 		await fireEvent.input(npcNameInput, { target: { value: 'NPC' } });
 
 		const addPitfallButton = screen.getByRole('button', { name: /add.*pitfall/i });
@@ -768,7 +856,11 @@ describe('NegotiationSetup Component - Create Event', () => {
 		const nameInput = screen.getByLabelText(/^name|negotiation.*name/i);
 		await fireEvent.input(nameInput, { target: { value: 'Test' } });
 
-		const npcNameInput = screen.getByLabelText(/npc.*name/i);
+		// Switch to manual mode to enter NPC name
+		const manualButton = screen.getByRole('button', { name: /manual/i });
+		await fireEvent.click(manualButton);
+
+		const npcNameInput = screen.getByPlaceholderText(/npc.*name/i);
 		await fireEvent.input(npcNameInput, { target: { value: 'NPC' } });
 
 		const addMotivationButton = screen.getByRole('button', { name: /add.*motivation/i });
@@ -798,19 +890,24 @@ describe('NegotiationSetup Component - Accessibility', () => {
 		render(NegotiationSetup);
 
 		expect(screen.getByLabelText(/^name|negotiation.*name/i)).toHaveAccessibleName();
-		expect(screen.getByLabelText(/npc.*name/i)).toHaveAccessibleName();
+		// NPC name section has mode toggles and search/input depending on mode
+		expect(screen.getByText(/npc.*name/i)).toBeInTheDocument();
 		expect(screen.getByLabelText(/description/i)).toHaveAccessibleName();
 		expect(screen.getByLabelText(/starting.*interest/i)).toHaveAccessibleName();
 		expect(screen.getByLabelText(/starting.*patience/i)).toHaveAccessibleName();
 	});
 
-	it('should mark required fields with aria-required', () => {
+	it('should mark required fields with aria-required', async () => {
 		render(NegotiationSetup);
 
 		const nameInput = screen.getByLabelText(/^name|negotiation.*name/i);
-		const npcNameInput = screen.getByLabelText(/npc.*name/i);
-
 		expect(nameInput).toHaveAttribute('aria-required', 'true');
+
+		// Switch to manual mode to check NPC name input
+		const manualButton = screen.getByRole('button', { name: /manual/i });
+		await fireEvent.click(manualButton);
+
+		const npcNameInput = screen.getByPlaceholderText(/npc.*name/i);
 		expect(npcNameInput).toHaveAttribute('aria-required', 'true');
 	});
 
@@ -876,7 +973,11 @@ describe('NegotiationSetup Component - Edge Cases', () => {
 		const nameInput = screen.getByLabelText(/^name|negotiation.*name/i);
 		await fireEvent.input(nameInput, { target: { value: 'Test' } });
 
-		const npcNameInput = screen.getByLabelText(/npc.*name/i);
+		// Switch to manual mode to enter NPC name
+		const manualButton = screen.getByRole('button', { name: /manual/i });
+		await fireEvent.click(manualButton);
+
+		const npcNameInput = screen.getByPlaceholderText(/npc.*name/i);
 		await fireEvent.input(npcNameInput, { target: { value: 'NPC' } });
 
 		const createButton = screen.getByRole('button', { name: /create.*negotiation|start.*negotiation/i });
@@ -956,7 +1057,11 @@ describe('NegotiationSetup Component - submitLabel prop (Issue #559)', () => {
 		const nameInput = screen.getByLabelText(/^name|negotiation.*name/i);
 		await fireEvent.input(nameInput, { target: { value: 'Peace Treaty' } });
 
-		const npcNameInput = screen.getByLabelText(/npc.*name/i);
+		// Switch to manual mode to enter NPC name
+		const manualButton = screen.getByRole('button', { name: /manual/i });
+		await fireEvent.click(manualButton);
+
+		const npcNameInput = screen.getByPlaceholderText(/npc.*name/i);
 		await fireEvent.input(npcNameInput, { target: { value: 'Lord Varric' } });
 
 		// Act: click the re-labelled submit button

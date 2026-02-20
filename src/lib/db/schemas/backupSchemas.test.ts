@@ -106,7 +106,9 @@ describe('CampaignBackupSchema', () => {
 						heroPoints: 2,
 						log: [],
 						createdAt: new Date(),
-						updatedAt: new Date()
+						updatedAt: new Date(),
+			turnMode: 'director-selected',
+			actedCombatantIds: []
 					}
 				]
 			};
@@ -406,3 +408,4 @@ describe('CampaignBackupSchema', () => {
 		});
 	});
 });
+

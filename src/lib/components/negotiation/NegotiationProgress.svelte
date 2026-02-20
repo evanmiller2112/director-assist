@@ -14,13 +14,15 @@
 	interface Props {
 		interest: number;
 		patience: number;
+		impression?: number;
 	}
 
-	let { interest, patience }: Props = $props();
+	let { interest, patience, impression = 0 }: Props = $props();
 
 	// Calculate progress percentages
 	const interestPercent = $derived((interest / 5) * 100);
 	const patiencePercent = $derived((patience / 5) * 100);
+	const impressionPercent = $derived((impression / 5) * 100);
 
 	// Get interest bar color classes
 	const interestBarColor = $derived(() => {
@@ -38,6 +40,16 @@
 		if (patience === 1) return 'bg-orange-600';
 		if (patience === 2) return 'bg-yellow-600';
 		return 'bg-blue-500';
+	});
+
+	// Get impression bar color classes
+	const impressionBarColor = $derived(() => {
+		if (impression === 0) return 'bg-gray-400';
+		if (impression === 1) return 'bg-gray-500';
+		if (impression === 2) return 'bg-blue-400';
+		if (impression === 3) return 'bg-blue-500';
+		if (impression === 4) return 'bg-blue-600';
+		return 'bg-purple-600';
 	});
 
 	// Get NPC response preview text
@@ -87,6 +99,26 @@
 				aria-valuemax={5}
 				class="{patienceBarColor()} h-4 rounded-full transition-all duration-300"
 				style="width: {patiencePercent}%"
+			></div>
+		</div>
+	</div>
+
+	<!-- Impression Section -->
+	<div class="space-y-2">
+		<div class="flex items-center justify-between">
+			<span class="text-sm font-medium">Impression: {impression}/5</span>
+		</div>
+		<div class="h-4 w-full rounded-full bg-gray-200 dark:bg-gray-700">
+			<div
+				data-testid="impression-bar"
+				data-value={impression}
+				role="progressbar"
+				aria-label="Impression level"
+				aria-valuenow={impression}
+				aria-valuemin={0}
+				aria-valuemax={5}
+				class="{impressionBarColor()} h-4 rounded-full transition-all duration-300"
+				style="width: {impressionPercent}%"
 			></div>
 		</div>
 	</div>

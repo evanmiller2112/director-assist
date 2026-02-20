@@ -74,6 +74,10 @@ describe('CombatRepository - CRUD Operations', () => {
 			expect(combat.log).toEqual([]);
 			expect(combat.createdAt).toBeInstanceOf(Date);
 			expect(combat.updatedAt).toBeInstanceOf(Date);
+			// Issue #501: New combats default to director-selected mode
+			expect(combat.turnMode).toBe('director-selected');
+			expect(combat.actedCombatantIds).toEqual([]);
+			expect(combat.activeCombatantId).toBeUndefined();
 		});
 
 		it('should generate unique IDs for each combat', async () => {
@@ -767,7 +771,8 @@ describe('CombatRepository - Turn Management', () => {
 
 	beforeEach(async () => {
 		await db.combatSessions.clear();
-		const combat = await combatRepository.create({ name: 'Turn Test' });
+		// Use sequential mode for traditional turn management tests
+		const combat = await combatRepository.create({ name: 'Turn Test', turnMode: 'sequential' });
 		combatId = combat.id;
 
 		// Add combatants
@@ -2404,8 +2409,10 @@ describe('CombatRepository - Group Management (Issue #263)', () => {
 	let combatId: string;
 
 	beforeEach(async () => {
+		// Use sequential mode for group tests (they use nextTurn/previousTurn)
 		const combat = await combatRepository.create({
-			name: 'Group Test Combat'
+			name: 'Group Test Combat',
+			turnMode: 'sequential'
 		});
 		combatId = combat.id;
 	});

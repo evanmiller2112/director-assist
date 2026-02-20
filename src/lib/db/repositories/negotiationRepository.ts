@@ -26,8 +26,7 @@ import type {
 	RecordArgumentInput,
 	ArgumentType,
 	NegotiationTier,
-	NegotiationOutcome,
-	MotivationType
+	NegotiationOutcome
 } from '$lib/types/negotiation';
 import { createFromNegotiation } from '$lib/services/narrativeEventService';
 
@@ -165,9 +164,11 @@ export const negotiationRepository = {
 			name: input.name,
 			description: input.description,
 			npcName: input.npcName,
+			npcEntityId: input.npcEntityId,
 			status: 'preparing',
 			interest: input.interest ?? 2,
 			patience: input.patience ?? 5,
+			impression: input.impression ?? 0,
 			motivations,
 			pitfalls,
 			arguments: [],
@@ -471,7 +472,7 @@ export const negotiationRepository = {
 	/**
 	 * Mark a motivation as used (increment timesUsed).
 	 */
-	async markMotivationUsed(id: string, motivationType: MotivationType): Promise<NegotiationSession> {
+	async markMotivationUsed(id: string, motivationType: string): Promise<NegotiationSession> {
 		await ensureDbReady();
 
 		const negotiation = await db.negotiationSessions.get(id);

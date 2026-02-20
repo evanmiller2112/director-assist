@@ -1,23 +1,27 @@
 <script lang="ts">
-	import type { MotivationType } from '$lib/types/negotiation';
+	import { CANONICAL_MOTIVATION_TYPES } from '$lib/types/negotiation';
+	import type { BaseEntity } from '$lib/types';
 	import { Plus, Trash2 } from 'lucide-svelte';
+	import { entitiesStore } from '$lib/stores';
 
 	interface MotivationInput {
-		type: MotivationType;
+		type: string;
 		isKnown: boolean;
 	}
 
 	interface PitfallInput {
-		type: MotivationType;
+		type: string;
 		isKnown: boolean;
 	}
 
 	interface CreateNegotiationInput {
 		name: string;
 		npcName: string;
+		npcEntityId?: string;
 		description?: string;
 		interest: number;
 		patience: number;
+		impression: number;
 		motivations: MotivationInput[];
 		pitfalls: PitfallInput[];
 	}
@@ -34,11 +38,17 @@
 	// Form state
 	let name = $state(initialData?.name || '');
 	let npcName = $state(initialData?.npcName || '');
+	let npcEntityId = $state(initialData?.npcEntityId);
 	let description = $state(initialData?.description || '');
 	let interest = $state(initialData?.interest || 2);
 	let patience = $state(initialData?.patience || 5);
+	let impression = $state(initialData?.impression || 0);
 	let motivations = $state<MotivationInput[]>(initialData?.motivations || []);
 	let pitfalls = $state<PitfallInput[]>(initialData?.pitfalls || []);
+
+	// NPC entity selector state
+	let npcMode = $state<'entity' | 'manual'>('entity');
+	let npcSearchQuery = $state('');
 
 	// Validation errors
 	let nameError = $state('');
@@ -46,27 +56,48 @@
 	let motivationError = $state('');
 	let pitfallError = $state('');
 
-	const motivationTypes: MotivationType[] = [
-		'charity',
-		'discovery',
-		'faith',
-		'freedom',
-		'greed',
-		'harmony',
-		'justice',
-		'knowledge',
-		'legacy',
-		'power',
-		'protection',
-		'revenge',
-		'wealth'
-	];
+	// Derived state for NPC entities (character or npc type)
+	const npcEntities = $derived(
+		entitiesStore.entities.filter((e) => e.type === 'npc' || e.type === 'character')
+	);
 
-	function formatMotivationType(type: MotivationType): string {
+	const filteredNpcEntities = $derived.by(() => {
+		if (!npcSearchQuery.trim()) return npcEntities;
+		const query = npcSearchQuery.toLowerCase();
+		return npcEntities.filter((e) => e.name.toLowerCase().includes(query));
+	});
+
+	function formatMotivationType(type: string): string {
 		return type
 			.split('_')
 			.map((word) => word.charAt(0).toUpperCase() + word.slice(1))
 			.join(' ');
+	}
+
+	function selectNpcEntity(entity: BaseEntity) {
+		npcName = entity.name;
+		npcEntityId = entity.id;
+		npcSearchQuery = '';
+	}
+
+	function clearNpcEntitySelection() {
+		npcName = '';
+		npcEntityId = undefined;
+		npcSearchQuery = '';
+	}
+
+	function setNpcMode(mode: 'entity' | 'manual') {
+		npcMode = mode;
+		if (mode === 'entity') {
+			// Switching to entity mode: clear everything
+			npcName = '';
+			npcEntityId = undefined;
+			npcSearchQuery = '';
+		} else {
+			// Switching to manual mode: preserve name but clear entityId
+			npcEntityId = undefined;
+			npcSearchQuery = '';
+		}
 	}
 
 	function addMotivation() {
@@ -148,9 +179,11 @@
 			onCreate({
 				name: name.trim(),
 				npcName: npcName.trim(),
+				npcEntityId: npcEntityId,
 				description: description.trim() || undefined,
 				interest,
 				patience,
+				impression,
 				motivations,
 				pitfalls
 			});
@@ -197,20 +230,108 @@
 			{/if}
 		</div>
 
-		<!-- NPC Name -->
+		<!-- NPC Name with Entity Selector -->
 		<div>
-			<label for="npc-name" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+			<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
 				NPC Name <span class="text-red-600">*</span>
 			</label>
-			<input
-				id="npc-name"
-				type="text"
-				bind:value={npcName}
-				required
-				aria-required="true"
-				aria-invalid={!!npcNameError}
-				class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-			/>
+
+			<!-- Mode Toggle -->
+			<div class="flex gap-2 mb-3">
+				<button
+					type="button"
+					onclick={() => setNpcMode('entity')}
+					class={`flex-1 px-3 py-2 rounded-md border text-sm font-medium transition-colors ${
+						npcMode === 'entity'
+							? 'bg-blue-100 dark:bg-blue-900 border-blue-500 text-blue-700 dark:text-blue-300 active selected'
+							: 'border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+					}`}
+					aria-pressed={npcMode === 'entity'}
+				>
+					From Entity
+				</button>
+				<button
+					type="button"
+					onclick={() => setNpcMode('manual')}
+					class={`flex-1 px-3 py-2 rounded-md border text-sm font-medium transition-colors ${
+						npcMode === 'manual'
+							? 'bg-blue-100 dark:bg-blue-900 border-blue-500 text-blue-700 dark:text-blue-300 active selected'
+							: 'border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+					}`}
+					aria-pressed={npcMode === 'manual'}
+				>
+					Manual
+				</button>
+			</div>
+
+			<!-- Entity Mode -->
+			{#if npcMode === 'entity'}
+				<div class="space-y-2">
+					{#if npcEntityId && npcName}
+						<!-- Selected Entity Display -->
+						<div class="px-3 py-2 rounded-md bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+							<div class="flex justify-between items-center">
+								<div class="text-sm font-medium text-blue-900 dark:text-blue-100">
+									<span class="text-xs text-blue-700 dark:text-blue-300">Selected:</span>
+									<span>{npcName}</span>
+								</div>
+								<button
+									type="button"
+									onclick={clearNpcEntitySelection}
+									class="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+									aria-label="Clear selection"
+								>
+									Clear Selection
+								</button>
+							</div>
+						</div>
+					{/if}
+
+					<input
+						type="text"
+						bind:value={npcSearchQuery}
+						placeholder="Search NPC/character entities..."
+						aria-label="Search NPC entities"
+						class="block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100"
+					/>
+
+					{#if npcEntities.length === 0}
+						<p class="text-sm text-gray-500 dark:text-gray-400 py-2">No NPC or character entities exist. Create entities or switch to Manual mode.</p>
+					{:else}
+						{@const filteredList = filteredNpcEntities}
+						{#if filteredList.length === 0}
+							<p class="text-sm text-gray-500 dark:text-gray-400 py-2">No entities found matching your search.</p>
+						{:else}
+							<div class="max-h-48 overflow-y-auto space-y-1">
+								{#each filteredList as entity (entity.id)}
+									<button
+										type="button"
+										onclick={() => selectNpcEntity(entity)}
+										class={`w-full text-left px-3 py-2 rounded-md border transition-colors text-sm ${
+											npcEntityId === entity.id
+												? 'bg-blue-50 dark:bg-blue-900/20 border-blue-500 text-blue-700 dark:text-blue-300 selected active'
+												: 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
+										}`}
+									>
+										{entity.name}
+									</button>
+								{/each}
+							</div>
+						{/if}
+					{/if}
+				</div>
+			{:else}
+				<!-- Manual Mode -->
+				<input
+					type="text"
+					bind:value={npcName}
+					placeholder="NPC name"
+					aria-required="true"
+					aria-invalid={!!npcNameError}
+					class="block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100"
+				/>
+			{/if}
+
 			{#if npcNameError}
 				<p class="mt-1 text-sm text-red-600">{npcNameError}</p>
 			{/if}
@@ -265,6 +386,26 @@
 			</select>
 			<p class="mt-1 text-xs text-gray-500">How patient the NPC is initially (1-5)</p>
 		</div>
+
+		<!-- Starting Impression -->
+		<div>
+			<label for="impression" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+				Starting Impression
+			</label>
+			<select
+				id="impression"
+				bind:value={impression}
+				class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+			>
+				<option value={0}>0</option>
+				<option value={1}>1</option>
+				<option value={2}>2</option>
+				<option value={3}>3</option>
+				<option value={4}>4</option>
+				<option value={5}>5</option>
+			</select>
+			<p class="mt-1 text-xs text-gray-500">How impressed the NPC is initially (0-5)</p>
+		</div>
 	</div>
 
 	<!-- Motivations Section -->
@@ -284,16 +425,19 @@
 							<label for="motivation-type-{index}" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
 								Motivation Type
 							</label>
-							<select
+							<input
 								id="motivation-type-{index}"
+								type="text"
+								list="motivation-suggestions"
 								bind:value={motivation.type}
-								onchange={() => checkDuplicateMotivations()}
+								oninput={() => checkDuplicateMotivations()}
 								class="block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-							>
-								{#each motivationTypes as type}
+							/>
+							<datalist id="motivation-suggestions">
+								{#each CANONICAL_MOTIVATION_TYPES as type}
 									<option value={type}>{formatMotivationType(type)}</option>
 								{/each}
-							</select>
+							</datalist>
 						</div>
 
 						<div class="flex items-center gap-2">
@@ -352,16 +496,19 @@
 							<label for="pitfall-type-{index}" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
 								Pitfall Type
 							</label>
-							<select
+							<input
 								id="pitfall-type-{index}"
+								type="text"
+								list="pitfall-suggestions"
 								bind:value={pitfall.type}
-								onchange={() => checkDuplicatePitfalls()}
+								oninput={() => checkDuplicatePitfalls()}
 								class="block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-							>
-								{#each motivationTypes as type}
+							/>
+							<datalist id="pitfall-suggestions">
+								{#each CANONICAL_MOTIVATION_TYPES as type}
 									<option value={type}>{formatMotivationType(type)}</option>
 								{/each}
-							</select>
+							</datalist>
 						</div>
 
 						<div class="flex items-center gap-2">

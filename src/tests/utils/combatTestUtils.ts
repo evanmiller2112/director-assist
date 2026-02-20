@@ -155,6 +155,8 @@ export function createMockCombatSession(
 		log: [],
 		createdAt: now,
 		updatedAt: now,
+		turnMode: 'director-selected',
+		actedCombatantIds: [],
 		...overrides
 	};
 }

@@ -3,16 +3,18 @@
 	import { negotiationStore } from '$lib/stores';
 	import { NegotiationSetup } from '$lib/components/negotiation';
 	import { ArrowLeft } from 'lucide-svelte';
-	import type { MotivationType } from '$lib/types/negotiation';
+	import { entityRepository } from '$lib/db/repositories/entityRepository';
 
 	interface NegotiationSetupOutput {
 		name: string;
 		npcName: string;
+		npcEntityId?: string;
 		description?: string;
 		interest: number;
 		patience: number;
-		motivations: Array<{ type: MotivationType; isKnown: boolean }>;
-		pitfalls: Array<{ type: MotivationType; isKnown: boolean }>;
+		impression: number;
+		motivations: Array<{ type: string; isKnown: boolean }>;
+		pitfalls: Array<{ type: string; isKnown: boolean }>;
 	}
 
 	async function handleCreate(data: NegotiationSetupOutput) {
@@ -20,9 +22,11 @@
 		const input = {
 			name: data.name,
 			npcName: data.npcName,
+			npcEntityId: data.npcEntityId,
 			description: data.description,
 			interest: data.interest,
 			patience: data.patience,
+			impression: data.impression,
 			motivations: data.motivations.map((m) => ({
 				type: m.type,
 				description: formatMotivationType(m.type)
@@ -33,6 +37,25 @@
 		};
 
 		const negotiation = await negotiationStore.createNegotiation(input);
+
+		// Create relationship if npcEntityId is provided (non-blocking)
+		if (data.npcEntityId) {
+			try {
+				await entityRepository.addLink(
+					data.npcEntityId,
+					negotiation.id,
+					'negotiated_with',
+					false,
+					`Negotiation: ${negotiation.name}`,
+					undefined,
+					{ negotiationId: negotiation.id }
+				);
+			} catch (error) {
+				console.error('Failed to create entity relationship for negotiation:', error);
+				// Don't block navigation if relationship creation fails
+			}
+		}
+
 		// Redirect to negotiation detail page
 		goto(`/negotiation/${negotiation.id}`);
 	}
@@ -41,7 +64,7 @@
 		goto('/negotiation');
 	}
 
-	function formatMotivationType(type: MotivationType): string {
+	function formatMotivationType(type: string): string {
 		return type
 			.split('_')
 			.map((word) => word.charAt(0).toUpperCase() + word.slice(1))

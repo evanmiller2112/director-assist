@@ -13,7 +13,7 @@
 		NegotiationSetup
 	} from '$lib/components/negotiation';
 	import { ArrowLeft, Play, StopCircle, RefreshCw } from 'lucide-svelte';
-	import type { RecordArgumentInput, MotivationType } from '$lib/types/negotiation';
+	import type { RecordArgumentInput } from '$lib/types/negotiation';
 
 	const negotiationId = $derived($page.params.id);
 
@@ -41,7 +41,7 @@
 	const npcPitfalls = $derived.by(() => {
 		if (!negotiation) return [];
 		return negotiation.pitfalls.map((p) => ({
-			type: p.description.toLowerCase() as MotivationType,
+			type: p.description.toLowerCase(),
 			isKnown: p.isKnown
 		}));
 	});
@@ -80,7 +80,7 @@
 			type: data.argumentType as 'motivation' | 'no_motivation' | 'pitfall',
 			tier: data.tier as 1 | 2 | 3,
 			description: data.notes || `${data.argumentType} argument`,
-			motivationType: data.motivationType as MotivationType | undefined,
+			motivationType: data.motivationType,
 			playerName: data.playerName,
 			notes: data.notes
 		};
@@ -98,7 +98,7 @@
 		await negotiationStore.reopenNegotiation(negotiation.id);
 	}
 
-	async function handleRevealMotivation(type: MotivationType) {
+	async function handleRevealMotivation(type: string) {
 		if (!negotiation) return;
 		const index = negotiation.motivations.findIndex((m) => m.type === type);
 		if (index !== -1) {
@@ -106,7 +106,7 @@
 		}
 	}
 
-	async function handleRevealPitfall(type: MotivationType) {
+	async function handleRevealPitfall(type: string) {
 		if (!negotiation) return;
 		// Find the pitfall by description matching the type
 		const index = negotiation.pitfalls.findIndex((p) => p.description === type);
@@ -119,18 +119,20 @@
 	interface NegotiationSetupOutput {
 		name: string;
 		npcName: string;
+		npcEntityId?: string;
 		description?: string;
 		interest: number;
 		patience: number;
-		motivations: Array<{ type: MotivationType; isKnown: boolean }>;
-		pitfalls: Array<{ type: MotivationType; isKnown: boolean }>;
+		impression: number;
+		motivations: Array<{ type: string; isKnown: boolean }>;
+		pitfalls: Array<{ type: string; isKnown: boolean }>;
 	}
 
 	async function handleUpdateSetup(data: NegotiationSetupOutput) {
 		if (!negotiation) return;
 
 		// Helper function to format motivation type for DB storage
-		function formatMotivationType(type: MotivationType): string {
+		function formatMotivationType(type: string): string {
 			return type
 				.split('_')
 				.map((word) => word.charAt(0).toUpperCase() + word.slice(1))
@@ -140,9 +142,11 @@
 		await negotiationStore.updateNegotiation(negotiation.id, {
 			name: data.name,
 			npcName: data.npcName,
+			npcEntityId: data.npcEntityId,
 			description: data.description,
 			interest: data.interest,
 			patience: data.patience,
+			impression: data.impression,
 			motivations: data.motivations.map((m) => ({
 				type: m.type,
 				description: `Motivated by ${m.type}`,
@@ -162,15 +166,17 @@
 		return {
 			name: negotiation.name,
 			npcName: negotiation.npcName,
+			npcEntityId: negotiation.npcEntityId,
 			description: negotiation.description,
 			interest: negotiation.interest,
 			patience: negotiation.patience,
+			impression: negotiation.impression,
 			motivations: negotiation.motivations.map((m) => ({
 				type: m.type,
 				isKnown: m.isKnown
 			})),
 			pitfalls: negotiation.pitfalls.map((p) => ({
-				type: p.description.toLowerCase() as MotivationType,
+				type: p.description.toLowerCase(),
 				isKnown: p.isKnown
 			}))
 		};
@@ -203,6 +209,15 @@
 				<div>
 					<h1 class="text-3xl font-bold text-slate-900 dark:text-white mb-1">
 						{negotiation.npcName}
+						{#if negotiation.npcEntityId}
+							<a
+								href="/entities/{negotiation.npcEntityId}"
+								class="ml-2 text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+								title="View entity"
+							>
+								(view entity)
+							</a>
+						{/if}
 					</h1>
 					{#if negotiation.name}
 						<p class="text-lg text-slate-600 dark:text-slate-400">{negotiation.name}</p>
@@ -281,7 +296,7 @@
 					<h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">
 						Progress
 					</h2>
-					<NegotiationProgress interest={negotiation.interest} patience={negotiation.patience} />
+					<NegotiationProgress interest={negotiation.interest} patience={negotiation.patience} impression={negotiation.impression} />
 				</div>
 
 				<!-- Right Column: Motivations and Pitfalls -->

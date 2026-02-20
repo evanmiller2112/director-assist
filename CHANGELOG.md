@@ -7,6 +7,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.9.7] - 2026-02-20
+
+### Added
+
+**App Metadata & Visibility (#560)**
+- App version display on settings page, automatically pulled from package.json
+
+**Error Handling & Recovery (#508)**
+- Error boundaries using Svelte 5 `<svelte:boundary>` with reusable ErrorBoundary component
+- Custom error pages for root, combat, and entities routes
+- Centralized error logging service with structured context
+- SvelteKit client error hook (hooks.client.ts)
+
+**Accessibility Improvements (#507)**
+- Skip navigation link for keyboard accessibility
+- Focus trap utility for modal dialogs
+- Toast notification live regions for screen reader announcements
+- ARIA landmark labels on header, sidebar, nav, and chat panel
+- Accessibility test suite
+
+**Developer Experience (#509)**
+- `getErrorMessage()` error utility for type-safe error handling
+
+### Changed
+
+**Code Quality & TypeScript Strictness (#509)**
+- Promoted `no-explicit-any` ESLint rule from warn to error
+- Replaced ~100 explicit `any` types with proper TypeScript types across 29+ files
+
+**Documentation Organization (#527)**
+- Organized 14 root-level documentation files into docs/ and docs/testing/ directories
+
+**Accessibility Enhancements (#507)**
+- Improved modal accessibility with role="document" on backdrop content
+- Chat panel controls now have proper aria-labels
+- Dashboard sidebar link now shows aria-current when active
+
+### Fixed
+
+- Latent bug in suggestionActionService using incorrect addLink API signature (exposed by type cleanup) (#509)
+
 ## [1.9.6] - 2026-02-19
 
 ### Added

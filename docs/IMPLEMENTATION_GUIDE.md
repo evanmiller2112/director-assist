@@ -377,7 +377,7 @@ await waitFor(() => expect(...).toBeInTheDocument());
 
 Refer to:
 1. Test files - They specify exact behavior expected
-2. `TEST_SUITE_SUMMARY.md` - Overview of all tests
+2. `testing/TEST_SUITE_SUMMARY.md` - Overview of all tests
 3. Existing components in `src/lib/components/` for patterns
 4. Type definitions in `src/lib/types/combat.ts`
 

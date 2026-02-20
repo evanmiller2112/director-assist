@@ -13,7 +13,7 @@ This document summarizes the test coverage improvements made for Issue #19, whic
 ### Repository Tests - 178 tests total
 
 #### `appConfigRepository.test.ts` - 56 tests
-**File**: `/home/evan/git4/director-assist/src/lib/db/repositories/appConfigRepository.test.ts`
+**File**: `/src/lib/db/repositories/appConfigRepository.test.ts`
 
 **Coverage Areas**:
 - Configuration key-value storage
@@ -23,7 +23,7 @@ This document summarizes the test coverage improvements made for Issue #19, whic
 - Data persistence across operations
 
 #### `chatRepository.test.ts` - 59 tests
-**File**: `/home/evan/git4/director-assist/src/lib/db/repositories/chatRepository.test.ts`
+**File**: `/src/lib/db/repositories/chatRepository.test.ts`
 
 **Coverage Areas**:
 - Chat message CRUD operations
@@ -34,7 +34,7 @@ This document summarizes the test coverage improvements made for Issue #19, whic
 - Error handling
 
 #### `campaignRepository.test.ts` - 63 tests
-**File**: `/home/evan/git4/director-assist/src/lib/db/repositories/campaignRepository.test.ts`
+**File**: `/src/lib/db/repositories/campaignRepository.test.ts`
 
 **Coverage Areas**:
 - Campaign creation and updates
@@ -47,7 +47,7 @@ This document summarizes the test coverage improvements made for Issue #19, whic
 ### Store Tests - 369 tests total
 
 #### `notifications.test.ts` - 59 tests
-**File**: `/home/evan/git4/director-assist/src/lib/stores/notifications.test.ts`
+**File**: `/src/lib/stores/notifications.test.ts`
 
 **Coverage Areas**:
 - Notification creation (success, error, warning, info)
@@ -58,7 +58,7 @@ This document summarizes the test coverage improvements made for Issue #19, whic
 - Notification state updates
 
 #### `ui.test.ts` - 88 tests
-**File**: `/home/evan/git4/director-assist/src/lib/stores/ui.test.ts`
+**File**: `/src/lib/stores/ui.test.ts`
 
 **Coverage Areas**:
 - Sidebar toggle (open/close)
@@ -70,7 +70,7 @@ This document summarizes the test coverage improvements made for Issue #19, whic
 - UI state persistence
 
 #### `chat.test.ts` - 113 tests
-**File**: `/home/evan/git4/director-assist/src/lib/stores/chat.test.ts`
+**File**: `/src/lib/stores/chat.test.ts`
 
 **Coverage Areas**:
 - Chat message sending
@@ -82,7 +82,7 @@ This document summarizes the test coverage improvements made for Issue #19, whic
 - Message state transitions
 
 #### `campaign.test.ts` - 109 tests
-**File**: `/home/evan/git4/director-assist/src/lib/stores/campaign.test.ts`
+**File**: `/src/lib/stores/campaign.test.ts`
 
 **Coverage Areas**:
 - Campaign loading
@@ -166,7 +166,7 @@ describe('EntityStore', () => {
 
 ## Documentation Updates
 
-Updated `/home/evan/git4/director-assist/src/tests/README.md` with:
+Updated `/src/tests/README.md` with:
 - Current test statistics
 - Test coverage breakdown by layer
 - Test organization structure
@@ -200,6 +200,6 @@ With comprehensive data layer testing in place, future improvements could includ
 
 ## References
 
-- Main test guide: `/home/evan/git4/director-assist/src/tests/README.md`
-- Test patterns: `/home/evan/git4/director-assist/TEST_PATTERNS.md`
-- Architecture docs: `/home/evan/git4/director-assist/docs/ARCHITECTURE.md`
+- Main test guide: `/src/tests/README.md`
+- Test patterns: `TEST_PATTERNS.md`
+- Architecture docs: `/docs/ARCHITECTURE.md`

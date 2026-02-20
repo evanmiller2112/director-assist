@@ -25,6 +25,7 @@ import type {
 	AddLogEntryInput,
 	LogPowerRollInput
 } from '$lib/types/combat';
+import { getErrorMessage } from '$lib/utils/errors';
 
 function createCombatStore() {
 	// ========================================================================
@@ -140,8 +141,8 @@ function createCombatStore() {
 			isLoading = true;
 			const combat = await combatRepository.create(input);
 			return combat;
-		} catch (err: any) {
-			error = err.message;
+		} catch (err: unknown) {
+			error = getErrorMessage(err);
 			throw err;
 		} finally {
 			isLoading = false;
@@ -154,8 +155,8 @@ function createCombatStore() {
 			isLoading = true;
 			const combat = await combatRepository.getById(id);
 			activeCombat = combat || null;
-		} catch (err: any) {
-			error = err.message;
+		} catch (err: unknown) {
+			error = getErrorMessage(err);
 			activeCombat = null;
 		} finally {
 			isLoading = false;
@@ -168,8 +169,8 @@ function createCombatStore() {
 			const updated = await combatRepository.update(id, input);
 			updateActiveCombatIfMatch(updated);
 			return updated;
-		} catch (err: any) {
-			error = err.message;
+		} catch (err: unknown) {
+			error = getErrorMessage(err);
 			throw err;
 		}
 	}
@@ -179,8 +180,8 @@ function createCombatStore() {
 			error = null;
 			await combatRepository.delete(id);
 			clearActiveCombatIfMatch(id);
-		} catch (err: any) {
-			error = err.message;
+		} catch (err: unknown) {
+			error = getErrorMessage(err);
 			throw err;
 		}
 	}
@@ -195,8 +196,8 @@ function createCombatStore() {
 			const updated = await combatRepository.startCombat(id);
 			updateActiveCombatIfMatch(updated);
 			return updated;
-		} catch (err: any) {
-			error = err.message;
+		} catch (err: unknown) {
+			error = getErrorMessage(err);
 			throw err;
 		}
 	}
@@ -207,8 +208,8 @@ function createCombatStore() {
 			const updated = await combatRepository.pauseCombat(id);
 			updateActiveCombatIfMatch(updated);
 			return updated;
-		} catch (err: any) {
-			error = err.message;
+		} catch (err: unknown) {
+			error = getErrorMessage(err);
 			throw err;
 		}
 	}
@@ -219,8 +220,8 @@ function createCombatStore() {
 			const updated = await combatRepository.resumeCombat(id);
 			updateActiveCombatIfMatch(updated);
 			return updated;
-		} catch (err: any) {
-			error = err.message;
+		} catch (err: unknown) {
+			error = getErrorMessage(err);
 			throw err;
 		}
 	}
@@ -233,8 +234,8 @@ function createCombatStore() {
 				activeCombat = null;
 			}
 			return updated;
-		} catch (err: any) {
-			error = err.message;
+		} catch (err: unknown) {
+			error = getErrorMessage(err);
 			throw err;
 		}
 	}
@@ -245,8 +246,8 @@ function createCombatStore() {
 			const updated = await combatRepository.reopenCombat(id);
 			updateActiveCombatIfMatch(updated);
 			return updated;
-		} catch (err: any) {
-			error = err.message;
+		} catch (err: unknown) {
+			error = getErrorMessage(err);
 			throw err;
 		}
 	}
@@ -261,8 +262,8 @@ function createCombatStore() {
 			const updated = await combatRepository.addHeroCombatant(combatId, input);
 			updateActiveCombatIfMatch(updated);
 			return updated;
-		} catch (err: any) {
-			error = err.message;
+		} catch (err: unknown) {
+			error = getErrorMessage(err);
 			throw err;
 		}
 	}
@@ -276,8 +277,8 @@ function createCombatStore() {
 			const updated = await combatRepository.addCreatureCombatant(combatId, input);
 			updateActiveCombatIfMatch(updated);
 			return updated;
-		} catch (err: any) {
-			error = err.message;
+		} catch (err: unknown) {
+			error = getErrorMessage(err);
 			throw err;
 		}
 	}
@@ -301,8 +302,8 @@ function createCombatStore() {
 			const updated = await combatRepository.addQuickCombatant(combatId, input);
 			updateActiveCombatIfMatch(updated);
 			return updated;
-		} catch (err: any) {
-			error = err.message;
+		} catch (err: unknown) {
+			error = getErrorMessage(err);
 			throw err;
 		}
 	}
@@ -317,8 +318,8 @@ function createCombatStore() {
 			const updated = await combatRepository.updateCombatant(combatId, combatantId, input);
 			updateActiveCombatIfMatch(updated);
 			return updated;
-		} catch (err: any) {
-			error = err.message;
+		} catch (err: unknown) {
+			error = getErrorMessage(err);
 			throw err;
 		}
 	}
@@ -329,8 +330,8 @@ function createCombatStore() {
 			const updated = await combatRepository.removeCombatant(combatId, combatantId);
 			updateActiveCombatIfMatch(updated);
 			return updated;
-		} catch (err: any) {
-			error = err.message;
+		} catch (err: unknown) {
+			error = getErrorMessage(err);
 			throw err;
 		}
 	}
@@ -349,8 +350,8 @@ function createCombatStore() {
 			);
 			updateActiveCombatIfMatch(updated);
 			return updated;
-		} catch (err: any) {
-			error = err.message;
+		} catch (err: unknown) {
+			error = getErrorMessage(err);
 			throw err;
 		}
 	}
@@ -369,8 +370,8 @@ function createCombatStore() {
 			);
 			updateActiveCombatIfMatch(updated);
 			return updated;
-		} catch (err: any) {
-			error = err.message;
+		} catch (err: unknown) {
+			error = getErrorMessage(err);
 			throw err;
 		}
 	}
@@ -385,8 +386,8 @@ function createCombatStore() {
 			const updated = await combatRepository.rollInitiative(combatId, combatantId, modifier);
 			updateActiveCombatIfMatch(updated);
 			return updated;
-		} catch (err: any) {
-			error = err.message;
+		} catch (err: unknown) {
+			error = getErrorMessage(err);
 			throw err;
 		}
 	}
@@ -397,8 +398,8 @@ function createCombatStore() {
 			const updated = await combatRepository.rollInitiativeForAll(combatId);
 			updateActiveCombatIfMatch(updated);
 			return updated;
-		} catch (err: any) {
-			error = err.message;
+		} catch (err: unknown) {
+			error = getErrorMessage(err);
 			throw err;
 		}
 	}
@@ -413,8 +414,8 @@ function createCombatStore() {
 			const updated = await combatRepository.nextTurn(combatId);
 			updateActiveCombatIfMatch(updated);
 			return updated;
-		} catch (err: any) {
-			error = err.message;
+		} catch (err: unknown) {
+			error = getErrorMessage(err);
 			throw err;
 		}
 	}
@@ -425,8 +426,8 @@ function createCombatStore() {
 			const updated = await combatRepository.previousTurn(combatId);
 			updateActiveCombatIfMatch(updated);
 			return updated;
-		} catch (err: any) {
-			error = err.message;
+		} catch (err: unknown) {
+			error = getErrorMessage(err);
 			throw err;
 		}
 	}
@@ -446,8 +447,8 @@ function createCombatStore() {
 			const updated = await combatRepository.applyDamage(combatId, combatantId, damage, source);
 			updateActiveCombatIfMatch(updated);
 			return updated;
-		} catch (err: any) {
-			error = err.message;
+		} catch (err: unknown) {
+			error = getErrorMessage(err);
 			throw err;
 		}
 	}
@@ -468,8 +469,8 @@ function createCombatStore() {
 			);
 			updateActiveCombatIfMatch(updated);
 			return updated;
-		} catch (err: any) {
-			error = err.message;
+		} catch (err: unknown) {
+			error = getErrorMessage(err);
 			throw err;
 		}
 	}
@@ -484,8 +485,8 @@ function createCombatStore() {
 			const updated = await combatRepository.addTemporaryHp(combatId, combatantId, tempHp);
 			updateActiveCombatIfMatch(updated);
 			return updated;
-		} catch (err: any) {
-			error = err.message;
+		} catch (err: unknown) {
+			error = getErrorMessage(err);
 			throw err;
 		}
 	}
@@ -500,8 +501,8 @@ function createCombatStore() {
 			const updated = await combatRepository.updateMaxHp(combatId, combatantId, newMaxHp);
 			updateActiveCombatIfMatch(updated);
 			return updated;
-		} catch (err: any) {
-			error = err.message;
+		} catch (err: unknown) {
+			error = getErrorMessage(err);
 			throw err;
 		}
 	}
@@ -520,8 +521,8 @@ function createCombatStore() {
 			const updated = await combatRepository.addCondition(combatId, combatantId, condition);
 			updateActiveCombatIfMatch(updated);
 			return updated;
-		} catch (err: any) {
-			error = err.message;
+		} catch (err: unknown) {
+			error = getErrorMessage(err);
 			throw err;
 		}
 	}
@@ -536,8 +537,8 @@ function createCombatStore() {
 			const updated = await combatRepository.removeCondition(combatId, combatantId, conditionName);
 			updateActiveCombatIfMatch(updated);
 			return updated;
-		} catch (err: any) {
-			error = err.message;
+		} catch (err: unknown) {
+			error = getErrorMessage(err);
 			throw err;
 		}
 	}
@@ -552,8 +553,8 @@ function createCombatStore() {
 			const updated = await combatRepository.addHeroPoints(combatId, points);
 			updateActiveCombatIfMatch(updated);
 			return updated;
-		} catch (err: any) {
-			error = err.message;
+		} catch (err: unknown) {
+			error = getErrorMessage(err);
 			throw err;
 		}
 	}
@@ -564,8 +565,8 @@ function createCombatStore() {
 			const updated = await combatRepository.spendHeroPoint(combatId);
 			updateActiveCombatIfMatch(updated);
 			return updated;
-		} catch (err: any) {
-			error = err.message;
+		} catch (err: unknown) {
+			error = getErrorMessage(err);
 			throw err;
 		}
 	}
@@ -584,8 +585,8 @@ function createCombatStore() {
 			const updated = await combatRepository.addVictoryPoints(combatId, points, reason);
 			updateActiveCombatIfMatch(updated);
 			return updated;
-		} catch (err: any) {
-			error = err.message;
+		} catch (err: unknown) {
+			error = getErrorMessage(err);
 			throw err;
 		}
 	}
@@ -600,8 +601,8 @@ function createCombatStore() {
 			const updated = await combatRepository.removeVictoryPoints(combatId, points, reason);
 			updateActiveCombatIfMatch(updated);
 			return updated;
-		} catch (err: any) {
-			error = err.message;
+		} catch (err: unknown) {
+			error = getErrorMessage(err);
 			throw err;
 		}
 	}
@@ -616,8 +617,8 @@ function createCombatStore() {
 			const updated = await combatRepository.addLogEntry(combatId, input);
 			updateActiveCombatIfMatch(updated);
 			return updated;
-		} catch (err: any) {
-			error = err.message;
+		} catch (err: unknown) {
+			error = getErrorMessage(err);
 			throw err;
 		}
 	}
@@ -628,8 +629,8 @@ function createCombatStore() {
 			const updated = await combatRepository.logPowerRoll(combatId, input);
 			updateActiveCombatIfMatch(updated);
 			return updated;
-		} catch (err: any) {
-			error = err.message;
+		} catch (err: unknown) {
+			error = getErrorMessage(err);
 			throw err;
 		}
 	}

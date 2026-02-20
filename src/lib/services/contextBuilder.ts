@@ -1,4 +1,4 @@
-import type { BaseEntity, EntityId, Campaign } from '$lib/types';
+import type { BaseEntity, EntityId, Campaign, FieldValue } from '$lib/types';
 import { entityRepository } from '$lib/db/repositories';
 import { getEntityTypeDefinition } from '$lib/config/entityTypes';
 
@@ -255,13 +255,19 @@ export function buildFullEntityContext(entity: BaseEntity): string {
 /**
  * Format a field value for display.
  */
-function formatFieldValue(value: any): string {
+function formatFieldValue(value: FieldValue): string {
+	if (value === null || value === undefined) {
+		return '';
+	}
 	if (Array.isArray(value)) {
 		return value.join(', ');
-	} else if (typeof value === 'object' && value !== null) {
-		// Handle ResourceValue-like objects
+	} else if (typeof value === 'object') {
+		// Handle ResourceValue and DurationValue objects
 		if ('current' in value && 'max' in value) {
 			return `${value.current}/${value.max}`;
+		}
+		if ('unit' in value) {
+			return value.value ? `${value.value} ${value.unit}` : value.unit;
 		}
 		return JSON.stringify(value);
 	}

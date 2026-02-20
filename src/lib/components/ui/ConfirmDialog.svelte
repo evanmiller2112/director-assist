@@ -30,6 +30,7 @@
 <script lang="ts">
 	import { AlertTriangle, AlertCircle } from 'lucide-svelte';
 	import { onMount } from 'svelte';
+	import { trapFocus } from '$lib/utils/focusTrap';
 
 	interface Props {
 		open?: boolean;
@@ -102,13 +103,20 @@
 		}
 	}
 
-	// Focus management - focus confirm button when dialog opens
+	// Focus management - focus confirm button when dialog opens and trap focus
 	$effect(() => {
-		if (open && confirmButtonRef) {
+		if (open && dialogRef) {
 			// Small delay to ensure DOM is ready
-			setTimeout(() => {
-				confirmButtonRef?.focus();
+			const timeoutId = setTimeout(() => {
+				if (dialogRef) {
+					const cleanup = trapFocus(dialogRef);
+					// Return cleanup in untrack to avoid reactive dependencies
+					return cleanup;
+				}
 			}, 0);
+			return () => {
+				clearTimeout(timeoutId);
+			};
 		}
 	});
 

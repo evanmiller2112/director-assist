@@ -31,7 +31,7 @@
 
 		const data = toVisNetworkData(relationshipMap, { isDark });
 
-		const options: any = {
+		const options: Record<string, unknown> = {
 			nodes: {
 				font: {
 					color: isDark ? '#e5e7eb' : '#1f2937'

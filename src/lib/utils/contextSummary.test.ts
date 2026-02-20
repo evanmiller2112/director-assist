@@ -208,7 +208,7 @@ describe('formatContextSummary', () => {
 				id: 'character',
 				name: 'Character',
 				icon: 'user',
-				fields: [
+				fieldDefinitions: [
 					{ key: 'class', label: 'Class', type: 'text', section: 'basic' },
 					{ key: 'background', label: 'Background', type: 'text', section: 'basic' }
 				]
@@ -238,7 +238,7 @@ describe('formatContextSummary', () => {
 				id: 'character',
 				name: 'Character',
 				icon: 'user',
-				fields: [
+				fieldDefinitions: [
 					{ key: 'name', label: 'Name', type: 'text', section: 'basic' },
 					{ key: 'secret', label: 'Secret', type: 'text', section: 'hidden' },
 					{ key: 'class', label: 'Class', type: 'text', section: 'basic' }
@@ -270,7 +270,7 @@ describe('formatContextSummary', () => {
 				id: 'character',
 				name: 'Character',
 				icon: 'user',
-				fields: [
+				fieldDefinitions: [
 					{ key: 'name', label: 'Name', type: 'text', section: 'basic' },
 					{ key: 'secret', label: 'Secret', type: 'text', section: 'hidden' },
 					{ key: 'class', label: 'Class', type: 'text', section: 'basic' },
@@ -340,7 +340,7 @@ describe('formatContextSummary', () => {
 				id: 'character',
 				name: 'Character',
 				icon: 'user',
-				fields: [
+				fieldDefinitions: [
 					{ key: 'field1', label: 'Field 1', type: 'text', section: 'basic' },
 					{ key: 'field2', label: 'Field 2', type: 'text', section: 'basic' },
 					{ key: 'field3', label: 'Field 3', type: 'text', section: 'basic' },
@@ -389,7 +389,7 @@ describe('formatContextSummary', () => {
 				id: 'character',
 				name: 'Character',
 				icon: 'user',
-				fields: [
+				fieldDefinitions: [
 					{ key: 'field1', label: 'Field 1', type: 'text', section: 'basic' },
 					{ key: 'field2', label: 'Field 2', type: 'text', section: 'basic' },
 					{ key: 'field3', label: 'Field 3', type: 'text', section: 'basic' },
@@ -424,7 +424,7 @@ describe('formatContextSummary', () => {
 				id: 'character',
 				name: 'Character',
 				icon: 'user',
-				fields: [{ key: 'class', label: 'Class', type: 'text', section: 'basic' }]
+				fieldDefinitions: [{ key: 'class', label: 'Class', type: 'text', section: 'basic' }]
 			};
 
 			const input: ContextSummaryInput = {
@@ -448,7 +448,7 @@ describe('formatContextSummary', () => {
 				id: 'character',
 				name: 'Character',
 				icon: 'user',
-				fields: [{ key: 'skills', label: 'Skills', type: 'tags', section: 'basic' }]
+				fieldDefinitions: [{ key: 'skills', label: 'Skills', type: 'tags', section: 'basic' }]
 			};
 
 			const input: ContextSummaryInput = {
@@ -476,7 +476,7 @@ describe('formatContextSummary', () => {
 				id: 'character',
 				name: 'Character',
 				icon: 'user',
-				fields: [{ key: 'isAlive', label: 'Alive', type: 'checkbox', section: 'basic' }]
+				fieldDefinitions: [{ key: 'isAlive', label: 'Alive', type: 'checkbox', section: 'basic' }]
 			};
 
 			const input: ContextSummaryInput = {
@@ -500,7 +500,7 @@ describe('formatContextSummary', () => {
 				id: 'character',
 				name: 'Character',
 				icon: 'user',
-				fields: [{ key: 'level', label: 'Level', type: 'number', section: 'basic' }]
+				fieldDefinitions: [{ key: 'level', label: 'Level', type: 'number', section: 'basic' }]
 			};
 
 			const input: ContextSummaryInput = {
@@ -524,7 +524,7 @@ describe('formatContextSummary', () => {
 				id: 'character',
 				name: 'Character',
 				icon: 'user',
-				fields: [
+				fieldDefinitions: [
 					{ key: 'class', label: 'Class', type: 'text', section: 'basic' },
 					{ key: 'race', label: 'Race', type: 'text', section: 'basic' }
 				]
@@ -552,7 +552,7 @@ describe('formatContextSummary', () => {
 				id: 'character',
 				name: 'Character',
 				icon: 'user',
-				fields: [
+				fieldDefinitions: [
 					{ key: 'class', label: 'Class', type: 'text', section: 'basic' },
 					{ key: 'skills', label: 'Skills', type: 'tags', section: 'basic' }
 				]
@@ -580,7 +580,7 @@ describe('formatContextSummary', () => {
 				id: 'character',
 				name: 'Character',
 				icon: 'user',
-				fields: [
+				fieldDefinitions: [
 					{ key: 'class', label: 'Class', type: 'text', section: 'basic' },
 					{ key: 'race', label: 'Race', type: 'text', section: 'basic' },
 					{ key: 'level', label: 'Level', type: 'number', section: 'basic' }
@@ -613,7 +613,7 @@ describe('formatContextSummary', () => {
 				id: 'character',
 				name: 'Character',
 				icon: 'user',
-				fields: [
+				fieldDefinitions: [
 					{ key: 'class', label: 'Class', type: 'text', section: 'basic' },
 					{ key: 'race', label: 'Race', type: 'text', section: 'basic' }
 				]
@@ -661,7 +661,7 @@ describe('formatContextSummary', () => {
 				id: 'character',
 				name: 'Character',
 				icon: 'user',
-				fields: [
+				fieldDefinitions: [
 					{ key: 'name', label: 'Name', type: 'text', section: 'basic' },
 					{ key: 'class', label: 'Class', type: 'text', section: 'basic' },
 					{ key: 'race', label: 'Race', type: 'text', section: 'basic' },
@@ -744,7 +744,7 @@ describe('formatContextSummary', () => {
 				id: 'character',
 				name: 'Character',
 				icon: 'user',
-				fields: [{ key: 'notes', label: 'Notes', type: 'textarea', section: 'basic' }]
+				fieldDefinitions: [{ key: 'notes', label: 'Notes', type: 'textarea', section: 'basic' }]
 			};
 
 			const input: ContextSummaryInput = {

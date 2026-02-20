@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { CreateMontageInput, MontageDifficulty, PredefinedChallenge } from '$lib/types/montage';
 	import PredefinedChallengeInput from './PredefinedChallengeInput.svelte';
+	import { getErrorMessage } from '$lib/utils/errors';
 
 	interface Props {
 		onSubmit: (input: CreateMontageInput) => Promise<void>;
@@ -52,8 +53,8 @@
 				playerCount,
 				...(plainChallenges && { predefinedChallenges: plainChallenges })
 			});
-		} catch (err: any) {
-			error = err.message;
+		} catch (err: unknown) {
+			error = getErrorMessage(err);
 		} finally {
 			isSubmitting = false;
 		}

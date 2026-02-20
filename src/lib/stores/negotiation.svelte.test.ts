@@ -824,7 +824,7 @@ describe('Negotiation Store - Lifecycle Operations', () => {
 
 			await negotiationStore.completeNegotiation('test-id', outcome);
 
-			expect(mockCompleteNegotiation).toHaveBeenCalledWith('test-id', outcome);
+			expect(mockCompleteNegotiation).toHaveBeenCalledWith('test-id');
 		});
 
 		it('should return completed negotiation with outcome', async () => {

@@ -22,10 +22,11 @@
 	};
 </script>
 
-<div class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none">
+<div class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none" role="status" aria-live="polite">
 	{#each notificationStore.toasts as toast (toast.id)}
 		{@const Icon = icons[toast.type]}
 		<div
+			role={toast.type === 'error' ? 'alert' : 'status'}
 			class="pointer-events-auto flex items-start gap-3 rounded-lg border p-4 shadow-lg backdrop-blur-sm max-w-md {styles[toast.type]}"
 			transition:fly={{ y: 50, duration: 300 }}
 		>

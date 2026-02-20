@@ -32,5 +32,10 @@ export function setPageUrl(url: string) {
 	page.update(p => ({ ...p, url: new URL(url) }));
 }
 
+// Helper to set page status and error for error page tests
+export function setPageError(status: number, error: Error | null) {
+	page.update(p => ({ ...p, status, error }));
+}
+
 export const navigating = readable(null);
 export const updated = readable(false);

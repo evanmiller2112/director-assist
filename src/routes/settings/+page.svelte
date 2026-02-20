@@ -36,6 +36,7 @@
 	import { getAllEntityTypes } from '$lib/config/entityTypes';
 	import type { PlayerExportFieldConfig } from '$lib/types/playerFieldVisibility';
 	import { page } from '$app/stores';
+	import AppVersion from '$lib/components/ui/AppVersion.svelte';
 
 	// Form state
 	let apiKey = $state('');
@@ -963,6 +964,11 @@
 			Delete All Data
 		</button>
 	</section>
+
+	<!-- App Version -->
+	<div class="mt-12 pt-4 border-t border-slate-200 dark:border-slate-700 text-center">
+		<AppVersion />
+	</div>
 </div>
 
 <!-- Player Export Modal -->

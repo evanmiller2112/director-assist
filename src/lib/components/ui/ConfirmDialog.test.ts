@@ -453,7 +453,7 @@ describe('ConfirmDialog Component - Accessibility', () => {
 		expect(dialog).toHaveAttribute('aria-describedby', messageId);
 	});
 
-	it('should focus on confirm button when opened', async () => {
+	it('should focus first focusable element when opened', async () => {
 		render(ConfirmDialog, {
 			props: {
 				open: true,
@@ -462,10 +462,11 @@ describe('ConfirmDialog Component - Accessibility', () => {
 			}
 		});
 
-		const confirmButton = screen.getByRole('button', { name: /confirm/i });
+		// The focus trap focuses the first focusable element (Cancel button)
+		const cancelButton = screen.getByRole('button', { name: /cancel/i });
 
 		await waitFor(() => {
-			expect(confirmButton).toHaveFocus();
+			expect(cancelButton).toHaveFocus();
 		});
 	});
 

@@ -49,7 +49,7 @@ We're developing **OCF (Open Campaign Format)**—an open JSON schema for campai
 - **Migrate freely** — Move between self-hosted and hosted versions without data loss
 - **Community interop** — Other TTRPG tools can adopt OCF for data exchange
 
-See [docs/OCF_SPEC.md](docs/OCF_SPEC.md) for the technical specification.
+See [OCF_SPEC.md](OCF_SPEC.md) for the technical specification.
 
 ### Potential Future Features
 
@@ -93,7 +93,7 @@ Hosted mode is opt-in via `VITE_HOSTED_MODE=true` and requires external backend 
 
 Backend services (auth, database, sync, billing) live in separate private repositories.
 
-See [docs/HOSTED_ARCHITECTURE.md](docs/HOSTED_ARCHITECTURE.md) for full technical details.
+See [HOSTED_ARCHITECTURE.md](HOSTED_ARCHITECTURE.md) for full technical details.
 
 Key technical decisions to make:
 - [ ] Auth provider (likely OAuth with GitHub/Google)

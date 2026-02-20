@@ -8,7 +8,7 @@
  */
 
 import { generate } from '$lib/ai/client';
-import type { EntityId } from '$lib/types';
+import type { EntityId, BaseEntity } from '$lib/types';
 import type {
 	AnalysisConfig,
 	AnalysisResult,
@@ -46,7 +46,7 @@ function findMentions(text: string, mentionedNames: Map<string, EntityId[]>): En
 /**
  * Calculate relevance score for a text mention relationship
  */
-function calculateMentionScore(entity: any, mentionedEntity: any): number {
+function calculateMentionScore(entity: BaseEntity, mentionedEntity: BaseEntity): number {
 	// Base score for text mention
 	let score = 60;
 

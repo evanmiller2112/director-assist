@@ -16,7 +16,7 @@ import type { PlayerExport, PlayerExportOptions, PlayerEntity } from '$lib/types
  */
 export function formatAsJson(playerExport: PlayerExport, options: PlayerExportOptions): string {
 	// Create a clean copy of the export data
-	const exportData: any = {
+	const exportData = {
 		version: playerExport.version,
 		exportedAt: playerExport.exportedAt.toISOString(),
 		campaignName: playerExport.campaignName,
@@ -31,8 +31,8 @@ export function formatAsJson(playerExport: PlayerExport, options: PlayerExportOp
 /**
  * Filters an entity based on export options
  */
-function filterEntity(entity: PlayerEntity, options: PlayerExportOptions): any {
-	const filtered: any = {
+function filterEntity(entity: PlayerEntity, options: PlayerExportOptions): Record<string, unknown> {
+	const filtered: Record<string, unknown> = {
 		id: entity.id,
 		type: entity.type,
 		name: entity.name,

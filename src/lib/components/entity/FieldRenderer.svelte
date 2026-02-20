@@ -303,7 +303,7 @@
 			{#if computedValue !== null && computedValue !== undefined}
 				<div class="computed-value">
 					{#if field.computedConfig?.outputType === 'number'}
-						{formatNumber(computedValue)}
+						{formatNumber(typeof computedValue === 'number' ? computedValue : 0)}
 					{:else if field.computedConfig?.outputType === 'boolean'}
 						<div class="flex items-center gap-2">
 							{#if computedValue}

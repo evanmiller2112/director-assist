@@ -277,6 +277,7 @@
 
 <aside
 	bind:this={chatPanelElement}
+	aria-label="AI chat assistant"
 	style="width: 448px; display: {isMinimized ? 'none' : 'flex'}; flex-direction: column; resize: none;"
 	class="border-l border-slate-200 dark:border-slate-700 bg-white dark:bg-surface-dark"
 >
@@ -289,6 +290,7 @@
 					type="button"
 					class="p-1.5 text-slate-400 hover:text-red-500 rounded"
 					onclick={handleClear}
+					aria-label="Clear chat history"
 					title="Clear history"
 				>
 					<Trash2 class="w-4 h-4" />
@@ -307,6 +309,7 @@
 				type="button"
 				class="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded"
 				onclick={() => uiStore.closeChatPanel()}
+				aria-label="Close chat panel"
 				title="Close"
 			>
 				<X class="w-5 h-5" />
@@ -445,12 +448,14 @@
 					onkeydown={handleKeydown}
 					onkeyup={handleKeyup}
 					placeholder="Ask about your campaign..."
+					aria-label="Chat message"
 					class="flex-1 resize-none rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
 					rows="2"
 					disabled={isLoading}
 				></textarea>
 				<button
 					type="submit"
+					aria-label="Send message"
 					class="self-end p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
 					disabled={isLoading || !inputValue.trim()}
 				>

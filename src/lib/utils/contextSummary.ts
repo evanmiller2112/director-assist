@@ -1,29 +1,25 @@
 import type { EntityType, FieldValue } from '$lib/types';
+import type { FieldDefinition as RealFieldDefinition, EntityTypeDefinition as RealEntityTypeDefinition } from '$lib/types';
 
-// Simplified type definition interface for context summary purposes
-// This is more flexible than the full EntityTypeDefinition from $lib/types
+// Local flexible types for tests and compatibility
 interface FieldDefinition {
 	key: string;
 	label: string;
 	type: string;
 	section?: string;
-	[key: string]: any;
+	[key: string]: unknown;
 }
 
 export interface EntityTypeDefinition {
-	id?: string;
 	type?: EntityType;
-	name?: string;
 	label?: string;
-	icon?: string;
-	fields?: FieldDefinition[];
 	fieldDefinitions?: FieldDefinition[];
-	[key: string]: any;
+	[key: string]: unknown;
 }
 
 export interface ContextSummaryInput {
 	entityType: EntityType;
-	typeDefinition?: EntityTypeDefinition;
+	typeDefinition?: EntityTypeDefinition | RealEntityTypeDefinition;
 	currentValues: {
 		name?: string;
 		description?: string;
@@ -93,8 +89,8 @@ export function formatContextSummary(input: ContextSummaryInput): string {
 	const fieldParts: string[] = [];
 	const fieldEntries = Object.entries(input.currentValues.fields);
 
-	// Get the field definitions array (support both naming conventions)
-	const fieldDefs = input.typeDefinition?.fieldDefinitions || input.typeDefinition?.fields;
+	// Get the field definitions array
+	const fieldDefs = input.typeDefinition?.fieldDefinitions;
 
 	for (const [key, value] of fieldEntries) {
 		// Skip if this is the target field
@@ -175,8 +171,8 @@ function hasValue(value: FieldValue): boolean {
 	return true;
 }
 
-function getFieldLabel(key: string, typeDefinition?: EntityTypeDefinition): string {
-	if (!typeDefinition) {
+function getFieldLabel(key: string, typeDefinition?: EntityTypeDefinition | RealEntityTypeDefinition): string {
+	if (!typeDefinition || !typeDefinition.fieldDefinitions) {
 		// Convert camelCase to Title Case
 		return key
 			.replace(/([A-Z])/g, ' $1')
@@ -184,8 +180,7 @@ function getFieldLabel(key: string, typeDefinition?: EntityTypeDefinition): stri
 			.trim();
 	}
 
-	const fieldDefs = typeDefinition.fieldDefinitions || typeDefinition.fields;
-	const fieldDef = fieldDefs?.find((f) => f.key === key);
+	const fieldDef = typeDefinition.fieldDefinitions.find((f) => f.key === key);
 	return fieldDef?.label || key;
 }
 

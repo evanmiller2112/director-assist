@@ -14,6 +14,7 @@ import {
 	buildRelationshipContext,
 	formatRelationshipContextForPrompt
 } from './relationshipContextBuilder';
+import { getErrorMessage } from '$lib/utils/errors';
 
 /**
  * Options for entity regeneration
@@ -320,10 +321,10 @@ Return ONLY a JSON object with the following structure (no markdown, no explanat
 			original: entity,
 			regenerated
 		};
-	} catch (error: any) {
+	} catch (err: unknown) {
 		return {
 			success: false,
-			error: error.message || 'Failed to regenerate entity',
+			error: getErrorMessage(err) || 'Failed to regenerate entity',
 			original: entity
 		};
 	}
@@ -356,12 +357,15 @@ export function computeRegenerationDiff(
 	const diffs: RegenerationDiff[] = [];
 
 	// Helper to format values
-	const formatValue = (value: any): string => {
+	const formatValue = (value: FieldValue): string => {
 		if (value === undefined || value === null || value === '') {
 			return '(empty)';
 		}
 		if (Array.isArray(value)) {
 			return value.join(', ');
+		}
+		if (typeof value === 'object') {
+			return JSON.stringify(value);
 		}
 		return String(value);
 	};

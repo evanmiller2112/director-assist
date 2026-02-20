@@ -118,7 +118,7 @@
 			.filter((h) => h.name.trim())
 			.map(({ mode, searchQuery, ...hero }) => {
 				// Remove heroId if it's undefined (manually entered heroes)
-				const result: any = {
+				const result: { name: string; recoveries: { current: number; max: number }; heroId?: string } = {
 					name: hero.name,
 					recoveries: hero.recoveries
 				};

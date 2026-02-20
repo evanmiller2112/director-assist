@@ -105,9 +105,9 @@
 	}
 </script>
 
-<aside class="dashboard-sidebar flex flex-col bg-surface-secondary dark:bg-surface-dark-secondary {mobileOpen ? 'mobile-open' : ''}">
+<aside aria-label="Main navigation" class="dashboard-sidebar flex flex-col bg-surface-secondary dark:bg-surface-dark-secondary {mobileOpen ? 'mobile-open' : ''}">
 	<!-- Navigation -->
-	<nav class="flex-1 overflow-y-auto p-4">
+	<nav aria-label="Site navigation" class="flex-1 overflow-y-auto p-4">
 		<!-- Home -->
 		<a
 			href="/"
@@ -115,6 +115,7 @@
 				{isActive('/') && $page.url.pathname === '/'
 				? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
 				: 'hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300'}"
+			aria-current={isActive('/') && $page.url.pathname === '/' ? 'page' : undefined}
 		>
 			<Home class="w-5 h-5" />
 			<span class="font-medium">Dashboard</span>

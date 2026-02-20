@@ -20,6 +20,7 @@ import type {
 	MontageOutcome,
 	MontageChallenge
 } from '$lib/types/montage';
+import { getErrorMessage } from '$lib/utils/errors';
 
 function createMontageStore() {
 	// ========================================================================
@@ -184,8 +185,8 @@ function createMontageStore() {
 			isLoading = true;
 			const montage = await montageRepository.create(input);
 			return montage;
-		} catch (err: any) {
-			error = err.message;
+		} catch (err: unknown) {
+			error = getErrorMessage(err);
 			throw err;
 		} finally {
 			isLoading = false;
@@ -198,8 +199,8 @@ function createMontageStore() {
 			isLoading = true;
 			const montage = await montageRepository.getById(id);
 			activeMontage = montage || null;
-		} catch (err: any) {
-			error = err.message;
+		} catch (err: unknown) {
+			error = getErrorMessage(err);
 			activeMontage = null;
 		} finally {
 			isLoading = false;
@@ -212,8 +213,8 @@ function createMontageStore() {
 			const updated = await montageRepository.update(id, input);
 			updateActiveMontageIfMatch(updated);
 			return updated;
-		} catch (err: any) {
-			error = err.message;
+		} catch (err: unknown) {
+			error = getErrorMessage(err);
 			throw err;
 		}
 	}
@@ -223,8 +224,8 @@ function createMontageStore() {
 			error = null;
 			await montageRepository.delete(id);
 			clearActiveMontageIfMatch(id);
-		} catch (err: any) {
-			error = err.message;
+		} catch (err: unknown) {
+			error = getErrorMessage(err);
 			throw err;
 		}
 	}
@@ -239,8 +240,8 @@ function createMontageStore() {
 			const updated = await montageRepository.startMontage(id);
 			updateActiveMontageIfMatch(updated);
 			return updated;
-		} catch (err: any) {
-			error = err.message;
+		} catch (err: unknown) {
+			error = getErrorMessage(err);
 			throw err;
 		}
 	}
@@ -251,8 +252,8 @@ function createMontageStore() {
 			const updated = await montageRepository.completeMontage(id, outcome);
 			updateActiveMontageIfMatch(updated);
 			return updated;
-		} catch (err: any) {
-			error = err.message;
+		} catch (err: unknown) {
+			error = getErrorMessage(err);
 			throw err;
 		}
 	}
@@ -263,8 +264,8 @@ function createMontageStore() {
 			const updated = await montageRepository.reopenMontage(id);
 			updateActiveMontageIfMatch(updated);
 			return updated;
-		} catch (err: any) {
-			error = err.message;
+		} catch (err: unknown) {
+			error = getErrorMessage(err);
 			throw err;
 		}
 	}
@@ -282,8 +283,8 @@ function createMontageStore() {
 			const updated = await montageRepository.recordChallengeResult(id, input);
 			updateActiveMontageIfMatch(updated);
 			return updated;
-		} catch (err: any) {
-			error = err.message;
+		} catch (err: unknown) {
+			error = getErrorMessage(err);
 			throw err;
 		}
 	}

@@ -46,8 +46,8 @@ export default [
 					varsIgnorePattern: '^_'
 				}
 			],
-			// Allow explicit any when needed
-			'@typescript-eslint/no-explicit-any': 'warn',
+			// Disallow explicit any
+			'@typescript-eslint/no-explicit-any': 'error',
 			// Disable some rules that are too noisy for now
 			'no-useless-catch': 'warn',
 			'prefer-const': 'warn',

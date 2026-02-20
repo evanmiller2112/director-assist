@@ -8,7 +8,7 @@
  * - Missing core fields: Required-like fields that are empty
  */
 
-import type { EntityId } from '$lib/types';
+import type { EntityId, BaseEntity } from '$lib/types';
 import type {
 	AnalysisConfig,
 	AnalysisResult,
@@ -35,7 +35,7 @@ const ORPHAN_EXEMPT_TYPES = ['session', 'timeline_event', 'note'];
 /**
  * Calculate sparsity score for an entity (0-100, higher = sparser)
  */
-function calculateSparsityScore(entity: any): number {
+function calculateSparsityScore(entity: BaseEntity): number {
 	let score = 0;
 
 	// Check description length
@@ -70,7 +70,7 @@ function calculateSparsityScore(entity: any): number {
  * Calculate importance score for an entity (0-100, higher = more important)
  */
 function calculateImportanceScore(
-	entity: any,
+	entity: BaseEntity,
 	context: EntityAnalysisContext
 ): number {
 	let score = 0;
@@ -118,7 +118,7 @@ function hasIncomingRelationships(
 /**
  * Get missing core fields for an entity
  */
-function getMissingCoreFields(entity: any): string[] {
+function getMissingCoreFields(entity: BaseEntity): string[] {
 	const coreFields = CORE_FIELDS_BY_TYPE[entity.type] || [];
 	const fields = entity.fields || {};
 	return coreFields.filter((field) => !fields[field] || fields[field].toString().trim() === '');

@@ -38,7 +38,7 @@
 	}
 </script>
 
-<header class="dashboard-header flex items-center justify-between px-4 bg-white dark:bg-surface-dark">
+<header aria-label="Site header" class="dashboard-header flex items-center justify-between px-4 bg-white dark:bg-surface-dark">
 	<div class="flex items-center gap-4">
 		<button
 			class="btn btn-ghost p-2 lg:hidden"

@@ -1,5 +1,8 @@
 import adapter from '@sveltejs/adapter-static';
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
+import { readFileSync } from 'fs';
+
+const pkg = JSON.parse(readFileSync('package.json', 'utf8'));
 
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
@@ -15,6 +18,9 @@ const config = {
 		alias: {
 			$lib: './src/lib',
 			$tests: './src/tests'
+		},
+		version: {
+			name: pkg.version
 		}
 	}
 };

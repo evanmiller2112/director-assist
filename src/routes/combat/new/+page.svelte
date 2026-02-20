@@ -2,6 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { Swords } from 'lucide-svelte';
 	import { combatStore } from '$lib/stores';
+	import { getErrorMessage } from '$lib/utils/errors';
 
 	let name = $state('');
 	let description = $state('');
@@ -25,8 +26,8 @@
 
 			// Navigate to the new combat
 			goto(`/combat/${combat.id}`);
-		} catch (err: any) {
-			error = err.message || 'Failed to create combat';
+		} catch (err: unknown) {
+			error = getErrorMessage(err) || 'Failed to create combat';
 			isCreating = false;
 		}
 	}

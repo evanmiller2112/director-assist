@@ -26,7 +26,7 @@
  * ```
  */
 
-import type { BaseEntity, EntityLink, FieldDefinition } from '$lib/types';
+import type { BaseEntity, EntityLink, FieldDefinition, FieldValue, EntityTypeDefinition, EntityTypeOverride } from '$lib/types';
 import { db } from '$lib/db';
 import { entityRepository } from '$lib/db/repositories/entityRepository';
 import { getEntityTypeDefinition } from '$lib/config/entityTypes';
@@ -144,10 +144,10 @@ function looksLikeEntityId(value: unknown): boolean {
  * 2. Use heuristics: check if field values look like entity IDs (for dynamic/undefined fields)
  */
 function getEntityRefFields(
-	fields: Record<string, any>,
+	fields: Record<string, FieldValue>,
 	entityType: string,
-	customEntityTypes: any[],
-	entityTypeOverrides: any[]
+	customEntityTypes: EntityTypeDefinition[],
+	entityTypeOverrides: EntityTypeOverride[]
 ): { singleRefFields: Set<string>; multiRefFields: Set<string> } {
 	const singleRefFields = new Set<string>();
 	const multiRefFields = new Set<string>();

@@ -328,7 +328,7 @@ interface ImportValidationResult {
 
 ### Developer Documentation
 - [Combat System Documentation](../COMBAT_SYSTEM.md) - Combat tracking system for Draw Steel
-- [Test Documentation](../../TEST_DOCUMENTATION.md) - Testing patterns and examples
+- [Test Documentation](../testing/TEST_DOCUMENTATION.md) - Testing patterns and examples
 - [Agent Workflow](../AGENT_WORKFLOW.md) - Development workflow
 
 ## Examples
@@ -426,7 +426,7 @@ if (result.valid) {
 When adding new features to the custom entity type system:
 
 1. Update the appropriate utility module (`fieldTypes.ts` or `entityTypeValidation.ts`)
-2. Add comprehensive tests (see [TEST_DOCUMENTATION.md](../../TEST_DOCUMENTATION.md))
+2. Add comprehensive tests (see [TEST_DOCUMENTATION.md](../testing/TEST_DOCUMENTATION.md))
 3. Update API documentation in this directory
 4. Update user-facing documentation in [USER_GUIDE.md](../USER_GUIDE.md)
 5. Follow the [Agent Workflow](../AGENT_WORKFLOW.md) for contributions

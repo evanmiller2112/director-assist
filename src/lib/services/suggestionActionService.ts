@@ -46,9 +46,9 @@ function loadHistory(): ActionHistoryEntry[] {
 			return [];
 		}
 
-		const parsed = JSON.parse(stored);
+		const parsed = JSON.parse(stored) as ActionHistoryEntry[];
 		// Convert timestamp strings back to Date objects
-		const history = parsed.map((entry: any) => ({
+		const history = parsed.map((entry) => ({
 			...entry,
 			timestamp: new Date(entry.timestamp)
 		}));
@@ -169,7 +169,9 @@ async function executeCreateRelationship(
 	historyEntry: ActionHistoryEntry
 ): Promise<ActionResult> {
 	// Validate required fields
-	const { sourceId, targetId, relationship } = actionData as any;
+	const sourceId = actionData.sourceId as string | undefined;
+	const targetId = actionData.targetId as string | undefined;
+	const relationship = actionData.relationship as string | undefined;
 
 	if (!sourceId || !targetId || !relationship) {
 		return {
@@ -179,7 +181,7 @@ async function executeCreateRelationship(
 		};
 	}
 
-	const bidirectional = actionData.bidirectional ?? false;
+	const bidirectional = (actionData.bidirectional as boolean | undefined) ?? false;
 	const notes = actionData.notes as string | undefined;
 	const strength = actionData.strength as 'strong' | 'moderate' | 'weak' | undefined;
 
@@ -193,32 +195,23 @@ async function executeCreateRelationship(
 	}
 
 	try {
-		// Build link object for the call
-		const linkData: any = {
+		// Call addLink with individual parameters (API returns void)
+		await entityRepository.addLink(
+			sourceId,
 			targetId,
 			relationship,
-			bidirectional
+			bidirectional,
+			notes,
+			strength,
+			Object.keys(metadata).length > 0 ? metadata : undefined
+		);
+
+		// Store undo data (sourceId, targetId, relationship for removal)
+		historyEntry.undoData = {
+			sourceId,
+			targetId,
+			relationship
 		};
-
-		if (notes) {
-			linkData.notes = notes;
-		}
-		if (strength) {
-			linkData.strength = strength;
-		}
-		if (Object.keys(metadata).length > 0) {
-			linkData.metadata = metadata;
-		}
-
-		// Call addLink - tests expect (sourceId, linkObject) signature
-		const createdLink = await (entityRepository.addLink as any)(sourceId, linkData);
-
-		// Store link ID for undo
-		if (createdLink?.id) {
-			historyEntry.undoData = {
-				linkId: createdLink.id
-			};
-		}
 
 		return {
 			success: true,
@@ -389,9 +382,9 @@ export async function undoLastAction(historyEntryId: string): Promise<boolean> {
 	try {
 		switch (entry.actionType) {
 			case 'create-relationship':
-				if (entry.undoData?.linkId && entry.result.affectedEntityIds.length > 0) {
-					// Remove the created link using (sourceId, linkId) format
-					await entityRepository.removeLink(entry.result.affectedEntityIds[0], entry.undoData.linkId);
+				if (entry.undoData?.sourceId && entry.undoData?.targetId) {
+					// Remove the created link using (sourceId, targetId) format
+					await entityRepository.removeLink(entry.undoData.sourceId, entry.undoData.targetId);
 				}
 				break;
 

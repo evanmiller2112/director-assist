@@ -165,9 +165,9 @@
 		aria-labelledby="delete-dialog-title"
 		tabindex="-1"
 	>
-		<!-- svelte-ignore a11y_no_static_element_interactions -->
 		<!-- svelte-ignore a11y_click_events_have_key_events -->
 		<div
+			role="document"
 			class="bg-white dark:bg-slate-800 rounded-lg p-6 max-w-sm mx-4 shadow-xl"
 			onclick={(e) => e.stopPropagation()}
 		>

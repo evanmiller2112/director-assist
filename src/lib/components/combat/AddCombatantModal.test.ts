@@ -464,7 +464,6 @@ describe('AddCombatantModal - Form Submission', () => {
 		await fireEvent.click(addButton);
 
 		expect(onAdd).toHaveBeenCalledWith({
-			type: 'hero',
 			entityId: 'char-1',
 			name: 'Hero',
 			hp: 30,
@@ -514,7 +513,6 @@ describe('AddCombatantModal - Form Submission', () => {
 		// But in "From Entity" mode, threat comes from state which doesn't update in tests
 		await waitFor(() => {
 			expect(onAdd).toHaveBeenCalledWith({
-				type: 'creature',
 				entityId: 'npc-1',
 				name: 'Monster',
 				hp: 25,
@@ -946,7 +944,7 @@ describe('AddCombatantModal - Quick-Add Mode (Issue #233)', () => {
 	});
 
 	describe('Quick Add Form Submission', () => {
-		it('should submit with isAdHoc: true in Quick Add mode', async () => {
+		it('should submit Quick Add combatant with correct data', async () => {
 			const onAdd = vi.fn();
 			render(AddCombatantModal, { props: { open: true, onAdd } });
 
@@ -976,7 +974,6 @@ describe('AddCombatantModal - Quick-Add Mode (Issue #233)', () => {
 						name: 'Goblin',
 						hp: 15,
 						type: 'creature',
-						isAdHoc: true
 					})
 				);
 			});
@@ -1147,7 +1144,6 @@ describe('AddCombatantModal - Optional Fields in Entity Mode (Issue #233)', () =
 			await waitFor(() => {
 				expect(onAdd).toHaveBeenCalledWith(
 					expect.objectContaining({
-						type: 'hero',
 						hp: 30
 					})
 				);
@@ -1452,7 +1448,6 @@ describe('Quick Add - Threat Level (Issue #240)', () => {
 					hp: 25,
 					type: 'creature',
 					threat: 2,
-					isAdHoc: true
 				})
 			);
 		});
@@ -1489,7 +1484,6 @@ describe('Quick Add - Threat Level (Issue #240)', () => {
 					name: 'Brave Knight',
 					hp: 40,
 					type: 'hero',
-					isAdHoc: true
 				})
 			);
 			expect(onAdd).toHaveBeenCalledWith(
@@ -1534,7 +1528,6 @@ describe('Quick Add - Threat Level (Issue #240)', () => {
 					hp: 15,
 					type: 'creature',
 					threat: 1,
-					isAdHoc: true
 				})
 			);
 		});
@@ -1837,7 +1830,6 @@ describe('AddCombatantModal - Token Indicator Field (Issue #300)', () => {
 					name: 'Goblin',
 					hp: 15,
 					tokenIndicator: 'G1',
-					isAdHoc: true
 				})
 			);
 		});
@@ -1865,7 +1857,6 @@ describe('AddCombatantModal - Token Indicator Field (Issue #300)', () => {
 				expect.objectContaining({
 					name: 'Orc',
 					hp: 20,
-					isAdHoc: true
 				})
 			);
 			expect(onAdd).toHaveBeenCalledWith(

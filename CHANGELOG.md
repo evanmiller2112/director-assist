@@ -7,6 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-02-20
+
+### Added
+
+**Director-Selected Turn Mode for Combat Tracker (#501)**
+- New alternating turn mode where the Director manually selects which combatant acts next
+- Turn eligibility tracking system enforces hero/villain side alternation rules
+- Visual indicators show eligible combatants based on current round state
+- actedCombatantIds tracking per round for accurate turn flow management
+- Seamless integration with existing initiative-based turn mode
+
+**NPC Entity Selector for Negotiation Setup (#550)**
+- Entity selector component with entity/manual mode toggle for NPC selection
+- Links negotiation sessions to existing NPC entities from the entity database
+- Auto-populates NPC name from selected entity data
+- Maintains backward compatibility with manual text entry
+
+**Impression Score Tracking (#551)**
+- Impression score field on NegotiationSession schema (0-10 scale)
+- Visual impression progress bar in NegotiationProgress component
+- Impression input field during negotiation setup
+- Real-time impression tracking throughout negotiation sessions
+
+**Custom Motivation and Pitfall Types (#552)**
+- Replaced select dropdowns with input + datalist pattern for motivation/pitfall type selection
+- Supports both canonical Draw Steel types and custom user-defined types
+- CANONICAL_MOTIVATION_TYPES constant provides standard Draw Steel options
+- Fallback icon handling gracefully displays custom types without predefined icons
+- Enhanced flexibility for Directors to model unique NPC motivations
+
+### Changed
+
+- **BREAKING:** Combat tracker now supports two distinct turn modes (initiative-based and director-selected), changing the turn flow behavior
+- **BREAKING:** Negotiation setup now defaults to entity selector mode, changing the NPC selection workflow
+
 ## [1.9.7] - 2026-02-20
 
 ### Added

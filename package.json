@@ -1,6 +1,6 @@
 {
   "name": "director-assist",
-  "version": "1.9.7",
+  "version": "2.0.0",
   "private": true,
   "type": "module",
   "scripts": {

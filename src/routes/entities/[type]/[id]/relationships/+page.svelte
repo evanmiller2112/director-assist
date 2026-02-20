@@ -120,8 +120,8 @@
 		const result = [...filteredRelationships];
 
 		result.sort((a, b) => {
-			let aValue: any;
-			let bValue: any;
+			let aValue: string | number | Date;
+			let bValue: string | number | Date;
 
 			switch (sortOptions.field) {
 				case 'targetName':
@@ -139,8 +139,8 @@
 					bValue = strengthOrder[b.link.strength as keyof typeof strengthOrder] ?? 0;
 					break;
 				case 'createdAt':
-					aValue = a.link.createdAt ?? 0;
-					bValue = b.link.createdAt ?? 0;
+					aValue = a.link.createdAt ?? new Date(0);
+					bValue = b.link.createdAt ?? new Date(0);
 					break;
 				default:
 					return 0;

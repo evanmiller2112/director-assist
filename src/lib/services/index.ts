@@ -191,3 +191,7 @@ export { scheduleIntegrityCheck } from './dbIntegrityScheduler';
 
 // Database recovery service (Issue #511)
 export { repairDatabase, resetDatabase } from './dbRecoveryService';
+
+// Error logging service (Issue #508)
+export { logError, formatErrorMessage } from './errorLoggingService';
+export type { ErrorLogEntry } from './errorLoggingService';

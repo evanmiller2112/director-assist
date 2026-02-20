@@ -7,6 +7,7 @@
  * - Note-taking applications
  */
 import type { PlayerExport, PlayerExportOptions, PlayerEntity, PlayerEntityLink } from '$lib/types/playerExport';
+import type { FieldValue } from '$lib/types';
 
 /**
  * Formats a player export as Markdown
@@ -228,11 +229,21 @@ function capitalizeType(type: string): string {
 /**
  * Formats a field value for display
  */
-function formatFieldValue(value: any): string {
+function formatFieldValue(value: FieldValue): string {
+	if (value === null || value === undefined) {
+		return '';
+	}
 	if (Array.isArray(value)) {
 		return value.join(', ');
 	}
-	if (typeof value === 'object' && value !== null) {
+	if (typeof value === 'object') {
+		// Handle ResourceValue and DurationValue objects
+		if ('current' in value && 'max' in value) {
+			return `${value.current}/${value.max}`;
+		}
+		if ('unit' in value) {
+			return value.value ? `${value.value} ${value.unit}` : value.unit;
+		}
 		return JSON.stringify(value);
 	}
 	return String(value);

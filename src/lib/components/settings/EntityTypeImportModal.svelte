@@ -16,7 +16,7 @@
 	let fileInput: HTMLInputElement | null = $state(null);
 	let selectedFile: File | null = $state(null);
 	let validationResult: ImportValidationResult | null = $state(null);
-	let importData: any = $state(null);
+	let importData: EntityTypeDefinition | null = $state(null);
 	let newTypeKey = $state('');
 
 	// Helper functions to avoid type narrowing issues with $derived
@@ -147,9 +147,13 @@
 	}
 
 	function handleImport() {
-		if (!canImport || !importData?.data) return;
+		if (!canImport || !importData) return;
 
-		let entityType: EntityTypeDefinition = importData.data;
+		// Import data structure has a 'data' field wrapping the EntityTypeDefinition
+		const importWrapper = importData as { data?: EntityTypeDefinition };
+		if (!importWrapper.data) return;
+
+		let entityType: EntityTypeDefinition = importWrapper.data;
 
 		// If there's a conflict and user provided new key, use it
 		if (hasConflict && newTypeKey.trim()) {

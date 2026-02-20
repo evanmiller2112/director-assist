@@ -14,7 +14,7 @@
  * - Graceful error handling for missing dependencies and invalid formulas
  */
 
-import type { FieldType, ComputedFieldConfig } from '$lib/types';
+import type { FieldType, ComputedFieldConfig, FieldValue } from '$lib/types';
 
 /**
  * Result of formula validation
@@ -377,8 +377,8 @@ export function validateFormulaForEval(formula: string): ValidationResult {
  */
 export function evaluateComputedField(
 	config: ComputedFieldConfig,
-	fields: Record<string, any>
-): any {
+	fields: Record<string, FieldValue>
+): FieldValue | null {
 	const { formula, dependencies, outputType } = config;
 
 	// Handle empty formula

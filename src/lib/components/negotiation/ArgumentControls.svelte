@@ -89,7 +89,13 @@
 
 	// Handle record button click
 	function handleRecord() {
-		const data: any = {
+		const data: {
+			argumentType: string;
+			tier: number;
+			motivationType?: string;
+			playerName?: string;
+			notes?: string;
+		} = {
 			argumentType,
 			tier: selectedTier
 		};

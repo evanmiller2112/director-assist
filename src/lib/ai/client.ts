@@ -9,6 +9,7 @@ import { generateText, streamText } from 'ai';
 import { getProviderModel } from './providers';
 import { getAISettings } from './config/storage';
 import type { GenerationOptions, GenerationResult, StreamCallback } from './providers/types';
+import { getErrorMessage } from '$lib/utils/errors';
 
 // Re-export types for convenience
 export type { GenerationOptions, GenerationResult, StreamCallback } from './providers/types';
@@ -76,20 +77,19 @@ export async function generate(
 						}
 					: undefined
 		};
-	} catch (error: any) {
+	} catch (err: unknown) {
 		// Handle different error types
+		const statusCode = (err as { status?: number })?.status;
 		let errorMessage = 'Unknown error occurred';
 
-		if (error?.status === 401) {
+		if (statusCode === 401) {
 			errorMessage = 'Invalid API key or authentication failed';
-		} else if (error?.status === 429) {
+		} else if (statusCode === 429) {
 			errorMessage = 'rate limit exceeded - please try again later';
-		} else if (error?.status === 500) {
+		} else if (statusCode === 500) {
 			errorMessage = 'Server error - please try again later';
-		} else if (error?.message) {
-			errorMessage = error.message;
-		} else if (typeof error === 'string') {
-			errorMessage = error;
+		} else {
+			errorMessage = getErrorMessage(err);
 		}
 
 		return {
@@ -188,20 +188,19 @@ export async function generateStream(
 						}
 					: undefined
 		};
-	} catch (error: any) {
+	} catch (err: unknown) {
 		// Handle different error types
+		const statusCode = (err as { status?: number })?.status;
 		let errorMessage = 'Unknown error occurred';
 
-		if (error?.status === 401) {
+		if (statusCode === 401) {
 			errorMessage = 'Invalid API key or authentication failed';
-		} else if (error?.status === 429) {
+		} else if (statusCode === 429) {
 			errorMessage = 'rate limit exceeded - please try again later';
-		} else if (error?.status === 500) {
+		} else if (statusCode === 500) {
 			errorMessage = 'Server error - please try again later';
-		} else if (error?.message) {
-			errorMessage = error.message;
-		} else if (typeof error === 'string') {
-			errorMessage = error;
+		} else {
+			errorMessage = getErrorMessage(err);
 		}
 
 		return {

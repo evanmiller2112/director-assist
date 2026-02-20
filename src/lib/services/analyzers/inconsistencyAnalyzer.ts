@@ -8,7 +8,7 @@
  * - Relationship asymmetry: Bidirectional relationships missing reverse link
  */
 
-import type { EntityId } from '$lib/types';
+import type { EntityId, BaseEntity, EntityLink } from '$lib/types';
 import type {
 	AnalysisConfig,
 	AnalysisResult,
@@ -87,7 +87,7 @@ function isPastTense(relationship: string): boolean {
 /**
  * Check if entity has deceased/inactive status
  */
-function isInactive(entity: any): boolean {
+function isInactive(entity: BaseEntity): boolean {
 	const tags = entity.tags || [];
 	const fields = entity.fields || {};
 
@@ -111,7 +111,7 @@ function isInactive(entity: any): boolean {
 function isNestedLocation(
 	loc1Id: EntityId,
 	loc2Id: EntityId,
-	entityMap: Map<EntityId, any>
+	entityMap: Map<EntityId, BaseEntity>
 ): boolean {
 	const loc1 = entityMap.get(loc1Id);
 	const loc2 = entityMap.get(loc2Id);
@@ -146,7 +146,7 @@ function isNestedLocation(
 /**
  * Detect entities that might be connected (family, faction members, etc.)
  */
-function areEntitiesConnected(entity1: any, entity2: any): boolean {
+function areEntitiesConnected(entity1: BaseEntity, entity2: BaseEntity): boolean {
 	// Check for shared family tags
 	const entity1Tags = new Set(entity1.tags || []);
 	const entity2Tags = new Set(entity2.tags || []);
@@ -163,8 +163,8 @@ function areEntitiesConnected(entity1: any, entity2: any): boolean {
 	const entity2Links = entity2.links || [];
 
 	const hasRelationship =
-		entity1Links.some((link: any) => link.targetId === entity2.id) ||
-		entity2Links.some((link: any) => link.targetId === entity1.id);
+		entity1Links.some((link: EntityLink) => link.targetId === entity2.id) ||
+		entity2Links.some((link: EntityLink) => link.targetId === entity1.id);
 
 	return hasRelationship;
 }

@@ -22,6 +22,7 @@ import type {
 } from '$lib/types/respite';
 import type { BaseEntity } from '$lib/types';
 import * as respiteActivityService from '$lib/services/respiteActivityService';
+import { getErrorMessage } from '$lib/utils/errors';
 
 function createRespiteStore() {
 	// ========================================================================
@@ -234,8 +235,8 @@ function createRespiteStore() {
 			isLoading = true;
 			const respite = await respiteRepository.create(input);
 			return respite;
-		} catch (err: any) {
-			error = err.message;
+		} catch (err: unknown) {
+			error = getErrorMessage(err);
 			throw err;
 		} finally {
 			isLoading = false;
@@ -249,8 +250,8 @@ function createRespiteStore() {
 			const respite = await respiteRepository.getById(id);
 			activeRespite = respite || null;
 			await loadActivityEntities(activeRespite);
-		} catch (err: any) {
-			error = err.message;
+		} catch (err: unknown) {
+			error = getErrorMessage(err);
 			activeRespite = null;
 			activityEntities = [];
 		} finally {
@@ -267,8 +268,8 @@ function createRespiteStore() {
 			const updated = await respiteRepository.update(id, input);
 			updateActiveRespiteIfMatch(updated);
 			return updated;
-		} catch (err: any) {
-			error = err.message;
+		} catch (err: unknown) {
+			error = getErrorMessage(err);
 			throw err;
 		}
 	}
@@ -278,8 +279,8 @@ function createRespiteStore() {
 			error = null;
 			await respiteRepository.delete(id);
 			clearActiveRespiteIfMatch(id);
-		} catch (err: any) {
-			error = err.message;
+		} catch (err: unknown) {
+			error = getErrorMessage(err);
 			throw err;
 		}
 	}
@@ -294,8 +295,8 @@ function createRespiteStore() {
 			const updated = await respiteRepository.startRespite(id);
 			updateActiveRespiteIfMatch(updated);
 			return updated;
-		} catch (err: any) {
-			error = err.message;
+		} catch (err: unknown) {
+			error = getErrorMessage(err);
 			throw err;
 		}
 	}
@@ -314,8 +315,8 @@ function createRespiteStore() {
 
 			updateActiveRespiteIfMatch(updated);
 			return updated;
-		} catch (err: any) {
-			error = err.message;
+		} catch (err: unknown) {
+			error = getErrorMessage(err);
 			throw err;
 		}
 	}
@@ -333,8 +334,8 @@ function createRespiteStore() {
 			const updated = await respiteRepository.addHero(id, hero);
 			updateActiveRespiteIfMatch(updated);
 			return updated;
-		} catch (err: any) {
-			error = err.message;
+		} catch (err: unknown) {
+			error = getErrorMessage(err);
 			throw err;
 		}
 	}
@@ -349,8 +350,8 @@ function createRespiteStore() {
 			const updated = await respiteRepository.updateHero(id, heroId, updates);
 			updateActiveRespiteIfMatch(updated);
 			return updated;
-		} catch (err: any) {
-			error = err.message;
+		} catch (err: unknown) {
+			error = getErrorMessage(err);
 			throw err;
 		}
 	}
@@ -361,8 +362,8 @@ function createRespiteStore() {
 			const updated = await respiteRepository.removeHero(id, heroId);
 			updateActiveRespiteIfMatch(updated);
 			return updated;
-		} catch (err: any) {
-			error = err.message;
+		} catch (err: unknown) {
+			error = getErrorMessage(err);
 			throw err;
 		}
 	}
@@ -394,8 +395,8 @@ function createRespiteStore() {
 			}
 
 			return entity;
-		} catch (err: any) {
-			error = err.message;
+		} catch (err: unknown) {
+			error = getErrorMessage(err);
 			throw err;
 		}
 	}
@@ -411,8 +412,8 @@ function createRespiteStore() {
 
 			// Reload activity entities to reflect the change
 			await loadActivityEntities(activeRespite);
-		} catch (err: any) {
-			error = err.message;
+		} catch (err: unknown) {
+			error = getErrorMessage(err);
 			throw err;
 		}
 	}
@@ -424,8 +425,8 @@ function createRespiteStore() {
 
 			// Reload activity entities to reflect the change
 			await loadActivityEntities(activeRespite);
-		} catch (err: any) {
-			error = err.message;
+		} catch (err: unknown) {
+			error = getErrorMessage(err);
 			throw err;
 		}
 	}
@@ -443,8 +444,8 @@ function createRespiteStore() {
 					await loadActivityEntities(activeRespite);
 				}
 			}
-		} catch (err: any) {
-			error = err.message;
+		} catch (err: unknown) {
+			error = getErrorMessage(err);
 			throw err;
 		}
 	}
@@ -462,8 +463,8 @@ function createRespiteStore() {
 			const updated = await respiteRepository.convertVictoryPoints(id, amount);
 			updateActiveRespiteIfMatch(updated);
 			return updated;
-		} catch (err: any) {
-			error = err.message;
+		} catch (err: unknown) {
+			error = getErrorMessage(err);
 			throw err;
 		}
 	}
@@ -481,8 +482,8 @@ function createRespiteStore() {
 			const updated = await respiteRepository.recordKitSwap(id, swap);
 			updateActiveRespiteIfMatch(updated);
 			return updated;
-		} catch (err: any) {
-			error = err.message;
+		} catch (err: unknown) {
+			error = getErrorMessage(err);
 			throw err;
 		}
 	}

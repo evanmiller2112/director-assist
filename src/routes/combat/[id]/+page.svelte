@@ -8,7 +8,8 @@
 	import HpTracker from '$lib/components/combat/HpTracker.svelte';
 	import ConditionManager from '$lib/components/combat/ConditionManager.svelte';
 	import AddCombatantModal from '$lib/components/combat/AddCombatantModal.svelte';
-	import type { Combatant } from '$lib/types/combat';
+	import { ErrorBoundary } from '$lib/components/ui';
+	import type { Combatant, AddConditionInput, AddHeroCombatantInput, AddCreatureCombatantInput, AddQuickCombatantInput } from '$lib/types/combat';
 
 	const combatId = $derived($page.params.id);
 	let selectedCombatant = $state<Combatant | null>(null);
@@ -139,7 +140,7 @@
 		await combatStore.updateMaxHp(combat.id, selectedCombatant.id, newMaxHp);
 	}
 
-	async function handleAddCondition(condition: any) {
+	async function handleAddCondition(condition: AddConditionInput) {
 		if (!combat || !selectedCombatant) return;
 		await combatStore.addCondition(combat.id, selectedCombatant.id, condition);
 	}
@@ -199,34 +200,18 @@
 		await combatStore.removeVictoryPoints(combat.id, 1);
 	}
 
-	async function handleAddCombatant(data: any) {
+	async function handleAddCombatant(data: AddHeroCombatantInput | AddCreatureCombatantInput | AddQuickCombatantInput) {
 		if (!combat) return;
 
-		// Handle quick-add (ad-hoc) combatants
-		if (data.isAdHoc) {
-			await combatStore.addQuickCombatant(combat.id, {
-				name: data.name,
-				hp: data.hp,
-				type: data.type
-			});
-		} else if (data.type === 'hero') {
-			await combatStore.addHero(combat.id, {
-				name: data.name,
-				entityId: data.entityId,
-				hp: data.hp,
-				maxHp: data.maxHp,
-				ac: data.ac,
-				heroicResource: data.heroicResource
-			});
+		// Handle quick-add combatants (have a 'type' field)
+		if ('type' in data && data.type) {
+			await combatStore.addQuickCombatant(combat.id, data);
+		} else if ('heroicResource' in data || !('threat' in data)) {
+			// Has heroicResource or doesn't have threat = hero
+			await combatStore.addHero(combat.id, data as AddHeroCombatantInput);
 		} else {
-			await combatStore.addCreature(combat.id, {
-				name: data.name,
-				entityId: data.entityId,
-				hp: data.hp,
-				maxHp: data.maxHp,
-				ac: data.ac,
-				threat: data.threat
-			});
+			// Has threat = creature
+			await combatStore.addCreature(combat.id, data as AddCreatureCombatantInput);
 		}
 
 		showAddCombatantModal = false;

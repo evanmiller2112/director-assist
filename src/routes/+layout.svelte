@@ -8,6 +8,7 @@
 	import AiSetupBanner from '$lib/components/ui/AiSetupBanner.svelte';
 	import IntegrityWarningBanner from '$lib/components/ui/IntegrityWarningBanner.svelte';
 	import IntegrityRecoveryDialog from '$lib/components/ui/IntegrityRecoveryDialog.svelte';
+	import { ErrorBoundary } from '$lib/components/ui';
 	import { aiSettings, campaignStore, entitiesStore, uiStore, integrityCheckStore } from '$lib/stores';
 	import { initializeDatabase, db } from '$lib/db';
 	import {
@@ -227,6 +228,9 @@
 {:else}
 	<!-- Director mode: full layout -->
 	<div class="dashboard-layout">
+		<a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-0 focus:left-0 focus:z-50 focus:bg-blue-600 focus:text-white focus:px-4 focus:py-2">
+			Skip to main content
+		</a>
 		<Header bind:this={headerComponent} />
 		<Sidebar mobileOpen={uiStore.mobileSidebarOpen} />
 
@@ -239,7 +243,7 @@
 			></button>
 		{/if}
 
-		<main class="dashboard-main">
+		<main id="main-content" class="dashboard-main">
 			<div class="flex-1 overflow-y-auto p-6">
 				<!-- AI setup reminder banner -->
 				{#if aiSetupReminderState.show}
@@ -282,7 +286,15 @@
 
 			<!-- Chat panel -->
 			{#if aiSettings.isEnabled && uiStore.chatPanelOpen}
-				<ChatPanel />
+				<ErrorBoundary
+					context="chat-panel"
+					fallbackTitle="Chat Error"
+					fallbackDescription="The chat assistant encountered an error."
+				>
+					{#snippet children()}
+						<ChatPanel />
+					{/snippet}
+				</ErrorBoundary>
 			{/if}
 		</main>
 		<!-- Integrity recovery dialog (major issues) -->

@@ -19,6 +19,7 @@ import type {
 	RecordArgumentInput,
 	NegotiationOutcome
 } from '$lib/types/negotiation';
+import { getErrorMessage } from '$lib/utils/errors';
 
 function createNegotiationStore() {
 	// ========================================================================
@@ -125,11 +126,11 @@ function createNegotiationStore() {
 			return [];
 		}
 		return activeNegotiation.motivations.filter((m) => {
-			// Handle test mock format with 'used' boolean
-			if ('used' in m && typeof (m as any).used === 'boolean') {
-				return !(m as any).used;
+			// Handle test mock format with 'used' boolean (NPCMotivation)
+			if ('used' in m && typeof m.used === 'boolean') {
+				return !m.used;
 			}
-			// Handle actual format with 'timesUsed' number
+			// Handle actual format with 'timesUsed' number (NegotiationMotivation)
 			return m.timesUsed === 0;
 		});
 	});
@@ -176,8 +177,8 @@ function createNegotiationStore() {
 			isLoading = true;
 			const negotiation = await negotiationRepository.create(input);
 			return negotiation;
-		} catch (err: any) {
-			error = err.message;
+		} catch (err: unknown) {
+			error = getErrorMessage(err);
 			throw err;
 		} finally {
 			isLoading = false;
@@ -190,8 +191,8 @@ function createNegotiationStore() {
 			isLoading = true;
 			const negotiation = await negotiationRepository.getById(id);
 			activeNegotiation = negotiation || null;
-		} catch (err: any) {
-			error = err.message;
+		} catch (err: unknown) {
+			error = getErrorMessage(err);
 			activeNegotiation = null;
 		} finally {
 			isLoading = false;
@@ -207,8 +208,8 @@ function createNegotiationStore() {
 			const updated = await negotiationRepository.update(id, input);
 			updateActiveNegotiationIfMatch(updated);
 			return updated;
-		} catch (err: any) {
-			error = err.message;
+		} catch (err: unknown) {
+			error = getErrorMessage(err);
 			throw err;
 		}
 	}
@@ -218,8 +219,8 @@ function createNegotiationStore() {
 			error = null;
 			await negotiationRepository.delete(id);
 			clearActiveNegotiationIfMatch(id);
-		} catch (err: any) {
-			error = err.message;
+		} catch (err: unknown) {
+			error = getErrorMessage(err);
 			throw err;
 		}
 	}
@@ -234,8 +235,8 @@ function createNegotiationStore() {
 			const updated = await negotiationRepository.startNegotiation(id);
 			updateActiveNegotiationIfMatch(updated);
 			return updated;
-		} catch (err: any) {
-			error = err.message;
+		} catch (err: unknown) {
+			error = getErrorMessage(err);
 			throw err;
 		}
 	}
@@ -246,13 +247,12 @@ function createNegotiationStore() {
 	): Promise<NegotiationSession> {
 		try {
 			error = null;
-			// Pass outcome to repository if provided (for testing/future use)
-			// Current repository ignores it and calculates outcome automatically
-			const updated = await (negotiationRepository.completeNegotiation as any)(id, outcome);
+			// Repository calculates outcome automatically
+			const updated = await negotiationRepository.completeNegotiation(id);
 			updateActiveNegotiationIfMatch(updated);
 			return updated;
-		} catch (err: any) {
-			error = err.message;
+		} catch (err: unknown) {
+			error = getErrorMessage(err);
 			throw err;
 		}
 	}
@@ -263,8 +263,8 @@ function createNegotiationStore() {
 			const updated = await negotiationRepository.reopenNegotiation(id);
 			updateActiveNegotiationIfMatch(updated);
 			return updated;
-		} catch (err: any) {
-			error = err.message;
+		} catch (err: unknown) {
+			error = getErrorMessage(err);
 			throw err;
 		}
 	}
@@ -282,8 +282,8 @@ function createNegotiationStore() {
 			const updated = await negotiationRepository.recordArgument(id, input);
 			updateActiveNegotiationIfMatch(updated);
 			return updated;
-		} catch (err: any) {
-			error = err.message;
+		} catch (err: unknown) {
+			error = getErrorMessage(err);
 			throw err;
 		}
 	}
@@ -298,8 +298,8 @@ function createNegotiationStore() {
 			const updated = await negotiationRepository.revealMotivation(id, index);
 			updateActiveNegotiationIfMatch(updated);
 			return updated;
-		} catch (err: any) {
-			error = err.message;
+		} catch (err: unknown) {
+			error = getErrorMessage(err);
 			throw err;
 		}
 	}
@@ -310,8 +310,8 @@ function createNegotiationStore() {
 			const updated = await negotiationRepository.revealPitfall(id, index);
 			updateActiveNegotiationIfMatch(updated);
 			return updated;
-		} catch (err: any) {
-			error = err.message;
+		} catch (err: unknown) {
+			error = getErrorMessage(err);
 			throw err;
 		}
 	}

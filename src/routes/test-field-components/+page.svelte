@@ -8,9 +8,9 @@
 
 	import FieldInput from '$lib/components/entity/FieldInput.svelte';
 	import FieldRenderer from '$lib/components/entity/FieldRenderer.svelte';
-	import type { FieldDefinition } from '$lib/types';
+	import type { FieldDefinition, FieldValue } from '$lib/types';
 
-	let formValues = $state<Record<string, any>>({
+	let formValues = $state<Record<string, FieldValue>>({
 		text_field: 'Sample text',
 		textarea_field: 'Line 1\nLine 2\nLine 3',
 		richtext_field: '# Heading\n\nSome **bold** text and *italic* text.',
@@ -117,7 +117,7 @@
 		}
 	];
 
-	function handleFieldChange(key: string, value: any) {
+	function handleFieldChange(key: string, value: FieldValue) {
 		formValues[key] = value;
 	}
 </script>

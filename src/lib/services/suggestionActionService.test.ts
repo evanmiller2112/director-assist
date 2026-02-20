@@ -148,11 +148,12 @@ describe('suggestionActionService', () => {
 			expect(result.message).toMatch(/relationship.*created/i);
 			expect(entityRepository.addLink).toHaveBeenCalledWith(
 				'entity-1',
-				expect.objectContaining({
-					targetId: 'entity-2',
-					relationship: 'allies_with',
-					bidirectional: true
-				})
+				'entity-2',
+				'allies_with',
+				true,
+				'They fought together in the battle',
+				undefined,
+				undefined
 			);
 		});
 
@@ -186,12 +187,13 @@ describe('suggestionActionService', () => {
 
 			expect(entityRepository.addLink).toHaveBeenCalledWith(
 				'entity-1',
+				'entity-2',
+				'allies_with',
+				true,
+				'They fought together in the battle',
+				'strong',
 				expect.objectContaining({
-					notes: 'They fought together in the battle',
-					metadata: expect.objectContaining({
-						strength: 'strong',
-						tags: ['alliance', 'military']
-					})
+					tags: ['alliance', 'military']
 				})
 			);
 		});
@@ -203,9 +205,12 @@ describe('suggestionActionService', () => {
 
 			expect(entityRepository.addLink).toHaveBeenCalledWith(
 				'entity-1',
-				expect.objectContaining({
-					bidirectional: false
-				})
+				'entity-2',
+				'allies_with',
+				false,
+				'They fought together in the battle',
+				undefined,
+				undefined
 			);
 		});
 	});
@@ -629,7 +634,7 @@ describe('suggestionActionService', () => {
 
 			expect(entityRepository.removeLink).toHaveBeenCalledWith(
 				'entity-1',
-				expect.any(String) // link ID
+				'entity-2'
 			);
 		});
 

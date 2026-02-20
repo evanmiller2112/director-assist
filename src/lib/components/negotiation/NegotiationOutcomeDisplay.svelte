@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { NegotiationOutcome } from '$lib/types/negotiation';
-	import { CheckCircle2, AlertCircle, Info, X, ShieldAlert } from 'lucide-svelte';
+	import { CheckCircle2, AlertCircle, Info, X, ShieldAlert, type Icon } from 'lucide-svelte';
+	import type { ComponentType } from 'svelte';
 
 	interface Props {
 		outcome: NegotiationOutcome;
@@ -14,7 +15,7 @@
 			title: string;
 			description: string;
 			interestRange: string;
-			icon: any;
+			icon: ComponentType<Icon>;
 			colorClass: string;
 			bgClass: string;
 			borderClass: string;

@@ -188,7 +188,7 @@ npm test +layout.test.ts
 
 ## Documentation Files
 
-### `/TEST_DOCUMENTATION.md`
+### `/docs/testing/TEST_DOCUMENTATION.md`
 **Purpose**: Comprehensive test documentation
 **Contents**:
 - Complete test coverage overview
@@ -216,7 +216,7 @@ npm test +layout.test.ts
 
 **Audience**: Developers writing or maintaining tests
 
-### `/TEST_PATTERNS.md`
+### `/docs/testing/TEST_PATTERNS.md`
 **Purpose**: Quick reference for copy-paste test patterns
 **Contents**:
 - Code snippets for common scenarios
@@ -230,7 +230,7 @@ npm test +layout.test.ts
 
 **Audience**: Developers writing tests (quick reference)
 
-### `/TESTING_SUMMARY.md`
+### `/docs/testing/TESTING_SUMMARY.md`
 **Purpose**: High-level summary of testing implementation
 **Contents**:
 - What has been delivered
@@ -243,7 +243,7 @@ npm test +layout.test.ts
 
 **Audience**: Project managers, stakeholders, team leads
 
-### `/TEST_FILES_INDEX.md` (this file)
+### `/docs/testing/TEST_FILES_INDEX.md` (this file)
 **Purpose**: Complete index of all test files
 **Contents**: You're reading it!
 
@@ -253,10 +253,13 @@ npm test +layout.test.ts
 director-assist/
 ├── vitest.config.ts                              # Vitest configuration
 ├── package.json                                   # Updated with test scripts
-├── TEST_DOCUMENTATION.md                          # Comprehensive docs
-├── TESTING_SUMMARY.md                             # High-level summary
-├── TEST_PATTERNS.md                               # Quick reference patterns
-├── TEST_FILES_INDEX.md                            # This file
+│
+├── docs/
+│   └── testing/
+│       ├── TEST_DOCUMENTATION.md                  # Comprehensive docs
+│       ├── TESTING_SUMMARY.md                     # High-level summary
+│       ├── TEST_PATTERNS.md                       # Quick reference patterns
+│       └── TEST_FILES_INDEX.md                    # This file
 │
 └── src/
     ├── tests/
@@ -393,8 +396,8 @@ Recommended maintenance activities:
 If you need help:
 
 1. Check `/src/tests/README.md` for developer guide
-2. Check `/TEST_PATTERNS.md` for code examples
-3. Review `/TEST_DOCUMENTATION.md` for detailed info
+2. Check `/docs/testing/TEST_PATTERNS.md` for code examples
+3. Review `/docs/testing/TEST_DOCUMENTATION.md` for detailed info
 4. Check [Vitest docs](https://vitest.dev/)
 5. Check [Testing Library docs](https://testing-library.com/)
 

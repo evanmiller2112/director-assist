@@ -23,6 +23,7 @@ import {
 	type EntityAnalysisContext,
 	type RelationshipMap
 } from './analyzers';
+import { getErrorMessage } from '$lib/utils/errors';
 
 /**
  * Default analysis configuration
@@ -209,9 +210,9 @@ export const suggestionAnalysisService = {
 				results.push(result);
 				totalApiCalls += result.apiCallsMade;
 			totalAnalyzerTime += result.analysisTimeMs;
-			} catch (error: any) {
+			} catch (err: unknown) {
 				errors.push(
-					`${analyzer.type} analyzer failed: ${error?.message || String(error)}`
+					`${analyzer.type} analyzer failed: ${getErrorMessage(err)}`
 				);
 				// Add empty result for failed analyzer
 				results.push({
@@ -297,9 +298,9 @@ export const suggestionAnalysisService = {
 					suggestions: filteredSuggestions
 				});
 				totalApiCalls += result.apiCallsMade;
-			} catch (error: any) {
+			} catch (err: unknown) {
 				errors.push(
-					`${analyzer.type} analyzer failed: ${error?.message || String(error)}`
+					`${analyzer.type} analyzer failed: ${getErrorMessage(err)}`
 				);
 				results.push({
 					type: analyzer.type,

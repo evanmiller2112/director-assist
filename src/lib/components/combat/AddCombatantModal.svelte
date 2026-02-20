@@ -2,10 +2,13 @@
 	import { X, User, Skull } from 'lucide-svelte';
 	import { entitiesStore } from '$lib/stores';
 	import type { BaseEntity } from '$lib/types';
+	import type { AddHeroCombatantInput, AddCreatureCombatantInput, AddQuickCombatantInput } from '$lib/types/combat';
+
+	type AddCombatantData = AddHeroCombatantInput | AddCreatureCombatantInput | AddQuickCombatantInput;
 
 	interface Props {
 		open: boolean;
-		onAdd?: (data: any) => void;
+		onAdd?: (data: AddCombatantData) => void;
 		onClose?: () => void;
 	}
 
@@ -140,23 +143,18 @@
 		if (!canSubmit) return;
 
 		if (addMode === 'quick') {
-			const quickData: any = {
+			const quickData: AddQuickCombatantInput = {
 				type: quickType,
 				name: quickName.trim(),
 				hp: parseInt(quickHp, 10),
-				isAdHoc: true
+				threat: quickType === 'creature' ? (() => {
+					// Read from DOM to ensure we get the latest value even if binding hasn't updated
+					const threatElement = document.getElementById('quick-threat-level') as HTMLSelectElement;
+					const threatValue = threatElement ? threatElement.value : quickThreat;
+					return parseInt(threatValue, 10);
+				})() : undefined,
+				tokenIndicator: tokenIndicator.trim() || undefined
 			};
-
-			if (quickType === 'creature') {
-				// Read from DOM to ensure we get the latest value even if binding hasn't updated
-				const threatElement = document.getElementById('quick-threat-level') as HTMLSelectElement;
-				const threatValue = threatElement ? threatElement.value : quickThreat;
-				quickData.threat = parseInt(threatValue, 10);
-			}
-
-			if (tokenIndicator.trim()) {
-				quickData.tokenIndicator = tokenIndicator.trim();
-			}
 
 			onAdd?.(quickData);
 			onClose?.();
@@ -165,34 +163,32 @@
 
 		if (!selectedEntity) return;
 
-		const baseData: any = {
-			name: selectedEntity.name,
-			entityId: selectedEntity.id,
-			hp: parseInt(hp, 10),
-			maxHp: maxHp ? parseInt(maxHp, 10) : undefined,
-			ac: ac ? parseInt(ac, 10) : undefined
-		};
-
-		if (tokenIndicator.trim()) {
-			baseData.tokenIndicator = tokenIndicator.trim();
-		}
-
 		if (combatantType === 'hero') {
-			onAdd?.({
-				...baseData,
-				type: 'hero',
+			const heroData: AddHeroCombatantInput = {
+				name: selectedEntity.name,
+				entityId: selectedEntity.id,
+				hp: parseInt(hp, 10),
+				maxHp: maxHp ? parseInt(maxHp, 10) : undefined,
+				ac: ac ? parseInt(ac, 10) : undefined,
+				tokenIndicator: tokenIndicator.trim() || undefined,
 				heroicResource: resourceName ? {
 					name: resourceName,
 					current: resourceCurrent ? parseInt(resourceCurrent, 10) : 0,
 					max: resourceMax ? parseInt(resourceMax, 10) : 0
 				} : undefined
-			});
+			};
+			onAdd?.(heroData);
 		} else {
-			onAdd?.({
-				...baseData,
-				type: 'creature',
+			const creatureData: AddCreatureCombatantInput = {
+				name: selectedEntity.name,
+				entityId: selectedEntity.id,
+				hp: parseInt(hp, 10),
+				maxHp: maxHp ? parseInt(maxHp, 10) : undefined,
+				ac: ac ? parseInt(ac, 10) : undefined,
+				tokenIndicator: tokenIndicator.trim() || undefined,
 				threat: parseInt(threat, 10)
-			});
+			};
+			onAdd?.(creatureData);
 		}
 
 		onClose?.();

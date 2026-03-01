@@ -5,6 +5,7 @@
 	import { entityRepository, chatRepository, appConfigRepository } from '$lib/db/repositories';
 	import { convertOldCampaignToEntity } from '$lib/db/migrations/migrateCampaignToEntity';
 	import type { CampaignBackup, ModelInfo } from '$lib/types';
+	import { rehydrateBackupDates } from '$lib/services/backupRehydration';
 	import {
 		fetchModels,
 		getSelectedModel,
@@ -204,6 +205,8 @@
 			const montageSessions = await db.montageSessions.toArray();
 			// Issue #392: Get negotiation sessions
 			const negotiationSessions = await db.negotiationSessions.toArray();
+			// Issue #591: Get respite sessions
+			const respiteSessions = await db.respiteSessions.toArray();
 
 			const exportDate = new Date();
 			const backup: CampaignBackup = {
@@ -215,7 +218,8 @@
 				selectedModel: modelToExport,
 				combatSessions,
 				montageSessions,
-				negotiationSessions
+				negotiationSessions,
+				respiteSessions
 			};
 
 			const json = JSON.stringify(backup, null, 2);
@@ -278,7 +282,7 @@
 			isImporting = true;
 			try {
 				const text = await file.text();
-				const backup = JSON.parse(text) as CampaignBackup;
+				const backup = rehydrateBackupDates(JSON.parse(text));
 
 				// Validate backup structure - must have entities (new format) or campaign (old format)
 				if (!backup.version || !backup.entities) {
@@ -305,7 +309,7 @@
 				// Import data
 				await db.transaction(
 					'rw',
-					[db.campaign, db.entities, db.chatMessages, db.appConfig, db.combatSessions, db.montageSessions, db.negotiationSessions],
+					[db.campaign, db.entities, db.chatMessages, db.appConfig, db.combatSessions, db.montageSessions, db.negotiationSessions, db.respiteSessions],
 					async () => {
 						await db.campaign.clear();
 						await db.entities.clear();
@@ -314,6 +318,7 @@
 						await db.combatSessions.clear();
 						await db.montageSessions.clear();
 						await db.negotiationSessions.clear();
+						await db.respiteSessions.clear();
 
 						// Handle old format: convert campaign to entity
 						let entitiesToImport = [...backup.entities];
@@ -343,6 +348,11 @@
 						// Issue #392: Restore negotiation sessions
 						if (backup.negotiationSessions && backup.negotiationSessions.length > 0) {
 							await db.negotiationSessions.bulkAdd(backup.negotiationSessions);
+						}
+
+						// Issue #591: Restore respite sessions
+						if (backup.respiteSessions && backup.respiteSessions.length > 0) {
+							await db.respiteSessions.bulkAdd(backup.respiteSessions);
 						}
 
 						// Set active campaign

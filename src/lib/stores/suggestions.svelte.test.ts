@@ -381,7 +381,7 @@ describe('Suggestions Store - B4 New Methods', () => {
 			const result = await suggestionsStore.executeAction(noActionSuggestion);
 
 			expect(result.success).toBe(false);
-			expect(result.error).toMatch(/no.*action/i);
+			expect(result.message).toMatch(/no.*action/i);
 		});
 
 		it('should set loading state during execution', async () => {
@@ -420,7 +420,7 @@ describe('Suggestions Store - B4 New Methods', () => {
 			const result = await suggestionsStore.executeAction(mockSuggestion);
 
 			expect(result.success).toBe(false);
-			expect(result.error).toContain('error');
+			expect(result.message).toContain('error');
 		});
 	});
 

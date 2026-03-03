@@ -893,7 +893,7 @@ describe('GenerateSuggestionsButton Component - Edge Cases', () => {
 				entityType: 'character',
 				currentData: {
 					name: 'Aragorn',
-					stats: { str: 16, dex: 14 }
+					stats: { str: 16, dex: 14 } as any
 				},
 				onSuggestionsGenerated: vi.fn()
 			}

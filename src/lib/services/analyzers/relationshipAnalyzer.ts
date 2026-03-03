@@ -207,7 +207,7 @@ export const relationshipAnalyzer: SuggestionAnalyzer = {
 		// 3. AI-powered semantic analysis (optional, rate-limited)
 		if (config.enableAIAnalysis) {
 			// Select a small sample of unlinked entity pairs for AI analysis
-			const unlinkedPairs: Array<[any, any]> = [];
+			const unlinkedPairs: Array<[BaseEntity, BaseEntity]> = [];
 			const maxAIPairs = 5; // Limit AI calls
 
 			for (let i = 0; i < context.entities.length && unlinkedPairs.length < maxAIPairs; i++) {

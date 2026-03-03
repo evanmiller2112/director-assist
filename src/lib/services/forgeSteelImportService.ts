@@ -5,7 +5,7 @@
  * to Director Assist entities.
  */
 
-import type { NewEntity } from '$lib/types';
+import type { FieldValue, NewEntity } from '$lib/types';
 import type { ForgeSteelHero } from '$lib/types/forgeSteel';
 import { validateForgeSteelHeroStructure } from '$lib/types/forgeSteel';
 
@@ -103,7 +103,7 @@ export function mapForgeSteelHeroToEntity(hero: ForgeSteelHero): NewEntity {
 	const status = hero.state.defeated ? 'deceased' : 'active';
 
 	// Build fields object
-	const fields: Record<string, any> = {
+	const fields: Record<string, FieldValue> = {
 		concept,
 		background: hero.state.notes,
 		status

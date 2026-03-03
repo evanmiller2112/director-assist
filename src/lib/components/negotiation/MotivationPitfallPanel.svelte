@@ -35,7 +35,7 @@
 		onRevealPitfall
 	}: Props = $props();
 
-	const motivationIcons: Record<MotivationType, any> = {
+	const motivationIcons: Record<MotivationType, typeof Heart> = {
 		charity: Heart,
 		discovery: Search,
 		faith: Users,
@@ -51,7 +51,7 @@
 		wealth: DollarSign
 	};
 
-	function getIconForType(type: string): any {
+	function getIconForType(type: string): typeof Heart {
 		// Check if it's a canonical type
 		if (type in motivationIcons) {
 			return motivationIcons[type as MotivationType];

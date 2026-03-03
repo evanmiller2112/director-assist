@@ -334,7 +334,7 @@ describe('networkGraph - toVisNetworkData', () => {
 			expect(result.nodes.length).toBe(2);
 
 			// Check first node
-			const node1 = result.nodes.get('entity-1');
+			const node1 = result.nodes.get('entity-1')!;
 			expect(node1).toBeDefined();
 			expect(node1.id).toBe('entity-1');
 			expect(node1.label).toBe('Gandalf');
@@ -345,7 +345,7 @@ describe('networkGraph - toVisNetworkData', () => {
 			expect(node1.title).toContain('Connections: 5');
 
 			// Check second node
-			const node2 = result.nodes.get('entity-2');
+			const node2 = result.nodes.get('entity-2')!;
 			expect(node2).toBeDefined();
 			expect(node2.id).toBe('entity-2');
 			expect(node2.label).toBe('Rivendell');
@@ -379,7 +379,7 @@ describe('networkGraph - toVisNetworkData', () => {
 
 			expect(result.edges.length).toBe(1);
 
-			const edge = result.edges.get(1);
+			const edge = result.edges.get(1)!;
 			expect(edge).toBeDefined();
 			expect(edge.id).toBe(1);
 			expect(edge.from).toBe('entity-1');
@@ -413,7 +413,7 @@ describe('networkGraph - toVisNetworkData', () => {
 
 			const result = toVisNetworkData(map, options);
 
-			const edge = result.edges.get(1);
+			const edge = result.edges.get(1)!;
 			expect(edge).toBeDefined();
 			expect(edge.arrows).toBe('to');
 		});
@@ -432,7 +432,7 @@ describe('networkGraph - toVisNetworkData', () => {
 
 			const result = toVisNetworkData(map, options);
 
-			const node = result.nodes.get('entity-1');
+			const node = result.nodes.get('entity-1')!;
 			expect(node.color).toBe('#1d4ed8'); // Dark mode character color
 		});
 	});
@@ -458,7 +458,7 @@ describe('networkGraph - toVisNetworkData', () => {
 
 			const result = toVisNetworkData(map, { isDark: false });
 
-			const edge = result.edges.get(1);
+			const edge = result.edges.get(1)!;
 			expect(edge.width).toBe(3);
 			expect(edge.dashes).toBe(false);
 		});
@@ -483,7 +483,7 @@ describe('networkGraph - toVisNetworkData', () => {
 
 			const result = toVisNetworkData(map, { isDark: false });
 
-			const edge = result.edges.get(1);
+			const edge = result.edges.get(1)!;
 			expect(edge.width).toBe(2);
 			expect(edge.dashes).toEqual([5, 5]);
 		});
@@ -508,7 +508,7 @@ describe('networkGraph - toVisNetworkData', () => {
 
 			const result = toVisNetworkData(map, { isDark: false });
 
-			const edge = result.edges.get(1);
+			const edge = result.edges.get(1)!;
 			expect(edge.width).toBe(1);
 			expect(edge.dashes).toEqual([2, 4]);
 		});
@@ -537,10 +537,10 @@ describe('networkGraph - toVisNetworkData', () => {
 			expect(result.edges.length).toBe(4);
 
 			// Verify all nodes have correct shapes
-			expect(result.nodes.get('c1').shape).toBe('circle');
-			expect(result.nodes.get('c2').shape).toBe('circle');
-			expect(result.nodes.get('l1').shape).toBe('square');
-			expect(result.nodes.get('f1').shape).toBe('hexagon');
+			expect(result.nodes.get('c1')!.shape).toBe('circle');
+			expect(result.nodes.get('c2')!.shape).toBe('circle');
+			expect(result.nodes.get('l1')!.shape).toBe('square');
+			expect(result.nodes.get('f1')!.shape).toBe('hexagon');
 		});
 	});
 
@@ -555,7 +555,7 @@ describe('networkGraph - toVisNetworkData', () => {
 
 			const result = toVisNetworkData(map, { isDark: false });
 
-			const node = result.nodes.get('e1');
+			const node = result.nodes.get('e1')!;
 			expect(node.title).toBe('Hero\nType: character\nConnections: 10');
 		});
 
@@ -569,7 +569,7 @@ describe('networkGraph - toVisNetworkData', () => {
 
 			const result = toVisNetworkData(map, { isDark: false });
 
-			const node = result.nodes.get('e1');
+			const node = result.nodes.get('e1')!;
 			expect(node.title).toBe('Sword\nType: item\nConnections: 1');
 		});
 
@@ -583,7 +583,7 @@ describe('networkGraph - toVisNetworkData', () => {
 
 			const result = toVisNetworkData(map, { isDark: false });
 
-			const node = result.nodes.get('e1');
+			const node = result.nodes.get('e1')!;
 			expect(node.title).toBe('Remote Cave\nType: location\nConnections: 0');
 		});
 	});
@@ -618,7 +618,7 @@ describe('networkGraph - toVisNetworkData', () => {
 			const result = toVisNetworkData(map, { isDark: false });
 
 			// Should be able to get by ID
-			const node = result.nodes.get('e1');
+			const node = result.nodes.get('e1')!;
 			expect(node).toBeDefined();
 
 			// Should be able to get all
@@ -644,7 +644,7 @@ describe('networkGraph - toVisNetworkData', () => {
 
 			const result = toVisNetworkData(map, { isDark: false });
 
-			const node = result.nodes.get('e1');
+			const node = result.nodes.get('e1')!;
 			expect(node.label).toBe('A'.repeat(100));
 		});
 
@@ -667,7 +667,7 @@ describe('networkGraph - toVisNetworkData', () => {
 
 			const result = toVisNetworkData(map, { isDark: false });
 
-			const edge = result.edges.get(1);
+			const edge = result.edges.get(1)!;
 			expect(edge.label).toBe('friend-of/ally');
 		});
 
@@ -690,7 +690,7 @@ describe('networkGraph - toVisNetworkData', () => {
 
 			const result = toVisNetworkData(map, { isDark: false });
 
-			const edge = result.edges.get(1);
+			const edge = result.edges.get(1)!;
 			expect(edge.width).toBe(2); // Default width
 			expect(edge.dashes).toBe(false); // Default dashes
 		});

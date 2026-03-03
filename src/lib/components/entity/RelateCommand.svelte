@@ -132,7 +132,7 @@
 				: [];
 
 			// Build metadata object
-			const metadata: Record<string, any> = {};
+			const metadata: { tags?: string[]; tension?: number } = {};
 			if (parsedTags.length > 0) {
 				metadata.tags = parsedTags;
 			}

@@ -16,7 +16,7 @@
 	interface Props {
 		field: FieldDefinition;
 		value: FieldValue;
-		allFields?: Record<string, any>; // For computed field evaluation
+		allFields?: Record<string, FieldValue>; // For computed field evaluation
 		compact?: boolean;
 	}
 

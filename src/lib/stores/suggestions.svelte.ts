@@ -7,13 +7,14 @@
 
 import { suggestionRepository } from '$lib/db/repositories';
 import { executeAction as executeActionService, getActionHistory } from '$lib/services/suggestionActionService';
+import type { ActionHistoryEntry, ActionResult } from '$lib/services/suggestionActionService';
 import type { AISuggestion, SuggestionQueryFilters } from '$lib/types';
 
 function createSuggestionsStore() {
 	let suggestions = $state<AISuggestion[]>([]);
 	let loading = $state(false);
 	let filters = $state<SuggestionQueryFilters>({});
-	let actionHistory = $state<any[]>([]);
+	let actionHistory = $state<ActionHistoryEntry[]>([]);
 
 	// Derived state for filtered suggestions
 	const filteredSuggestions = $derived.by(() => {
@@ -116,12 +117,12 @@ function createSuggestionsStore() {
 			}
 		},
 
-		async executeAction(suggestion: AISuggestion): Promise<any> {
+		async executeAction(suggestion: AISuggestion): Promise<ActionResult> {
 			loading = true;
 			try {
 				// Check if suggestion has a suggested action
 				if (!suggestion.suggestedAction) {
-					return { success: false, error: 'No action to execute' };
+					return { success: false, message: 'No action to execute', affectedEntityIds: [] };
 				}
 
 				// Execute the action
@@ -138,7 +139,7 @@ function createSuggestionsStore() {
 				return result;
 			} catch (e) {
 				console.error('Failed to execute action:', e);
-				return { success: false, error: e instanceof Error ? e.message : 'Unknown error' };
+				return { success: false, message: e instanceof Error ? e.message : 'Unknown error', affectedEntityIds: [] };
 			} finally {
 				loading = false;
 			}

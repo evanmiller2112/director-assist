@@ -121,7 +121,8 @@ function basicSanitize(html: string): string {
 			const decoded = decodeHtmlEntities(value);
 			// Check for dangerous protocols (strip whitespace/control chars attackers
 			// may inject between the protocol name and the colon)
-			const normalised = decoded.replace(/[\s\u0000-\u001f]+/g, '').toLowerCase();
+			// eslint-disable-next-line no-control-regex
+		const normalised = decoded.replace(/[\s\u0000-\u001f]+/g, '').toLowerCase();
 			if (
 				normalised.startsWith('javascript:') ||
 				normalised.startsWith('vbscript:') ||

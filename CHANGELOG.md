@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.1] - 2026-03-05
+
+### Fixed
+
+**Chat panel crashes with TypeError: _.getTime is not a function (#595)**
+- `formatRelativeTime` in the chat panel now safely handles non-Date timestamp values
+- Converts string and numeric timestamps to `Date` objects before calling date methods
+- Prevents uncaught `TypeError` that caused the chat panel to become unresponsive
+- Closes #595
+
+**CI failing: 25 ESLint @typescript-eslint/no-explicit-any errors (#593)**
+- Replaced all `any` type annotations with explicit types across the codebase
+- Resolves ESLint errors that were blocking CI on the `fix/chat-panel-gettime-crash-595` branch
+- Closes #593
+
+**CI failing: markdownUtils XSS sanitization tests and flaky e2e tests (#562)**
+- Fixed flaky combat-lifecycle end-to-end test causing intermittent CI failures
+- Closes #562
+
+**Critical: Negotiation crashes after import -- createdAt.toISOString is not a function (#591)**
+- Backup import now rehydrates all date fields (`createdAt`, `updatedAt`, etc.) back to `Date` objects after JSON parsing
+- Prevents `TypeError` when Negotiation and other features access date methods on imported records
+- Closes #591
+
 ## [2.0.0] - 2026-02-20
 
 ### Added

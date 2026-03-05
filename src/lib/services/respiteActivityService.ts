@@ -9,7 +9,7 @@
 
 import { entityRepository } from '$lib/db/repositories';
 import { respiteRepository } from '$lib/db/repositories/respiteRepository';
-import type { BaseEntity, NewEntity } from '$lib/types';
+import type { BaseEntity, FieldValue, NewEntity } from '$lib/types';
 import type {
 	CreateRespiteActivityInput,
 	RespiteActivityStatus
@@ -120,7 +120,7 @@ export async function updateActivityStatus(
 		throw new Error(`Activity entity ${activityEntityId} not found`);
 	}
 
-	const updates: Record<string, any> = {
+	const updates: Record<string, FieldValue> = {
 		activityStatus: status
 	};
 

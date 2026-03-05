@@ -14,6 +14,24 @@ import type { RelationshipMap } from '$lib/db/repositories/entityRepository';
 import type { NetworkDisplayOptions } from '$lib/types/network';
 import type { EntityType } from '$lib/types';
 
+interface VisNode {
+	id: string;
+	label: string;
+	shape: string;
+	color: string;
+	title: string;
+}
+
+interface VisEdge {
+	id: number;
+	from: string;
+	to: string;
+	label: string;
+	arrows: string;
+	width: number;
+	dashes: boolean | number[];
+}
+
 /**
  * Get the vis.js node shape for an entity type
  */
@@ -84,7 +102,7 @@ export function getEntityColor(entityType: EntityType, isDark: boolean): string 
 export function toVisNetworkData(
 	map: RelationshipMap,
 	options: NetworkDisplayOptions
-): { nodes: DataSet<any>; edges: DataSet<any> } {
+): { nodes: DataSet<VisNode>; edges: DataSet<VisEdge> } {
 	const { isDark } = options;
 
 	// Convert nodes

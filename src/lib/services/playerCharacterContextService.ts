@@ -13,7 +13,7 @@
  * @see GitHub Issue #319
  */
 
-import type { BaseEntity, EntityId } from '$lib/types';
+import type { BaseEntity, EntityId, FieldValue } from '$lib/types';
 import { entityRepository } from '$lib/db/repositories';
 import { getEntityTypeDefinition } from '$lib/config/entityTypes';
 
@@ -42,7 +42,7 @@ export interface PlayerCharacterContext {
 	/** Character summary */
 	summary?: string;
 	/** All character fields (excluding hidden/secrets) */
-	fields: Record<string, any>;
+	fields: Record<string, FieldValue>;
 	/** Field labels for proper formatting */
 	fieldLabels: Record<string, string>;
 }
@@ -139,7 +139,7 @@ export async function buildFullCharacterContext(
 	// Get the character type definition to access field definitions
 	const typeDef = getEntityTypeDefinition('character');
 
-	const fields: Record<string, any> = {};
+	const fields: Record<string, FieldValue> = {};
 	const fieldLabels: Record<string, string> = {};
 
 	// Process all fields from the character

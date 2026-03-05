@@ -82,6 +82,11 @@ export default [
 		}
 	},
 
+	// Ignore ErrorBoundary.svelte (svelte:boundary causes a parser error)
+	{
+		ignores: ['src/lib/components/ui/ErrorBoundary.svelte']
+	},
+
 	// Test files configuration
 	{
 		files: ['**/*.test.ts', '**/*.test.js', 'src/tests/**/*'],

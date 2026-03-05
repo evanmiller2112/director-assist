@@ -7,6 +7,7 @@
  * Pure TypeScript service with no Svelte dependencies.
  */
 
+import type { FieldValue } from '$lib/types';
 import type { PlayerExport, PlayerEntity, PlayerEntityLink } from '$lib/types/playerExport';
 
 /**
@@ -163,9 +164,9 @@ export function validateEntity(rawEntity: unknown, index: number): PlayerEntity 
 
 	// Fields (object, default to empty object)
 	// Note: We accept unknown field values and let TypeScript cast them to FieldValue
-	let fields: Record<string, any> = {};
+	let fields: Record<string, FieldValue> = {};
 	if (entity.fields && typeof entity.fields === 'object' && !Array.isArray(entity.fields)) {
-		fields = entity.fields as Record<string, any>;
+		fields = entity.fields as Record<string, FieldValue>;
 	}
 
 	// Links (array of PlayerEntityLink, default to empty array)

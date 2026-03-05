@@ -34,7 +34,7 @@
 		onchange: (value: FieldValue) => void;
 		disabled?: boolean;
 		error?: string;
-		allFields?: Record<string, any>; // For computed field evaluation
+		allFields?: Record<string, FieldValue>; // For computed field evaluation
 	}
 
 	let {

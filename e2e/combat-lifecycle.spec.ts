@@ -75,9 +75,22 @@ test.describe('Combat Lifecycle', () => {
     await expect(page.getByText('Round 1').first()).toBeVisible({ timeout: 10000 });
 
     // ------------------------------------------------------------------ Advance turns
-    // With 2 combatants, clicking Next Turn twice advances to Round 2.
+    // The app defaults to director-selected turn mode.
+    // Click each combatant card to select their turn, then click "Next Turn" to end it.
+    // After both combatants act, the round advances to Round 2.
+
+    // Select first combatant's turn by clicking their card
+    const combatantCards = page.locator('[data-testid="combatant-card"]');
+    await combatantCards.first().click();
+    // Wait for active indicator (aria-current="true" on the card)
+    await expect(combatantCards.first()).toHaveAttribute('aria-current', 'true', { timeout: 5000 });
     await page.click('button:has-text("Next Turn")');
+
+    // Select second combatant's turn by clicking their card
+    await combatantCards.nth(1).click();
+    await expect(combatantCards.nth(1)).toHaveAttribute('aria-current', 'true', { timeout: 5000 });
     await page.click('button:has-text("Next Turn")');
+
     await expect(page.getByText('Round 2').first()).toBeVisible({ timeout: 10000 });
 
     // ------------------------------------------------------------------ End combat

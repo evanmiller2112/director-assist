@@ -5,7 +5,7 @@
  * of executed actions for undo functionality.
  */
 
-import type { AISuggestion } from '$lib/types';
+import type { AISuggestion, EntityLink, FieldValue } from '$lib/types';
 import { entityRepository, suggestionRepository } from '$lib/db/repositories';
 import { nanoid } from 'nanoid';
 
@@ -233,7 +233,8 @@ async function executeEditEntity(
 	actionData: Record<string, unknown>,
 	historyEntry: ActionHistoryEntry
 ): Promise<ActionResult> {
-	const { entityId, updates } = actionData as any;
+	const entityId = actionData.entityId as string | undefined;
+	const updates = actionData.updates as Record<string, unknown> | undefined;
 
 	if (!entityId || !updates) {
 		return {
@@ -274,7 +275,10 @@ async function executeCreateEntity(
 	actionData: Record<string, unknown>,
 	historyEntry: ActionHistoryEntry
 ): Promise<ActionResult> {
-	const { type, name, fields, links } = actionData as any;
+	const type = actionData.type as string | undefined;
+	const name = actionData.name as string | undefined;
+	const fields = actionData.fields as Record<string, unknown> | undefined;
+	const links = actionData.links as Record<string, unknown>[] | undefined;
 
 	if (!type || !name) {
 		return {
@@ -288,10 +292,10 @@ async function executeCreateEntity(
 		const newEntity = await entityRepository.create({
 			type,
 			name,
-			description: fields?.description || '',
-			tags: fields?.tags || [],
-			fields: fields || {},
-			links: links || [],
+			description: (fields?.description as string) || '',
+			tags: (fields?.tags as string[]) || [],
+			fields: (fields || {}) as Record<string, FieldValue>,
+			links: (links || []) as unknown as EntityLink[],
 			notes: '',
 			metadata: {}
 		});
@@ -318,7 +322,9 @@ async function executeFlagForReview(
 	actionData: Record<string, unknown>,
 	historyEntry: ActionHistoryEntry
 ): Promise<ActionResult> {
-	const { entityIds, reason, priority } = actionData as any;
+	const entityIds = actionData.entityIds as string[] | undefined;
+	const reason = actionData.reason as string | undefined;
+	const priority = actionData.priority as string | undefined;
 
 	if (!entityIds || !Array.isArray(entityIds) || entityIds.length === 0) {
 		return {

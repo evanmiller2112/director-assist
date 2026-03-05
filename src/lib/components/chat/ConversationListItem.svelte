@@ -20,7 +20,8 @@
 		if (!date) return '';
 
 		const now = new Date();
-		const diff = now.getTime() - date.getTime();
+		const dateObj = date instanceof Date ? date : new Date(date);
+		const diff = now.getTime() - dateObj.getTime();
 		const seconds = Math.floor(diff / 1000);
 		const minutes = Math.floor(seconds / 60);
 		const hours = Math.floor(minutes / 60);
@@ -31,7 +32,7 @@
 		if (hours < 24) return `${hours} hour${hours !== 1 ? 's' : ''} ago`;
 		if (days < 7) return `${days} day${days !== 1 ? 's' : ''} ago`;
 
-		return date.toLocaleDateString();
+		return dateObj.toLocaleDateString();
 	}
 
 	function handleClick() {

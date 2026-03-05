@@ -408,6 +408,21 @@ function createCombatStore() {
 	// Turn Management
 	// ========================================================================
 
+	async function selectCombatantTurn(
+		combatId: string,
+		combatantId: string
+	): Promise<CombatSession> {
+		try {
+			error = null;
+			const updated = await combatRepository.selectCombatantTurn(combatId, combatantId);
+			updateActiveCombatIfMatch(updated);
+			return updated;
+		} catch (err: unknown) {
+			error = getErrorMessage(err);
+			throw err;
+		}
+	}
+
 	async function nextTurn(combatId: string): Promise<CombatSession> {
 		try {
 			error = null;
@@ -716,6 +731,7 @@ function createCombatStore() {
 		rollInitiativeForAll,
 
 		// Turns
+		selectCombatantTurn,
 		nextTurn,
 		previousTurn,
 

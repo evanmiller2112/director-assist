@@ -27,7 +27,7 @@
 
 	interface Props {
 		entityType: string;
-		currentData: Record<string, any>;
+		currentData: Record<string, unknown>;
 		entityId?: number;
 		onSuggestionsGenerated?: () => void;
 		disabled?: boolean;

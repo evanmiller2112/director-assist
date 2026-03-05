@@ -2,7 +2,7 @@ import {
 	getEntityTypeDefinition,
 	getEntityTypeDefinitionWithSystem
 } from '$lib/config/entityTypes';
-import type { EntityTypeDefinition, EntityTypeOverride } from '$lib/types';
+import type { EntityType, EntityTypeDefinition, EntityTypeOverride } from '$lib/types';
 import type { SystemProfile } from '$lib/types/systems';
 
 /**
@@ -62,7 +62,7 @@ export function getSystemAwareEntityType(
 	// Apply system modifications AND overrides
 	// Overrides are applied last so fieldOrder isn't undone by system's sort
 	return getEntityTypeDefinitionWithSystem(
-		entityType as any, // Cast to EntityType - getEntityTypeDefinitionWithSystem expects this
+		entityType as EntityType, // Cast to EntityType - getEntityTypeDefinitionWithSystem expects this
 		baseDefinition,
 		systemProfile,
 		customTypes ?? [],

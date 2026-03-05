@@ -81,8 +81,17 @@
 		}
 	});
 
-	function handleCombatantClick(combatant: Combatant) {
+	async function handleCombatantClick(combatant: Combatant) {
 		selectedCombatant = combatant;
+
+		// In director-selected mode, also select this combatant's turn
+		if (combat && combat.status === 'active' && combat.turnMode === 'director-selected' && !combat.activeCombatantId) {
+			try {
+				await combatStore.selectCombatantTurn(combat.id, combatant.id);
+			} catch {
+				// Combatant may not be eligible; ignore silently
+			}
+		}
 	}
 
 	async function handleNextTurn() {

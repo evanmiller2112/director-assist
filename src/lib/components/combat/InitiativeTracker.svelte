@@ -86,7 +86,9 @@
 			aria-label="Initiative order and turn tracker"
 		>
 			{#each combatants as combatant, index}
-				{@const isCurrent = index === combat.currentTurn}
+				{@const isCurrent = combat.turnMode === 'director-selected'
+					? combatant.id === combat.activeCombatantId
+					: index === combat.currentTurn}
 				<li
 					class={`transition-colors ${
 						!isClickable ? '' : 'hover:bg-slate-50 dark:hover:bg-slate-800'

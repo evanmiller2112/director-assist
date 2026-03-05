@@ -66,20 +66,75 @@ const DOMPURIFY_CONFIG = {
 };
 
 /**
- * Basic sanitization for SSR - removes obvious XSS vectors
+ * Decodes HTML entities in a string so protocol checks work even when
+ * an attacker encodes characters like 'a' as '&#97;' or '&amp;'.
+ * Only decodes numeric and named character references — does not parse tags.
+ */
+function decodeHtmlEntities(text: string): string {
+	return text
+		// Decimal numeric references: &#97; → a
+		.replace(/&#(\d+);/g, (_, dec) => String.fromCharCode(Number(dec)))
+		// Hex numeric references: &#x61; → a
+		.replace(/&#x([0-9a-f]+);/gi, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
+		// Common named references that are relevant to URL/protocol sanitization
+		.replace(/&amp;/gi, '&')
+		.replace(/&lt;/gi, '<')
+		.replace(/&gt;/gi, '>')
+		.replace(/&quot;/gi, '"')
+		.replace(/&apos;/gi, "'");
+}
+
+/**
+ * Basic sanitization for SSR - removes obvious XSS vectors.
+ *
+ * This is also applied as a second pass after DOMPurify in browser contexts
+ * to catch anything DOMPurify may have missed.
+ *
+ * Handles:
+ * - Script tags (including unclosed and malformed variants)
+ * - Event handler attributes (onclick, onload, etc.)
+ * - Dangerous URL protocols (javascript:, vbscript:) including entity-encoded forms
+ * - data:text/html URLs
  */
 function basicSanitize(html: string): string {
 	let sanitized = html;
-	// Remove script tags
+
+	// Remove <script> tags in all forms:
+	//   1. Well-formed:  <script ...>...</script>
+	//   2. Unclosed:     <script ...>...EOF
+	//   3. Malformed closing tag: <script>bad</>
+	// Strategy: remove everything from an opening <script to the next </script>,
+	// and then strip any remaining <script opening tags (catches unclosed / malformed).
 	sanitized = sanitized.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '');
-	// Remove event handlers
+	sanitized = sanitized.replace(/<script[^>]*>[\s\S]*/gi, '');
+	sanitized = sanitized.replace(/<script[^>]*>/gi, '');
+
+	// Remove event handlers (onclick=, onload=, etc.)
 	sanitized = sanitized.replace(/\s*on\w+\s*=\s*["'][^"']*["']/gi, '');
-	// Remove javascript: protocol
-	sanitized = sanitized.replace(/href\s*=\s*["']javascript:[^"']*["']/gi, '');
-	sanitized = sanitized.replace(/src\s*=\s*["']javascript:[^"']*["']/gi, '');
-	// Remove data:text/html URLs
-	sanitized = sanitized.replace(/href\s*=\s*["']data:text\/html[^"']*["']/gi, '');
-	sanitized = sanitized.replace(/src\s*=\s*["']data:text\/html[^"']*["']/gi, '');
+
+	// Decode HTML entities within attribute values before protocol checks.
+	// We target only the content inside href/src quotes to avoid mangling
+	// safe entity-encoded display text like &lt;div&gt;.
+	sanitized = sanitized.replace(
+		/(href|src)\s*=\s*(["'])(.*?)\2/gi,
+		(_match, attr, quote, value) => {
+			const decoded = decodeHtmlEntities(value);
+			// Check for dangerous protocols (strip whitespace/control chars attackers
+			// may inject between the protocol name and the colon)
+			const normalised = decoded.replace(/[\s\u0000-\u001f]+/g, '').toLowerCase();
+			if (
+				normalised.startsWith('javascript:') ||
+				normalised.startsWith('vbscript:') ||
+				normalised.startsWith('data:text/html')
+			) {
+				return '';
+			}
+			// Value is safe — return the original (un-decoded) attribute so we
+			// don't accidentally alter safe entity-encoded text.
+			return _match;
+		}
+	);
+
 	return sanitized;
 }
 

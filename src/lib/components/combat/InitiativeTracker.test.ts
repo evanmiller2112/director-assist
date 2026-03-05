@@ -89,7 +89,8 @@ describe('InitiativeTracker Component - Basic Rendering', () => {
 describe('InitiativeTracker Component - Current Turn Highlighting', () => {
 	it('should highlight the current combatant', () => {
 		const combat = createActiveCombatSession(2, 1);
-		combat.currentTurn = 1;
+		// In director-selected mode, the active combatant is tracked via activeCombatantId
+		combat.activeCombatantId = combat.combatants[1].id;
 
 		render(InitiativeTracker, {
 			props: { combat }
@@ -103,7 +104,8 @@ describe('InitiativeTracker Component - Current Turn Highlighting', () => {
 
 	it('should not highlight other combatants', () => {
 		const combat = createActiveCombatSession(3, 1);
-		combat.currentTurn = 1;
+		// In director-selected mode, the active combatant is tracked via activeCombatantId
+		combat.activeCombatantId = combat.combatants[1].id;
 
 		render(InitiativeTracker, {
 			props: { combat }
@@ -118,7 +120,8 @@ describe('InitiativeTracker Component - Current Turn Highlighting', () => {
 
 	it('should show current turn indicator icon', () => {
 		const combat = createActiveCombatSession(2, 1);
-		combat.currentTurn = 0;
+		// In director-selected mode, the active combatant is tracked via activeCombatantId
+		combat.activeCombatantId = combat.combatants[0].id;
 
 		render(InitiativeTracker, {
 			props: { combat }
@@ -130,9 +133,10 @@ describe('InitiativeTracker Component - Current Turn Highlighting', () => {
 		expect(currentCombatantCard?.querySelector('[data-testid="current-turn-indicator"]')).toBeInTheDocument();
 	});
 
-	it('should update highlighting when currentTurn changes', () => {
+	it('should update highlighting when active combatant changes', () => {
 		const combat = createActiveCombatSession(2, 1);
-		combat.currentTurn = 0;
+		// In director-selected mode, the active combatant is tracked via activeCombatantId
+		combat.activeCombatantId = combat.combatants[0].id;
 
 		const { rerender } = render(InitiativeTracker, {
 			props: { combat }
@@ -142,8 +146,8 @@ describe('InitiativeTracker Component - Current Turn Highlighting', () => {
 		let firstCard = screen.getByText(combat.combatants[0].name).closest('[data-testid="combatant-card"]');
 		expect(firstCard).toHaveClass(/current|active/);
 
-		// Change turn
-		combat.currentTurn = 1;
+		// Change active combatant
+		combat.activeCombatantId = combat.combatants[1].id;
 		rerender({ combat });
 
 		// Second combatant should now be highlighted
@@ -416,7 +420,8 @@ describe('InitiativeTracker Component - Accessibility', () => {
 
 	it('should indicate current combatant to screen readers', () => {
 		const combat = createActiveCombatSession();
-		combat.currentTurn = 1;
+		// In director-selected mode, the active combatant is tracked via activeCombatantId
+		combat.activeCombatantId = combat.combatants[1].id;
 
 		render(InitiativeTracker, {
 			props: { combat }

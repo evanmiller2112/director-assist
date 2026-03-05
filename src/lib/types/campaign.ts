@@ -10,6 +10,7 @@ import type { PlayerExportFieldConfig } from './playerFieldVisibility';
 import type { CombatSession } from './combat';
 import type { MontageSession } from './montage';
 import type { NegotiationSession } from './negotiation';
+import type { RespiteSession } from './respite';
 
 // Campaign model
 export interface Campaign {
@@ -108,6 +109,7 @@ export interface CampaignBackup {
 	combatSessions?: CombatSession[]; // Issue #310: Combat sessions for backup/restore
 	montageSessions?: MontageSession[]; // Issue #310: Montage sessions for backup/restore
 	negotiationSessions?: NegotiationSession[]; // Issue #392: Negotiation sessions for backup/restore
+	respiteSessions?: RespiteSession[]; // Issue #591: Respite sessions for backup/restore
 }
 
 // Issue #152: Backup reminder system types

@@ -306,7 +306,7 @@
 							<!-- Recovery Fields (always visible) -->
 							<div class="flex gap-3 pt-2 border-t border-gray-200 dark:border-gray-700">
 								<div class="flex items-center gap-2">
-									<label for="hero-current-{index}" class="text-xs text-gray-600 dark:text-gray-400">Current</label>
+									<label for="hero-current-{index}" class="text-xs text-gray-600 dark:text-gray-400">Current Recoveries</label>
 									<input
 										id="hero-current-{index}"
 										type="number"
@@ -316,7 +316,7 @@
 									/>
 								</div>
 								<div class="flex items-center gap-2">
-									<label for="hero-max-{index}" class="text-xs text-gray-600 dark:text-gray-400">Max</label>
+									<label for="hero-max-{index}" class="text-xs text-gray-600 dark:text-gray-400">Max Recoveries</label>
 									<input
 										id="hero-max-{index}"
 										type="number"

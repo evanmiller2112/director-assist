@@ -9,9 +9,39 @@
 		isCurrent?: boolean;
 		onClick?: (combatant: Combatant) => void;
 		compact?: boolean;
+		onUpdateTokenIndicator?: (value: string | undefined) => void;
 	}
 
-	let { combatant, isCurrent = false, onClick, compact = false }: Props = $props();
+	let { combatant, isCurrent = false, onClick, compact = false, onUpdateTokenIndicator }: Props =
+		$props();
+
+	// Token indicator inline edit state
+	let isEditingToken = $state(false);
+	let tokenEditValue = $state('');
+
+	function startEditingToken(event: MouseEvent) {
+		event.stopPropagation();
+		tokenEditValue = combatant.tokenIndicator ?? '';
+		isEditingToken = true;
+	}
+
+	function saveToken() {
+		const trimmed = tokenEditValue.trim();
+		onUpdateTokenIndicator?.(trimmed === '' ? undefined : trimmed);
+		isEditingToken = false;
+	}
+
+	function cancelToken() {
+		isEditingToken = false;
+	}
+
+	function handleTokenKeydown(event: KeyboardEvent) {
+		if (event.key === 'Enter') {
+			saveToken();
+		} else if (event.key === 'Escape') {
+			cancelToken();
+		}
+	}
 
 	const isHero = $derived(isHeroCombatant(combatant));
 	const isCreature = $derived(isCreatureCombatant(combatant));
@@ -88,14 +118,56 @@
 	<div class="flex items-start justify-between gap-2 mb-3">
 		<div class="flex-1 min-w-0">
 			<div class="flex items-center gap-2">
-				{#if combatant.tokenIndicator}
-					<span
-						class="flex-shrink-0 inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold bg-purple-600 dark:bg-purple-500 text-white"
-						data-testid="token-indicator-badge"
-						aria-label={`Token ${combatant.tokenIndicator}`}
+				{#if isEditingToken}
+					<!-- Inline token indicator editor -->
+					<input
+						type="text"
+						class="w-16 px-1 py-0.5 text-sm border border-purple-400 rounded focus:outline-none focus:ring-1 focus:ring-purple-500"
+						data-testid="token-indicator-input"
+						bind:value={tokenEditValue}
+						oninput={(e) => { tokenEditValue = (e.target as HTMLInputElement).value; }}
+						onkeydown={handleTokenKeydown}
+					/>
+					<button
+						type="button"
+						class="px-1.5 py-0.5 text-xs bg-purple-600 text-white rounded hover:bg-purple-700"
+						data-testid="token-indicator-save-button"
+						onclick={saveToken}
 					>
-						{combatant.tokenIndicator}
-					</span>
+						Save
+					</button>
+					<button
+						type="button"
+						class="px-1.5 py-0.5 text-xs bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded hover:bg-slate-300"
+						data-testid="token-indicator-cancel-button"
+						onclick={cancelToken}
+					>
+						Cancel
+					</button>
+				{:else}
+					{#if combatant.tokenIndicator}
+						<span
+							class="flex-shrink-0 inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold bg-purple-600 dark:bg-purple-500 text-white"
+							data-testid="token-indicator-badge"
+							aria-label={`Token ${combatant.tokenIndicator}`}
+						>
+							{combatant.tokenIndicator}
+						</span>
+					{/if}
+					{#if onUpdateTokenIndicator}
+						<button
+							type="button"
+							class="flex-shrink-0 inline-flex items-center justify-center w-5 h-5 text-slate-400 hover:text-purple-600 dark:hover:text-purple-400"
+							data-testid="token-indicator-edit-button"
+							aria-label="Edit token indicator"
+							onclick={startEditingToken}
+						>
+							<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3 h-3" aria-hidden="true">
+								<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+								<path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+							</svg>
+						</button>
+					{/if}
 				{/if}
 				<h3
 					class="font-semibold text-slate-900 dark:text-white truncate ellipsis"

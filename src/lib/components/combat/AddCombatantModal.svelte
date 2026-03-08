@@ -20,6 +20,7 @@
 	let searchQuery = $state('');
 	let hp = $state('');
 	let maxHp = $state('');
+	let maxHpManuallySet = $state(false);
 	let ac = $state('');
 	let initiative = $state('');
 
@@ -118,10 +119,18 @@
 		errors = newErrors;
 	});
 
+	// Auto-default Max HP from starting HP unless the user has manually set it
+	$effect(() => {
+		if (!maxHpManuallySet) {
+			maxHp = hp;
+		}
+	});
+
 	function clearForm() {
 		searchQuery = '';
 		hp = '';
 		maxHp = '';
+		maxHpManuallySet = false;
 		ac = '';
 		initiative = '';
 		resourceName = '';
@@ -470,6 +479,7 @@
 										step="1"
 										placeholder="Optional"
 										aria-label="Maximum"
+										oninput={() => (maxHpManuallySet = true)}
 									/>
 									{#if errors.maxHp}
 										<p class="text-xs text-red-600 dark:text-red-400 mt-1">{errors.maxHp}</p>

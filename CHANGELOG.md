@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.0] - 2026-03-15
+
+### Added
+
+**Default Max HP to Starting HP Value (#601)**
+- Max HP field in AddCombatantModal now auto-defaults to the starting HP value
+- Auto-link is preserved as the user changes starting HP until Max HP is manually edited
+- Manual override is respected — changing starting HP after a manual Max HP edit does not overwrite it
+- Auto-link resets on form clear, type switch, and modal close/reopen
+
+**Inline Token Indicator Editing (#600)**
+- Token indicator can now be edited directly on CombatantCard after creature creation
+- Edit button appears next to the token badge when the update callback is provided
+- Inline editor with Save/Cancel buttons and Enter/Escape keyboard support
+- Whitespace trimming and undefined-on-clear semantics for clean data handling
+- Works for both hero and creature combatants
+
+### Fixed
+
+**Reveal Button in Negotiation Greys Out and Does Nothing (#566)**
+- Fixed async callback handling: reveal button now properly awaits the database write and re-enables afterward
+- Changed `onRevealMotivation` and `onRevealPitfall` prop types from `void` to `Promise<void>` so the component can track in-flight operations
+- Fixed case-insensitive pitfall lookup: page handler now matches pitfalls regardless of DB description casing
+- Button correctly re-enables on both success and error, allowing retry on failure
+- Double-click protection prevents duplicate database writes while a reveal is in-flight
+
 ## [2.0.1] - 2026-03-05
 
 ### Fixed

@@ -56,7 +56,7 @@ function handleRunScene(sceneId: string) {
 }
 
 function handleNewScene() {
-	goto('/entity/new?type=scene');
+	goto('/entities/scene/new');
 }
 
 onMount(() => {

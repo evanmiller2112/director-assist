@@ -23,8 +23,8 @@
 		motivations: NPCMotivation[];
 		pitfalls: NPCPitfall[];
 		readonly?: boolean;
-		onRevealMotivation?: (type: string) => void;
-		onRevealPitfall?: (type: string) => void;
+		onRevealMotivation?: (type: string) => Promise<void>;
+		onRevealPitfall?: (type: string) => Promise<void>;
 	}
 
 	let {
@@ -67,29 +67,29 @@
 			.join(' ');
 	}
 
-	function handleRevealMotivation(type: string) {
-		if (onRevealMotivation) {
-			onRevealMotivation(type);
-		}
-	}
-
-	function handleRevealPitfall(type: string) {
-		if (onRevealPitfall) {
-			onRevealPitfall(type);
-		}
-	}
-
 	let revealingMotivations = $state<string[]>([]);
 	let revealingPitfalls = $state<string[]>([]);
 
-	function revealMotivation(type: string) {
+	async function revealMotivation(type: string) {
 		revealingMotivations = [...revealingMotivations, type];
-		handleRevealMotivation(type);
+		try {
+			await onRevealMotivation?.(type);
+		} catch {
+			// Swallow errors — the button re-enables via finally so the user can retry
+		} finally {
+			revealingMotivations = revealingMotivations.filter((t) => t !== type);
+		}
 	}
 
-	function revealPitfall(type: string) {
+	async function revealPitfall(type: string) {
 		revealingPitfalls = [...revealingPitfalls, type];
-		handleRevealPitfall(type);
+		try {
+			await onRevealPitfall?.(type);
+		} catch {
+			// Swallow errors — the button re-enables via finally so the user can retry
+		} finally {
+			revealingPitfalls = revealingPitfalls.filter((t) => t !== type);
+		}
 	}
 </script>
 

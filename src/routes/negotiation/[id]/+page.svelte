@@ -109,7 +109,7 @@
 	async function handleRevealPitfall(type: string) {
 		if (!negotiation) return;
 		// Find the pitfall by description matching the type
-		const index = negotiation.pitfalls.findIndex((p) => p.description === type);
+		const index = negotiation.pitfalls.findIndex((p) => p.description.toLowerCase() === type);
 		if (index !== -1) {
 			await negotiationStore.revealPitfall(negotiation.id, index);
 		}

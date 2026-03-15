@@ -1127,7 +1127,8 @@ describe('AddCombatantModal - Optional Fields in Entity Mode (Issue #233)', () =
 			});
 		});
 
-		it('should call onAdd with hero data without maxHp when not provided', async () => {
+		it('should call onAdd with hero data with maxHp auto-defaulted to hp when not manually provided', async () => {
+			// Issue #601: maxHp now auto-defaults to the starting HP value when not manually set
 			const onAdd = vi.fn();
 			render(AddCombatantModal, { props: { open: true, onAdd } });
 
@@ -1144,12 +1145,8 @@ describe('AddCombatantModal - Optional Fields in Entity Mode (Issue #233)', () =
 			await waitFor(() => {
 				expect(onAdd).toHaveBeenCalledWith(
 					expect.objectContaining({
-						hp: 30
-					})
-				);
-				expect(onAdd).toHaveBeenCalledWith(
-					expect.not.objectContaining({
-						maxHp: expect.anything()
+						hp: 30,
+						maxHp: 30
 					})
 				);
 			});
@@ -1889,5 +1886,339 @@ describe('AddCombatantModal - Token Indicator Field (Issue #300)', () => {
 				expect(tokenInputAfter).toBeInTheDocument();
 			});
 		});
+	});
+});
+
+// ============================================================================
+// Issue #601 - Default max HP to starting HP value when adding creature to combat
+// ============================================================================
+
+describe('AddCombatantModal - Max HP Auto-Default from Starting HP (Issue #601)', () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+		mockEntities.splice(0, mockEntities.length,
+			createMockEntity({ id: 'char-1', name: 'Hero', type: 'character' }),
+			createMockEntity({ id: 'npc-1', name: 'Goblin', type: 'npc' })
+		);
+	});
+
+	// -------------------------------------------------------------------------
+	// Core auto-default behaviour
+	// -------------------------------------------------------------------------
+
+	it('shouldDefaultMaxHpToStartingHpWhenHpIsEntered', async () => {
+		// Arrange
+		render(AddCombatantModal, { props: { open: true } });
+
+		// Act – enter a value into the "Hit Points" (starting HP) field only
+		const hpInput = screen.getByLabelText(/^hit points$/i) as HTMLInputElement;
+		await fireEvent.input(hpInput, { target: { value: '30' } });
+		await tick();
+
+		// Assert – Max HP should have been automatically set to 30
+		await waitFor(() => {
+			const maxHpInput = screen.getByLabelText(/max.*hp/i) as HTMLInputElement;
+			expect(maxHpInput.value).toBe('30');
+		});
+	});
+
+	it('shouldUpdateMaxHpWhenStartingHpChangesAndMaxHpHasNotBeenManuallySet', async () => {
+		// Arrange
+		render(AddCombatantModal, { props: { open: true } });
+		const hpInput = screen.getByLabelText(/^hit points$/i) as HTMLInputElement;
+
+		// Act – enter an initial HP value (auto-default kicks in)
+		await fireEvent.input(hpInput, { target: { value: '20' } });
+		await tick();
+
+		// Act – change the HP value again without ever touching Max HP
+		await fireEvent.input(hpInput, { target: { value: '35' } });
+		await tick();
+
+		// Assert – Max HP should follow the updated starting HP
+		await waitFor(() => {
+			const maxHpInput = screen.getByLabelText(/max.*hp/i) as HTMLInputElement;
+			expect(maxHpInput.value).toBe('35');
+		});
+	});
+
+	it('shouldKeepMaxHpEmptyWhenHpFieldIsCleared', async () => {
+		// Arrange
+		render(AddCombatantModal, { props: { open: true } });
+		const hpInput = screen.getByLabelText(/^hit points$/i) as HTMLInputElement;
+
+		// Establish the auto-link first
+		await fireEvent.input(hpInput, { target: { value: '25' } });
+		await tick();
+
+		// Act – clear the HP field
+		await fireEvent.input(hpInput, { target: { value: '' } });
+		await tick();
+
+		// Assert – Max HP should also be cleared (no stale value left)
+		await waitFor(() => {
+			const maxHpInput = screen.getByLabelText(/max.*hp/i) as HTMLInputElement;
+			expect(maxHpInput.value).toBe('');
+		});
+	});
+
+	// -------------------------------------------------------------------------
+	// Manual override locks the max HP field
+	// -------------------------------------------------------------------------
+
+	it('shouldAllowUserToManuallyOverrideMaxHp', async () => {
+		// Arrange
+		render(AddCombatantModal, { props: { open: true } });
+
+		// Act – set starting HP (auto-default fills Max HP with 30)
+		const hpInput = screen.getByLabelText(/^hit points$/i) as HTMLInputElement;
+		await fireEvent.input(hpInput, { target: { value: '30' } });
+		await tick();
+
+		// Act – manually change Max HP to a different value
+		const maxHpInput = screen.getByLabelText(/max.*hp/i) as HTMLInputElement;
+		await fireEvent.input(maxHpInput, { target: { value: '50' } });
+		await tick();
+
+		// Assert – the manually-entered Max HP value is preserved
+		await waitFor(() => {
+			expect(maxHpInput.value).toBe('50');
+		});
+	});
+
+	it('shouldNotOverwriteMaxHpAfterUserHasManuallySetIt', async () => {
+		// Arrange
+		render(AddCombatantModal, { props: { open: true } });
+		const hpInput = screen.getByLabelText(/^hit points$/i) as HTMLInputElement;
+		const maxHpInput = screen.getByLabelText(/max.*hp/i) as HTMLInputElement;
+
+		// Establish auto-link
+		await fireEvent.input(hpInput, { target: { value: '30' } });
+		await tick();
+
+		// User manually sets Max HP to a different value (creature enters combat wounded)
+		await fireEvent.input(maxHpInput, { target: { value: '50' } });
+		await tick();
+
+		// Act – user now changes starting HP (wound scenario: start at 20, max stays at 50)
+		await fireEvent.input(hpInput, { target: { value: '20' } });
+		await tick();
+
+		// Assert – Max HP must NOT be overwritten; it stays at the user's value of 50
+		await waitFor(() => {
+			expect(maxHpInput.value).toBe('50');
+		});
+	});
+
+	it('shouldNotOverwriteMaxHpWhenStartingHpChangesMultipleTimesAfterManualOverride', async () => {
+		// Arrange
+		render(AddCombatantModal, { props: { open: true } });
+		const hpInput = screen.getByLabelText(/^hit points$/i) as HTMLInputElement;
+		const maxHpInput = screen.getByLabelText(/max.*hp/i) as HTMLInputElement;
+
+		await fireEvent.input(hpInput, { target: { value: '25' } });
+		await tick();
+		await fireEvent.input(maxHpInput, { target: { value: '40' } });
+		await tick();
+
+		// Act – change starting HP several times
+		await fireEvent.input(hpInput, { target: { value: '10' } });
+		await tick();
+		await fireEvent.input(hpInput, { target: { value: '15' } });
+		await tick();
+		await fireEvent.input(hpInput, { target: { value: '20' } });
+		await tick();
+
+		// Assert – Max HP always stays at 40, the user's manually-entered value
+		await waitFor(() => {
+			expect(maxHpInput.value).toBe('40');
+		});
+	});
+
+	// -------------------------------------------------------------------------
+	// Submitted payload correctness
+	// -------------------------------------------------------------------------
+
+	it('shouldSubmitMaxHpEqualToStartingHpWhenUserNeverEditedMaxHpForHero', async () => {
+		// Arrange
+		const onAdd = vi.fn();
+		render(AddCombatantModal, { props: { open: true, onAdd } });
+
+		// Select the hero entity
+		const entityButtons = screen.getAllByRole('button');
+		const heroEntityButton = entityButtons.find(
+			(btn) => btn.textContent === 'Hero' && btn.classList.contains('border-slate-200')
+		);
+		await fireEvent.click(heroEntityButton!);
+		await tick();
+
+		// Enter starting HP only – Max HP should auto-default
+		await fireEvent.input(screen.getByLabelText(/^hit points$/i), { target: { value: '30' } });
+		await tick();
+
+		// Act – submit
+		const addButton = screen.getByRole('button', { name: /^add$/i });
+		await fireEvent.click(addButton);
+
+		// Assert – onAdd receives maxHp equal to the starting HP
+		await waitFor(() => {
+			expect(onAdd).toHaveBeenCalledWith(
+				expect.objectContaining({
+					hp: 30,
+					maxHp: 30
+				})
+			);
+		});
+	});
+
+	it('shouldSubmitMaxHpEqualToStartingHpWhenUserNeverEditedMaxHpForCreature', async () => {
+		// Arrange
+		const onAdd = vi.fn();
+		render(AddCombatantModal, { props: { open: true, onAdd } });
+
+		// Switch to creature type
+		const creatureButton = screen.getByRole('button', { name: /creature/i });
+		await fireEvent.click(creatureButton);
+		await tick();
+
+		// Select the goblin entity
+		const entityButtons = screen.getAllByRole('button');
+		const goblinEntityButton = entityButtons.find(
+			(btn) => btn.textContent === 'Goblin' && btn.classList.contains('border-slate-200')
+		);
+		await fireEvent.click(goblinEntityButton!);
+		await tick();
+
+		// Enter starting HP only – Max HP should auto-default
+		await fireEvent.input(screen.getByLabelText(/^hit points$/i), { target: { value: '15' } });
+		await tick();
+
+		// Act – submit
+		const addButton = screen.getByRole('button', { name: /^add$/i });
+		await fireEvent.click(addButton);
+
+		// Assert – onAdd receives maxHp equal to the starting HP
+		await waitFor(() => {
+			expect(onAdd).toHaveBeenCalledWith(
+				expect.objectContaining({
+					hp: 15,
+					maxHp: 15
+				})
+			);
+		});
+	});
+
+	it('shouldSubmitManuallySetMaxHpWhenUserOverrodIt', async () => {
+		// Arrange – wounded creature scenario: starts at 10 HP but max is 30
+		const onAdd = vi.fn();
+		render(AddCombatantModal, { props: { open: true, onAdd } });
+
+		// Select the hero entity
+		const entityButtons = screen.getAllByRole('button');
+		const heroEntityButton = entityButtons.find(
+			(btn) => btn.textContent === 'Hero' && btn.classList.contains('border-slate-200')
+		);
+		await fireEvent.click(heroEntityButton!);
+		await tick();
+
+		// Set starting HP (auto-fill triggers)
+		await fireEvent.input(screen.getByLabelText(/^hit points$/i), { target: { value: '10' } });
+		await tick();
+
+		// Override Max HP to represent full health
+		await fireEvent.input(screen.getByLabelText(/max.*hp/i), { target: { value: '30' } });
+		await tick();
+
+		// Act – submit
+		const addButton = screen.getByRole('button', { name: /^add$/i });
+		await fireEvent.click(addButton);
+
+		// Assert – onAdd receives the user's manually-entered maxHp (30), not the starting HP (10)
+		await waitFor(() => {
+			expect(onAdd).toHaveBeenCalledWith(
+				expect.objectContaining({
+					hp: 10,
+					maxHp: 30
+				})
+			);
+		});
+	});
+
+	// -------------------------------------------------------------------------
+	// State reset / form lifecycle
+	// -------------------------------------------------------------------------
+
+	it('shouldResetMaxHpAutoLinkWhenFormIsClearedOnTypeSwitch', async () => {
+		// Arrange
+		render(AddCombatantModal, { props: { open: true } });
+		const hpInput = screen.getByLabelText(/^hit points$/i) as HTMLInputElement;
+
+		// Establish a manual override
+		await fireEvent.input(hpInput, { target: { value: '30' } });
+		await tick();
+		await fireEvent.input(screen.getByLabelText(/max.*hp/i), { target: { value: '50' } });
+		await tick();
+
+		// Switch combatant type – this should clear the form and reset the manual-override flag
+		const creatureButton = screen.getByRole('button', { name: /creature/i });
+		await fireEvent.click(creatureButton);
+		await tick();
+
+		// Enter a new HP value after the reset
+		const freshHpInput = screen.getByLabelText(/^hit points$/i) as HTMLInputElement;
+		await fireEvent.input(freshHpInput, { target: { value: '20' } });
+		await tick();
+
+		// Assert – Max HP should auto-default again (not stuck at 50 from the previous session)
+		await waitFor(() => {
+			const maxHpInput = screen.getByLabelText(/max.*hp/i) as HTMLInputElement;
+			expect(maxHpInput.value).toBe('20');
+		});
+	});
+
+	it('shouldResetMaxHpAutoLinkWhenModalIsClosedAndReopened', async () => {
+		// Arrange
+		mockEntities.splice(0, mockEntities.length,
+			createMockEntity({ id: 'char-1', name: 'Hero', type: 'character' })
+		);
+		const onClose = vi.fn();
+		const { rerender } = render(AddCombatantModal, { props: { open: true, onClose } });
+
+		// Enter HP and manually override Max HP
+		await fireEvent.input(screen.getByLabelText(/^hit points$/i), { target: { value: '30' } });
+		await tick();
+		await fireEvent.input(screen.getByLabelText(/max.*hp/i), { target: { value: '50' } });
+		await tick();
+
+		// Close modal
+		rerender({ open: false, onClose });
+		await tick();
+
+		// Reopen modal
+		rerender({ open: true, onClose });
+		await tick();
+
+		// Enter HP on the fresh form
+		await fireEvent.input(screen.getByLabelText(/^hit points$/i), { target: { value: '25' } });
+		await tick();
+
+		// Assert – Max HP auto-defaults to 25 (the override flag was cleared on close)
+		await waitFor(() => {
+			const maxHpInput = screen.getByLabelText(/max.*hp/i) as HTMLInputElement;
+			expect(maxHpInput.value).toBe('25');
+		});
+	});
+
+	// -------------------------------------------------------------------------
+	// Max HP field label communicates the auto-default behaviour
+	// -------------------------------------------------------------------------
+
+	it('shouldShowMaxHpFieldWithoutRequiredIndicator', () => {
+		// The Max HP field is optional (auto-defaulted from starting HP) —
+		// its label must NOT include a visual "required" marker.
+		render(AddCombatantModal, { props: { open: true } });
+
+		// The existing label text is "Max HP (optional)" — verify it remains optional
+		expect(screen.getByLabelText(/max.*hp.*optional/i)).toBeInTheDocument();
 	});
 });

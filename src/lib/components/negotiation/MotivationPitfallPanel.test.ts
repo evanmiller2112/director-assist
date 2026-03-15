@@ -503,7 +503,11 @@ describe('MotivationPitfallPanel Component - Reveal Functionality', () => {
 		expect(onRevealPitfall).toHaveBeenCalledWith('revenge');
 	});
 
-	it('should disable reveal button after clicking', async () => {
+	it('should disable reveal button while async callback is in-flight', async () => {
+		let resolveReveal!: () => void;
+		const onRevealMotivation = vi.fn(
+			() => new Promise<void>((res) => { resolveReveal = res; })
+		);
 		const motivations: NPCMotivation[] = [
 			{ type: 'justice', isKnown: false, used: false }
 		];
@@ -511,15 +515,17 @@ describe('MotivationPitfallPanel Component - Reveal Functionality', () => {
 		render(MotivationPitfallPanel, {
 			props: {
 				motivations,
-				pitfalls: []
+				pitfalls: [],
+				onRevealMotivation
 			}
 		});
 
 		const revealButton = screen.getByRole('button', { name: /reveal/i });
 		await fireEvent.click(revealButton);
 
-		// Button should be disabled or loading after click
+		// Button should be disabled while the async callback is in-flight
 		expect(revealButton).toBeDisabled();
+		resolveReveal();
 	});
 });
 

@@ -372,7 +372,7 @@ describe('Scene List Page - New Scene Creation', () => {
 		const newButton = screen.getByRole('button', { name: /new scene/i });
 		await fireEvent.click(newButton);
 
-		expect(goto).toHaveBeenCalledWith('/entity/new?type=scene');
+		expect(goto).toHaveBeenCalledWith('/entities/scene/new');
 	});
 
 	it('should have prominent styling for new scene button', () => {
